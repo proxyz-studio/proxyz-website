@@ -225,11 +225,11 @@ export const bookingConfig: BookingConfig = {
   sectionLabel: "07 / BOOK YOUR AUDIT",
   heading: "60 minutes. One page memo. Yours to keep.",
   body: "Every PROXYZ engagement starts here. Pick a time below.",
-  calLink: "YOUR-CAL-LINK",
+  calLink: "proxyz/audit",
 }
 
 export const footerConfig: FooterConfig = {
-  left: "PROXYZ. An operator studio. Phuket and Bangkok.",
+  left: "PROXYZ. An operator studio.",
   email: {
     label: "hello@proxyz.studio",
     href: "mailto:hello@proxyz.studio",
