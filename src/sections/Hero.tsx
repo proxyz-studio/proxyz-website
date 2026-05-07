@@ -154,7 +154,7 @@ export default function Hero() {
               textTransform: 'uppercase',
               margin: 0,
               letterSpacing: '0.015em',
-              wordSpacing: '-0.3em',
+              wordSpacing: '-0.45em',
               textWrap: 'balance',
               background:
                 'repeating-linear-gradient(' +
