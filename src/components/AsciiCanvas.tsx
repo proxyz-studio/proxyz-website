@@ -261,7 +261,7 @@ export default function AsciiCanvas() {
         ctx.font = 'bold 13px "IBM Plex Mono", monospace';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
-        ctx.fillStyle = 'rgba(255, 65, 147, 0.85)';
+        ctx.fillStyle = 'rgba(135, 206, 250, 0.85)';
         ctx.fillText('PROXYZ', stationX, stationY - 16);
       };
 
