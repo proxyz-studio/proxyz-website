@@ -32,9 +32,11 @@ export default function StudioOS() {
 
         <h2
           style={{
-            fontSize: 'clamp(28px, 3.4vw, 44px)',
-            fontWeight: 400,
-            lineHeight: 1.18,
+            fontSize: 'clamp(36px, 4.4vw, 60px)',
+            fontWeight: 700,
+            lineHeight: 1.12,
+            letterSpacing: '-0.01em',
+            textTransform: 'uppercase',
             margin: '0 0 56px 0',
             maxWidth: '24ch',
             textWrap: 'balance',

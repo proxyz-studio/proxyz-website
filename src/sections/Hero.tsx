@@ -146,15 +146,15 @@ export default function Hero() {
           </p>
           <h1
             style={{
-              fontFamily: "'Geist Pixel', monospace",
-              fontSize: 'clamp(44px, 5.6vw, 82px)',
+              fontFamily: "'Geist Pixel Square', 'Geist Pixel', monospace",
+              fontSize: 'clamp(56px, 7.2vw, 108px)',
               fontWeight: 400,
-              lineHeight: 0.96,
+              lineHeight: 0.94,
               color: '#fff',
               textTransform: 'uppercase',
               margin: 0,
               textWrap: 'balance',
-              letterSpacing: '0.015em',
+              letterSpacing: '0.01em',
             }}
           >
             {heroConfig.titleLines.map((line, index) => (

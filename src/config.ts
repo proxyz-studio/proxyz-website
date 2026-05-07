@@ -278,8 +278,8 @@ export const selectedWorkConfig: SelectedWorkConfig = {
 
 export const bookingConfig: BookingConfig = {
   sectionLabel: "09 / BOOK YOUR AUDIT",
-  heading: "Sixty minutes. One page memo. No pitch.",
-  body: "The Audit is how every PROXYZ engagement starts. Pick a time below.",
+  heading: "60 minutes. One page memo. Yours to keep.",
+  body: "Every PROXYZ engagement starts here. Pick a time below.",
   calLink: "YOUR-CAL-LINK",
 }
 
