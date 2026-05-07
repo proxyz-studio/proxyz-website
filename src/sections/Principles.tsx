@@ -32,9 +32,11 @@ export default function Principles() {
 
         <h2
           style={{
-            fontSize: 'clamp(28px, 3.4vw, 44px)',
-            fontWeight: 400,
-            lineHeight: 1.18,
+            fontSize: 'clamp(40px, 5vw, 68px)',
+            fontWeight: 700,
+            lineHeight: 1.1,
+            letterSpacing: '-0.015em',
+            textTransform: 'uppercase',
             margin: '0 0 80px 0',
           }}
         >

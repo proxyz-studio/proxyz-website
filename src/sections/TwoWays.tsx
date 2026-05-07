@@ -32,9 +32,11 @@ export default function TwoWays() {
 
         <h2
           style={{
-            fontSize: 'clamp(28px, 3.4vw, 44px)',
-            fontWeight: 400,
-            lineHeight: 1.18,
+            fontSize: 'clamp(32px, 3.8vw, 52px)',
+            fontWeight: 700,
+            lineHeight: 1.15,
+            letterSpacing: '-0.01em',
+            textTransform: 'uppercase',
             margin: '0 0 80px 0',
           }}
         >
@@ -61,9 +63,11 @@ export default function TwoWays() {
             >
               <h3
                 style={{
-                  fontSize: '24px',
-                  fontWeight: 400,
+                  fontSize: '26px',
+                  fontWeight: 700,
                   lineHeight: 1.2,
+                  letterSpacing: '-0.01em',
+                  color: 'var(--accent-blue)',
                   margin: 0,
                 }}
               >
