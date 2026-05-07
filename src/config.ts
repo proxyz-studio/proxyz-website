@@ -82,26 +82,6 @@ export interface StudioOSConfig {
   closing: string
 }
 
-export interface FounderConfig {
-  sectionLabel: string
-  heading: string
-  body: string
-  imagePlaceholder: string
-}
-
-export interface WorkRow {
-  year: string
-  title: string
-  role: string
-  description: string
-}
-
-export interface SelectedWorkConfig {
-  sectionLabel: string
-  heading: string
-  rows: WorkRow[]
-}
-
 export interface BookingConfig {
   sectionLabel: string
   heading: string
@@ -128,7 +108,6 @@ export const navigationConfig: NavigationConfig = {
   links: [
     { label: "What we do", href: "#services" },
     { label: "Studio OS", href: "#studio-os" },
-    { label: "Founder", href: "#founder" },
   ],
   primaryCta: { label: "Book the Audit", href: "#booking" },
 }
@@ -239,45 +218,11 @@ export const studioOSConfig: StudioOSConfig = {
     "An AI stack tailored to the operation, not someone else's playbook",
   ],
   closing:
-    "Modeled on the playbook Tew ran inside Portfolio Play. White labeled and rebuilt for every client. Whether we build for you or with you, the Studio OS is the system we install.",
-}
-
-export const founderConfig: FounderConfig = {
-  sectionLabel: "07 / THE FOUNDER",
-  heading: "Tew.",
-  body: "Tew is the founder of PROXYZ. Bilingual, Thai and English. Designer, deal architect, operator. Built Game Over, a Bangkok lifestyle gaming brand that ran profitably for four years. Co-founded Bastion, an NFT gaming venture that raised before the cycle turned. Spent the past two months deep inside the AI ecosystem, with a decade of deal architecture behind him. Lives in Phuket. The face is the brand.",
-  imagePlaceholder: "[TEW PORTRAIT — TO BE ADDED. Recommended 1200x1500 portrait.]",
-}
-
-export const selectedWorkConfig: SelectedWorkConfig = {
-  sectionLabel: "08 / SELECTED WORK",
-  heading: "Receipts.",
-  rows: [
-    {
-      year: "2024 to present",
-      title: "ATLAS Analytics",
-      role: "Head of Media",
-      description:
-        "Building the AI media factory inside one of Thailand's earliest venture studios.",
-    },
-    {
-      year: "2022 to 2023",
-      title: "Bastion",
-      role: "Co-founder",
-      description:
-        "NFT gaming venture, raised pre-seed before the crypto cycle turned.",
-    },
-    {
-      year: "2018 to 2022",
-      title: "Game Over",
-      role: "Founder",
-      description: "Bangkok lifestyle gaming brand. Profitable for four years.",
-    },
-  ],
+    "A real operator playbook, white labeled and rebuilt for every client. Whether we build for you or with you, the Studio OS is the system we install.",
 }
 
 export const bookingConfig: BookingConfig = {
-  sectionLabel: "09 / BOOK YOUR AUDIT",
+  sectionLabel: "07 / BOOK YOUR AUDIT",
   heading: "60 minutes. One page memo. Yours to keep.",
   body: "Every PROXYZ engagement starts here. Pick a time below.",
   calLink: "YOUR-CAL-LINK",

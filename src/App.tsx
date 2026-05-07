@@ -8,8 +8,6 @@ import TwoWays from './sections/TwoWays';
 import Services from './sections/Services';
 import BuildWith from './sections/BuildWith';
 import StudioOS from './sections/StudioOS';
-import Founder from './sections/Founder';
-import SelectedWork from './sections/SelectedWork';
 import Booking from './sections/Booking';
 import Footer from './sections/Footer';
 
@@ -36,8 +34,6 @@ function Home() {
         <Services />
         <BuildWith />
         <StudioOS />
-        <Founder />
-        <SelectedWork />
         <Booking />
       </main>
       <Footer />
