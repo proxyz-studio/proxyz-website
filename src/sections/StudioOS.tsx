@@ -8,6 +8,7 @@ export default function StudioOS() {
   return (
     <section
       id="studio-os"
+      className="section-mobile"
       style={{
         background: '#ffffff',
         color: '#000000',

@@ -16,6 +16,7 @@ export default function Hero() {
   return (
     <section
       id="hero"
+      className="hero-section"
       style={{
         position: 'relative',
         width: '100%',
@@ -25,6 +26,7 @@ export default function Hero() {
       }}
     >
       <div
+        className="hero-left"
         style={{
           position: 'relative',
           width: '40%',
@@ -35,6 +37,7 @@ export default function Hero() {
       >
         {/* Navigation */}
         <nav
+          className="hero-nav"
           style={{
             position: 'fixed',
             top: 0,
@@ -55,6 +58,7 @@ export default function Hero() {
         >
           <a
             href="#hero"
+            className="hero-nav-brand"
             style={{
               fontSize: '18px',
               fontWeight: 400,
@@ -66,7 +70,7 @@ export default function Hero() {
           >
             {navigationConfig.brandName}
           </a>
-          <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+          <div className="hero-nav-links" style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
             {navigationConfig.links.map((item) => (
               <a
                 key={`${item.label}-${item.href}`}
@@ -95,6 +99,7 @@ export default function Hero() {
             {navigationConfig.primaryCta && (
               <a
                 href={navigationConfig.primaryCta.href}
+                className="hero-nav-cta"
                 style={{
                   fontSize: '12px',
                   fontWeight: 400,
@@ -122,6 +127,7 @@ export default function Hero() {
 
         {/* Hero content */}
         <div
+          className="hero-content"
           style={{
             position: 'absolute',
             left: '40px',
@@ -192,6 +198,7 @@ export default function Hero() {
           </p>
 
           <div
+            className="hero-ctas"
             style={{
               display: 'flex',
               gap: '24px',
@@ -250,6 +257,7 @@ export default function Hero() {
       </div>
 
       <div
+        className="hero-right"
         style={{
           position: 'relative',
           width: '60%',

@@ -8,6 +8,7 @@ export default function Booking() {
   return (
     <section
       id="booking"
+      className="section-mobile"
       style={{
         background: '#000',
         color: '#fff',

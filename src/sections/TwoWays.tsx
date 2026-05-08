@@ -8,6 +8,7 @@ export default function TwoWays() {
   return (
     <section
       id="two-ways"
+      className="section-mobile"
       style={{
         background: '#ffffff',
         color: '#000000',

@@ -8,6 +8,7 @@ export default function BuildWith() {
   return (
     <section
       id="build-with"
+      className="section-mobile"
       style={{
         background: '#000',
         color: '#fff',

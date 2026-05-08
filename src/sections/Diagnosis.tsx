@@ -8,6 +8,7 @@ export default function Diagnosis() {
   return (
     <section
       id="diagnosis"
+      className="section-mobile"
       style={{
         background: '#ffffff',
         color: '#000000',

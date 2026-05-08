@@ -8,6 +8,7 @@ export default function Principles() {
   return (
     <section
       id="principles"
+      className="section-mobile"
       style={{
         background: '#000',
         color: '#fff',
