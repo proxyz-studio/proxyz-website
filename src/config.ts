@@ -159,32 +159,32 @@ export const twoWaysConfig: TwoWaysConfig = {
 export const servicesConfig: ServicesConfig = {
   sectionLabel: "04 / BUILD FOR",
   intro:
-    "Paid engagements. We come in, install systems, automate the work, and stay long term.",
+    "We come in, install systems, automate the work, and stay long term.",
   cards: [
     {
       name: "The Audit",
-      label: "FREE / 60 MINUTES",
+      label: "60 MINUTES",
       forLabel: "Anyone serious about running better.",
       body: "A working session, not a sales call. We sit with you, walk the business, and leave you with a one page memo on the three highest leverage points in your operation. Yours to keep, even if we never work together.",
       cta: { label: "Book the Audit", href: "#booking" },
     },
     {
       name: "The Blueprint",
-      label: "USD 12,000 / 90 DAYS",
+      label: "90 DAYS",
       forLabel: "Founders launching a new venture.",
       body: "We take your idea and turn it into a structured, validated, ready to operate company. Legal structure, deal architecture, partners, financial model, operating system spec, AI stack from day one. You walk out with a build ready blueprint and the introductions to make it real.",
       cta: { label: "Start with the Audit", href: "#booking" },
     },
     {
       name: "The Install",
-      label: "USD 25,000 to 40,000 / 90 TO 120 DAYS",
+      label: "90 TO 120 DAYS",
       forLabel: "Existing companies modernizing their operation.",
       body: "We install the Studio OS, automate the work that doesn't need a human, layer in AI where it earns its place, and train your team. You come out running on something that scales without the founder in every meeting.",
       cta: { label: "Start with the Audit", href: "#booking" },
     },
     {
       name: "The Partnership",
-      label: "FROM USD 2,000 PER MONTH",
+      label: "MONTHLY RETAINER",
       forLabel:
         "Companies who want PROXYZ on retainer as the AI landscape shifts.",
       body: "We stay as your fractional AI operating partner. Quarterly roadmap reviews, stack updates, team training, and a direct line as the landscape changes. This is what makes \"future proof\" something other than a slogan.",
