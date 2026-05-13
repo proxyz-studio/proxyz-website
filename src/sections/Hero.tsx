@@ -59,16 +59,22 @@ export default function Hero() {
           <a
             href="#hero"
             className="hero-nav-brand"
+            aria-label={navigationConfig.brandName}
             style={{
-              fontSize: '18px',
-              fontWeight: 400,
-              color: '#fff',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
+              display: 'inline-flex',
+              alignItems: 'center',
               textDecoration: 'none',
             }}
           >
-            {navigationConfig.brandName}
+            <img
+              src="/proxyz-tricolor.svg"
+              alt={navigationConfig.brandName}
+              style={{
+                height: '28px',
+                width: 'auto',
+                display: 'block',
+              }}
+            />
           </a>
           <div className="hero-nav-links" style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
             {navigationConfig.links.map((item) => (
