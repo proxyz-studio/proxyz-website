@@ -109,9 +109,8 @@ export const navigationConfig: NavigationConfig = {
     { label: "What we do", href: "/#services" },
     { label: "Studio OS", href: "/portal" },
     { label: "Partners", href: "/partners" },
-    { label: "Login", href: "https://portal.proxyz.studio/sign-in" },
   ],
-  primaryCta: { label: "Book the Audit", href: "/#booking" },
+  primaryCta: { label: "Login", href: "https://portal.proxyz.studio/sign-in" },
 }
 
 export const heroConfig: HeroConfig = {
