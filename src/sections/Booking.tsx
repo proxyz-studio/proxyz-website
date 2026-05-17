@@ -57,22 +57,21 @@ export default function Booking() {
         </p>
 
         {/*
-          TODO: Replace YOUR-CAL-LINK with the actual Cal.com handle once the account is set up.
-          The src URL should look like https://cal.com/your-handle/your-event.
+          Cal.com embed forced to dark theme via ?theme=dark URL param so it
+          always matches the site, ignoring the visitor's OS-level preference.
         */}
-        <div
-          style={{
-            background: '#fff',
-            padding: '8px',
-          }}
-        >
+        <div style={{ background: 'transparent' }}>
           <iframe
-            src={`https://cal.com/${bookingConfig.calLink}`}
+            src={`https://cal.com/${bookingConfig.calLink}?theme=dark`}
             width="100%"
             height={700}
             frameBorder={0}
             title="Book the Audit"
-            style={{ display: 'block', border: 0 }}
+            style={{
+              display: 'block',
+              border: '1px solid rgba(255,255,255,0.10)',
+              colorScheme: 'dark',
+            }}
           />
         </div>
       </div>
