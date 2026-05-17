@@ -108,6 +108,7 @@ export const navigationConfig: NavigationConfig = {
   links: [
     { label: "What we do", href: "/#services" },
     { label: "Studio OS", href: "/portal" },
+    { label: "Media", href: "/media" },
     { label: "Partners", href: "/partners" },
   ],
   primaryCta: { label: "Login", href: "https://portal.proxyz.studio/sign-in" },
@@ -331,6 +332,123 @@ export const portalPageConfig: PortalPageConfig = {
   closingBody:
     "Audit clients get a working demo inside the first 60 minutes. Active engagements get a live workspace with their data inside week one.",
   closingCta: { label: "Book the Audit", href: "/#booking" },
+}
+
+export interface MediaFlywheelStep {
+  label: string
+  body: string
+}
+
+export interface MediaPropertyCard {
+  name: string
+  status: string
+  tagline: string
+  description: string
+  lead: string
+}
+
+export interface MediaPageConfig {
+  eyebrow: string
+  titleLines: string[]
+  lead: string
+  thesis: {
+    heading: string
+    paragraphs: string[]
+  }
+  principles: {
+    heading: string
+    items: string[]
+  }
+  flywheel: {
+    heading: string
+    steps: MediaFlywheelStep[]
+  }
+  properties: {
+    heading: string
+    subhead: string
+    cards: MediaPropertyCard[]
+    closingLine: string
+  }
+  operators: {
+    heading: string
+    paragraphs: string[]
+  }
+  cta: {
+    heading: string
+    lead: string
+    primaryCta: NavigationLink
+  }
+}
+
+export const mediaPageConfig: MediaPageConfig = {
+  eyebrow: "PROXYZ MEDIA / OWNED PROPERTIES",
+  titleLines: ["Media as", "a product,", "not a channel."],
+  lead: "PROXYZ builds owned media properties. Each one is a brand, an audience, and a community in its own right. The product underneath is the data layer that feeds the camera. The media presence is the brand.",
+  thesis: {
+    heading: "Why this division exists.",
+    paragraphs: [
+      "Most companies treat media as marketing. They post when there is something to sell, hire an agency when reach drops, and outsource the voice to whoever is cheapest. The output looks like everyone else's output. The audience does not stay.",
+      "PROXYZ treats media as infrastructure. Owned audiences are durable assets. The studio model lets us build them as products, with the same care we give to the apps and systems we ship for clients. A media property is not a content strategy. It is a company shape we can grow, partner with, or spin out.",
+    ],
+  },
+  principles: {
+    heading: "Principles we run on.",
+    items: [
+      "Media is the product, not an afterthought. The app is the substrate that feeds it.",
+      "Hyperlocal first. Coverage we can defend by being closer than anyone else.",
+      "Every event in the product is a piece of content. Match, milestone, club spotlight, tournament arc.",
+      "Properties expand by beat, not by feature. New city, new beat. Same playbook.",
+      "Tone over volume. We post less and mean more.",
+    ],
+  },
+  flywheel: {
+    heading: "The loop.",
+    steps: [
+      {
+        label: "Events",
+        body: "The product captures structured events. Matches played, results, photos, scores, club activity.",
+      },
+      {
+        label: "Content",
+        body: "A content engine turns those events into media. Player profiles, club spotlights, highlight reels, tournament narratives, beginner clips.",
+      },
+      {
+        label: "Distribution",
+        body: "Properties publish where the audience already is. Instagram first, TikTok for reach, YouTube for long-form, LINE and WhatsApp for direct community broadcast.",
+      },
+      {
+        label: "Audience",
+        body: "The audience funnels back. New players sign up. Clubs partner. Sponsors arrive. The product gets denser. The loop accelerates.",
+      },
+    ],
+  },
+  properties: {
+    heading: "Properties.",
+    subhead: "Currently in the studio.",
+    cards: [
+      {
+        name: "Padel Z",
+        status: "FOUNDATION / 2026",
+        tagline: "Matchmaking and social platform for the Phuket Padel scene.",
+        description:
+          "Web first. Mobile to follow. Phuket as the opening beat. Coverage of every club, every notable match, every player worth following. Expansion by city, not by feature.",
+        lead: "Tim Chang, Phuket beat.",
+      },
+    ],
+    closingLine: "More properties to come. Same playbook, different beats.",
+  },
+  operators: {
+    heading: "How the studio runs a property.",
+    paragraphs: [
+      "Every property has a head of beat. They run the scene. They know the players, the clubs, the rhythms. They decide what is worth covering and what is not.",
+      "PROXYZ provides the engine. Brand voice, content workflows, AI-assisted operations, design system, distribution stack. The studio is the rails. The operator is the train.",
+    ],
+  },
+  cta: {
+    heading: "Want to build a beat?",
+    lead: "If you operate a community PROXYZ should be inside, talk to us. We are not looking for content gigs. We are looking for properties that can grow into companies.",
+    primaryCta: { label: "Talk to PROXYZ", href: "/#booking" },
+  },
 }
 
 export interface PartnerCard {
