@@ -356,7 +356,18 @@ export default function Media() {
                       margin: '0 0 12px 0',
                     }}
                   >
-                    {card.name}
+                    {(() => {
+                      const m = /^(.*?\s+)(Z)$/i.exec(card.name);
+                      if (m) {
+                        return (
+                          <>
+                            {m[1]}
+                            <span style={{ color: '#5BC9B8' }}>{m[2]}</span>
+                          </>
+                        );
+                      }
+                      return card.name;
+                    })()}
                   </h3>
                   <p
                     style={{
