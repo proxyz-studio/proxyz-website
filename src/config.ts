@@ -107,7 +107,7 @@ export const navigationConfig: NavigationConfig = {
   brandName: "PROXYZ",
   links: [
     { label: "What we do", href: "/#services" },
-    { label: "The Portal", href: "/portal" },
+    { label: "Studio OS", href: "/portal" },
     { label: "Partners", href: "/partners" },
     { label: "Login", href: "https://portal.proxyz.studio/sign-in" },
   ],
