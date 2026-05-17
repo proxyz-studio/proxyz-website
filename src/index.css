@@ -179,53 +179,85 @@
 }
 .proxy-breathe { display: inline-block; animation: proxy-breathe 3.4s ease-in-out infinite; }
 
-/* Variant 3: glitch slice — frequent horizontal tears, top + bottom shift opposite */
+/* Variant 3: glitch slice — irregular timing, variable intensity, stretch on big events
+   Top and bottom run at different prime-ish durations so they constantly drift
+   in/out of phase — the combined effect never repeats. */
 @keyframes proxy-glitch-top {
-  0%, 7%, 15%, 29%, 37%, 55%, 63%, 81%, 89%, 100% { transform: translate(0, 0); }
-  /* Glitch 1 — small */
-  8%  { transform: translate(-4px, -1px); }
-  10% { transform: translate(3px, 0); }
-  12% { transform: translate(-2px, 1px); }
-  14% { transform: translate(0, 0); }
-  /* Glitch 2 — big */
-  30% { transform: translate(-7px, -1px); }
-  32% { transform: translate(6px, 1px); }
-  34% { transform: translate(-3px, 0); }
-  36% { transform: translate(0, 0); }
-  /* Glitch 3 — small */
-  56% { transform: translate(4px, 1px); }
-  58% { transform: translate(-3px, -1px); }
-  60% { transform: translate(2px, 0); }
-  62% { transform: translate(0, 0); }
-  /* Glitch 4 — big */
-  82% { transform: translate(8px, -1px); }
-  84% { transform: translate(-6px, 1px); }
-  86% { transform: translate(3px, 0); }
-  88% { transform: translate(0, 0); }
-}
-@keyframes proxy-glitch-bottom {
-  0%, 7%, 15%, 29%, 37%, 55%, 63%, 81%, 89%, 100% { transform: translate(0, 0); }
-  /* Glitch 1 — small (opposite) */
-  8%  { transform: translate(3px, 1px); }
-  10% { transform: translate(-3px, 0); }
-  12% { transform: translate(2px, -1px); }
-  14% { transform: translate(0, 0); }
-  /* Glitch 2 — big (opposite) */
-  30% { transform: translate(6px, 1px); }
-  32% { transform: translate(-5px, -1px); }
+  /* Resting between events (locks position so no slow interpolation drift) */
+  0%, 9%, 12%, 18%, 22%, 31%, 36%, 48%, 53%, 63%, 66%, 73%, 77%, 88%, 93%, 100% {
+    transform: translate(0, 0) scaleX(1);
+  }
+  /* Event A — tiny jitter @ 10% */
+  10% { transform: translate(-2px, 0); }
+  11% { transform: translate(1px, 0); }
+  /* Event B — medium tear with stretch @ 19% */
+  19% { transform: translate(-6px, -1px) scaleX(1.07); }
+  20% { transform: translate(4px, 1px) scaleX(1.03); }
+  21% { transform: translate(-2px, 0); }
+  /* Event C — double stutter @ 32% */
+  32% { transform: translate(3px, 1px); }
+  33% { transform: translate(-5px, -1px); }
   34% { transform: translate(2px, 0); }
-  36% { transform: translate(0, 0); }
-  /* Glitch 3 — small (opposite) */
-  56% { transform: translate(-3px, -1px); }
-  58% { transform: translate(4px, 1px); }
-  60% { transform: translate(-2px, 0); }
-  62% { transform: translate(0, 0); }
-  /* Glitch 4 — big (opposite) */
-  82% { transform: translate(-7px, 1px); }
-  84% { transform: translate(6px, -1px); }
-  86% { transform: translate(-3px, 0); }
-  88% { transform: translate(0, 0); }
+  35% { transform: translate(-3px, 1px); }
+  /* Event D — BIG with major stretch @ 49% */
+  49% { transform: translate(-11px, -2px) scaleX(1.14); }
+  50% { transform: translate(8px, 2px) scaleX(1.10); }
+  51% { transform: translate(-4px, -1px) scaleX(1.05); }
+  52% { transform: translate(2px, 1px) scaleX(1.02); }
+  /* Event E — tiny jitter @ 64% */
+  64% { transform: translate(2px, 0); }
+  65% { transform: translate(-1px, 0); }
+  /* Event F — medium tear @ 74% */
+  74% { transform: translate(5px, 1px) scaleX(1.05); }
+  75% { transform: translate(-4px, -1px) scaleX(1.02); }
+  76% { transform: translate(2px, 0); }
+  /* Event G — final BIG with stretch @ 89% */
+  89% { transform: translate(9px, -1px) scaleX(1.10); }
+  90% { transform: translate(-7px, 1px) scaleX(1.07); }
+  91% { transform: translate(4px, 0) scaleX(1.03); }
+  92% { transform: translate(-1px, 0); }
 }
+
+@keyframes proxy-glitch-bottom {
+  /* Different rest checkpoints — events placed at completely different positions */
+  0%, 5%, 9%, 16%, 21%, 27%, 30%, 37%, 43%, 51%, 56%, 68%, 71%, 79%, 84%, 91%, 93%, 100% {
+    transform: translate(0, 0) scaleX(1);
+  }
+  /* Event A — medium tear @ 6% */
+  6% { transform: translate(5px, 1px) scaleX(1.04); }
+  7% { transform: translate(-3px, -1px) scaleX(1.02); }
+  8% { transform: translate(1px, 0); }
+  /* Event B — BIG with stretch @ 17% */
+  17% { transform: translate(9px, 2px) scaleX(1.11); }
+  18% { transform: translate(-7px, -2px) scaleX(1.08); }
+  19% { transform: translate(3px, 1px) scaleX(1.04); }
+  20% { transform: translate(-1px, 0); }
+  /* Event C — tiny jitter @ 28% */
+  28% { transform: translate(-2px, 0); }
+  29% { transform: translate(1px, 0); }
+  /* Event D — triple stutter @ 38% */
+  38% { transform: translate(-4px, 1px); }
+  39% { transform: translate(3px, -1px); }
+  40% { transform: translate(-3px, 1px); }
+  41% { transform: translate(2px, -1px); }
+  42% { transform: translate(-1px, 0); }
+  /* Event E — medium tear opposite @ 52% */
+  52% { transform: translate(-6px, -1px) scaleX(1.06); }
+  53% { transform: translate(4px, 1px) scaleX(1.03); }
+  54% { transform: translate(-2px, 0); }
+  55% { transform: translate(1px, 0); }
+  /* Event F — tiny jitter @ 69% */
+  69% { transform: translate(2px, 0); }
+  70% { transform: translate(-1px, 0); }
+  /* Event G — BIG tear with stretch @ 80% */
+  80% { transform: translate(-10px, 1px) scaleX(1.12); }
+  81% { transform: translate(7px, -1px) scaleX(1.08); }
+  82% { transform: translate(-3px, 0) scaleX(1.04); }
+  83% { transform: translate(1px, 0); }
+  /* Event H — tiny jitter @ 92% */
+  92% { transform: translate(-1px, 0); }
+}
+
 .proxy-glitch { position: relative; display: inline-block; }
 .proxy-glitch::before,
 .proxy-glitch::after {
@@ -243,13 +275,13 @@
 }
 .proxy-glitch::before {
   clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
-  animation: proxy-glitch-top 3s infinite;
+  animation: proxy-glitch-top 3.7s infinite;
   color: var(--accent-pink);
   mix-blend-mode: screen;
 }
 .proxy-glitch::after {
   clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
-  animation: proxy-glitch-bottom 3s infinite;
+  animation: proxy-glitch-bottom 4.3s infinite;
 }
 
 /* Variant 4: chromatic split — RGB ghost halo, always on */
