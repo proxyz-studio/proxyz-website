@@ -179,20 +179,52 @@
 }
 .proxy-breathe { display: inline-block; animation: proxy-breathe 3.4s ease-in-out infinite; }
 
-/* Variant 3: glitch slice — horizontal slices shift left/right occasionally */
+/* Variant 3: glitch slice — frequent horizontal tears, top + bottom shift opposite */
 @keyframes proxy-glitch-top {
-  0%, 90%, 100% { transform: translate(0, 0); }
-  91% { transform: translate(-4px, -1px); }
-  93% { transform: translate(3px, 1px); }
-  95% { transform: translate(-2px, 0); }
-  97% { transform: translate(0, 0); }
+  0%, 7%, 15%, 29%, 37%, 55%, 63%, 81%, 89%, 100% { transform: translate(0, 0); }
+  /* Glitch 1 — small */
+  8%  { transform: translate(-4px, -1px); }
+  10% { transform: translate(3px, 0); }
+  12% { transform: translate(-2px, 1px); }
+  14% { transform: translate(0, 0); }
+  /* Glitch 2 — big */
+  30% { transform: translate(-7px, -1px); }
+  32% { transform: translate(6px, 1px); }
+  34% { transform: translate(-3px, 0); }
+  36% { transform: translate(0, 0); }
+  /* Glitch 3 — small */
+  56% { transform: translate(4px, 1px); }
+  58% { transform: translate(-3px, -1px); }
+  60% { transform: translate(2px, 0); }
+  62% { transform: translate(0, 0); }
+  /* Glitch 4 — big */
+  82% { transform: translate(8px, -1px); }
+  84% { transform: translate(-6px, 1px); }
+  86% { transform: translate(3px, 0); }
+  88% { transform: translate(0, 0); }
 }
 @keyframes proxy-glitch-bottom {
-  0%, 90%, 100% { transform: translate(0, 0); }
-  91% { transform: translate(3px, 1px); }
-  93% { transform: translate(-3px, -1px); }
-  95% { transform: translate(2px, 0); }
-  97% { transform: translate(0, 0); }
+  0%, 7%, 15%, 29%, 37%, 55%, 63%, 81%, 89%, 100% { transform: translate(0, 0); }
+  /* Glitch 1 — small (opposite) */
+  8%  { transform: translate(3px, 1px); }
+  10% { transform: translate(-3px, 0); }
+  12% { transform: translate(2px, -1px); }
+  14% { transform: translate(0, 0); }
+  /* Glitch 2 — big (opposite) */
+  30% { transform: translate(6px, 1px); }
+  32% { transform: translate(-5px, -1px); }
+  34% { transform: translate(2px, 0); }
+  36% { transform: translate(0, 0); }
+  /* Glitch 3 — small (opposite) */
+  56% { transform: translate(-3px, -1px); }
+  58% { transform: translate(4px, 1px); }
+  60% { transform: translate(-2px, 0); }
+  62% { transform: translate(0, 0); }
+  /* Glitch 4 — big (opposite) */
+  82% { transform: translate(-7px, 1px); }
+  84% { transform: translate(6px, -1px); }
+  86% { transform: translate(-3px, 0); }
+  88% { transform: translate(0, 0); }
 }
 .proxy-glitch { position: relative; display: inline-block; }
 .proxy-glitch::before,
@@ -211,13 +243,13 @@
 }
 .proxy-glitch::before {
   clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
-  animation: proxy-glitch-top 5s infinite;
+  animation: proxy-glitch-top 3s infinite;
   color: var(--accent-pink);
   mix-blend-mode: screen;
 }
 .proxy-glitch::after {
   clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
-  animation: proxy-glitch-bottom 5s infinite;
+  animation: proxy-glitch-bottom 3s infinite;
 }
 
 /* Variant 4: chromatic split — RGB ghost halo, always on */
