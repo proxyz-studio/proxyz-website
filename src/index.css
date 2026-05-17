@@ -78,18 +78,58 @@
 
 /* ---------- HERO WORD EFFECTS (PROXY) ---------- */
 
-/* Variant 1: signal-loss flicker — occasional opacity/blur drop */
+/* Variant 1: signal-loss flicker — frequent, deep dropouts with stutter */
 @keyframes proxy-flicker {
-  0%, 100% { opacity: 1; filter: blur(0); transform: translateX(0); }
-  6% { opacity: 0.35; filter: blur(2px); }
-  7% { opacity: 1; filter: blur(0); }
+  /* Resting beats — the "clean" moments between glitches */
+  0%, 4%, 9%, 14%, 19%, 28%, 33%, 44%, 49%, 60%, 65%, 76%, 81%, 92%, 100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateX(0) scaleX(1);
+  }
+
+  /* Glitch 1 — hard cut + sideways jolt */
+  5% { opacity: 0.06; filter: blur(0); transform: translateX(-7px); }
+  6% { opacity: 1; transform: translateX(0); }
+  7% { opacity: 0.25; }
+  8% { opacity: 1; }
+
+  /* Glitch 2 — heavy blur + horizontal stretch */
+  15% { opacity: 0.45; filter: blur(5px); transform: translateX(10px) scaleX(1.04); }
+  17% { opacity: 0.85; filter: blur(1.5px); transform: translateX(-4px); }
+  18% { opacity: 1; filter: blur(0); transform: translateX(0) scaleX(1); }
+
+  /* Glitch 3 — triple stutter */
+  29% { opacity: 0.08; transform: translateX(-5px); }
+  30% { opacity: 1; transform: translateX(3px); }
+  31% { opacity: 0.18; filter: blur(2px); transform: translateX(-2px); }
+  32% { opacity: 1; filter: blur(0); transform: translateX(0); }
+
+  /* Glitch 4 — deep blur drop */
+  45% { opacity: 0.5; filter: blur(7px); transform: translateX(-9px); }
+  47% { opacity: 0.95; filter: blur(1px); }
   48% { opacity: 1; filter: blur(0); transform: translateX(0); }
-  50% { opacity: 0.7; filter: blur(1.5px); transform: translateX(3px); }
-  52% { opacity: 1; filter: blur(0); transform: translateX(0); }
-  74% { opacity: 0.5; filter: blur(3px); }
-  76% { opacity: 1; filter: blur(0); }
+
+  /* Glitch 5 — rapid 4-stutter */
+  61% { opacity: 0.15; transform: translateX(6px); }
+  62% { opacity: 1; transform: translateX(-4px); }
+  63% { opacity: 0.3; filter: blur(2.5px); transform: translateX(5px); }
+  64% { opacity: 1; filter: blur(0); transform: translateX(0); }
+
+  /* Glitch 6 — widest sideways jolt */
+  77% { opacity: 0.55; filter: blur(4px); transform: translateX(-12px); }
+  78% { opacity: 1; filter: blur(0); transform: translateX(4px); }
+  80% { opacity: 1; transform: translateX(0); }
+
+  /* Glitch 7 — final hard cut to near-black */
+  93% { opacity: 0.03; }
+  94% { opacity: 1; }
+  95% { opacity: 0.25; filter: blur(1.5px); transform: translateX(-3px); }
+  96% { opacity: 1; filter: blur(0); transform: translateX(0); }
 }
-.proxy-flicker { display: inline-block; animation: proxy-flicker 6s infinite; }
+.proxy-flicker {
+  display: inline-block;
+  animation: proxy-flicker 4.2s steps(60) infinite;
+}
 
 /* Variant 2: soft breathe — slow continuous blur pulse */
 @keyframes proxy-breathe {
