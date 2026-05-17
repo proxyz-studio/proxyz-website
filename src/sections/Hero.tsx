@@ -1,4 +1,5 @@
 import AsciiCanvas from '../components/AsciiCanvas';
+import Nav from '../components/Nav';
 import { heroConfig, navigationConfig } from '../config';
 
 export default function Hero() {
@@ -25,6 +26,7 @@ export default function Hero() {
         display: 'flex',
       }}
     >
+      <Nav />
       <div
         className="hero-left"
         style={{
@@ -35,102 +37,6 @@ export default function Hero() {
           overflow: 'hidden',
         }}
       >
-        {/* Navigation */}
-        <nav
-          className="hero-nav"
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100%',
-            zIndex: 50,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '20px 40px',
-            background: 'rgba(0,0,0,0.72)',
-            backdropFilter: 'blur(10px)',
-            WebkitBackdropFilter: 'blur(10px)',
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
-            fontFamily: "'IBM Plex Mono', monospace",
-            boxSizing: 'border-box',
-          }}
-        >
-          <a
-            href="#hero"
-            className="hero-nav-brand"
-            aria-label={navigationConfig.brandName}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              textDecoration: 'none',
-            }}
-          >
-            <img
-              src="/proxyz-tricolor.svg"
-              alt={navigationConfig.brandName}
-              style={{
-                height: '28px',
-                width: 'auto',
-                display: 'block',
-              }}
-            />
-          </a>
-          <div className="hero-nav-links" style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
-            {navigationConfig.links.map((item) => (
-              <a
-                key={`${item.label}-${item.href}`}
-                href={item.href}
-                style={{
-                  fontSize: '12px',
-                  fontWeight: 400,
-                  color: '#fff',
-                  textTransform: 'uppercase',
-                  textDecoration: 'none',
-                  letterSpacing: '0.08em',
-                  borderBottom: '1px solid transparent',
-                  transition: 'border-color 0.2s',
-                  paddingBottom: '2px',
-                }}
-                onMouseEnter={(e) => {
-                  (e.target as HTMLElement).style.borderBottomColor = '#fff';
-                }}
-                onMouseLeave={(e) => {
-                  (e.target as HTMLElement).style.borderBottomColor = 'transparent';
-                }}
-              >
-                {item.label}
-              </a>
-            ))}
-            {navigationConfig.primaryCta && (
-              <a
-                href={navigationConfig.primaryCta.href}
-                className="hero-nav-cta"
-                style={{
-                  fontSize: '12px',
-                  fontWeight: 400,
-                  color: '#000',
-                  background: '#fff',
-                  textTransform: 'uppercase',
-                  textDecoration: 'none',
-                  letterSpacing: '0.08em',
-                  padding: '8px 14px',
-                  borderRadius: '999px',
-                  transition: 'opacity 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  (e.target as HTMLElement).style.opacity = '0.85';
-                }}
-                onMouseLeave={(e) => {
-                  (e.target as HTMLElement).style.opacity = '1';
-                }}
-              >
-                {navigationConfig.primaryCta.label}
-              </a>
-            )}
-          </div>
-        </nav>
-
         {/* Hero content */}
         <div
           className="hero-content"

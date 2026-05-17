@@ -10,20 +10,31 @@ import BuildWith from './sections/BuildWith';
 import StudioOS from './sections/StudioOS';
 import Booking from './sections/Booking';
 import Footer from './sections/Footer';
+import Portal from './pages/Portal';
+import Partners from './pages/Partners';
+import FastFix from './pages/FastFix';
 
-function Home() {
-  const { hash } = useLocation();
+function ScrollManager() {
+  const { pathname, hash } = useLocation();
 
   useEffect(() => {
-    if (!hash) return;
-    const id = hash.slice(1);
-    const el = document.getElementById(id);
-    if (!el) return;
-    requestAnimationFrame(() => {
-      el.scrollIntoView({ behavior: 'auto', block: 'start' });
-    });
-  }, [hash]);
+    if (hash) {
+      const id = hash.slice(1);
+      const el = document.getElementById(id);
+      if (el) {
+        requestAnimationFrame(() => {
+          el.scrollIntoView({ behavior: 'auto', block: 'start' });
+        });
+        return;
+      }
+    }
+    window.scrollTo(0, 0);
+  }, [pathname, hash]);
 
+  return null;
+}
+
+function Home() {
   return (
     <>
       <main>
@@ -56,9 +67,15 @@ function App() {
   }, []);
 
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-    </Routes>
+    <>
+      <ScrollManager />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/portal" element={<Portal />} />
+        <Route path="/partners" element={<Partners />} />
+        <Route path="/partners/fast-fix" element={<FastFix />} />
+      </Routes>
+    </>
   );
 }
 

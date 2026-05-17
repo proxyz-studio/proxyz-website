@@ -1,4 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 400" width="1080" height="400" role="img" aria-label="PROXYZ wordmark, PRO white, X yellow, Y green, Z pink">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 400" width="1080" height="400" role="img" aria-label="PROXYZ wordmark, PRO white, X yellow, Y green, Z pink, on black">
+  <rect width="1080" height="400" fill="#000000"/>
   <path d="M174 0V296H344C473 296 543 371 543 497C543 623 473 698 344 698H90V0ZM174 625H342C412 625 454 588 454 523V471C454 406 412 369 342 369H174Z" transform="translate(181.0000 262.8200) scale(0.180000 -0.180000)" fill="#ffffff"/>
   <path d="M174 298H285L455 0H549L371 302C482 313 543 385 543 497C543 623 473 698 344 698H90V0H174ZM174 369V625H342C412 625 454 588 454 523V471C454 406 412 369 342 369Z" transform="translate(303.0000 262.8200) scale(0.180000 -0.180000)" fill="#ffffff"/>
   <path d="M300 -12C470 -12 544 121 544 349C544 577 470 710 300 710C130 710 56 577 56 349C56 121 130 -12 300 -12ZM300 61C189 61 145 152 145 292V406C145 546 189 637 300 637C411 637 455 546 455 406V292C455 152 411 61 300 61Z" transform="translate(425.0000 262.8200) scale(0.180000 -0.180000)" fill="#ffffff"/>

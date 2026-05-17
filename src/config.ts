@@ -106,10 +106,12 @@ export const siteConfig: SiteConfig = {
 export const navigationConfig: NavigationConfig = {
   brandName: "PROXYZ",
   links: [
-    { label: "What we do", href: "#services" },
-    { label: "Studio OS", href: "#studio-os" },
+    { label: "What we do", href: "/#services" },
+    { label: "The Portal", href: "/portal" },
+    { label: "Partners", href: "/partners" },
+    { label: "Login", href: "https://portal.proxyz.studio/sign-in" },
   ],
-  primaryCta: { label: "Book the Audit", href: "#booking" },
+  primaryCta: { label: "Book the Audit", href: "/#booking" },
 }
 
 export const heroConfig: HeroConfig = {
@@ -236,4 +238,477 @@ export const footerConfig: FooterConfig = {
   },
   linkedin: { label: "LinkedIn", href: "#" },
   right: "© 2026. All rights reserved.",
+}
+
+export interface PortalFeature {
+  name: string
+  description: string
+}
+
+export interface PortalPageConfig {
+  eyebrow: string
+  titleLines: string[]
+  lead: string
+  primaryCta: NavigationLink
+  secondaryLink: NavigationLink
+  pillarsLabel: string
+  pillars: PortalFeature[]
+  modulesLabel: string
+  modulesIntro: string
+  modules: PortalFeature[]
+  whoLabel: string
+  whoHeading: string
+  whoBody: string
+  closingHeading: string
+  closingBody: string
+  closingCta: NavigationLink
+}
+
+export const portalPageConfig: PortalPageConfig = {
+  eyebrow: "ISSUE 02 / THE PORTAL",
+  titleLines: ["The Studio OS,", "operating live."],
+  lead:
+    "The Portal is the working surface every PROXYZ engagement runs on. Meeting cadence, decisions, automations, AI agents, scorecards, all in one workspace. Built by operators for operators.",
+  primaryCta: { label: "Open the Portal →", href: "https://portal.proxyz.studio/sign-in" },
+  secondaryLink: { label: "Book the Audit", href: "/#booking" },
+  pillarsLabel: "01 / WHAT IT DOES",
+  pillars: [
+    {
+      name: "Compresses decision time",
+      description:
+        "Meetings run on a fixed cadence. Decisions, blockers, and owners land in writing the moment they're made. No status update meetings. No tribal knowledge.",
+    },
+    {
+      name: "Runs the work that doesn't need a human",
+      description:
+        "An automation layer wired into the operation, not bolted on. From inbound deal routing to weekly reports, the boring half of the company runs itself.",
+    },
+    {
+      name: "AI partner, not AI features",
+      description:
+        "Meeting agent, drafting agent, research agent. Each tuned to the company. Each with a workspace memory and an audit trail.",
+    },
+  ],
+  modulesLabel: "02 / INSIDE THE PORTAL",
+  modulesIntro:
+    "Every module is built around the same idea: the system runs the company, not the founder.",
+  modules: [
+    {
+      name: "Meetings",
+      description:
+        "Calendar-aware. Meeting agent reviews each session, drafts decisions and todos, you approve. Costs and review history tracked per workspace.",
+    },
+    {
+      name: "Todos",
+      description:
+        "Split-pane workflow. Status, owner, due date, rich-text notes. Keyboard nav. URL-persisted focus. Mobile sheet for on the road.",
+    },
+    {
+      name: "Rocks",
+      description:
+        "Quarterly goals with owners and progress. The 12-week horizon the company commits to. Always visible, always honest.",
+    },
+    {
+      name: "Issues",
+      description:
+        "Kanban-style. Surface the friction the moment it shows up. Discuss, decide, close, archive. Nothing rots in a doc.",
+    },
+    {
+      name: "Scorecard",
+      description:
+        "Weekly numbers that matter. One row per metric, one column per week. The dashboard the operator actually reads.",
+    },
+    {
+      name: "V/TO",
+      description:
+        "Vision and traction in one document. Core values, focus, ten-year target, three-year picture, annual plan, quarterly rocks. The company's true north.",
+    },
+  ],
+  whoLabel: "03 / WHO RUNS ON IT",
+  whoHeading: "Every PROXYZ engagement. Every partner company.",
+  whoBody:
+    "The Portal is what we install during The Install and The Blueprint. It's the operating surface for every Build-with venture. New workspace per company. Owner controls. Multi-org rollup for the studio team.",
+  closingHeading: "Want a tour?",
+  closingBody:
+    "Audit clients get a working demo inside the first 60 minutes. Active engagements get a live workspace with their data inside week one.",
+  closingCta: { label: "Book the Audit", href: "/#booking" },
+}
+
+export interface PartnerCard {
+  name: string
+  sector: string
+  location: string
+  stage: string
+  partnerLabel: string
+  partner: string
+  proxyzRole: string
+  partnerBrings: string
+  whyItMatters: string
+  milestones: { label: string; status: 'done' | 'active' | 'next' }[]
+  lastUpdate: string
+  cta: NavigationLink
+  detailHref?: string
+}
+
+export interface PartnersPageConfig {
+  eyebrow: string
+  titleLines: string[]
+  lead: string
+  filterLabel: string
+  filterValues: string[]
+  partners: PartnerCard[]
+  closingLabel: string
+  closingHeading: string
+  closingBody: string
+  closingCta: NavigationLink
+}
+
+export const partnersPageConfig: PartnersPageConfig = {
+  eyebrow: "ISSUE 03 / THE PARTNERS",
+  titleLines: ["Live partner", "engagements."],
+  lead:
+    "PROXYZ runs a Build-with arm in parallel with the studio. Two to three companies at a time. Equity, not retainer. Co-built end to end. This is the working table.",
+  filterLabel: "Status",
+  filterValues: ["Active discussion", "Diligence", "Building", "Operating"],
+  partners: [
+    {
+      name: "Fast-Fix",
+      sector: "Hospitality maintenance",
+      location: "Phuket, Thailand",
+      stage: "Active discussion",
+      partnerLabel: "Operating partner",
+      partner: "Cathal",
+      proxyzRole:
+        "Software, AI, brand, accounting, legal. The studio side of a co-built operator.",
+      partnerBrings:
+        "Technician network, hospitality relationships, ground operations across Phuket villas, boutique hotels, serviced condos.",
+      whyItMatters:
+        "Phuket hospitality maintenance is a THB 7 to 10 billion market with no dominant challenger and zero formal SLA across existing operators. The first AI-native field service operator in the region wins the next decade.",
+      milestones: [
+        { label: "Week 1–2 · Introductions", status: 'done' },
+        { label: "Week 3–6 · Diligence", status: 'active' },
+        { label: "Week 7–10 · Co-write business plan", status: 'next' },
+        { label: "Week 11+ · Form company, launch", status: 'next' },
+      ],
+      lastUpdate:
+        "Market sizing, moat archetype, equity-partner-model research complete. Pitch document draft v1 with Cathal for review.",
+      cta: { label: "View full pitch →", href: "/partners/fast-fix" },
+      detailHref: "/partners/fast-fix",
+    },
+  ],
+  closingLabel: "BECOME A PARTNER",
+  closingHeading: "Two to three slots per year.",
+  closingBody:
+    "Build-with isn't a tier on a menu. It's a partnership. If the upside is real and the chemistry is right, we want to talk.",
+  closingCta: {
+    label: "Pitch us →",
+    href: "mailto:hello@proxyz.studio?subject=Build with PROXYZ",
+  },
+}
+
+export interface FastFixStep {
+  num: string
+  title: string
+  body: string
+}
+
+export interface FastFixContribution {
+  num: string
+  title: string
+  lead: string
+  bullets: string[]
+}
+
+export interface FastFixWhyItem {
+  num: string
+  title: string
+  body: string
+}
+
+export interface FastFixTimelineStep {
+  num: string
+  title: string
+  body: string
+}
+
+export interface FastFixPageConfig {
+  eyebrow: string
+  titleLines: string[]
+  accentLineIndex: number
+  subtitle: string
+  pills: string[]
+
+  modelLabel: string
+  modelHeadingLines: string[]
+  modelParagraphs: string[]
+  modelQuote: string
+  modelSteps: FastFixStep[]
+
+  portalLabel: string
+  portalHeadingLines: string[]
+  portalParagraphs: string[]
+  portalBullets: string[]
+  portalHubLabel: string
+  portalHubLabels: string[]
+
+  contribLabel: string
+  contribHeadingLines: string[]
+  contribLead: string
+  contributions: FastFixContribution[]
+
+  partnershipLabel: string
+  partnershipHeadingLines: string[]
+  partnershipParagraphs: string[]
+  operatorBringsLabel: string
+  operatorBrings: string[]
+  proxyzBringsLabel: string
+  proxyzBrings: string[]
+  partnershipCoreTitle: string
+  partnershipCoreLabel: string
+  partnershipCoreTag: string
+
+  whyLabel: string
+  whyHeadingLines: string[]
+  whyParagraphs: string[]
+  whyItems: FastFixWhyItem[]
+
+  roadmapLabel: string
+  roadmapHeadingLines: string[]
+  roadmapLead: string
+  roadmapSteps: FastFixTimelineStep[]
+
+  closingLines: string[]
+  closingAccentIndex: number
+  closingSub: string
+  closingCta: NavigationLink
+}
+
+export const fastFixPageConfig: FastFixPageConfig = {
+  eyebrow: "FAST-FIX × PROXYZ STUDIO · 2026",
+  titleLines: ["Operator on the", "ground.", "Engine in the", "cloud."],
+  accentLineIndex: 3,
+  subtitle:
+    "PROXYZ Studio is a venture studio. We don't pitch decks and walk away — we co-build operating companies and stay in the game. This is what we bring to Fast-Fix: the engine, the brand, the systems, and the long-game commitment.",
+  pills: ["Draft · For partner review", "Phuket · Hospitality maintenance"],
+
+  modelLabel: "01 · THE MODEL",
+  modelHeadingLines: ["We're not", "consultants.", "We co-build."],
+  modelParagraphs: [
+    "Most agencies sell you a service and disappear when the invoice clears. Venture studios are built differently. We invest our team's time, our software, our brand, and our network into a partner company — and we share the upside.",
+    "That means we win when you win. We're locked in for the long game, not the launch.",
+  ],
+  modelQuote:
+    "For Fast-Fix, this looks like a partnership: you bring the operator instinct and the local network. We bring the engine, the brand, and the back-office. Together, we build a company that can't be replicated by either side alone.",
+  modelSteps: [
+    {
+      num: "01",
+      title: "We invest, we don't bill",
+      body:
+        "PROXYZ contributes software, team time, brand, and infrastructure as equity, not as a monthly invoice. We're betting on the company with you.",
+    },
+    {
+      num: "02",
+      title: "We co-build, you operate",
+      body:
+        "You run the day-to-day on the ground. We run the engine in the background — software, automation, brand, accounting, legal.",
+    },
+    {
+      num: "03",
+      title: "We stay for years",
+      body:
+        "A studio relationship isn't a 6-month engagement. We're committed for the long arc — through growth, hiring, and eventually, the exit.",
+    },
+  ],
+
+  portalLabel: "02 · THE OPERATING SYSTEM",
+  portalHeadingLines: ["One brain.", "Every partner", "company."],
+  portalParagraphs: [
+    "We call it the Portal. Think of it as the central nervous system that every PROXYZ company runs on — the place where your bookings, your team, your customers, your invoices, your AI, and your reports all live together.",
+    "When you join the studio, you don't build any of this from scratch. You plug in.",
+  ],
+  portalBullets: [
+    "One login, every tool. Your team uses one platform — not eight different apps stitched with email.",
+    "Data lives in one place. Customers, jobs, photos, invoices, owner reports — all connected.",
+    "AI works behind the scenes. Translation, dispatch, reporting — it runs without you thinking about it.",
+    "Built once, polished by all partners. Every new PROXYZ company makes the Portal better.",
+  ],
+  portalHubLabel: "THE PORTAL",
+  portalHubLabels: [
+    "SOFTWARE",
+    "AUTOMATION",
+    "BRAND",
+    "CONTENT",
+    "OPERATIONS",
+    "BACK-OFFICE",
+    "LEGAL",
+    "ACCOUNTING",
+  ],
+
+  contribLabel: "03 · OUR CONTRIBUTION",
+  contribHeadingLines: ["What we bring", "to Fast-Fix."],
+  contribLead:
+    "Six things. Each one is a department you would otherwise have to build, hire, or outsource. We bring all six as part of the partnership — already running, already polished, ready on day one.",
+  contributions: [
+    {
+      num: "01",
+      title: "Customer Software",
+      lead: "The booking, dispatch, and owner-facing apps — built once, polished across every PROXYZ partner.",
+      bullets: [
+        "Owner mobile app with monthly maintenance reports",
+        "Booking + dispatch console for the coordinator",
+        "Job photos auto-archived to each owner's account",
+      ],
+    },
+    {
+      num: "02",
+      title: "AI & Smart Automation",
+      lead: "AI that does real work — not chatbot theater.",
+      bullets: [
+        "Thai voice intake → auto-translated English work order",
+        "Owner reports written in their language (Russian, Mandarin, English)",
+        "Predictive alerts when equipment is about to fail",
+      ],
+    },
+    {
+      num: "03",
+      title: "Brand & Storytelling",
+      lead: "Identity, photo, video, social — every job becomes marketing material.",
+      bullets: [
+        "Logo, identity system, website — all in-house",
+        "Job-site photo and video shoots, packaged for social",
+        "Content built for villa owners and hotel managers",
+      ],
+    },
+    {
+      num: "04",
+      title: "Operations Playbook",
+      lead: "Battle-tested templates instead of inventing from scratch.",
+      bullets: [
+        "Hiring scripts for technicians and coordinators",
+        "Service standards, response-time SLAs, pricing frameworks",
+        "Training materials in Thai and English",
+      ],
+    },
+    {
+      num: "05",
+      title: "Back-Office Services",
+      lead: "Accounting, legal, HR — shared across the studio portfolio, cheaper than going solo.",
+      bullets: [
+        "Monthly accounting and tax compliance",
+        "Contract templates: customers, vendors, employees",
+        "HR onboarding and payroll infrastructure",
+      ],
+    },
+    {
+      num: "06",
+      title: "Strategic Intelligence",
+      lead: "Market data, competitive intel, and lessons from across the PROXYZ portfolio.",
+      bullets: [
+        "Quarterly market reviews specific to Phuket hospitality",
+        "Pricing and benchmark data from comparable markets",
+        "Lessons from other PROXYZ partner companies — applied to Fast-Fix",
+      ],
+    },
+  ],
+
+  partnershipLabel: "04 · THE PARTNERSHIP",
+  partnershipHeadingLines: ["Operator on", "the ground.", "Engine in the", "cloud."],
+  partnershipParagraphs: [
+    "Fast-Fix runs on the ground with the operating partner driving it — customer trust, technician relationships, daily execution.",
+    "PROXYZ runs in the background — software, brand, AI, back-office, intelligence. We're not in your way. We're behind the curtain making the whole thing work.",
+    "You focus on the customer, the tech, the job. We handle everything else.",
+  ],
+  operatorBringsLabel: "OPERATOR BRINGS",
+  operatorBrings: [
+    "Local network of trades and contractors",
+    "Customer relationships and trust",
+    "Operating instinct on Phuket conditions",
+    "Day-to-day execution and quality control",
+    "Cultural and language fluency",
+  ],
+  proxyzBringsLabel: "PROXYZ BRINGS",
+  proxyzBrings: [
+    "The Portal — software for every part of the business",
+    "AI and automation that does real work",
+    "Brand, identity, and content production",
+    "Accounting, legal, HR infrastructure",
+    "Strategic intelligence and portfolio learnings",
+  ],
+  partnershipCoreTitle: "FAST-FIX",
+  partnershipCoreLabel: "THE COMPANY",
+  partnershipCoreTag:
+    "Where the two sides click together into one operating company.",
+
+  whyLabel: "05 · WHY NOW",
+  whyHeadingLines: ["Phuket has a", "problem.", "Nobody is fixing", "it well."],
+  whyParagraphs: [
+    "Hospitality maintenance in Phuket is a real, large market with a clear gap. Property managers all outsource the trades — but nobody has built a serious operator that owns the standard. Customers complain about the same things over and over: no-shows, opaque billing, language barriers, broken promises.",
+    "That's the opening. We have a 12- to 18-month head start before anyone with real capital notices.",
+  ],
+  whyItems: [
+    {
+      num: "01",
+      title: "The market is large.",
+      body:
+        "Phuket hospitality maintenance is a multi-billion-baht annual market, growing every year with tourism. The addressable outsourced segment alone is hundreds of millions in USD.",
+    },
+    {
+      num: "02",
+      title: "Nobody owns the trades.",
+      body:
+        "Every property management company in Phuket outsources maintenance. None of them coordinate it well. That's the structural gap Fast-Fix occupies.",
+    },
+    {
+      num: "03",
+      title: "Villas suffer most.",
+      body:
+        "Hotels have engineering teams and procurement processes. Luxury villas have WhatsApp threads and crossed fingers. That's the wedge customer — owners willing to pay for a real service.",
+    },
+    {
+      num: "04",
+      title: "No serious competitor.",
+      body:
+        "No AI-native player has entered Southeast Asia hospitality services. The closest international comparable is a North America-only operator. We have first-mover advantage in the region.",
+    },
+  ],
+
+  roadmapLabel: "06 · WHAT HAPPENS NEXT",
+  roadmapHeadingLines: ["Four steps.", "No rush."],
+  roadmapLead:
+    "A studio partnership isn't a handshake on the back of a napkin. We move deliberately — both sides need to know this is the right fit before we start building together.",
+  roadmapSteps: [
+    {
+      num: "01 · WEEK 1-2",
+      title: "Introductions",
+      body:
+        "We meet your trade partners. You meet our team. Honest conversations about what each side actually brings.",
+    },
+    {
+      num: "02 · WEEK 3-6",
+      title: "Diligence",
+      body:
+        "We walk through the operations, the relationships, the market together. Both sides decide if it's a fit. Either side can say no.",
+    },
+    {
+      num: "03 · WEEK 7-10",
+      title: "Plan",
+      body:
+        "We co-write the business plan — who does what, how we measure success, what good looks like in year one.",
+    },
+    {
+      num: "04 · WEEK 11+",
+      title: "Build",
+      body:
+        "We form the company together. The engine goes live. Fast-Fix opens for business in Phuket.",
+    },
+  ],
+
+  closingLines: ["The right operator.", "The right engine.", "The right time."],
+  closingAccentIndex: 2,
+  closingSub:
+    "Fast-Fix isn't a moonshot. It's a clear gap in a real market — and we'd like to build it with you.",
+  closingCta: {
+    label: "Let's talk → hello@proxyz.studio",
+    href: "mailto:hello@proxyz.studio?subject=Fast-Fix",
+  },
 }

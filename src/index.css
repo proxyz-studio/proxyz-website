@@ -147,8 +147,8 @@
   .hero-content h1 {
     font-size: clamp(34px, 13vw, 56px) !important;
   }
-  .hero-nav-brand {
-    font-size: 16px !important;
+  .hero-nav-brand img {
+    height: 32px !important;
   }
   .hero-nav-cta {
     padding: 7px 12px !important;
@@ -156,6 +156,100 @@
   }
   .hero-nav-links a:not(.hero-nav-cta) {
     display: none !important;
+  }
+}
+
+/* Portal page grids */
+@media (max-width: 900px) {
+  .portal-pillars,
+  .portal-modules {
+    grid-template-columns: 1fr !important;
+  }
+  .portal-pillars > div,
+  .portal-modules > div {
+    border-right: none !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  .portal-pillars > div:last-child,
+  .portal-modules > div:last-child {
+    border-bottom: none;
+  }
+  .portal-modules > div {
+    border-bottom-color: #000 !important;
+  }
+}
+
+/* Partners page responsive */
+@media (max-width: 900px) {
+  .partner-header {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  .partner-status-pill {
+    justify-self: start !important;
+  }
+  .partner-meta {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .partner-body {
+    grid-template-columns: 1fr !important;
+    gap: 32px !important;
+  }
+  .partner-milestones {
+    grid-template-columns: 1fr !important;
+  }
+  .partner-foot {
+    grid-template-columns: 1fr !important;
+  }
+  .partner-foot a {
+    justify-self: start !important;
+  }
+}
+
+/* Fast-Fix detail page responsive */
+@media (max-width: 920px) {
+  .ff-two-col {
+    grid-template-columns: 1fr !important;
+    gap: 32px !important;
+  }
+  .ff-hub {
+    grid-template-columns: 1fr !important;
+    gap: 32px !important;
+  }
+  .ff-cards {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .ff-engine {
+    grid-template-columns: 1fr !important;
+  }
+  .ff-engine > div + div {
+    border-left: none !important;
+    border-right: none !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.30) !important;
+  }
+  .ff-engine-center {
+    padding: 40px 28px !important;
+  }
+  .ff-timeline {
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
+  }
+  .ff-timeline-line {
+    display: none !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .ff-steps {
+    grid-template-columns: 1fr !important;
+  }
+  .ff-cards {
+    grid-template-columns: 1fr !important;
+  }
+  .ff-why {
+    grid-template-columns: 1fr !important;
   }
 }
 
