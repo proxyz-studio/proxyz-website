@@ -87,12 +87,41 @@ export default function Hero() {
               WebkitTextFillColor: 'transparent',
             }}
           >
-            {heroConfig.titleLines.map((line, index) => (
-              <span key={`${line}-${index}`}>
-                {line}
-                {index < heroConfig.titleLines.length - 1 && <br />}
-              </span>
-            ))}
+            {heroConfig.titleLines.map((line, index) => {
+              const match = /^(.*?)\b(proxy)\b(.*)$/i.exec(line);
+              return (
+                <span key={`${line}-${index}`}>
+                  {match ? (
+                    <>
+                      {match[1]}
+                      <span
+                        className="proxy-glitch"
+                        data-text={match[2].toUpperCase()}
+                        style={{
+                          background:
+                            'repeating-linear-gradient(' +
+                            'to bottom, ' +
+                            '#fff 0px, ' +
+                            '#fff 2px, ' +
+                            'transparent 2px, ' +
+                            'transparent 5px' +
+                            ')',
+                          WebkitBackgroundClip: 'text',
+                          backgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                        }}
+                      >
+                        {match[2]}
+                      </span>
+                      {match[3]}
+                    </>
+                  ) : (
+                    line
+                  )}
+                  {index < heroConfig.titleLines.length - 1 && <br />}
+                </span>
+              );
+            })}
           </h1>
 
           <p
