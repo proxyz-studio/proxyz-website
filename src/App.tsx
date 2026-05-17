@@ -13,6 +13,7 @@ import Footer from './sections/Footer';
 import Portal from './pages/Portal';
 import Partners from './pages/Partners';
 import FastFix from './pages/FastFix';
+import HeroPreview from './pages/HeroPreview';
 
 function ScrollManager() {
   const { pathname, hash } = useLocation();
@@ -74,6 +75,7 @@ function App() {
         <Route path="/portal" element={<Portal />} />
         <Route path="/partners" element={<Partners />} />
         <Route path="/partners/fast-fix" element={<FastFix />} />
+        <Route path="/preview/hero" element={<HeroPreview />} />
       </Routes>
     </>
   );

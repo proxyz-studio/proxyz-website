@@ -76,6 +76,128 @@
   }
 }
 
+/* ---------- HERO WORD EFFECTS (PROXY) ---------- */
+
+/* Variant 1: signal-loss flicker — occasional opacity/blur drop */
+@keyframes proxy-flicker {
+  0%, 100% { opacity: 1; filter: blur(0); transform: translateX(0); }
+  6% { opacity: 0.35; filter: blur(2px); }
+  7% { opacity: 1; filter: blur(0); }
+  48% { opacity: 1; filter: blur(0); transform: translateX(0); }
+  50% { opacity: 0.7; filter: blur(1.5px); transform: translateX(3px); }
+  52% { opacity: 1; filter: blur(0); transform: translateX(0); }
+  74% { opacity: 0.5; filter: blur(3px); }
+  76% { opacity: 1; filter: blur(0); }
+}
+.proxy-flicker { display: inline-block; animation: proxy-flicker 6s infinite; }
+
+/* Variant 2: soft breathe — slow continuous blur pulse */
+@keyframes proxy-breathe {
+  0%, 100% { filter: blur(0); opacity: 1; }
+  50% { filter: blur(1.6px); opacity: 0.78; }
+}
+.proxy-breathe { display: inline-block; animation: proxy-breathe 3.4s ease-in-out infinite; }
+
+/* Variant 3: glitch slice — horizontal slices shift left/right occasionally */
+@keyframes proxy-glitch-top {
+  0%, 90%, 100% { transform: translate(0, 0); }
+  91% { transform: translate(-4px, -1px); }
+  93% { transform: translate(3px, 1px); }
+  95% { transform: translate(-2px, 0); }
+  97% { transform: translate(0, 0); }
+}
+@keyframes proxy-glitch-bottom {
+  0%, 90%, 100% { transform: translate(0, 0); }
+  91% { transform: translate(3px, 1px); }
+  93% { transform: translate(-3px, -1px); }
+  95% { transform: translate(2px, 0); }
+  97% { transform: translate(0, 0); }
+}
+.proxy-glitch { position: relative; display: inline-block; }
+.proxy-glitch::before,
+.proxy-glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    #fff 0px, #fff 2px, transparent 2px, transparent 5px
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  pointer-events: none;
+}
+.proxy-glitch::before {
+  clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+  animation: proxy-glitch-top 5s infinite;
+  color: var(--accent-pink);
+  mix-blend-mode: screen;
+}
+.proxy-glitch::after {
+  clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
+  animation: proxy-glitch-bottom 5s infinite;
+}
+
+/* Variant 4: chromatic split — RGB ghost halo, always on */
+@keyframes proxy-chroma-r {
+  0%, 100% { transform: translate(-2px, 0); }
+  50% { transform: translate(-3px, 1px); }
+}
+@keyframes proxy-chroma-b {
+  0%, 100% { transform: translate(2px, 0); }
+  50% { transform: translate(3px, -1px); }
+}
+.proxy-chroma { position: relative; display: inline-block; }
+.proxy-chroma::before,
+.proxy-chroma::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  -webkit-text-fill-color: currentColor;
+  mix-blend-mode: screen;
+}
+.proxy-chroma::before {
+  color: rgba(255, 65, 147, 0.85);
+  animation: proxy-chroma-r 2.6s ease-in-out infinite;
+}
+.proxy-chroma::after {
+  color: rgba(91, 201, 184, 0.85);
+  animation: proxy-chroma-b 2.6s ease-in-out infinite;
+}
+
+/* Variant 5: static noise wash — animated SVG noise overlay */
+@keyframes proxy-static-shift {
+  0%, 100% { background-position: 0 0; }
+  10% { background-position: 5% 10%; }
+  20% { background-position: -8% 12%; }
+  30% { background-position: 12% -5%; }
+  40% { background-position: -3% 8%; }
+  50% { background-position: 7% -10%; }
+  60% { background-position: -12% 4%; }
+  70% { background-position: 4% 15%; }
+  80% { background-position: -7% -6%; }
+  90% { background-position: 9% 3%; }
+}
+.proxy-static {
+  position: relative;
+  display: inline-block;
+  isolation: isolate;
+}
+.proxy-static::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='2.4' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-size: 200px 200px;
+  mix-blend-mode: screen;
+  opacity: 0.45;
+  animation: proxy-static-shift 0.6s steps(10) infinite;
+  -webkit-mask-image: linear-gradient(to bottom, #000, #000);
+}
+
 @media (max-width: 900px) {
   /* HERO — stack panels vertically */
   .hero-section {
