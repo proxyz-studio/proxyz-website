@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import Nav from '../components/Nav';
+import PartnerGate from '../components/PartnerGate';
 import Footer from '../sections/Footer';
 import { fastFixPageConfig } from '../config';
 
@@ -108,6 +109,7 @@ export default function FastFix() {
   return (
     <>
       <Nav />
+      <PartnerGate>
       <main style={{ background: '#000', color: '#fff' }}>
         {/* ====== HERO ====== */}
         <section
@@ -1027,6 +1029,7 @@ export default function FastFix() {
         </section>
       </main>
       <Footer />
+      </PartnerGate>
     </>
   );
 }
