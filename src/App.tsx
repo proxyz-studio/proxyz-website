@@ -21,6 +21,7 @@ const HeroPreview = lazy(() => import('./pages/HeroPreview'));
 const VisualPreview = lazy(() => import('./pages/VisualPreview'));
 const GlowPreview = lazy(() => import('./pages/GlowPreview'));
 const MotionPreview = lazy(() => import('./pages/MotionPreview'));
+const ShowcasePreview = lazy(() => import('./pages/ShowcasePreview'));
 
 function ScrollManager() {
   const { pathname, hash } = useLocation();
@@ -88,6 +89,7 @@ function App() {
         <Route path="/preview/visual" element={<Suspense fallback={null}><VisualPreview /></Suspense>} />
         <Route path="/preview/glow" element={<Suspense fallback={null}><GlowPreview /></Suspense>} />
         <Route path="/preview/motion" element={<Suspense fallback={null}><MotionPreview /></Suspense>} />
+        <Route path="/preview/showcase" element={<Suspense fallback={null}><ShowcasePreview /></Suspense>} />
       </Routes>
     </>
   );
