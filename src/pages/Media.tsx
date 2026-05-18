@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import Nav from '../components/Nav';
 import Footer from '../sections/Footer';
 import { mediaPageConfig } from '../config';
@@ -324,90 +325,139 @@ export default function Media() {
                 marginBottom: '48px',
               }}
             >
-              {c.properties.cards.map((card, i) => (
-                <div
-                  key={i}
-                  style={{
-                    border: '1px solid rgba(255,255,255,0.10)',
-                    padding: '32px',
-                    borderRadius: '4px',
-                  }}
-                >
-                  <p
-                    style={{
-                      fontFamily: "'IBM Plex Mono', monospace",
-                      fontSize: '11px',
-                      fontWeight: 400,
-                      letterSpacing: '0.18em',
-                      textTransform: 'uppercase',
-                      color: 'var(--accent-pink)',
-                      margin: '0 0 20px 0',
-                    }}
-                  >
-                    {card.status}
-                  </p>
-                  <h3
-                    style={{
-                      fontFamily: "'Fragment Mono', 'Courier New', monospace",
-                      fontSize: '22px',
-                      fontWeight: 400,
-                      lineHeight: 1.1,
-                      textTransform: 'uppercase',
-                      margin: '0 0 12px 0',
-                    }}
-                  >
-                    {(() => {
-                      const m = /^(.*?\s+)(Z)$/i.exec(card.name);
-                      if (m) {
-                        return (
-                          <>
-                            {m[1]}
-                            <span style={{ color: '#5BC9B8' }}>{m[2]}</span>
-                          </>
-                        );
-                      }
-                      return card.name;
-                    })()}
-                  </h3>
-                  <p
-                    style={{
-                      fontFamily: "'IBM Plex Mono', monospace",
-                      fontSize: '14px',
-                      fontWeight: 400,
-                      lineHeight: 1.5,
-                      color: 'rgba(255,255,255,0.85)',
-                      margin: '0 0 16px 0',
-                    }}
-                  >
-                    {card.tagline}
-                  </p>
-                  <p
-                    style={{
-                      fontFamily: "'IBM Plex Mono', monospace",
-                      fontSize: '13px',
-                      fontWeight: 400,
-                      lineHeight: 1.6,
-                      color: 'rgba(255,255,255,0.55)',
-                      margin: '0 0 24px 0',
-                    }}
-                  >
-                    {card.description}
-                  </p>
-                  <p
-                    style={{
-                      fontFamily: "'IBM Plex Mono', monospace",
-                      fontSize: '11px',
-                      fontWeight: 400,
-                      letterSpacing: '0.12em',
-                      textTransform: 'uppercase',
-                      color: 'rgba(255,255,255,0.35)',
-                      margin: 0,
-                    }}
-                  >
-                    {card.lead}
-                  </p>
-                </div>
-              ))}
+              {c.properties.cards.map((card, i) => {
+                const inner = (
+                  <>
+                    <p
+                      style={{
+                        fontFamily: "'IBM Plex Mono', monospace",
+                        fontSize: '11px',
+                        fontWeight: 400,
+                        letterSpacing: '0.18em',
+                        textTransform: 'uppercase',
+                        color: 'var(--accent-pink)',
+                        margin: '0 0 20px 0',
+                      }}
+                    >
+                      {card.status}
+                    </p>
+                    <h3
+                      style={{
+                        fontFamily: "'Fragment Mono', 'Courier New', monospace",
+                        fontSize: '22px',
+                        fontWeight: 400,
+                        lineHeight: 1.1,
+                        textTransform: 'uppercase',
+                        margin: '0 0 12px 0',
+                        color: '#fff',
+                      }}
+                    >
+                      {(() => {
+                        const m = /^(.*?\s+)(Z)$/i.exec(card.name);
+                        if (m) {
+                          return (
+                            <>
+                              {m[1]}
+                              <span style={{ color: '#5BC9B8' }}>{m[2]}</span>
+                            </>
+                          );
+                        }
+                        return card.name;
+                      })()}
+                    </h3>
+                    <p
+                      style={{
+                        fontFamily: "'IBM Plex Mono', monospace",
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        lineHeight: 1.5,
+                        color: 'rgba(255,255,255,0.85)',
+                        margin: '0 0 16px 0',
+                      }}
+                    >
+                      {card.tagline}
+                    </p>
+                    <p
+                      style={{
+                        fontFamily: "'IBM Plex Mono', monospace",
+                        fontSize: '13px',
+                        fontWeight: 400,
+                        lineHeight: 1.6,
+                        color: 'rgba(255,255,255,0.55)',
+                        margin: '0 0 24px 0',
+                      }}
+                    >
+                      {card.description}
+                    </p>
+                    <p
+                      style={{
+                        fontFamily: "'IBM Plex Mono', monospace",
+                        fontSize: '11px',
+                        fontWeight: 400,
+                        letterSpacing: '0.12em',
+                        textTransform: 'uppercase',
+                        color: 'rgba(255,255,255,0.35)',
+                        margin: '0 0 20px 0',
+                      }}
+                    >
+                      {card.lead}
+                    </p>
+                    {card.detailHref && (
+                      <span
+                        style={{
+                          fontFamily: "'IBM Plex Mono', monospace",
+                          fontSize: '11px',
+                          letterSpacing: '0.14em',
+                          textTransform: 'uppercase',
+                          color: 'var(--accent-pink)',
+                          borderBottom: '1px solid var(--accent-pink)',
+                          paddingBottom: '2px',
+                        }}
+                      >
+                        View project →
+                      </span>
+                    )}
+                  </>
+                );
+
+                const cardStyle: React.CSSProperties = {
+                  border: '1px solid rgba(255,255,255,0.10)',
+                  padding: '32px',
+                  borderRadius: '4px',
+                  display: 'block',
+                  textDecoration: 'none',
+                  color: 'inherit',
+                  transition: 'border-color 0.2s, background 0.2s',
+                };
+
+                if (card.detailHref) {
+                  return (
+                    <Link
+                      key={i}
+                      to={card.detailHref}
+                      style={cardStyle}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLElement).style.borderColor =
+                          'rgba(255,255,255,0.30)';
+                        (e.currentTarget as HTMLElement).style.background =
+                          'rgba(255,255,255,0.02)';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLElement).style.borderColor =
+                          'rgba(255,255,255,0.10)';
+                        (e.currentTarget as HTMLElement).style.background = 'transparent';
+                      }}
+                    >
+                      {inner}
+                    </Link>
+                  );
+                }
+                return (
+                  <div key={i} style={cardStyle}>
+                    {inner}
+                  </div>
+                );
+              })}
             </div>
             <p
               style={{

@@ -12,6 +12,7 @@ import Booking from './sections/Booking';
 import Footer from './sections/Footer';
 import Portal from './pages/Portal';
 import Media from './pages/Media';
+import PadelZ from './pages/PadelZ';
 import Partners from './pages/Partners';
 import FastFix from './pages/FastFix';
 import HeroPreview from './pages/HeroPreview';
@@ -75,6 +76,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/portal" element={<Portal />} />
         <Route path="/media" element={<Media />} />
+        <Route path="/media/padel-z" element={<PadelZ />} />
         <Route path="/partners" element={<Partners />} />
         <Route path="/partners/fast-fix" element={<FastFix />} />
         <Route path="/preview/hero" element={<HeroPreview />} />

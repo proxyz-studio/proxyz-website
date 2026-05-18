@@ -345,6 +345,7 @@ export interface MediaPropertyCard {
   tagline: string
   description: string
   lead: string
+  detailHref?: string
 }
 
 export interface MediaPageConfig {
@@ -433,6 +434,7 @@ export const mediaPageConfig: MediaPageConfig = {
         description:
           "Web first. Mobile to follow. Phuket as the opening beat. Coverage of every club, every notable match, every player worth following. Expansion by city, not by feature.",
         lead: "Tim Chang, Phuket beat.",
+        detailHref: "/media/padel-z",
       },
     ],
     closingLine: "More properties to come. Same playbook, different beats.",
