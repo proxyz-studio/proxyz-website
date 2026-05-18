@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import Nav from '../components/Nav';
 import PartnerGate from '../components/PartnerGate';
+import Reveal from '../components/Reveal';
+import { MagneticAnchor, TiltCard } from '../components/Spatial';
 import Footer from '../sections/Footer';
 import { fastFixPageConfig } from '../config';
 
@@ -452,13 +454,16 @@ export default function FastFix() {
                 borderLeft: '1px solid rgba(255,255,255,0.30)',
               }}
             >
-              {c.contributions.map((card) => (
-                <div
-                  key={card.num}
+              {c.contributions.map((card, i) => (
+                <Reveal key={card.num} delay={i * 70}>
+                <TiltCard
+                  maxTiltX={3}
+                  maxTiltY={4}
                   style={{
                     padding: '40px 32px',
                     borderRight: '1px solid rgba(255,255,255,0.30)',
                     borderBottom: '1px solid rgba(255,255,255,0.30)',
+                    minHeight: '100%',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '20px',
@@ -509,9 +514,9 @@ export default function FastFix() {
                       borderTop: '1px solid rgba(255,255,255,0.08)',
                     }}
                   >
-                    {card.bullets.map((b, i) => (
+                    {card.bullets.map((b, bi) => (
                       <li
-                        key={i}
+                        key={bi}
                         style={{
                           fontFamily: FONT_MONO,
                           fontSize: '13px',
@@ -536,7 +541,8 @@ export default function FastFix() {
                       </li>
                     ))}
                   </ul>
-                </div>
+                </TiltCard>
+                </Reveal>
               ))}
             </div>
           </div>
@@ -996,11 +1002,10 @@ export default function FastFix() {
             >
               {c.closingSub}
             </p>
-            <a
+            <MagneticAnchor
               href={c.closingCta.href}
               style={{
                 marginTop: '40px',
-                display: 'inline-flex',
                 alignItems: 'center',
                 gap: '10px',
                 padding: '14px 22px',
@@ -1012,19 +1017,10 @@ export default function FastFix() {
                 letterSpacing: '0.12em',
                 textTransform: 'uppercase',
                 textDecoration: 'none',
-                transition: 'all 220ms ease',
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.background = 'var(--accent-pink)';
-                (e.currentTarget as HTMLElement).style.color = '#fff';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.background = 'transparent';
-                (e.currentTarget as HTMLElement).style.color = 'var(--accent-pink)';
               }}
             >
               {c.closingCta.label}
-            </a>
+            </MagneticAnchor>
           </div>
         </section>
       </main>

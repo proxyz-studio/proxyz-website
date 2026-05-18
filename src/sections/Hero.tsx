@@ -1,5 +1,7 @@
 import AsciiCanvas from '../components/AsciiCanvas';
 import Nav from '../components/Nav';
+import Reveal from '../components/Reveal';
+import { MagneticAnchor } from '../components/Spatial';
 import { heroConfig, navigationConfig } from '../config';
 
 export default function Hero() {
@@ -48,6 +50,7 @@ export default function Hero() {
             zIndex: 10,
           }}
         >
+          <Reveal>
           <p
             style={{
               fontFamily: "'IBM Plex Mono', monospace",
@@ -62,6 +65,8 @@ export default function Hero() {
           >
             {heroConfig.eyebrow}
           </p>
+          </Reveal>
+          <Reveal delay={80}>
           <h1
             style={{
               fontFamily: "'Fragment Mono', 'Courier New', monospace",
@@ -123,7 +128,9 @@ export default function Hero() {
               );
             })}
           </h1>
+          </Reveal>
 
+          <Reveal delay={180}>
           <p
             style={{
               fontFamily: "'IBM Plex Mono', monospace",
@@ -137,7 +144,9 @@ export default function Hero() {
           >
             {heroConfig.lead}
           </p>
+          </Reveal>
 
+          <Reveal delay={260}>
           <div
             className="hero-ctas"
             style={{
@@ -148,7 +157,7 @@ export default function Hero() {
               fontFamily: "'IBM Plex Mono', monospace",
             }}
           >
-            <a
+            <MagneticAnchor
               href={heroConfig.primaryCta.href}
               style={{
                 fontSize: '12px',
@@ -160,17 +169,10 @@ export default function Hero() {
                 letterSpacing: '0.08em',
                 padding: '12px 22px',
                 borderRadius: '999px',
-                transition: 'opacity 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                (e.target as HTMLElement).style.opacity = '0.85';
-              }}
-              onMouseLeave={(e) => {
-                (e.target as HTMLElement).style.opacity = '1';
               }}
             >
               {heroConfig.primaryCta.label}
-            </a>
+            </MagneticAnchor>
             <a
               href={heroConfig.secondaryLink.href}
               style={{
@@ -194,6 +196,7 @@ export default function Hero() {
               {heroConfig.secondaryLink.label}
             </a>
           </div>
+          </Reveal>
         </div>
       </div>
 

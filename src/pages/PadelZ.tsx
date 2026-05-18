@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import Nav from '../components/Nav';
 import MediaGate from '../components/MediaGate';
+import Reveal from '../components/Reveal';
+import { MagneticAnchor, TiltCard } from '../components/Spatial';
 import Footer from '../sections/Footer';
 
 const FONT_MONO = "'IBM Plex Mono', monospace";
@@ -401,8 +403,10 @@ export default function PadelZ() {
                   const row = Math.floor(i / 3);
                   const isLastRow = row === 1;
                   return (
-                    <div
-                      key={card.num}
+                    <Reveal key={card.num} delay={i * 70}>
+                    <TiltCard
+                      maxTiltX={3}
+                      maxTiltY={4}
                       style={{
                         padding: '36px 28px',
                         borderRight:
@@ -410,6 +414,7 @@ export default function PadelZ() {
                         borderBottom: isLastRow
                           ? 'none'
                           : '1px solid rgba(255,255,255,0.30)',
+                        minHeight: '100%',
                       }}
                     >
                       <span
@@ -445,7 +450,8 @@ export default function PadelZ() {
                       >
                         {card.body}
                       </p>
-                    </div>
+                    </TiltCard>
+                    </Reveal>
                   );
                 })}
               </div>
@@ -693,11 +699,10 @@ export default function PadelZ() {
                 to compound across every operator we own in Phuket and
                 beyond.
               </p>
-              <a
+              <MagneticAnchor
                 href="mailto:hello@proxyz.studio?subject=Padel%20Z"
                 style={{
                   marginTop: '40px',
-                  display: 'inline-flex',
                   alignItems: 'center',
                   gap: '10px',
                   padding: '14px 22px',
@@ -709,19 +714,10 @@ export default function PadelZ() {
                   letterSpacing: '0.12em',
                   textTransform: 'uppercase',
                   textDecoration: 'none',
-                  transition: 'all 220ms ease',
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.background = MINT;
-                  (e.currentTarget as HTMLElement).style.color = '#000';
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.background = 'transparent';
-                  (e.currentTarget as HTMLElement).style.color = MINT;
                 }}
               >
                 Talk to us → hello@proxyz.studio
-              </a>
+              </MagneticAnchor>
             </div>
           </section>
         </main>

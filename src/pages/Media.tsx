@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import Nav from '../components/Nav';
+import Reveal from '../components/Reveal';
+import { MagneticAnchor } from '../components/Spatial';
 import Footer from '../sections/Footer';
 import { mediaPageConfig } from '../config';
 
@@ -326,6 +328,7 @@ export default function Media() {
               }}
             >
               {c.properties.cards.map((card, i) => {
+                const _delay = i * 80;
                 const inner = (
                   <>
                     <p
@@ -432,8 +435,8 @@ export default function Media() {
 
                 if (card.detailHref) {
                   return (
+                    <Reveal key={i} delay={_delay}>
                     <Link
-                      key={i}
                       to={card.detailHref}
                       style={cardStyle}
                       onMouseEnter={(e) => {
@@ -450,12 +453,13 @@ export default function Media() {
                     >
                       {inner}
                     </Link>
+                    </Reveal>
                   );
                 }
                 return (
-                  <div key={i} style={cardStyle}>
-                    {inner}
-                  </div>
+                  <Reveal key={i} delay={_delay}>
+                    <div style={cardStyle}>{inner}</div>
+                  </Reveal>
                 );
               })}
             </div>
@@ -548,7 +552,7 @@ export default function Media() {
             >
               {c.cta.lead}
             </p>
-            <a
+            <MagneticAnchor
               href={c.cta.primaryCta.href}
               style={{
                 fontFamily: "'IBM Plex Mono', monospace",
@@ -561,18 +565,10 @@ export default function Media() {
                 letterSpacing: '0.08em',
                 padding: '14px 26px',
                 borderRadius: '999px',
-                display: 'inline-block',
-                transition: 'opacity 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                (e.target as HTMLElement).style.opacity = '0.85';
-              }}
-              onMouseLeave={(e) => {
-                (e.target as HTMLElement).style.opacity = '1';
               }}
             >
               {c.cta.primaryCta.label}
-            </a>
+            </MagneticAnchor>
           </div>
         </section>
 

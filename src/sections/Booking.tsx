@@ -1,3 +1,6 @@
+import Reveal from '../components/Reveal';
+import { Marginalia } from '../components/Editorial';
+import PictoIcon from '../components/PictoIcon';
 import { bookingConfig } from '../config';
 
 export default function Booking() {
@@ -10,51 +13,75 @@ export default function Booking() {
       id="booking"
       className="section-mobile"
       style={{
+        position: 'relative',
         background: '#000',
         color: '#fff',
         padding: '120px 40px',
         fontFamily: "'IBM Plex Mono', monospace",
+        overflow: 'hidden',
       }}
     >
-      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-        <p
-          style={{
-            fontSize: '12px',
-            fontWeight: 400,
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-            color: 'var(--accent-pink)',
-            margin: '0 0 64px 0',
-          }}
-        >
-          {bookingConfig.sectionLabel}
-        </p>
+      <div
+        aria-hidden
+        style={{
+          position: 'absolute',
+          top: '32px',
+          right: '40px',
+          opacity: 0.45,
+          pointerEvents: 'none',
+        }}
+      >
+        <Marginalia number="07" color="light" />
+      </div>
 
-        <h2
-          style={{
-            fontSize: 'clamp(28px, 3.4vw, 44px)',
-            fontWeight: 400,
-            lineHeight: 1.18,
-            margin: '0 0 32px 0',
-            maxWidth: '24ch',
-            textWrap: 'balance',
-          }}
-        >
-          {bookingConfig.heading}
-        </h2>
+      <div style={{ position: 'relative', maxWidth: '1100px', margin: '0 auto' }}>
+        <Reveal>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', margin: '0 0 64px 0' }}>
+            <PictoIcon name="time" size={32} stroke="var(--accent-pink)" />
+            <p
+              style={{
+                fontSize: '12px',
+                fontWeight: 400,
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                color: 'var(--accent-pink)',
+                margin: 0,
+              }}
+            >
+              {bookingConfig.sectionLabel}
+            </p>
+          </div>
+        </Reveal>
 
-        <p
-          style={{
-            fontSize: '15px',
-            fontWeight: 400,
-            lineHeight: 1.7,
-            margin: '0 0 56px 0',
-            maxWidth: '56ch',
-            color: 'rgba(255,255,255,0.85)',
-          }}
-        >
-          {bookingConfig.body}
-        </p>
+        <Reveal delay={60}>
+          <h2
+            style={{
+              fontSize: 'clamp(28px, 3.4vw, 44px)',
+              fontWeight: 400,
+              lineHeight: 1.18,
+              margin: '0 0 32px 0',
+              maxWidth: '24ch',
+              textWrap: 'balance',
+            }}
+          >
+            {bookingConfig.heading}
+          </h2>
+        </Reveal>
+
+        <Reveal delay={140}>
+          <p
+            style={{
+              fontSize: '15px',
+              fontWeight: 400,
+              lineHeight: 1.7,
+              margin: '0 0 56px 0',
+              maxWidth: '56ch',
+              color: 'rgba(255,255,255,0.85)',
+            }}
+          >
+            {bookingConfig.body}
+          </p>
+        </Reveal>
 
         {/*
           Cal.com embed forced to dark theme via ?theme=dark URL param so it

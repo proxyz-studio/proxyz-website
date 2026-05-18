@@ -1,6 +1,13 @@
 import Nav from '../components/Nav';
+import Reveal from '../components/Reveal';
+import PictoIcon from '../components/PictoIcon';
+import { TiltCard, MagneticAnchor } from '../components/Spatial';
+import { Marginalia } from '../components/Editorial';
 import Footer from '../sections/Footer';
 import { portalPageConfig } from '../config';
+
+const moduleIcons = ['meetings', 'todos', 'rocks', 'issues', 'scorecard', 'vto'] as const;
+const pillarIcons = ['time', 'install', 'spark'] as const;
 
 export default function Portal() {
   const c = portalPageConfig;
@@ -88,7 +95,7 @@ export default function Portal() {
                 flexWrap: 'wrap',
               }}
             >
-              <a
+              <MagneticAnchor
                 href={c.primaryCta.href}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -102,17 +109,10 @@ export default function Portal() {
                   letterSpacing: '0.08em',
                   padding: '14px 26px',
                   borderRadius: '999px',
-                  transition: 'opacity 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  (e.target as HTMLElement).style.opacity = '0.85';
-                }}
-                onMouseLeave={(e) => {
-                  (e.target as HTMLElement).style.opacity = '1';
                 }}
               >
                 {c.primaryCta.label}
-              </a>
+              </MagneticAnchor>
               <a
                 href={c.secondaryLink.href}
                 style={{
@@ -166,8 +166,8 @@ export default function Portal() {
               }}
             >
               {c.pillars.map((pillar, i) => (
+                <Reveal key={pillar.name} delay={i * 80}>
                 <div
-                  key={pillar.name}
                   style={{
                     padding: '36px 28px 36px 0',
                     paddingLeft: i === 0 ? 0 : '28px',
@@ -175,6 +175,7 @@ export default function Portal() {
                       i === c.pillars.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.18)',
                   }}
                 >
+                  <PictoIcon name={pillarIcons[i] ?? 'spark'} size={32} stroke="#fff" style={{ marginBottom: '18px' }} />
                   <p
                     style={{
                       fontFamily: "'IBM Plex Mono', monospace",
@@ -214,6 +215,7 @@ export default function Portal() {
                     {pillar.description}
                   </p>
                 </div>
+                </Reveal>
               ))}
             </div>
           </div>
@@ -270,16 +272,20 @@ export default function Portal() {
                 const row = Math.floor(i / 3);
                 const isLastRow = row === Math.floor((c.modules.length - 1) / 3);
                 return (
-                  <div
-                    key={m.name}
+                  <Reveal key={m.name} delay={i * 60}>
+                  <TiltCard
+                    maxTiltX={3}
+                    maxTiltY={4}
                     style={{
                       padding: '32px 28px',
                       paddingLeft: col === 0 ? 0 : '28px',
                       paddingRight: col === 2 ? 0 : '28px',
                       borderRight: col === 2 ? 'none' : '1px solid #000',
                       borderBottom: isLastRow ? 'none' : '1px solid #000',
+                      minHeight: '100%',
                     }}
                   >
+                    <PictoIcon name={moduleIcons[i] ?? 'arrow'} size={32} stroke="#000" style={{ marginBottom: '16px' }} />
                     <h3
                       style={{
                         fontFamily: "'IBM Plex Mono', monospace",
@@ -304,7 +310,8 @@ export default function Portal() {
                     >
                       {m.description}
                     </p>
-                  </div>
+                  </TiltCard>
+                  </Reveal>
                 );
               })}
             </div>

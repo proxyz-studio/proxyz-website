@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import Nav from '../components/Nav';
+import Reveal from '../components/Reveal';
+import { MagneticAnchor } from '../components/Spatial';
 import Footer from '../sections/Footer';
 import { partnersPageConfig, type PartnerCard } from '../config';
 
@@ -525,7 +527,9 @@ export default function Partners() {
         <section className="section-mobile" style={{ padding: '40px 40px 120px' }}>
           <div style={{ maxWidth: '1360px', margin: '0 auto' }}>
             {c.partners.map((p, i) => (
-              <PartnerEntry key={p.name} partner={p} index={i} />
+              <Reveal key={p.name} delay={i * 100}>
+                <PartnerEntry partner={p} index={i} />
+              </Reveal>
             ))}
           </div>
         </section>
@@ -578,7 +582,7 @@ export default function Partners() {
             >
               {c.closingBody}
             </p>
-            <a
+            <MagneticAnchor
               href={c.closingCta.href}
               style={{
                 fontFamily: "'IBM Plex Mono', monospace",
@@ -591,18 +595,10 @@ export default function Partners() {
                 letterSpacing: '0.08em',
                 padding: '14px 26px',
                 borderRadius: '999px',
-                display: 'inline-block',
-                transition: 'opacity 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                (e.target as HTMLElement).style.opacity = '0.85';
-              }}
-              onMouseLeave={(e) => {
-                (e.target as HTMLElement).style.opacity = '1';
               }}
             >
               {c.closingCta.label}
-            </a>
+            </MagneticAnchor>
           </div>
         </section>
       </main>
