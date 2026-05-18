@@ -1,5 +1,6 @@
 import Reveal from '../components/Reveal';
 import { Marginalia } from '../components/Editorial';
+import { EdgeRule } from '../components/Glow';
 import PictoIcon from '../components/PictoIcon';
 import { principlesConfig } from '../config';
 
@@ -24,6 +25,7 @@ export default function Principles() {
         overflow: 'hidden',
       }}
     >
+      <EdgeRule />
       <div
         aria-hidden
         style={{
@@ -32,12 +34,13 @@ export default function Principles() {
           right: '40px',
           opacity: 0.45,
           pointerEvents: 'none',
+          zIndex: 2,
         }}
       >
         <Marginalia number="02" color="light" />
       </div>
 
-      <div style={{ position: 'relative', maxWidth: '1360px', margin: '0 auto' }}>
+      <div style={{ position: 'relative', zIndex: 2, maxWidth: '1360px', margin: '0 auto' }}>
         <Reveal>
           <p
             style={{

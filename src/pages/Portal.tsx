@@ -2,6 +2,7 @@ import Nav from '../components/Nav';
 import Reveal from '../components/Reveal';
 import PictoIcon from '../components/PictoIcon';
 import { TiltCard, MagneticAnchor } from '../components/Spatial';
+import { HeroMesh, EdgeRule } from '../components/Glow';
 import Footer from '../sections/Footer';
 import { portalPageConfig } from '../config';
 
@@ -19,11 +20,14 @@ export default function Portal() {
         <section
           className="section-mobile"
           style={{
+            position: 'relative',
             padding: '180px 40px 120px',
             borderBottom: '1px solid rgba(255,255,255,0.08)',
+            overflow: 'hidden',
           }}
         >
-          <div style={{ maxWidth: '1360px', margin: '0 auto' }}>
+          <HeroMesh />
+          <div style={{ position: 'relative', zIndex: 1, maxWidth: '1360px', margin: '0 auto' }}>
             <p
               style={{
                 fontFamily: "'IBM Plex Mono', monospace",
@@ -136,11 +140,14 @@ export default function Portal() {
         <section
           className="section-mobile"
           style={{
+            position: 'relative',
             padding: '120px 40px',
             borderBottom: '1px solid rgba(255,255,255,0.08)',
+            overflow: 'hidden',
           }}
         >
-          <div style={{ maxWidth: '1360px', margin: '0 auto' }}>
+          <EdgeRule />
+          <div style={{ position: 'relative', zIndex: 2, maxWidth: '1360px', margin: '0 auto' }}>
             <p
               style={{
                 fontFamily: "'IBM Plex Mono', monospace",

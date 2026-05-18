@@ -3,6 +3,7 @@ import Nav from '../components/Nav';
 import Reveal from '../components/Reveal';
 import { MagneticAnchor } from '../components/Spatial';
 import { Marginalia } from '../components/Editorial';
+import { HeroMesh } from '../components/Glow';
 import PictoIcon from '../components/PictoIcon';
 import Footer from '../sections/Footer';
 import { partnersPageConfig, type PartnerCard } from '../config';
@@ -433,6 +434,7 @@ export default function Partners() {
             overflow: 'hidden',
           }}
         >
+          <HeroMesh />
           <div
             aria-hidden
             style={{
@@ -441,12 +443,13 @@ export default function Partners() {
               right: '40px',
               opacity: 0.4,
               pointerEvents: 'none',
+              zIndex: 1,
             }}
           >
             <Marginalia number="03" color="light" />
           </div>
 
-          <div style={{ position: 'relative', maxWidth: '1360px', margin: '0 auto' }}>
+          <div style={{ position: 'relative', zIndex: 2, maxWidth: '1360px', margin: '0 auto' }}>
             <Reveal>
             <div style={{ display: 'flex', alignItems: 'center', gap: '20px', margin: '0 0 22px 0' }}>
               <PictoIcon name="partnership" size={28} stroke="var(--accent-pink)" />

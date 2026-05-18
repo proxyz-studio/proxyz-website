@@ -1,5 +1,6 @@
 import Reveal from '../components/Reveal';
 import { Marginalia } from '../components/Editorial';
+import { HeadlineHalo } from '../components/Glow';
 import PictoIcon from '../components/PictoIcon';
 import { bookingConfig } from '../config';
 
@@ -21,6 +22,7 @@ export default function Booking() {
         overflow: 'hidden',
       }}
     >
+      <HeadlineHalo top="32%" width="800px" opacity={0.13} />
       <div
         aria-hidden
         style={{
@@ -29,12 +31,13 @@ export default function Booking() {
           right: '40px',
           opacity: 0.45,
           pointerEvents: 'none',
+          zIndex: 2,
         }}
       >
         <Marginalia number="07" color="light" />
       </div>
 
-      <div style={{ position: 'relative', maxWidth: '1100px', margin: '0 auto' }}>
+      <div style={{ position: 'relative', zIndex: 2, maxWidth: '1100px', margin: '0 auto' }}>
         <Reveal>
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px', margin: '0 0 64px 0' }}>
             <PictoIcon name="time" size={32} stroke="var(--accent-pink)" />

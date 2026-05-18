@@ -1,6 +1,7 @@
 import Reveal from '../components/Reveal';
 import { Marginalia, DropCap, PullQuote } from '../components/Editorial';
 import { MagneticAnchor } from '../components/Spatial';
+import { HeadlineHalo, EdgeRule } from '../components/Glow';
 import PictoIcon from '../components/PictoIcon';
 import { buildWithConfig } from '../config';
 
@@ -22,6 +23,8 @@ export default function BuildWith() {
         overflow: 'hidden',
       }}
     >
+      <EdgeRule />
+      <HeadlineHalo top="42%" opacity={0.14} />
       <div
         aria-hidden
         style={{
@@ -30,12 +33,13 @@ export default function BuildWith() {
           right: '40px',
           opacity: 0.45,
           pointerEvents: 'none',
+          zIndex: 2,
         }}
       >
         <Marginalia number="05" color="light" />
       </div>
 
-      <div style={{ position: 'relative', maxWidth: '1360px', margin: '0 auto' }}>
+      <div style={{ position: 'relative', zIndex: 2, maxWidth: '1360px', margin: '0 auto' }}>
         <Reveal>
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px', margin: '0 0 64px 0' }}>
             <PictoIcon name="partnership" size={32} stroke="var(--accent-pink)" />

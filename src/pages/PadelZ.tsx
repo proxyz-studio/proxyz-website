@@ -3,6 +3,7 @@ import Nav from '../components/Nav';
 import MediaGate from '../components/MediaGate';
 import Reveal from '../components/Reveal';
 import { MagneticAnchor, TiltCard } from '../components/Spatial';
+import { HeroMesh, HeadlineHalo } from '../components/Glow';
 import Footer from '../sections/Footer';
 
 const FONT_MONO = "'IBM Plex Mono', monospace";
@@ -65,11 +66,14 @@ export default function PadelZ() {
           <section
             className="section-mobile"
             style={{
+              position: 'relative',
               padding: '180px 40px 120px',
               borderBottom: '1px solid rgba(255,255,255,0.30)',
+              overflow: 'hidden',
             }}
           >
-            <div style={{ maxWidth: '1240px', margin: '0 auto' }}>
+            <HeroMesh />
+            <div style={{ position: 'relative', zIndex: 1, maxWidth: '1240px', margin: '0 auto' }}>
               <p
                 style={{
                   fontFamily: FONT_MONO,
@@ -659,13 +663,16 @@ export default function PadelZ() {
           {/* CLOSING */}
           <section
             style={{
+              position: 'relative',
               padding: '120px 40px',
               background: '#0a0a0a',
               borderBottom: '1px solid rgba(255,255,255,0.30)',
               textAlign: 'center',
+              overflow: 'hidden',
             }}
           >
-            <div style={{ maxWidth: '1240px', margin: '0 auto' }}>
+            <HeadlineHalo color="#5BC9B8" />
+            <div style={{ position: 'relative', zIndex: 1, maxWidth: '1240px', margin: '0 auto' }}>
               <h2
                 style={{
                   fontFamily: FONT_MONO,
