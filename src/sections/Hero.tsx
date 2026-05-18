@@ -1,3 +1,5 @@
+import { useRef } from 'react';
+import { motion, useScroll, useTransform, useSpring } from 'motion/react';
 import AsciiCanvas from '../components/AsciiCanvas';
 import Nav from '../components/Nav';
 import Reveal from '../components/Reveal';
@@ -5,6 +7,32 @@ import { MagneticAnchor } from '../components/Spatial';
 import { heroConfig, navigationConfig } from '../config';
 
 export default function Hero() {
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const leftRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ['start start', 'end start'],
+  });
+  const titleY = useTransform(scrollYProgress, [0, 1], [0, -120]);
+  const titleOpacity = useTransform(scrollYProgress, [0, 0.75], [1, 0]);
+  const leadOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+
+  // Smooth spring-tracked cursor for the left panel
+  const cursorX = useSpring(-100, { stiffness: 220, damping: 28 });
+  const cursorY = useSpring(-100, { stiffness: 220, damping: 28 });
+
+  function handleLeftMove(e: React.MouseEvent<HTMLDivElement>) {
+    const el = leftRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    cursorX.set(e.clientX - rect.left);
+    cursorY.set(e.clientY - rect.top);
+  }
+  function handleLeftLeave() {
+    cursorX.set(-100);
+    cursorY.set(-100);
+  }
+
   const hasHeroContent =
     navigationConfig.brandName ||
     navigationConfig.links.length > 0 ||
@@ -18,6 +46,7 @@ export default function Hero() {
 
   return (
     <section
+      ref={sectionRef}
       id="hero"
       className="hero-section"
       style={{
@@ -30,6 +59,9 @@ export default function Hero() {
     >
       <Nav />
       <div
+        ref={leftRef}
+        onMouseMove={handleLeftMove}
+        onMouseLeave={handleLeftLeave}
         className="hero-left"
         style={{
           position: 'relative',
@@ -39,6 +71,25 @@ export default function Hero() {
           overflow: 'hidden',
         }}
       >
+        <motion.div
+          aria-hidden
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            x: cursorX,
+            y: cursorY,
+            width: '24px',
+            height: '24px',
+            marginLeft: '-12px',
+            marginTop: '-12px',
+            borderRadius: '50%',
+            background: 'var(--accent-pink)',
+            mixBlendMode: 'screen',
+            pointerEvents: 'none',
+            zIndex: 60,
+          }}
+        />
         {/* Hero content */}
         <div
           className="hero-content"
@@ -67,8 +118,10 @@ export default function Hero() {
           </p>
           </Reveal>
           <Reveal delay={80}>
-          <h1
+          <motion.h1
             style={{
+              y: titleY,
+              opacity: titleOpacity,
               fontFamily: "'Fragment Mono', 'Courier New', monospace",
               fontSize: 'clamp(44px, 5.6vw, 82px)',
               fontWeight: 400,
@@ -127,12 +180,13 @@ export default function Hero() {
                 </span>
               );
             })}
-          </h1>
+          </motion.h1>
           </Reveal>
 
           <Reveal delay={180}>
-          <p
+          <motion.p
             style={{
+              opacity: leadOpacity,
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: '13px',
               fontWeight: 400,
@@ -143,7 +197,7 @@ export default function Hero() {
             }}
           >
             {heroConfig.lead}
-          </p>
+          </motion.p>
           </Reveal>
 
           <Reveal delay={260}>

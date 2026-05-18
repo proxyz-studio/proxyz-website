@@ -10,6 +10,7 @@ import BuildWith from './sections/BuildWith';
 import StudioOS from './sections/StudioOS';
 import Booking from './sections/Booking';
 import Footer from './sections/Footer';
+import Marquee from './components/Marquee';
 import Portal from './pages/Portal';
 import Media from './pages/Media';
 import PadelZ from './pages/PadelZ';
@@ -52,6 +53,7 @@ function Home() {
         <Principles />
         <TwoWays />
         <Services />
+        <Marquee />
         <BuildWith />
         <StudioOS />
         <Booking />

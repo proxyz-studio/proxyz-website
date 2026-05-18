@@ -1,4 +1,5 @@
 import { useRef, type ReactNode, type AnchorHTMLAttributes } from 'react';
+import { motion } from 'motion/react';
 
 function isTouchDevice() {
   if (typeof window === 'undefined') return false;
@@ -94,6 +95,16 @@ export function SpotlightCard({
   );
 }
 
+type AnchorPropsWithoutMotionConflicts = Omit<
+  AnchorHTMLAttributes<HTMLAnchorElement>,
+  | 'onDrag'
+  | 'onDragStart'
+  | 'onDragEnd'
+  | 'onAnimationStart'
+  | 'onAnimationEnd'
+  | 'onAnimationIteration'
+>;
+
 export function MagneticAnchor({
   children,
   style,
@@ -103,7 +114,7 @@ export function MagneticAnchor({
 }: {
   children: ReactNode;
   strength?: number;
-} & AnchorHTMLAttributes<HTMLAnchorElement>) {
+} & AnchorPropsWithoutMotionConflicts) {
   const ref = useRef<HTMLAnchorElement>(null);
   function onMove(e: React.MouseEvent<HTMLAnchorElement>) {
     if (isTouchDevice()) return;
@@ -112,28 +123,36 @@ export function MagneticAnchor({
     const rect = el.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width - 0.5;
     const y = (e.clientY - rect.top) / rect.height - 0.5;
-    el.style.transform = `translate(${x * strength}px, ${y * (strength * 0.65)}px)`;
+    // Keep the magnetic drift on the existing inline transform —
+    // Motion's whileHover scale lives on a separate transform stack.
+    el.style.setProperty('--magnetic-x', `${x * strength}px`);
+    el.style.setProperty('--magnetic-y', `${y * (strength * 0.65)}px`);
   }
   function onLeave() {
     const el = ref.current;
     if (!el) return;
-    el.style.transform = 'translate(0, 0)';
+    el.style.setProperty('--magnetic-x', '0px');
+    el.style.setProperty('--magnetic-y', '0px');
   }
   return (
-    <a
+    <motion.a
       ref={ref}
       onMouseMove={onMove}
       onMouseLeave={onLeave}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.96 }}
+      transition={{ type: 'spring', stiffness: 280, damping: 18 }}
       className={className}
       style={{
         display: 'inline-flex',
-        transition: 'transform 180ms cubic-bezier(0.2, 0.7, 0.1, 1)',
+        translateX: 'var(--magnetic-x, 0px)',
+        translateY: 'var(--magnetic-y, 0px)',
         willChange: 'transform',
         ...style,
       }}
       {...rest}
     >
       {children}
-    </a>
+    </motion.a>
   );
 }
