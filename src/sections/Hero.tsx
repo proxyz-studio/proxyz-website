@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { motion, useScroll, useTransform, useSpring } from 'motion/react';
+import { motion, useScroll, useTransform } from 'motion/react';
 import AsciiCanvas from '../components/AsciiCanvas';
 import Nav from '../components/Nav';
 import Reveal from '../components/Reveal';
@@ -8,7 +8,6 @@ import { heroConfig, navigationConfig } from '../config';
 
 export default function Hero() {
   const sectionRef = useRef<HTMLDivElement>(null);
-  const leftRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ['start start', 'end start'],
@@ -16,22 +15,6 @@ export default function Hero() {
   const titleY = useTransform(scrollYProgress, [0, 1], [0, -120]);
   const titleOpacity = useTransform(scrollYProgress, [0, 0.75], [1, 0]);
   const leadOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
-
-  // Smooth spring-tracked cursor for the left panel
-  const cursorX = useSpring(-100, { stiffness: 220, damping: 28 });
-  const cursorY = useSpring(-100, { stiffness: 220, damping: 28 });
-
-  function handleLeftMove(e: React.MouseEvent<HTMLDivElement>) {
-    const el = leftRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    cursorX.set(e.clientX - rect.left);
-    cursorY.set(e.clientY - rect.top);
-  }
-  function handleLeftLeave() {
-    cursorX.set(-100);
-    cursorY.set(-100);
-  }
 
   const hasHeroContent =
     navigationConfig.brandName ||
@@ -59,9 +42,6 @@ export default function Hero() {
     >
       <Nav />
       <div
-        ref={leftRef}
-        onMouseMove={handleLeftMove}
-        onMouseLeave={handleLeftLeave}
         className="hero-left"
         style={{
           position: 'relative',
@@ -71,25 +51,6 @@ export default function Hero() {
           overflow: 'hidden',
         }}
       >
-        <motion.div
-          aria-hidden
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            x: cursorX,
-            y: cursorY,
-            width: '24px',
-            height: '24px',
-            marginLeft: '-12px',
-            marginTop: '-12px',
-            borderRadius: '50%',
-            background: 'var(--accent-pink)',
-            mixBlendMode: 'screen',
-            pointerEvents: 'none',
-            zIndex: 60,
-          }}
-        />
         {/* Hero content */}
         <div
           className="hero-content"

@@ -13,7 +13,6 @@ const DEFAULT_WORDS = [
   'BUILD WITH',
   'THE PORTAL',
   'PADEL Z',
-  'FAST-FIX',
   'AI INSIDE',
 ];
 
