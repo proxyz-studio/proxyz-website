@@ -416,6 +416,39 @@
   }
 }
 
+/* ---------- BACKGROUND GLOWS (preview options) ---------- */
+
+/* Option D — slow mesh drift */
+@keyframes glow-drift-a {
+  0%   { transform: translate(0, 0); }
+  50%  { transform: translate(60px, -40px); }
+  100% { transform: translate(0, 0); }
+}
+@keyframes glow-drift-b {
+  0%   { transform: translate(0, 0); }
+  50%  { transform: translate(-80px, 50px); }
+  100% { transform: translate(0, 0); }
+}
+@keyframes glow-drift-c {
+  0%   { transform: translate(0, 0); }
+  50%  { transform: translate(40px, 60px); }
+  100% { transform: translate(0, 0); }
+}
+.glow-mesh-a {
+  animation: glow-drift-a 22s ease-in-out infinite;
+}
+.glow-mesh-b {
+  animation: glow-drift-b 28s ease-in-out infinite;
+}
+.glow-mesh-c {
+  animation: glow-drift-c 25s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .glow-mesh-a, .glow-mesh-b, .glow-mesh-c {
+    animation: none !important;
+  }
+}
+
 /* ---------- VISUAL PREVIEW: motion + icon animations ---------- */
 
 /* Direction A — Choreographed: scroll-revealed lines + stagger */
