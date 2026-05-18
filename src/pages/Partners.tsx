@@ -1,7 +1,9 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Nav from '../components/Nav';
 import Reveal from '../components/Reveal';
-import { MagneticAnchor } from '../components/Spatial';
+import { MagneticAnchor, SpotlightCard } from '../components/Spatial';
+import { Marginalia } from '../components/Editorial';
+import PictoIcon from '../components/PictoIcon';
 import Footer from '../sections/Footer';
 import { partnersPageConfig, type PartnerCard } from '../config';
 
@@ -15,12 +17,27 @@ const statusColor: Record<string, string> = {
   next: 'rgba(255,255,255,0.35)',
 };
 
+const metaIcons = {
+  sector: 'stage',
+  location: 'place',
+  partner: 'person',
+  stage: 'time',
+} as const;
+
 function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number }) {
+  const navigate = useNavigate();
   return (
-    <article
+    <SpotlightCard
+      color="rgba(255, 65, 147, 0.08)"
+      size={520}
       style={{
         borderTop: '1px solid rgba(255,255,255,0.18)',
-        padding: '64px 0',
+        padding: '64px 32px',
+        margin: '0 -32px',
+      }}
+    >
+    <article
+      style={{
         position: 'relative',
       }}
     >
@@ -99,61 +116,73 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
           fontSize: '12px',
         }}
       >
-        <div>
-          <p
-            style={{
-              fontSize: '10px',
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-              color: 'rgba(255,255,255,0.45)',
-              margin: '0 0 6px 0',
-            }}
-          >
-            Sector
-          </p>
-          <p style={{ margin: 0, color: '#fff' }}>{partner.sector}</p>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+          <PictoIcon name={metaIcons.sector} size={20} stroke="rgba(255,255,255,0.55)" />
+          <div>
+            <p
+              style={{
+                fontSize: '10px',
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                color: 'rgba(255,255,255,0.45)',
+                margin: '0 0 6px 0',
+              }}
+            >
+              Sector
+            </p>
+            <p style={{ margin: 0, color: '#fff' }}>{partner.sector}</p>
+          </div>
         </div>
-        <div>
-          <p
-            style={{
-              fontSize: '10px',
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-              color: 'rgba(255,255,255,0.45)',
-              margin: '0 0 6px 0',
-            }}
-          >
-            Location
-          </p>
-          <p style={{ margin: 0, color: '#fff' }}>{partner.location}</p>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+          <PictoIcon name={metaIcons.location} size={20} stroke="rgba(255,255,255,0.55)" />
+          <div>
+            <p
+              style={{
+                fontSize: '10px',
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                color: 'rgba(255,255,255,0.45)',
+                margin: '0 0 6px 0',
+              }}
+            >
+              Location
+            </p>
+            <p style={{ margin: 0, color: '#fff' }}>{partner.location}</p>
+          </div>
         </div>
-        <div>
-          <p
-            style={{
-              fontSize: '10px',
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-              color: 'rgba(255,255,255,0.45)',
-              margin: '0 0 6px 0',
-            }}
-          >
-            {partner.partnerLabel}
-          </p>
-          <p style={{ margin: 0, color: '#fff' }}>{partner.partner}</p>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+          <PictoIcon name={metaIcons.partner} size={20} stroke="rgba(255,255,255,0.55)" />
+          <div>
+            <p
+              style={{
+                fontSize: '10px',
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                color: 'rgba(255,255,255,0.45)',
+                margin: '0 0 6px 0',
+              }}
+            >
+              {partner.partnerLabel}
+            </p>
+            <p style={{ margin: 0, color: '#fff' }}>{partner.partner}</p>
+          </div>
         </div>
-        <div>
-          <p
-            style={{
-              fontSize: '10px',
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-              color: 'rgba(255,255,255,0.45)',
-              margin: '0 0 6px 0',
-            }}
-          >
-            Stage
-          </p>
-          <p style={{ margin: 0, color: 'var(--accent-pink)' }}>{partner.stage}</p>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+          <PictoIcon name={metaIcons.stage} size={20} stroke="var(--accent-pink)" />
+          <div>
+            <p
+              style={{
+                fontSize: '10px',
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                color: 'rgba(255,255,255,0.45)',
+                margin: '0 0 6px 0',
+              }}
+            >
+              Stage
+            </p>
+            <p style={{ margin: 0, color: 'var(--accent-pink)' }}>{partner.stage}</p>
+          </div>
         </div>
       </div>
 
@@ -345,8 +374,12 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
           </p>
         </div>
         {isInternalRoute(partner.cta.href) ? (
-          <Link
-            to={partner.cta.href}
+          <MagneticAnchor
+            href={partner.cta.href}
+            onClick={(e) => {
+              e.preventDefault();
+              navigate(partner.cta.href);
+            }}
             style={{
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: '12px',
@@ -360,19 +393,12 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
               borderRadius: '999px',
               whiteSpace: 'nowrap',
               justifySelf: 'end',
-              transition: 'opacity 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              (e.target as HTMLElement).style.opacity = '0.85';
-            }}
-            onMouseLeave={(e) => {
-              (e.target as HTMLElement).style.opacity = '1';
             }}
           >
             {partner.cta.label}
-          </Link>
+          </MagneticAnchor>
         ) : (
-          <a
+          <MagneticAnchor
             href={partner.cta.href}
             style={{
               fontFamily: "'IBM Plex Mono', monospace",
@@ -387,20 +413,14 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
               borderRadius: '999px',
               whiteSpace: 'nowrap',
               justifySelf: 'end',
-              transition: 'opacity 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              (e.target as HTMLElement).style.opacity = '0.85';
-            }}
-            onMouseLeave={(e) => {
-              (e.target as HTMLElement).style.opacity = '1';
             }}
           >
             {partner.cta.label}
-          </a>
+          </MagneticAnchor>
         )}
       </div>
     </article>
+    </SpotlightCard>
   );
 }
 
@@ -415,23 +435,44 @@ export default function Partners() {
         <section
           className="section-mobile"
           style={{
+            position: 'relative',
             padding: '180px 40px 80px',
             borderBottom: '1px solid rgba(255,255,255,0.08)',
+            overflow: 'hidden',
           }}
         >
-          <div style={{ maxWidth: '1360px', margin: '0 auto' }}>
-            <p
-              style={{
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '11px',
-                letterSpacing: '0.18em',
-                textTransform: 'uppercase',
-                color: 'var(--accent-pink)',
-                margin: '0 0 22px 0',
-              }}
-            >
-              {c.eyebrow}
-            </p>
+          <div
+            aria-hidden
+            style={{
+              position: 'absolute',
+              top: '120px',
+              right: '40px',
+              opacity: 0.4,
+              pointerEvents: 'none',
+            }}
+          >
+            <Marginalia number="03" color="light" />
+          </div>
+
+          <div style={{ position: 'relative', maxWidth: '1360px', margin: '0 auto' }}>
+            <Reveal>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', margin: '0 0 22px 0' }}>
+              <PictoIcon name="partnership" size={28} stroke="var(--accent-pink)" />
+              <p
+                style={{
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: '11px',
+                  letterSpacing: '0.18em',
+                  textTransform: 'uppercase',
+                  color: 'var(--accent-pink)',
+                  margin: 0,
+                }}
+              >
+                {c.eyebrow}
+              </p>
+            </div>
+            </Reveal>
+            <Reveal delay={80}>
             <h1
               style={{
                 fontFamily: "'Fragment Mono', monospace",
@@ -464,6 +505,8 @@ export default function Partners() {
                 </span>
               ))}
             </h1>
+            </Reveal>
+            <Reveal delay={180}>
             <p
               style={{
                 fontFamily: "'IBM Plex Mono', monospace",
@@ -476,8 +519,10 @@ export default function Partners() {
             >
               {c.lead}
             </p>
+            </Reveal>
 
             {/* Status filter strip (visual only for now) */}
+            <Reveal delay={260}>
             <div
               style={{
                 marginTop: '48px',
@@ -520,6 +565,7 @@ export default function Partners() {
                 </span>
               ))}
             </div>
+            </Reveal>
           </div>
         </section>
 

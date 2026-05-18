@@ -1,9 +1,13 @@
 import { Link } from 'react-router-dom';
 import Nav from '../components/Nav';
 import Reveal from '../components/Reveal';
-import { MagneticAnchor } from '../components/Spatial';
+import { MagneticAnchor, SpotlightCard, TiltCard } from '../components/Spatial';
+import { Marginalia } from '../components/Editorial';
+import PictoIcon from '../components/PictoIcon';
 import Footer from '../sections/Footer';
 import { mediaPageConfig } from '../config';
+
+const flywheelIcons = ['stage', 'spark', 'arrow', 'orbit'] as const;
 
 export default function Media() {
   const c = mediaPageConfig;
@@ -17,25 +21,46 @@ export default function Media() {
         <section
           className="section-mobile"
           style={{
+            position: 'relative',
             padding: '180px 40px 120px',
             borderBottom: '1px solid rgba(255,255,255,0.08)',
+            overflow: 'hidden',
           }}
         >
-          <div style={{ maxWidth: '1360px', margin: '0 auto' }}>
-            <p
-              style={{
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '11px',
-                fontWeight: 400,
-                lineHeight: 1.6,
-                letterSpacing: '0.18em',
-                textTransform: 'uppercase',
-                color: 'var(--accent-pink)',
-                margin: '0 0 22px 0',
-              }}
-            >
-              {c.eyebrow}
-            </p>
+          <div
+            aria-hidden
+            style={{
+              position: 'absolute',
+              top: '120px',
+              right: '40px',
+              opacity: 0.4,
+              pointerEvents: 'none',
+            }}
+          >
+            <Marginalia number="04" color="light" />
+          </div>
+
+          <div style={{ position: 'relative', maxWidth: '1360px', margin: '0 auto' }}>
+            <Reveal>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', margin: '0 0 22px 0' }}>
+              <PictoIcon name="stage" size={28} stroke="var(--accent-pink)" />
+              <p
+                style={{
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: '11px',
+                  fontWeight: 400,
+                  lineHeight: 1.6,
+                  letterSpacing: '0.18em',
+                  textTransform: 'uppercase',
+                  color: 'var(--accent-pink)',
+                  margin: 0,
+                }}
+              >
+                {c.eyebrow}
+              </p>
+            </div>
+            </Reveal>
+            <Reveal delay={80}>
             <h1
               style={{
                 fontFamily: "'Fragment Mono', 'Courier New', monospace",
@@ -68,6 +93,8 @@ export default function Media() {
                 </span>
               ))}
             </h1>
+            </Reveal>
+            <Reveal delay={180}>
             <p
               style={{
                 fontFamily: "'IBM Plex Mono', monospace",
@@ -81,6 +108,7 @@ export default function Media() {
             >
               {c.lead}
             </p>
+            </Reveal>
           </div>
         </section>
 
@@ -230,8 +258,8 @@ export default function Media() {
               }}
             >
               {c.flywheel.steps.map((step, i) => (
+                <Reveal key={i} delay={i * 80}>
                 <div
-                  key={i}
                   style={{
                     padding: '36px 28px 36px 0',
                     paddingLeft: i === 0 ? 0 : '28px',
@@ -241,6 +269,7 @@ export default function Media() {
                         : '1px solid rgba(255,255,255,0.18)',
                   }}
                 >
+                  <PictoIcon name={flywheelIcons[i] ?? 'arrow'} size={32} stroke="#fff" style={{ marginBottom: '20px' }} />
                   <p
                     style={{
                       fontFamily: "'IBM Plex Mono', monospace",
@@ -280,6 +309,7 @@ export default function Media() {
                     {step.body}
                   </p>
                 </div>
+                </Reveal>
               ))}
             </div>
           </div>
@@ -331,6 +361,7 @@ export default function Media() {
                 const _delay = i * 80;
                 const inner = (
                   <>
+                    <PictoIcon name="orbit" size={36} stroke="#fff" style={{ marginBottom: '24px' }} />
                     <p
                       style={{
                         fontFamily: "'IBM Plex Mono', monospace",
@@ -436,29 +467,34 @@ export default function Media() {
                 if (card.detailHref) {
                   return (
                     <Reveal key={i} delay={_delay}>
+                    <TiltCard maxTiltX={3} maxTiltY={4} style={{ height: '100%' }}>
+                    <SpotlightCard color="rgba(255, 65, 147, 0.10)" size={420} style={{ height: '100%' }}>
                     <Link
                       to={card.detailHref}
                       style={cardStyle}
                       onMouseEnter={(e) => {
                         (e.currentTarget as HTMLElement).style.borderColor =
                           'rgba(255,255,255,0.30)';
-                        (e.currentTarget as HTMLElement).style.background =
-                          'rgba(255,255,255,0.02)';
                       }}
                       onMouseLeave={(e) => {
                         (e.currentTarget as HTMLElement).style.borderColor =
                           'rgba(255,255,255,0.10)';
-                        (e.currentTarget as HTMLElement).style.background = 'transparent';
                       }}
                     >
                       {inner}
                     </Link>
+                    </SpotlightCard>
+                    </TiltCard>
                     </Reveal>
                   );
                 }
                 return (
                   <Reveal key={i} delay={_delay}>
-                    <div style={cardStyle}>{inner}</div>
+                    <TiltCard maxTiltX={3} maxTiltY={4} style={{ height: '100%' }}>
+                    <SpotlightCard color="rgba(255, 65, 147, 0.10)" size={420} style={{ height: '100%' }}>
+                      <div style={cardStyle}>{inner}</div>
+                    </SpotlightCard>
+                    </TiltCard>
                   </Reveal>
                 );
               })}
