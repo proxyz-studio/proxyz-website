@@ -1,6 +1,6 @@
 import Reveal from '../components/Reveal';
 import { Marginalia } from '../components/Editorial';
-import { TiltCard, SpotlightCard } from '../components/Spatial';
+import { TiltCard } from '../components/Spatial';
 import PictoIcon from '../components/PictoIcon';
 import { twoWaysConfig } from '../config';
 
@@ -82,18 +82,11 @@ export default function TwoWays() {
                 style={{
                   borderTop: '1px solid #000',
                   paddingTop: '32px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '24px',
                 }}
               >
-                <SpotlightCard
-                  color="rgba(255, 65, 147, 0.10)"
-                  style={{
-                    padding: '4px',
-                    margin: '-4px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '24px',
-                  }}
-                >
                   <PictoIcon name={cardIcons[index] ?? 'arrow'} size={40} stroke="#000" />
                   <h3
                     style={{
@@ -140,7 +133,6 @@ export default function TwoWays() {
                   >
                     {card.link.label}
                   </a>
-                </SpotlightCard>
               </TiltCard>
             </Reveal>
           ))}

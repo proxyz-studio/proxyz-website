@@ -1,6 +1,6 @@
 import Reveal from '../components/Reveal';
 import { Marginalia, PullQuote } from '../components/Editorial';
-import { TiltCard, SpotlightCard } from '../components/Spatial';
+import { TiltCard } from '../components/Spatial';
 import PictoIcon from '../components/PictoIcon';
 import { servicesConfig, type ServiceCard } from '../config';
 
@@ -22,18 +22,12 @@ function ServiceColumn({
       style={{
         borderRight: isLast ? 'none' : '1px solid #000',
         minHeight: '100%',
+        padding: '40px 24px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0',
       }}
     >
-      <SpotlightCard
-        color="rgba(255, 65, 147, 0.08)"
-        style={{
-          padding: '40px 24px',
-          display: 'flex',
-          flexDirection: 'column',
-          minHeight: '100%',
-          gap: '0',
-        }}
-      >
         <PictoIcon name={iconName} size={36} stroke="#000" style={{ marginBottom: '24px' }} />
         <p
           style={{
@@ -115,7 +109,6 @@ function ServiceColumn({
             {card.cta.label}
           </a>
         </div>
-      </SpotlightCard>
     </TiltCard>
   );
 }
