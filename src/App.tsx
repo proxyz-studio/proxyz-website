@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { siteConfig } from './config';
 import Hero from './sections/Hero';
@@ -15,9 +15,12 @@ import Media from './pages/Media';
 import PadelZ from './pages/PadelZ';
 import Partners from './pages/Partners';
 import FastFix from './pages/FastFix';
-import HeroPreview from './pages/HeroPreview';
-import VisualPreview from './pages/VisualPreview';
-import GlowPreview from './pages/GlowPreview';
+
+// Preview routes are dev-only — code-split so production users don't pay for motion lib etc.
+const HeroPreview = lazy(() => import('./pages/HeroPreview'));
+const VisualPreview = lazy(() => import('./pages/VisualPreview'));
+const GlowPreview = lazy(() => import('./pages/GlowPreview'));
+const MotionPreview = lazy(() => import('./pages/MotionPreview'));
 
 function ScrollManager() {
   const { pathname, hash } = useLocation();
@@ -81,9 +84,10 @@ function App() {
         <Route path="/media/padel-z" element={<PadelZ />} />
         <Route path="/partners" element={<Partners />} />
         <Route path="/partners/fast-fix" element={<FastFix />} />
-        <Route path="/preview/hero" element={<HeroPreview />} />
-        <Route path="/preview/visual" element={<VisualPreview />} />
-        <Route path="/preview/glow" element={<GlowPreview />} />
+        <Route path="/preview/hero" element={<Suspense fallback={null}><HeroPreview /></Suspense>} />
+        <Route path="/preview/visual" element={<Suspense fallback={null}><VisualPreview /></Suspense>} />
+        <Route path="/preview/glow" element={<Suspense fallback={null}><GlowPreview /></Suspense>} />
+        <Route path="/preview/motion" element={<Suspense fallback={null}><MotionPreview /></Suspense>} />
       </Routes>
     </>
   );
