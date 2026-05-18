@@ -2,7 +2,6 @@ import Nav from '../components/Nav';
 import Reveal from '../components/Reveal';
 import PictoIcon from '../components/PictoIcon';
 import { TiltCard, MagneticAnchor } from '../components/Spatial';
-import { Marginalia } from '../components/Editorial';
 import Footer from '../sections/Footer';
 import { portalPageConfig } from '../config';
 
