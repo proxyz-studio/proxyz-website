@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import Nav from '../components/Nav';
 import Reveal from '../components/Reveal';
-import { MagneticAnchor, SpotlightCard, TiltCard } from '../components/Spatial';
+import { MagneticAnchor, TiltCard } from '../components/Spatial';
 import { Marginalia } from '../components/Editorial';
 import PictoIcon from '../components/PictoIcon';
 import Footer from '../sections/Footer';
@@ -468,7 +468,6 @@ export default function Media() {
                   return (
                     <Reveal key={i} delay={_delay}>
                     <TiltCard maxTiltX={3} maxTiltY={4} style={{ height: '100%' }}>
-                    <SpotlightCard color="rgba(255, 65, 147, 0.10)" size={420} style={{ height: '100%' }}>
                     <Link
                       to={card.detailHref}
                       style={cardStyle}
@@ -483,7 +482,6 @@ export default function Media() {
                     >
                       {inner}
                     </Link>
-                    </SpotlightCard>
                     </TiltCard>
                     </Reveal>
                   );
@@ -491,9 +489,7 @@ export default function Media() {
                 return (
                   <Reveal key={i} delay={_delay}>
                     <TiltCard maxTiltX={3} maxTiltY={4} style={{ height: '100%' }}>
-                    <SpotlightCard color="rgba(255, 65, 147, 0.10)" size={420} style={{ height: '100%' }}>
                       <div style={cardStyle}>{inner}</div>
-                    </SpotlightCard>
                     </TiltCard>
                   </Reveal>
                 );

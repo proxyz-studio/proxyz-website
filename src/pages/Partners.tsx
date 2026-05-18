@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import Nav from '../components/Nav';
 import Reveal from '../components/Reveal';
-import { MagneticAnchor, SpotlightCard } from '../components/Spatial';
+import { MagneticAnchor } from '../components/Spatial';
 import { Marginalia } from '../components/Editorial';
 import PictoIcon from '../components/PictoIcon';
 import Footer from '../sections/Footer';
@@ -27,17 +27,10 @@ const metaIcons = {
 function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number }) {
   const navigate = useNavigate();
   return (
-    <SpotlightCard
-      color="rgba(255, 65, 147, 0.08)"
-      size={520}
-      style={{
-        borderTop: '1px solid rgba(255,255,255,0.18)',
-        padding: '64px 32px',
-        margin: '0 -32px',
-      }}
-    >
     <article
       style={{
+        borderTop: '1px solid rgba(255,255,255,0.18)',
+        padding: '64px 0',
         position: 'relative',
       }}
     >
@@ -420,7 +413,6 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
         )}
       </div>
     </article>
-    </SpotlightCard>
   );
 }
 
