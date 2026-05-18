@@ -416,6 +416,109 @@
   }
 }
 
+/* ---------- VISUAL PREVIEW: motion + icon animations ---------- */
+
+/* Direction A — Choreographed: scroll-revealed lines + stagger */
+@keyframes pvz-rise {
+  0% { transform: translateY(28px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.pvz-reveal > * {
+  animation: pvz-rise 320ms cubic-bezier(0.2, 0.7, 0.1, 1) both;
+}
+.pvz-reveal > *:nth-child(1) { animation-delay: 0ms; }
+.pvz-reveal > *:nth-child(2) { animation-delay: 60ms; }
+.pvz-reveal > *:nth-child(3) { animation-delay: 120ms; }
+.pvz-reveal > *:nth-child(4) { animation-delay: 180ms; }
+.pvz-reveal > *:nth-child(5) { animation-delay: 240ms; }
+.pvz-reveal > *:nth-child(6) { animation-delay: 300ms; }
+
+@keyframes pvz-count {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.pvz-count {
+  font-variant-numeric: tabular-nums;
+  animation: pvz-count 280ms cubic-bezier(0.2, 0.7, 0.1, 1) both;
+}
+
+/* Direction B — Pictogram: stroke-draw on hover */
+.pvz-icon path,
+.pvz-icon line,
+.pvz-icon circle,
+.pvz-icon polyline,
+.pvz-icon rect {
+  stroke-dasharray: 200;
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
+}
+.pvz-icon:hover path,
+.pvz-icon:hover line,
+.pvz-icon:hover circle,
+.pvz-icon:hover polyline,
+.pvz-icon:hover rect {
+  animation: pvz-draw 720ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+@keyframes pvz-draw {
+  0%   { stroke-dashoffset: 200; }
+  100% { stroke-dashoffset: 0; }
+}
+
+/* Direction C — Editorial: marginalia number */
+.pvz-marginalia {
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Direction D — Spatial: tilt card, magnetic button, spotlight */
+.pvz-tilt {
+  transform-style: preserve-3d;
+  transition: transform 240ms cubic-bezier(0.2, 0.7, 0.1, 1);
+  will-change: transform;
+}
+.pvz-tilt > * {
+  transform: translateZ(0);
+}
+.pvz-magnetic {
+  transition: transform 180ms cubic-bezier(0.2, 0.7, 0.1, 1);
+  will-change: transform;
+}
+.pvz-spotlight {
+  position: relative;
+  overflow: hidden;
+}
+.pvz-spotlight::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    320px circle at var(--pvz-x, 50%) var(--pvz-y, 50%),
+    rgba(255, 65, 147, 0.18),
+    transparent 70%
+  );
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 200ms ease-out;
+}
+.pvz-spotlight:hover::after {
+  opacity: 1;
+}
+
+/* Respect reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .pvz-reveal > *,
+  .pvz-count,
+  .pvz-icon:hover path,
+  .pvz-icon:hover line,
+  .pvz-icon:hover circle,
+  .pvz-icon:hover polyline,
+  .pvz-icon:hover rect,
+  .pvz-tilt,
+  .pvz-magnetic {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
 /* Partners page responsive */
 @media (max-width: 900px) {
   .partner-header {

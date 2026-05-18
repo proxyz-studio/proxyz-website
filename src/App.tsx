@@ -16,6 +16,7 @@ import PadelZ from './pages/PadelZ';
 import Partners from './pages/Partners';
 import FastFix from './pages/FastFix';
 import HeroPreview from './pages/HeroPreview';
+import VisualPreview from './pages/VisualPreview';
 
 function ScrollManager() {
   const { pathname, hash } = useLocation();
@@ -80,6 +81,7 @@ function App() {
         <Route path="/partners" element={<Partners />} />
         <Route path="/partners/fast-fix" element={<FastFix />} />
         <Route path="/preview/hero" element={<HeroPreview />} />
+        <Route path="/preview/visual" element={<VisualPreview />} />
       </Routes>
     </>
   );
