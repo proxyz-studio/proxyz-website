@@ -474,7 +474,7 @@ export default function LanguageToggle() {
         display: 'inline-flex',
         alignItems: 'center',
         gap: '6px',
-        marginLeft: '8px',
+        marginLeft: '16px',
       }}
     >
       <ToggleButton
@@ -581,7 +581,7 @@ Insert `<LanguageToggle />` between the `links.map()` and the `primaryCta` block
 </div>
 ```
 
-The toggle's own `marginLeft: '8px'` plus the cluster `gap: '24px'` gives roughly the visual spacing the spec calls for. When the toggle returns `null` on non-homepage routes, the cluster's `gap` makes the absence invisible.
+The toggle's own `marginLeft: '16px'` (per spec §"Unit 5") plus the cluster `gap: '24px'` gives the visual spacing the spec calls for. When the toggle returns `null` on non-homepage routes, the cluster's `gap` makes the absence invisible.
 
 - [ ] **Step 4: Typecheck + build**
 
@@ -687,33 +687,31 @@ import type { Bilingual } from './i18n/Bilingual';
 
 - [ ] **Step 2: Update heroConfig values**
 
-Find the `heroConfig` definition (around line 117). Convert each translatable string to `{ en: '...' }`. Example:
+Find the `heroConfig` definition (around line 117). The shape transformation is mechanical: for each translatable field, replace `field: "value"` with `field: { en: "value" }`. Use the actual existing strings verbatim — do not retype them, copy them. Keep the existing quote style (double-quotes) and casing (Title Case for labels like `"Book the Audit"`).
 
-Before:
+Example shape transformation (illustrative only; copy the real strings from the file):
 
 ```ts
+// Before (illustrative)
 export const heroConfig: HeroConfig = {
-  eyebrow: 'ISSUE 01 / OPERATOR STUDIO',
-  titleLines: ['Your proxy', 'on the', 'inside.'],
-  lead: 'PROXYZ goes inside your company, rebuilds how it runs, ...',
-  primaryCta: { label: 'BOOK THE AUDIT', href: '#booking' },
-  secondaryLink: { label: 'WHAT WE DO →', href: '#services' },
+  eyebrow: "ISSUE 01 / OPERATOR STUDIO",
+  titleLines: ["Your proxy", "on the", "inside."],
+  lead: "PROXYZ goes inside your company...",
+  primaryCta: { label: "Book the Audit", href: "#booking" },
+  secondaryLink: { label: "What we do →", href: "#services" },
+};
+
+// After (same strings, wrapped)
+export const heroConfig: HeroConfig = {
+  eyebrow: { en: "ISSUE 01 / OPERATOR STUDIO" },
+  titleLines: { en: ["Your proxy", "on the", "inside."] },
+  lead: { en: "PROXYZ goes inside your company..." },
+  primaryCta: { label: { en: "Book the Audit" }, href: "#booking" },
+  secondaryLink: { label: { en: "What we do →" }, href: "#services" },
 };
 ```
 
-After:
-
-```ts
-export const heroConfig: HeroConfig = {
-  eyebrow: { en: 'ISSUE 01 / OPERATOR STUDIO' },
-  titleLines: { en: ['Your proxy', 'on the', 'inside.'] },
-  lead: { en: 'PROXYZ goes inside your company, rebuilds how it runs, ...' },
-  primaryCta: { label: { en: 'BOOK THE AUDIT' }, href: '#booking' },
-  secondaryLink: { label: { en: 'WHAT WE DO →' }, href: '#services' },
-};
-```
-
-Note: do NOT add `th:` lines now. They land later, organically, when Thai copy is written.
+Do NOT add `th:` lines now. They land later, organically, when Thai copy is written.
 
 - [ ] **Step 3: Update Hero.tsx imports**
 
@@ -771,19 +769,46 @@ Change to:
 </p>
 ```
 
-- [ ] **Step 5: Typecheck + build**
+- [ ] **Step 5: Update or remove the vestigial render guard**
+
+Existing `Hero.tsx` lines 22-24 contain a guard that returns `null` when the hero has no content:
+
+```tsx
+const hasContent =
+  heroConfig.eyebrow ||
+  heroConfig.titleLines.length > 0 ||
+  heroConfig.lead;
+if (!hasContent) return null;
+```
+
+After Step 1, `heroConfig.eyebrow` is a `Bilingual<string>` object (always truthy), `heroConfig.titleLines` is a `Bilingual<string[]>` (the `.length` access becomes a TypeScript error), and `heroConfig.lead` is also a `Bilingual<string>`. The guard is vestigial — heroConfig is always populated in this codebase. **Delete the guard entirely** as the cleanest fix:
+
+```tsx
+// Remove the const hasContent = ... and the if (!hasContent) return null; block
+```
+
+If you prefer to keep it as a defensive check, rewrite using the resolved values:
+
+```tsx
+const hasContent = eyebrow || titleLines.length > 0 || lead;
+if (!hasContent) return null;
+```
+
+But place this AFTER the `useBilingual` calls in Step 4. The deletion route is recommended.
+
+- [ ] **Step 6: Typecheck + build**
 
 Run: `npm run typecheck && npm run build`
 Expected: both succeed.
 
-- [ ] **Step 6: Manual smoke**
+- [ ] **Step 7: Manual smoke**
 
 Run: `npm run dev`. Visit `/`.
 - In EN mode: hero looks unchanged
 - Click TH: hero text stays in English BUT a small `[EN]` badge appears next to `ISSUE 01 / OPERATOR STUDIO`
 - Click EN: badge disappears
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 git add src/config.ts src/sections/Hero.tsx
@@ -959,7 +984,51 @@ export interface TwoWaysConfig {
 
 - [ ] **Step 2: Update twoWaysConfig values** per the new shape.
 
-- [ ] **Step 3: Refactor TwoWays.tsx** using the per-item child-component pattern from Task 3.3 for `cards.map`. Each `WayCard` row component calls `useBilingual` for its body and link label. The parent computes `showBadge` from `sectionLabel`, `heading`, and the spread of all card bodies + link labels.
+- [ ] **Step 3: Refactor TwoWays.tsx**
+
+Add the standard four imports at the top of `src/sections/TwoWays.tsx`:
+
+```tsx
+import { useLocale } from '../i18n/LocaleContext';
+import { useBilingual } from '../i18n/useBilingual';
+import { anyFallback } from '../i18n/Bilingual';
+import { FallbackBadge } from '../components/FallbackBadge';
+```
+
+In the main `TwoWays` component body:
+
+```tsx
+const { locale } = useLocale();
+const sectionLabel = useBilingual(twoWaysConfig.sectionLabel);
+const heading = useBilingual(twoWaysConfig.heading);
+const showBadge = anyFallback(
+  locale,
+  twoWaysConfig.sectionLabel,
+  twoWaysConfig.heading,
+  ...twoWaysConfig.cards.map((card) => card.body),
+  ...twoWaysConfig.cards.map((card) => card.link.label),
+);
+```
+
+Replace direct uses of `twoWaysConfig.sectionLabel` and `twoWaysConfig.heading` with the local variables. Append `<FallbackBadge show={showBadge} />` to the section label's JSX element.
+
+For the `cards.map(...)` rendering, extract a child component so each card's `useBilingual` call follows the Rules of Hooks:
+
+```tsx
+function WayCardRow({ card }: { card: WayCard }) {
+  const body = useBilingual(card.body);
+  const linkLabel = useBilingual(card.link.label);
+  return (
+    <div className="way-card">
+      <h3>{card.name}</h3>{/* card.name stays English per spec */}
+      <p>{body}</p>
+      <a href={card.link.href}>{linkLabel}</a>
+    </div>
+  );
+}
+```
+
+Then render `twoWaysConfig.cards.map((card) => <WayCardRow key={card.name} card={card} />)`. Preserve any existing class names and styling on the original elements — adapt the skeleton to match the existing JSX shape, only changing the data sources.
 
 - [ ] **Step 4: Typecheck + commit**
 
@@ -1000,7 +1069,54 @@ export interface ServicesConfig {
 
 - [ ] **Step 2: Update servicesConfig values** per the new shape. Keep engagement-mode names plain English.
 
-- [ ] **Step 3: Refactor Services.tsx** using the per-item child component pattern. Each ServiceCard row component calls `useBilingual` for body and cta label. Parent computes `showBadge` from `sectionLabel`, `intro`, and spread of card bodies + cta labels.
+- [ ] **Step 3: Refactor Services.tsx**
+
+Add the standard four imports at the top of `src/sections/Services.tsx`:
+
+```tsx
+import { useLocale } from '../i18n/LocaleContext';
+import { useBilingual } from '../i18n/useBilingual';
+import { anyFallback } from '../i18n/Bilingual';
+import { FallbackBadge } from '../components/FallbackBadge';
+```
+
+In the main `Services` component body:
+
+```tsx
+const { locale } = useLocale();
+const sectionLabel = useBilingual(servicesConfig.sectionLabel);
+const intro = useBilingual(servicesConfig.intro);
+const showBadge = anyFallback(
+  locale,
+  servicesConfig.sectionLabel,
+  servicesConfig.intro,
+  ...servicesConfig.cards.map((card) => card.body),
+  ...servicesConfig.cards.map((card) => card.cta.label),
+);
+```
+
+Replace direct uses of `servicesConfig.sectionLabel` and `servicesConfig.intro` with the local variables. Append `<FallbackBadge show={showBadge} />` to the section label's JSX element.
+
+For `cards.map(...)`, extract a child component for Rules of Hooks compliance:
+
+```tsx
+function ServiceCardRow({ card }: { card: ServiceCard }) {
+  const body = useBilingual(card.body);
+  const ctaLabel = useBilingual(card.cta.label);
+  return (
+    <div className="service-card">
+      {/* card.name, card.label, card.forLabel all stay English per spec */}
+      <span className="service-for">{card.forLabel}</span>
+      <h3 className="service-name">{card.name}</h3>
+      <span className="service-label">{card.label}</span>
+      <p>{body}</p>
+      <a href={card.cta.href}>{ctaLabel}</a>
+    </div>
+  );
+}
+```
+
+Render `servicesConfig.cards.map((card) => <ServiceCardRow key={card.name} card={card} />)`. Preserve existing class names and styling — adapt the skeleton to match the existing JSX shape.
 
 - [ ] **Step 4: Typecheck + commit**
 
