@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { navigationConfig } from '../config';
+import LanguageToggle from './LanguageToggle';
 
 function isExternal(href: string) {
   return /^https?:\/\//i.test(href);
@@ -165,6 +166,7 @@ export default function Nav() {
         {navigationConfig.links.map((item) => (
           <NavLink key={`${item.label}-${item.href}`} href={item.href} label={item.label} />
         ))}
+        <LanguageToggle />
         {navigationConfig.primaryCta && (
           <NavLink
             href={navigationConfig.primaryCta.href}
