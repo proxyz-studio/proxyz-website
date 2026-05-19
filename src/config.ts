@@ -45,13 +45,13 @@ export interface PrinciplesConfig {
 
 export interface WayCard {
   name: string
-  body: string
-  link: NavigationLink
+  body: Bilingual<string>
+  link: { label: Bilingual<string>; href: string }
 }
 
 export interface TwoWaysConfig {
-  sectionLabel: string
-  heading: string
+  sectionLabel: Bilingual<string>
+  heading: Bilingual<string>
   cards: WayCard[]
 }
 
@@ -144,18 +144,18 @@ export const principlesConfig: PrinciplesConfig = {
 }
 
 export const twoWaysConfig: TwoWaysConfig = {
-  sectionLabel: "03 / TWO WAYS TO WORK WITH PROXYZ",
-  heading: "Build for. Build with.",
+  sectionLabel: { en: "03 / TWO WAYS TO WORK WITH PROXYZ" },
+  heading: { en: "Build for. Build with." },
   cards: [
     {
       name: "Build for.",
-      body: "We come in. We install. We stay as your operator.",
-      link: { label: "See the services →", href: "#services" },
+      body: { en: "We come in. We install. We stay as your operator." },
+      link: { label: { en: "See the services →" }, href: "#services" },
     },
     {
       name: "Build with.",
-      body: "We come in. We build alongside. We own a piece.",
-      link: { label: "See the venture arm →", href: "#build-with" },
+      body: { en: "We come in. We build alongside. We own a piece." },
+      link: { label: { en: "See the venture arm →" }, href: "#build-with" },
     },
   ],
 }
