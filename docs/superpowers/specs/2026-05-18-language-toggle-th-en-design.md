@@ -49,7 +49,7 @@ These fields get wrapped in `Bilingual<T>` and accept Thai copy. Thai may be omi
 
 ## Architecture
 
-The implementation breaks into five small units. Each has a single responsibility and can be understood and tested independently.
+The implementation breaks into four small units. Each has one responsibility and can be understood independently. There is no dynamic fallback-tracking context; the fallback signal is computed statically by each section from the same `Bilingual<T>` values it renders. This avoids React render-order bugs and the hidden-cycle pitfalls of a context-based tracker.
 
 ### Unit 1 — `Bilingual<T>` type and the `t()` helper
 
@@ -58,11 +58,31 @@ The implementation breaks into five small units. Each has a single responsibilit
 A type and a pure function. Zero React dependency.
 
 - `Bilingual<T> = { en: T; th?: T }` — the wrapper type used in `config.ts`.
-- `t(value: Bilingual<T>, locale: 'en' | 'th'): { value: T; fellBack: boolean }` — pure function. Returns Thai if present, otherwise English, plus a flag for whether fallback occurred.
+- `t<T>(value: Bilingual<T>, locale: 'en' | 'th'): T` — pure function. Returns `value.th` when present and locale is Thai, otherwise `value.en`. Never returns `undefined`.
+- `isFallback(value: Bilingual<unknown>, locale: 'en' | 'th'): boolean` — pure predicate. Returns `true` if locale is Thai and `value.th` is undefined. Returns `false` otherwise.
+- `anyFallback(locale: 'en' | 'th', ...values: Array<Bilingual<unknown>>): boolean` — convenience helper. Returns `true` if any of the passed values would fall back at the given locale.
 
-**Interface contract:** never returns `undefined`. The `en` field is required by the type, so a missing English value is a compile error.
+**Interface contract:** all three are pure functions. No React. No side effects. The `en` field is required by the type, so a missing English value is a TypeScript compile error.
 
-**Tested by:** unit tests in `src/i18n/__tests__/t.test.ts`. Three cases: English mode, Thai mode with translation present, Thai mode with translation missing.
+**Concrete example for arrays-of-objects:** sections with repeating items (Principles list, Services list, Footer columns) wrap each translatable field on each item, not the array itself:
+
+```ts
+// principlesConfig in src/config.ts
+export const principlesConfig = {
+  heading: { en: 'How we think', th: 'วิธีคิดของเรา' } satisfies Bilingual<string>,
+  items: [
+    {
+      title: { en: 'Inside, not beside', th: 'อยู่ข้างใน ไม่ใช่ข้างเคียง' } satisfies Bilingual<string>,
+      body:  { en: '...', th: '...' } satisfies Bilingual<string>,
+    },
+    // more items...
+  ],
+};
+```
+
+Sections then call `t()` per field per item. The array itself is plain, only the per-item fields are wrapped.
+
+**Tested by:** TypeScript compile-time check (`npm run typecheck`) plus manual smoke (toggle the locale, watch the values flip). No Vitest runtime tests in v1 — see Verification section for why.
 
 ### Unit 2 — `LocaleContext` and `useLocale` hook
 
@@ -71,57 +91,80 @@ A type and a pure function. Zero React dependency.
 A React Context that holds the active locale and a setter.
 
 - Provides `{ locale: 'en' | 'th', setLocale: (next) => void }`.
-- On provider mount: reads `localStorage.getItem('proxyz-locale')`. Defaults to `'en'` if missing, malformed, or set to an unknown value.
-- On `setLocale`: writes the new value to `localStorage` synchronously.
-- Exposes a `useLocale()` hook.
+- On provider mount: reads `localStorage.getItem('proxyz-locale')`. Defaults to `'en'` if missing, malformed, or any unknown value.
+- On `setLocale`: writes new value to `localStorage` synchronously inside a try/catch. localStorage failures are logged via `console.warn` but do not throw.
+- Exposes a `useLocale()` hook. Outside the provider, the hook returns a default `{ locale: 'en', setLocale: () => {} }` so components never crash if accidentally rendered without the provider.
+- The provider is mounted at the App root in `src/App.tsx`, wrapping `<RouterProvider />` (or equivalent).
 
-**Interface contract:** consumers receive a stable object with a guaranteed `'en'` or `'th'` locale and a setter that always succeeds (localStorage write is wrapped in try/catch; failures are logged but do not throw).
-
-**Tested by:** smoke tested via the toggle behavior. No dedicated unit test in v1.
+**Interface contract:** consumers receive a stable object. Locale is guaranteed to be `'en'` or `'th'`. Setter always succeeds (no thrown exceptions).
 
 ### Unit 3 — `useBilingual` hook
 
 **Location:** `src/i18n/useBilingual.ts`
 
-A React hook that wraps `t()` for component use.
+A thin React hook over `t()`.
 
 - Signature: `useBilingual<T>(value: Bilingual<T>): T`
 - Reads locale from `useLocale()`.
-- Returns the resolved value.
-- Calls `useFallbackTracker().report(fellBack)` so the enclosing section can detect whether any field in it fell back to English.
+- Returns `t(value, locale)`.
+- Pure render-time function. No side effects, no refs, no context registration. Safe to call any number of times in any order.
 
-**Interface contract:** drop-in replacement for direct field access. Components change `heroConfig.title` to `useBilingual(heroConfig.title)`.
+**Interface contract:** drop-in replacement for direct field access. Components change `heroConfig.title` to `useBilingual(heroConfig.title)`. No render-order concerns because there is no fallback registration happening behind the scenes.
 
-### Unit 4 — `FallbackTracker` context and badge
+### Unit 4 — `<FallbackBadge />` component
 
-**Location:** `src/i18n/FallbackTracker.tsx`
+**Location:** `src/components/FallbackBadge.tsx`
 
-A section-scoped React Context that collects fallback signals from `useBilingual` calls inside one section, then exposes a flag for the section's eyebrow to render the `[EN]` badge.
+A dumb presentational component. No context, no tracking, no state.
 
-- `<FallbackTrackerProvider>` wraps a section. Children's `useBilingual` calls register their fallback state.
-- A `useFellBack()` hook returns `true` if any wrapped field fell back in the current render.
-- `<FallbackBadge />` renders the small `[EN]` indicator. It checks `useFellBack()` and `useLocale()` itself; it only renders when `locale === 'th'` AND `useFellBack() === true`.
+- Props: `{ show: boolean }`
+- Renders `<span>[EN]</span>` when `show === true`, otherwise renders `null`.
+- Visual: IBM Plex Mono, half the font-size of normal eyebrow text, color `rgba(255,255,255,0.5)`, two non-breaking spaces of left margin to separate from the preceding eyebrow text.
 
-**Visual:** monospace `[EN]`, half the size of normal eyebrow text, color `rgba(255,255,255,0.5)`. Appended to the existing eyebrow string, separated by two spaces.
+**How sections use it:** each section computes its own `show` boolean from the `Bilingual<T>` fields it renders, using `anyFallback()`. Example:
 
-**Interface contract:** sections that opt into fallback reporting wrap themselves in the provider and render `<FallbackBadge />` near their eyebrow. Sections that don't opt in still work, they just never show the badge.
+```tsx
+function HeroSection() {
+  const { locale } = useLocale();
+  const eyebrow = useBilingual(heroConfig.eyebrow);
+  const titleLines = useBilingual(heroConfig.titleLines);
+  const lead = useBilingual(heroConfig.lead);
+  const showBadge = anyFallback(locale, heroConfig.eyebrow, heroConfig.titleLines, heroConfig.lead);
+
+  return (
+    <section>
+      <p className="eyebrow">{eyebrow}<FallbackBadge show={showBadge} /></p>
+      <h1>{titleLines.join(' ')}</h1>
+      <p>{lead}</p>
+    </section>
+  );
+}
+```
+
+**Why this beats the original context-based tracker design:**
+- No React render-order bug (the badge no longer reads sibling state).
+- No `report()` during render, no warnings, no double-renders.
+- Each section's fallback signal is explicit and reviewable in one block of code.
+- The trade-off (each section must list its tracked fields when computing `showBadge`) is acceptable because every section knows its own fields and the list is short.
 
 ### Unit 5 — `<LanguageToggle />` component
 
 **Location:** `src/components/LanguageToggle.tsx`
 
-The actual toggle UI.
+The toggle UI.
 
-- Renders two adjacent `<button>` elements styled to look like `EN | TH` text (with a `|` separator span between them).
-- Each button reads locale from `useLocale()`. The active button gets `color: var(--accent-pink)`; the inactive gets `color: rgba(255,255,255,0.6)`.
-- Each button has `aria-pressed={isActive}`, `aria-label="Switch to English"` / `"Switch to Thai"`, and keyboard support out of the box (native button element).
+- Renders two adjacent `<button>` elements with a `|` separator span between, styled to read as `EN | TH`.
+- Each button reads locale from `useLocale()`. Active button: `color: var(--accent-pink)`. Inactive: `color: rgba(255,255,255,0.6)`.
+- Each button has `aria-pressed={isActive}` and `aria-label="Switch to English"` / `"Switch to Thai"`.
 - Click handler calls `setLocale('en' | 'th')`.
-- Visual: IBM Plex Mono, same font-size as nav links. Buttons have no background, no border, no padding beyond their text. Cursor is `pointer`.
-- Hover state: inactive letter brightens to `rgba(255,255,255,0.85)`.
+- Visual: IBM Plex Mono, same font-size as nav links. Buttons have no background, no border, no padding beyond their text. Cursor: `pointer`.
+- Hover state on the inactive letter: brightens to `rgba(255,255,255,0.85)`.
 
-**Placement in `Nav.tsx`:** inserted as the last child of the nav's right cluster, immediately before the `LOGIN` pill. Adds a small horizontal margin to separate visually.
+**Route gating:** the toggle renders only on the homepage in v1. Implementation: the toggle reads `useLocation().pathname` and returns `null` unless `pathname === '/'`. This is robust enough for the current `react-router-dom@^7` setup; trailing-slash and query/hash variants normalize correctly under React Router 7 (`pathname` excludes search and hash).
 
-**Mobile behavior:** when the nav collapses to a hamburger / mobile menu, the toggle sits at the top of the opened menu, same position relative to LOGIN. Same component, just rendered inside the mobile menu container.
+**Placement in `Nav.tsx`:** inserted into the existing right-cluster of nav links, immediately before the `LOGIN` pill. The toggle adds a small left margin (16px) to separate from the preceding nav link.
+
+**Mobile behavior:** the current site has no hamburger menu. At `≤480px` the nav-link strip is hidden via `display: none !important` on `.hero-nav-links a:not(.hero-nav-cta)` (see `src/index.css` lines 392-394). For v1, the `<LanguageToggle />` is NOT a nav link in that sense; it is rendered as a peer of the `LOGIN` pill and stays visible at mobile, slightly smaller (font-size matches the mobile LOGIN pill). No hamburger work in scope.
 
 ## Translation workflow
 
@@ -133,15 +176,17 @@ The first-pass workflow is direct editing of `src/config.ts`:
 
 ## Edge cases and explicit decisions
 
-- **Toggle on non-homepage routes** (e.g., `/studio-os`, `/partners/*`, `/media`): in v1, the toggle is rendered **only on the homepage route (`/`)**. The `<LanguageToggle />` component checks `useLocation().pathname === '/'` before rendering, returning `null` otherwise. This communicates clearly: "Thai is available here." When more pages get translations, lift the toggle to global nav.
+- **Toggle on non-homepage routes** (e.g., `/portal`, `/partners/*`, `/media`): in v1, the toggle is rendered **only on the homepage route (`/`)**. The `<LanguageToggle />` component checks `useLocation().pathname === '/'` before rendering, returning `null` otherwise. This communicates clearly: "Thai is available here." When more pages get translations, lift the toggle to global nav. (Note: the existing Studio OS route is at `/portal`, not `/studio-os`; verified via `src/App.tsx`.)
+- **Initial commit, Thai mode**: on the first commit that ships the toggle, no Thai copy has been written yet, so toggling to Thai will render the entire homepage with `[EN]` badges visible. This is intentional. The toggle's discoverability matters more than the appearance of completeness on day one. The badges become a useful progress indicator as Thai copy is added section by section.
 - **Thai text length differs from English** (Thai often runs longer per equivalent thought): the design relies on existing responsive type sizing in `index.css`. No per-locale layout overrides in v1. If a specific section visibly breaks, fix that section's layout case by case rather than building generic locale-aware spacing.
 - **Locale persistence across browsers / devices**: not in scope. localStorage is per-browser. If a user clears storage or switches devices, they get English again until they re-toggle.
 - **Toggling in the middle of a session**: instant. No fade, no loading state. React re-renders with the new locale and content swaps.
 - **Server-side rendering / static prerender**: the site is a Vite SPA, all rendering is client-side. No SSR considerations.
+- **`navigationConfig` source-string format**: nav labels in `config.ts` are stored as Title Case strings (e.g., `'What we do'`); the uppercase rendering happens via CSS `text-transform: uppercase` in `Nav.tsx`. Do not change the source format — leave the strings Title Case and let CSS handle the visual case.
 
 ## Out of scope (explicit non-goals for v1)
 
-- Other pages (`/studio-os`, `/partners/*`, `/media`, `/the-audit`, `/preview/*`)
+- Other pages (`/portal`, `/partners/*`, `/media`, `/the-audit`, `/preview/*`)
 - Auto-detection of Thai browser locale
 - Separate Thai URL (`/th` route)
 - SEO hreflang tags or meta-language tags
@@ -149,33 +194,47 @@ The first-pass workflow is direct editing of `src/config.ts`:
 - Pluralization rules, number formatting, currency formatting, date formatting
 - Right-to-left language support
 - Multi-language support beyond English and Thai
+- Vitest / Jest / runtime test framework setup
+- Hamburger mobile menu
+
+## Prerequisites
+
+Before implementation begins, add this script to `package.json` if it does not already exist:
+
+```json
+"scripts": {
+  "typecheck": "tsc --noEmit -p ."
+}
+```
+
+This is the command used in the Verification section below. The existing `build` script (`tsc -b && vite build`) also catches type errors, but a standalone `typecheck` script keeps the verification step fast and explicit.
 
 ## Verification
 
 ### Automated
 
-- Unit tests on `t()` helper at `src/i18n/__tests__/t.test.ts`:
-  - Returns `value.en` when `locale === 'en'`, `fellBack === false`
-  - Returns `value.th` when `locale === 'th'` AND `value.th` is defined, `fellBack === false`
-  - Returns `value.en` when `locale === 'th'` AND `value.th` is undefined, `fellBack === true`
-  - Never returns `undefined`
-- TypeScript compile check (`npx tsc --noEmit -p .`) catches missing required `en` fields and missing imports.
+- TypeScript compile check via `npm run typecheck`. This catches missing required `en` fields, malformed `Bilingual<T>` usage, missing imports, and type errors in the new i18n module. It is the primary correctness check for v1.
+- `npm run lint` to confirm no ESLint regressions in the new files.
+- `npm run build` to confirm the full production build succeeds.
+
+**Vitest / runtime unit tests are out of scope for v1.** Reasoning: the `t()` helper logic is a single ternary expression. The `useBilingual` hook is a thin wrapper around `t()`. Setting up Vitest, test-runner config, and CI plumbing has higher cost than the test coverage value at this stage. If the i18n module grows beyond this spec (pluralization, interpolation, more locales), revisit and add Vitest as a follow-up.
 
 ### Manual smoke (local Vite preview, before deploy)
 
-- Toggle EN → TH → EN, watch homepage sections swap content each time
-- Reload after picking Thai; verify locale persists
-- Open in incognito window; verify default is English
-- Resize to mobile breakpoint; verify toggle exists in mobile menu and works
-- Confirm nav labels, marquee words, BUILD FOR / WITH labels stay English in both modes
-- Confirm `[EN]` badges appear in Thai mode for un-translated sections and disappear once Thai is added
-- Confirm toggle is hidden on non-homepage routes (Studio OS, Partners, Media)
+- Toggle EN → TH → EN, watch each homepage section swap content
+- Reload after picking Thai, verify locale persists across reload
+- Open in incognito window, verify default is English on first visit
+- Resize to mobile breakpoint (≤480px), verify toggle still visible next to LOGIN
+- Confirm nav labels, marquee words, BUILD FOR / WITH labels stay English in both modes (regression check on always-English elements)
+- Confirm `[EN]` badges appear in Thai mode for un-translated sections, disappear once Thai is added for those sections
+- Confirm toggle is hidden on non-homepage routes: navigate to `/portal`, `/partners`, `/media`, verify toggle returns `null`
 
 ### Post-deploy smoke (proxyz.studio)
 
-- Fresh browser hits `proxyz.studio`; toggle visible in nav
-- Click TH; content swaps with no page reload, no URL change
-- Page source contains both the structure and any Thai text that has been added
+- Fresh browser hits `proxyz.studio`, toggle visible in nav
+- Click TH, content swaps with no page reload, no URL change
+- View page source, confirm both English and Thai strings present in the bundle (Vite inlines them at build time)
+- Navigate to `/portal`, confirm toggle does not render
 
 ## Risks and known unknowns
 
