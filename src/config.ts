@@ -85,9 +85,9 @@ export interface StudioOSConfig {
 }
 
 export interface BookingConfig {
-  sectionLabel: string
-  heading: string
-  body: string
+  sectionLabel: Bilingual<string>
+  heading: Bilingual<string>
+  body: Bilingual<string>
   calLink: string
 }
 
@@ -224,9 +224,9 @@ export const studioOSConfig: StudioOSConfig = {
 }
 
 export const bookingConfig: BookingConfig = {
-  sectionLabel: "07 / BOOK YOUR AUDIT",
-  heading: "60 minutes. One page memo. Yours to keep.",
-  body: "Every PROXYZ engagement starts here. Pick a time below.",
+  sectionLabel: { en: "07 / BOOK YOUR AUDIT" },
+  heading: { en: "60 minutes. One page memo. Yours to keep." },
+  body: { en: "Every PROXYZ engagement starts here. Pick a time below." },
   calLink: "proxyz/audit",
 }
 
