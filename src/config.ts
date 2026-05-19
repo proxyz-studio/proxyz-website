@@ -34,12 +34,12 @@ export interface DiagnosisConfig {
 
 export interface PrincipleItem {
   number: string
-  text: string
+  text: Bilingual<string>
 }
 
 export interface PrinciplesConfig {
-  sectionLabel: string
-  heading: string
+  sectionLabel: Bilingual<string>
+  heading: Bilingual<string>
   items: PrincipleItem[]
 }
 
@@ -134,12 +134,12 @@ export const diagnosisConfig: DiagnosisConfig = {
 }
 
 export const principlesConfig: PrinciplesConfig = {
-  sectionLabel: "02 / WHAT WE BELIEVE",
-  heading: "Three principles.",
+  sectionLabel: { en: "02 / WHAT WE BELIEVE" },
+  heading: { en: "Three principles." },
   items: [
-    { number: "01.", text: "Automate first. Agentic where it earns it." },
-    { number: "02.", text: "The system runs the company. Not the founder." },
-    { number: "03.", text: "Thailand is not a market. It's an ecosystem." },
+    { number: "01.", text: { en: "Automate first. Agentic where it earns it." } },
+    { number: "02.", text: { en: "The system runs the company. Not the founder." } },
+    { number: "03.", text: { en: "Thailand is not a market. It's an ecosystem." } },
   ],
 }
 
