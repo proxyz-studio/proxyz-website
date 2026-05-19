@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { navigationConfig } from '../config';
 import LanguageToggle from './LanguageToggle';
@@ -8,6 +9,68 @@ function isExternal(href: string) {
 
 function isRoute(href: string) {
   return href.startsWith('/') && !href.startsWith('/#');
+}
+
+function BurgerIcon() {
+  return (
+    <svg width="22" height="14" viewBox="0 0 22 14" aria-hidden="true">
+      <rect x="0" y="0" width="22" height="1.5" fill="currentColor" />
+      <rect x="0" y="6.25" width="22" height="1.5" fill="currentColor" />
+      <rect x="0" y="12.5" width="22" height="1.5" fill="currentColor" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+      <line x1="3" y1="3" x2="17" y2="17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="17" y1="3" x2="3" y2="17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function MobileNavLink({
+  href,
+  label,
+  onNavigate,
+}: {
+  href: string;
+  label: string;
+  onNavigate: () => void;
+}) {
+  const style = {
+    fontSize: '20px',
+    fontWeight: 400 as const,
+    color: '#fff',
+    textTransform: 'uppercase' as const,
+    textDecoration: 'none',
+    letterSpacing: '0.08em',
+    padding: '20px 0',
+    borderBottom: '1px solid rgba(255,255,255,0.08)',
+    display: 'block',
+    fontFamily: "'IBM Plex Mono', monospace",
+  };
+
+  if (isExternal(href)) {
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" onClick={onNavigate} style={style}>
+        {label}
+      </a>
+    );
+  }
+  if (isRoute(href)) {
+    return (
+      <Link to={href} onClick={onNavigate} style={style}>
+        {label}
+      </Link>
+    );
+  }
+  return (
+    <a href={href} onClick={onNavigate} style={style}>
+      {label}
+    </a>
+  );
 }
 
 function NavLink({
@@ -109,72 +172,170 @@ function NavLink({
 export default function Nav() {
   const { pathname } = useLocation();
   const homeHref = pathname === '/' ? '#hero' : '/';
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMobileOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [mobileOpen]);
+
+  const closeMobile = () => setMobileOpen(false);
 
   return (
-    <nav
-      className="hero-nav"
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100%',
-        zIndex: 50,
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '20px 40px',
-        background: 'rgba(0,0,0,0.72)',
-        backdropFilter: 'blur(10px)',
-        WebkitBackdropFilter: 'blur(10px)',
-        borderBottom: '1px solid rgba(255,255,255,0.08)',
-        fontFamily: "'IBM Plex Mono', monospace",
-        boxSizing: 'border-box',
-      }}
-    >
-      {isRoute(homeHref) ? (
-        <Link
-          to={homeHref}
-          className="hero-nav-brand"
-          aria-label={navigationConfig.brandName}
-          style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}
-        >
-          <img
-            src="/proxyz-tricolor.svg"
-            alt={navigationConfig.brandName}
-            style={{ height: '42px', width: 'auto', display: 'block' }}
-          />
-        </Link>
-      ) : (
-        <a
-          href={homeHref}
-          className="hero-nav-brand"
-          aria-label={navigationConfig.brandName}
-          style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}
-        >
-          <img
-            src="/proxyz-tricolor.svg"
-            alt={navigationConfig.brandName}
-            style={{ height: '42px', width: 'auto', display: 'block' }}
-          />
-        </a>
-      )}
-
-      <div
-        className="hero-nav-links"
-        style={{ display: 'flex', gap: '24px', alignItems: 'center' }}
+    <>
+      <nav
+        className="hero-nav"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          zIndex: 50,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '20px 40px',
+          background: 'rgba(0,0,0,0.72)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          fontFamily: "'IBM Plex Mono', monospace",
+          boxSizing: 'border-box',
+        }}
       >
-        {navigationConfig.links.map((item) => (
-          <NavLink key={`${item.label}-${item.href}`} href={item.href} label={item.label} />
-        ))}
-        <LanguageToggle />
-        {navigationConfig.primaryCta && (
-          <NavLink
-            href={navigationConfig.primaryCta.href}
-            label={navigationConfig.primaryCta.label}
-            variant="cta"
-          />
+        {isRoute(homeHref) ? (
+          <Link
+            to={homeHref}
+            className="hero-nav-brand"
+            aria-label={navigationConfig.brandName}
+            style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}
+          >
+            <img
+              src="/proxyz-tricolor.svg"
+              alt={navigationConfig.brandName}
+              style={{ height: '42px', width: 'auto', display: 'block' }}
+            />
+          </Link>
+        ) : (
+          <a
+            href={homeHref}
+            className="hero-nav-brand"
+            aria-label={navigationConfig.brandName}
+            style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}
+          >
+            <img
+              src="/proxyz-tricolor.svg"
+              alt={navigationConfig.brandName}
+              style={{ height: '42px', width: 'auto', display: 'block' }}
+            />
+          </a>
         )}
-      </div>
-    </nav>
+
+        <div
+          className="hero-nav-links"
+          style={{ display: 'flex', gap: '24px', alignItems: 'center' }}
+        >
+          {navigationConfig.links.map((item) => (
+            <NavLink key={`${item.label}-${item.href}`} href={item.href} label={item.label} />
+          ))}
+          <LanguageToggle />
+          {navigationConfig.primaryCta && (
+            <NavLink
+              href={navigationConfig.primaryCta.href}
+              label={navigationConfig.primaryCta.label}
+              variant="cta"
+            />
+          )}
+        </div>
+
+        <div
+          className="hero-nav-mobile-actions"
+          style={{ display: 'none', alignItems: 'center', gap: '12px' }}
+        >
+          {navigationConfig.primaryCta && (
+            <NavLink
+              href={navigationConfig.primaryCta.href}
+              label={navigationConfig.primaryCta.label}
+              variant="cta"
+            />
+          )}
+          <button
+            type="button"
+            className="hero-nav-toggle"
+            aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={mobileOpen}
+            aria-controls="hero-nav-mobile-panel"
+            onClick={() => setMobileOpen((v) => !v)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              padding: '8px',
+              margin: 0,
+              cursor: 'pointer',
+              color: '#fff',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minWidth: '40px',
+              minHeight: '40px',
+            }}
+          >
+            {mobileOpen ? <CloseIcon /> : <BurgerIcon />}
+          </button>
+        </div>
+      </nav>
+
+      {mobileOpen && (
+        <div
+          id="hero-nav-mobile-panel"
+          className="hero-nav-mobile-panel"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Site navigation"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            paddingTop: '72px',
+            background: 'rgba(0,0,0,0.97)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            zIndex: 49,
+            fontFamily: "'IBM Plex Mono', monospace",
+            overflowY: 'auto',
+            animation: 'hero-nav-panel-fade 0.18s ease-out',
+          }}
+        >
+          <div style={{ padding: '8px 24px 40px' }}>
+            {navigationConfig.links.map((item) => (
+              <MobileNavLink
+                key={`m-${item.label}-${item.href}`}
+                href={item.href}
+                label={item.label}
+                onNavigate={closeMobile}
+              />
+            ))}
+            <div style={{ paddingTop: '28px' }}>
+              <LanguageToggle />
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
