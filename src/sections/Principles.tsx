@@ -2,11 +2,64 @@ import Reveal from '../components/Reveal';
 import { Marginalia } from '../components/Editorial';
 import { EdgeRule } from '../components/Glow';
 import PictoIcon from '../components/PictoIcon';
-import { principlesConfig } from '../config';
+import { principlesConfig, type PrincipleItem } from '../config';
+import { useLocale } from '../i18n/LocaleContext';
+import { useBilingual } from '../i18n/useBilingual';
+import { anyFallback } from '../i18n/Bilingual';
+import { FallbackBadge } from '../components/FallbackBadge';
 
 const principleIcons = ['spark', 'studioOs', 'orbit'] as const;
 
+function PrincipleRow({ item, index }: { item: PrincipleItem; index: number }) {
+  const text = useBilingual(item.text);
+  return (
+    <div
+      style={{
+        borderTop: '1px solid rgba(255,255,255,0.3)',
+        paddingTop: '24px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px',
+      }}
+    >
+      <PictoIcon name={principleIcons[index] ?? 'principle'} size={36} stroke="#fff" />
+      <p
+        style={{
+          fontSize: '12px',
+          fontWeight: 400,
+          letterSpacing: '0.08em',
+          color: 'var(--accent-pink)',
+          margin: 0,
+        }}
+      >
+        {item.number}
+      </p>
+      <p
+        style={{
+          fontSize: '18px',
+          fontWeight: 400,
+          lineHeight: 1.45,
+          margin: 0,
+          textWrap: 'balance',
+        }}
+      >
+        {text}
+      </p>
+    </div>
+  );
+}
+
 export default function Principles() {
+  const { locale } = useLocale();
+  const sectionLabel = useBilingual(principlesConfig.sectionLabel);
+  const heading = useBilingual(principlesConfig.heading);
+  const showBadge = anyFallback(
+    locale,
+    principlesConfig.sectionLabel,
+    principlesConfig.heading,
+    ...principlesConfig.items.map((item) => item.text),
+  );
+
   if (principlesConfig.items.length === 0) {
     return null;
   }
@@ -52,7 +105,8 @@ export default function Principles() {
               margin: '0 0 64px 0',
             }}
           >
-            {principlesConfig.sectionLabel}
+            {sectionLabel}
+            <FallbackBadge show={showBadge} />
           </p>
         </Reveal>
 
@@ -67,7 +121,7 @@ export default function Principles() {
               margin: '0 0 80px 0',
             }}
           >
-            {principlesConfig.heading}
+            {heading}
           </h2>
         </Reveal>
 
@@ -83,39 +137,7 @@ export default function Principles() {
         >
           {principlesConfig.items.map((item, index) => (
             <Reveal key={index} delay={140 + index * 80} as="li">
-              <div
-                style={{
-                  borderTop: '1px solid rgba(255,255,255,0.3)',
-                  paddingTop: '24px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '20px',
-                }}
-              >
-                <PictoIcon name={principleIcons[index] ?? 'principle'} size={36} stroke="#fff" />
-                <p
-                  style={{
-                    fontSize: '12px',
-                    fontWeight: 400,
-                    letterSpacing: '0.08em',
-                    color: 'var(--accent-pink)',
-                    margin: 0,
-                  }}
-                >
-                  {item.number}
-                </p>
-                <p
-                  style={{
-                    fontSize: '18px',
-                    fontWeight: 400,
-                    lineHeight: 1.45,
-                    margin: 0,
-                    textWrap: 'balance',
-                  }}
-                >
-                  {item.text}
-                </p>
-              </div>
+              <PrincipleRow item={item} index={index} />
             </Reveal>
           ))}
         </ol>

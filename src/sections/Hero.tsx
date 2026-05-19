@@ -4,7 +4,11 @@ import AsciiCanvas from '../components/AsciiCanvas';
 import Nav from '../components/Nav';
 import Reveal from '../components/Reveal';
 import { MagneticAnchor } from '../components/Spatial';
-import { heroConfig, navigationConfig } from '../config';
+import { heroConfig } from '../config';
+import { useLocale } from '../i18n/LocaleContext';
+import { useBilingual } from '../i18n/useBilingual';
+import { anyFallback } from '../i18n/Bilingual';
+import { FallbackBadge } from '../components/FallbackBadge';
 
 export default function Hero() {
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -16,16 +20,20 @@ export default function Hero() {
   const titleOpacity = useTransform(scrollYProgress, [0, 0.75], [1, 0]);
   const leadOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
-  const hasHeroContent =
-    navigationConfig.brandName ||
-    navigationConfig.links.length > 0 ||
-    heroConfig.eyebrow ||
-    heroConfig.titleLines.length > 0 ||
-    heroConfig.lead;
-
-  if (!hasHeroContent) {
-    return null;
-  }
+  const { locale } = useLocale();
+  const eyebrow = useBilingual(heroConfig.eyebrow);
+  const titleLines = useBilingual(heroConfig.titleLines);
+  const lead = useBilingual(heroConfig.lead);
+  const primaryCtaLabel = useBilingual(heroConfig.primaryCta.label);
+  const secondaryLabel = useBilingual(heroConfig.secondaryLink.label);
+  const showBadge = anyFallback(
+    locale,
+    heroConfig.eyebrow,
+    heroConfig.titleLines,
+    heroConfig.lead,
+    heroConfig.primaryCta.label,
+    heroConfig.secondaryLink.label,
+  );
 
   return (
     <section
@@ -75,7 +83,8 @@ export default function Hero() {
               margin: '0 0 22px 0',
             }}
           >
-            {heroConfig.eyebrow}
+            {eyebrow}
+            <FallbackBadge show={showBadge} />
           </p>
           </Reveal>
           <Reveal delay={80}>
@@ -106,7 +115,7 @@ export default function Hero() {
               WebkitTextFillColor: 'transparent',
             }}
           >
-            {heroConfig.titleLines.map((line, index) => {
+            {titleLines.map((line, index) => {
               const match = /^(.*?)\b(proxy)\b(.*)$/i.exec(line);
               return (
                 <span key={`${line}-${index}`}>
@@ -137,7 +146,7 @@ export default function Hero() {
                   ) : (
                     line
                   )}
-                  {index < heroConfig.titleLines.length - 1 && <br />}
+                  {index < titleLines.length - 1 && <br />}
                 </span>
               );
             })}
@@ -157,7 +166,7 @@ export default function Hero() {
               maxWidth: '52ch',
             }}
           >
-            {heroConfig.lead}
+            {lead}
           </motion.p>
           </Reveal>
 
@@ -186,7 +195,7 @@ export default function Hero() {
                 borderRadius: '999px',
               }}
             >
-              {heroConfig.primaryCta.label}
+              {primaryCtaLabel}
             </MagneticAnchor>
             <a
               href={heroConfig.secondaryLink.href}
@@ -208,7 +217,7 @@ export default function Hero() {
                 (e.target as HTMLElement).style.borderBottomColor = 'rgba(255,255,255,0.4)';
               }}
             >
-              {heroConfig.secondaryLink.label}
+              {secondaryLabel}
             </a>
           </div>
           </Reveal>

@@ -3,6 +3,10 @@ import { Marginalia, PullQuote } from '../components/Editorial';
 import { TiltCard } from '../components/Spatial';
 import PictoIcon from '../components/PictoIcon';
 import { servicesConfig, type ServiceCard } from '../config';
+import { useLocale } from '../i18n/LocaleContext';
+import { useBilingual } from '../i18n/useBilingual';
+import { anyFallback } from '../i18n/Bilingual';
+import { FallbackBadge } from '../components/FallbackBadge';
 
 const serviceIcons = ['audit', 'blueprint', 'install', 'partnership'] as const;
 
@@ -15,6 +19,9 @@ function ServiceColumn({
   isLast: boolean;
   iconName: (typeof serviceIcons)[number];
 }) {
+  const body = useBilingual(card.body);
+  const ctaLabel = useBilingual(card.cta.label);
+
   return (
     <TiltCard
       maxTiltX={3}
@@ -81,7 +88,7 @@ function ServiceColumn({
             margin: '0 0 32px 0',
           }}
         >
-          {card.body}
+          {body}
         </p>
 
         <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
@@ -106,7 +113,7 @@ function ServiceColumn({
               (e.target as HTMLElement).style.borderBottomWidth = '1px';
             }}
           >
-            {card.cta.label}
+            {ctaLabel}
           </a>
         </div>
     </TiltCard>
@@ -114,6 +121,17 @@ function ServiceColumn({
 }
 
 export default function Services() {
+  const { locale } = useLocale();
+  const sectionLabel = useBilingual(servicesConfig.sectionLabel);
+  const intro = useBilingual(servicesConfig.intro);
+  const showBadge = anyFallback(
+    locale,
+    servicesConfig.sectionLabel,
+    servicesConfig.intro,
+    ...servicesConfig.cards.map((card) => card.body),
+    ...servicesConfig.cards.map((card) => card.cta.label),
+  );
+
   if (servicesConfig.cards.length === 0) {
     return null;
   }
@@ -157,7 +175,8 @@ export default function Services() {
               margin: '0 0 32px 0',
             }}
           >
-            {servicesConfig.sectionLabel}
+            {sectionLabel}
+            <FallbackBadge show={showBadge} />
           </p>
         </Reveal>
 
@@ -173,7 +192,7 @@ export default function Services() {
               maxWidth: '64ch',
             }}
           >
-            {servicesConfig.intro}
+            {intro}
           </p>
         </Reveal>
 

@@ -1,6 +1,15 @@
 import { footerConfig } from '../config';
+import { useLocale } from '../i18n/LocaleContext';
+import { useBilingual } from '../i18n/useBilingual';
+import { anyFallback } from '../i18n/Bilingual';
+import { FallbackBadge } from '../components/FallbackBadge';
 
 export default function Footer() {
+  const { locale } = useLocale();
+  const left = useBilingual(footerConfig.left);
+  const right = useBilingual(footerConfig.right);
+  const showBadge = anyFallback(locale, footerConfig.left, footerConfig.right);
+
   return (
     <footer
       className="footer-grid"
@@ -19,7 +28,10 @@ export default function Footer() {
         letterSpacing: '0.05em',
       }}
     >
-      <span style={{ textTransform: 'uppercase' }}>{footerConfig.left}</span>
+      <span style={{ textTransform: 'uppercase' }}>
+        {left}
+        <FallbackBadge show={showBadge} />
+      </span>
 
       <div style={{ display: 'flex', gap: '24px', justifySelf: 'center' }}>
         <a
@@ -48,7 +60,7 @@ export default function Footer() {
       </div>
 
       <span style={{ justifySelf: 'end', textTransform: 'uppercase' }}>
-        {footerConfig.right}
+        {right}
       </span>
     </footer>
   );

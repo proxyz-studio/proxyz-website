@@ -2,13 +2,28 @@ import Reveal from '../components/Reveal';
 import { Marginalia, DropCap } from '../components/Editorial';
 import PictoIcon from '../components/PictoIcon';
 import { studioOSConfig } from '../config';
+import { useLocale } from '../i18n/LocaleContext';
+import { useBilingual } from '../i18n/useBilingual';
+import { anyFallback } from '../i18n/Bilingual';
+import { FallbackBadge } from '../components/FallbackBadge';
 
 const listIcons = ['meetings', 'principle', 'scorecard', 'install', 'spark'] as const;
 
 export default function StudioOS() {
-  if (!studioOSConfig.heading) {
-    return null;
-  }
+  const { locale } = useLocale();
+  const sectionLabel = useBilingual(studioOSConfig.sectionLabel);
+  const heading = useBilingual(studioOSConfig.heading);
+  const lead = useBilingual(studioOSConfig.lead);
+  const list = useBilingual(studioOSConfig.list);
+  const closing = useBilingual(studioOSConfig.closing);
+  const showBadge = anyFallback(
+    locale,
+    studioOSConfig.sectionLabel,
+    studioOSConfig.heading,
+    studioOSConfig.lead,
+    studioOSConfig.list,
+    studioOSConfig.closing,
+  );
 
   return (
     <section
@@ -51,7 +66,8 @@ export default function StudioOS() {
                 margin: 0,
               }}
             >
-              {studioOSConfig.sectionLabel}
+              {sectionLabel}
+              <FallbackBadge show={showBadge} />
             </p>
           </div>
         </Reveal>
@@ -69,13 +85,13 @@ export default function StudioOS() {
               textWrap: 'balance',
             }}
           >
-            {studioOSConfig.heading}
+            {heading}
           </h2>
         </Reveal>
 
         <Reveal delay={140}>
           <div style={{ margin: '0 0 48px 0', maxWidth: '64ch' }}>
-            <DropCap color="#000">{studioOSConfig.lead}</DropCap>
+            <DropCap color="#000">{lead}</DropCap>
           </div>
         </Reveal>
 
@@ -87,7 +103,7 @@ export default function StudioOS() {
             borderTop: '1px solid #000',
           }}
         >
-          {studioOSConfig.list.map((item, index) => (
+          {list.map((item, index) => (
             <Reveal key={index} delay={220 + index * 70} as="li">
               <div
                 style={{
@@ -125,7 +141,7 @@ export default function StudioOS() {
               color: 'rgba(0,0,0,0.7)',
             }}
           >
-            {studioOSConfig.closing}
+            {closing}
           </p>
         </Reveal>
       </div>

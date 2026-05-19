@@ -2,11 +2,89 @@ import Reveal from '../components/Reveal';
 import { Marginalia } from '../components/Editorial';
 import { TiltCard } from '../components/Spatial';
 import PictoIcon from '../components/PictoIcon';
-import { twoWaysConfig } from '../config';
+import { twoWaysConfig, type WayCard } from '../config';
+import { useLocale } from '../i18n/LocaleContext';
+import { useBilingual } from '../i18n/useBilingual';
+import { anyFallback } from '../i18n/Bilingual';
+import { FallbackBadge } from '../components/FallbackBadge';
 
 const cardIcons = ['install', 'partnership'] as const;
 
+function WayCardRow({ card, index }: { card: WayCard; index: number }) {
+  const body = useBilingual(card.body);
+  const linkLabel = useBilingual(card.link.label);
+  return (
+    <TiltCard
+      style={{
+        borderTop: '1px solid #000',
+        paddingTop: '32px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '24px',
+      }}
+    >
+        <PictoIcon name={cardIcons[index] ?? 'arrow'} size={40} stroke="#000" />
+        <h3
+          style={{
+            fontSize: '26px',
+            fontWeight: 700,
+            lineHeight: 1.2,
+            letterSpacing: '-0.01em',
+            color: 'var(--accent-blue)',
+            margin: 0,
+          }}
+        >
+          {card.name}
+        </h3>
+        <p
+          style={{
+            fontSize: '15px',
+            fontWeight: 400,
+            lineHeight: 1.6,
+            margin: 0,
+            maxWidth: '40ch',
+          }}
+        >
+          {body}
+        </p>
+        <a
+          href={card.link.href}
+          style={{
+            fontSize: '12px',
+            fontWeight: 400,
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            color: '#000',
+            textDecoration: 'none',
+            borderBottom: '1px solid #000',
+            paddingBottom: '2px',
+            alignSelf: 'flex-start',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLElement).style.opacity = '0.6';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLElement).style.opacity = '1';
+          }}
+        >
+          {linkLabel}
+        </a>
+    </TiltCard>
+  );
+}
+
 export default function TwoWays() {
+  const { locale } = useLocale();
+  const sectionLabel = useBilingual(twoWaysConfig.sectionLabel);
+  const heading = useBilingual(twoWaysConfig.heading);
+  const showBadge = anyFallback(
+    locale,
+    twoWaysConfig.sectionLabel,
+    twoWaysConfig.heading,
+    ...twoWaysConfig.cards.map((card) => card.body),
+    ...twoWaysConfig.cards.map((card) => card.link.label),
+  );
+
   if (twoWaysConfig.cards.length === 0) {
     return null;
   }
@@ -50,7 +128,8 @@ export default function TwoWays() {
               margin: '0 0 64px 0',
             }}
           >
-            {twoWaysConfig.sectionLabel}
+            {sectionLabel}
+            <FallbackBadge show={showBadge} />
           </p>
         </Reveal>
 
@@ -65,7 +144,7 @@ export default function TwoWays() {
               margin: '0 0 80px 0',
             }}
           >
-            {twoWaysConfig.heading}
+            {heading}
           </h2>
         </Reveal>
 
@@ -78,62 +157,7 @@ export default function TwoWays() {
         >
           {twoWaysConfig.cards.map((card, index) => (
             <Reveal key={index} delay={140 + index * 100}>
-              <TiltCard
-                style={{
-                  borderTop: '1px solid #000',
-                  paddingTop: '32px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '24px',
-                }}
-              >
-                  <PictoIcon name={cardIcons[index] ?? 'arrow'} size={40} stroke="#000" />
-                  <h3
-                    style={{
-                      fontSize: '26px',
-                      fontWeight: 700,
-                      lineHeight: 1.2,
-                      letterSpacing: '-0.01em',
-                      color: 'var(--accent-blue)',
-                      margin: 0,
-                    }}
-                  >
-                    {card.name}
-                  </h3>
-                  <p
-                    style={{
-                      fontSize: '15px',
-                      fontWeight: 400,
-                      lineHeight: 1.6,
-                      margin: 0,
-                      maxWidth: '40ch',
-                    }}
-                  >
-                    {card.body}
-                  </p>
-                  <a
-                    href={card.link.href}
-                    style={{
-                      fontSize: '12px',
-                      fontWeight: 400,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.08em',
-                      color: '#000',
-                      textDecoration: 'none',
-                      borderBottom: '1px solid #000',
-                      paddingBottom: '2px',
-                      alignSelf: 'flex-start',
-                    }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLElement).style.opacity = '0.6';
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLElement).style.opacity = '1';
-                    }}
-                  >
-                    {card.link.label}
-                  </a>
-              </TiltCard>
+              <WayCardRow card={card} index={index} />
             </Reveal>
           ))}
         </div>

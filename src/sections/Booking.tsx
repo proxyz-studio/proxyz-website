@@ -3,11 +3,22 @@ import { Marginalia } from '../components/Editorial';
 import { HeadlineHalo } from '../components/Glow';
 import PictoIcon from '../components/PictoIcon';
 import { bookingConfig } from '../config';
+import { useLocale } from '../i18n/LocaleContext';
+import { useBilingual } from '../i18n/useBilingual';
+import { anyFallback } from '../i18n/Bilingual';
+import { FallbackBadge } from '../components/FallbackBadge';
 
 export default function Booking() {
-  if (!bookingConfig.heading) {
-    return null;
-  }
+  const { locale } = useLocale();
+  const sectionLabel = useBilingual(bookingConfig.sectionLabel);
+  const heading = useBilingual(bookingConfig.heading);
+  const body = useBilingual(bookingConfig.body);
+  const showBadge = anyFallback(
+    locale,
+    bookingConfig.sectionLabel,
+    bookingConfig.heading,
+    bookingConfig.body,
+  );
 
   return (
     <section
@@ -51,7 +62,8 @@ export default function Booking() {
                 margin: 0,
               }}
             >
-              {bookingConfig.sectionLabel}
+              {sectionLabel}
+              <FallbackBadge show={showBadge} />
             </p>
           </div>
         </Reveal>
@@ -67,7 +79,7 @@ export default function Booking() {
               textWrap: 'balance',
             }}
           >
-            {bookingConfig.heading}
+            {heading}
           </h2>
         </Reveal>
 
@@ -82,7 +94,7 @@ export default function Booking() {
               color: 'rgba(255,255,255,0.85)',
             }}
           >
-            {bookingConfig.body}
+            {body}
           </p>
         </Reveal>
 
