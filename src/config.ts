@@ -26,9 +26,9 @@ export interface HeroConfig {
 }
 
 export interface DiagnosisConfig {
-  sectionLabel: string
-  heading: string
-  paragraphs: string[]
+  sectionLabel: Bilingual<string>
+  heading: Bilingual<string>
+  paragraphs: Bilingual<string[]>
   videoPath?: string
 }
 
@@ -125,12 +125,12 @@ export const heroConfig: HeroConfig = {
 }
 
 export const diagnosisConfig: DiagnosisConfig = {
-  sectionLabel: "01 / THE DIAGNOSIS",
-  heading: "Most companies don't have an AI problem. They have an operations problem.",
-  paragraphs: [
+  sectionLabel: { en: "01 / THE DIAGNOSIS" },
+  heading: { en: "Most companies don't have an AI problem. They have an operations problem." },
+  paragraphs: { en: [
     "Tribal knowledge in someone's head. Decisions made in group chats. Spreadsheets duct taped to email. AI bolted on top of broken process and called transformation.",
     "Companies don't run badly because the technology is missing. They run badly because the operating system is.",
-  ],
+  ] },
 }
 
 export const principlesConfig: PrinciplesConfig = {

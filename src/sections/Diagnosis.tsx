@@ -1,11 +1,22 @@
 import Reveal from '../components/Reveal';
 import { Marginalia, DropCap } from '../components/Editorial';
 import { diagnosisConfig } from '../config';
+import { useLocale } from '../i18n/LocaleContext';
+import { useBilingual } from '../i18n/useBilingual';
+import { anyFallback } from '../i18n/Bilingual';
+import { FallbackBadge } from '../components/FallbackBadge';
 
 export default function Diagnosis() {
-  if (!diagnosisConfig.heading && diagnosisConfig.paragraphs.length === 0) {
-    return null;
-  }
+  const { locale } = useLocale();
+  const sectionLabel = useBilingual(diagnosisConfig.sectionLabel);
+  const heading = useBilingual(diagnosisConfig.heading);
+  const paragraphs = useBilingual(diagnosisConfig.paragraphs);
+  const showBadge = anyFallback(
+    locale,
+    diagnosisConfig.sectionLabel,
+    diagnosisConfig.heading,
+    diagnosisConfig.paragraphs,
+  );
 
   return (
     <section
@@ -45,7 +56,8 @@ export default function Diagnosis() {
               margin: '0 0 64px 0',
             }}
           >
-            {diagnosisConfig.sectionLabel}
+            {sectionLabel}
+            <FallbackBadge show={showBadge} />
           </p>
         </Reveal>
 
@@ -62,12 +74,12 @@ export default function Diagnosis() {
               textWrap: 'balance',
             }}
           >
-            {diagnosisConfig.heading}
+            {heading}
           </h2>
         </Reveal>
 
         <div style={{ maxWidth: '64ch' }}>
-          {diagnosisConfig.paragraphs.map((paragraph, index) => (
+          {paragraphs.map((paragraph, index) => (
             <Reveal key={index} delay={120 + index * 60}>
               {index === 0 ? (
                 <div style={{ margin: '0 0 24px 0' }}>
