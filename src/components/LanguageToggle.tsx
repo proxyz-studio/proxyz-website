@@ -22,7 +22,7 @@ function ToggleButton({
     <button
       type="button"
       aria-pressed={active}
-      aria-label={target === 'en' ? 'Switch to English' : 'Switch to Thai'}
+      aria-label={target === 'en' ? 'English' : 'Thai'}
       onClick={() => onClick(target)}
       onMouseEnter={(e) => {
         if (!active) (e.currentTarget as HTMLElement).style.color = HOVER_COLOR;
@@ -60,11 +60,15 @@ export default function LanguageToggle() {
 
   return (
     <div
+      role="group"
+      aria-label="Language selector"
       style={{
         display: 'inline-flex',
         alignItems: 'center',
         gap: '6px',
-        marginLeft: '16px',
+        // No marginLeft; parent .hero-nav-links flex container already
+        // applies gap: 24px between siblings, matching the rest of the
+        // nav cluster's rhythm.
       }}
     >
       <ToggleButton
