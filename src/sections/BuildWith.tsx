@@ -4,11 +4,24 @@ import { MagneticAnchor } from '../components/Spatial';
 import { HeadlineHalo, EdgeRule } from '../components/Glow';
 import PictoIcon from '../components/PictoIcon';
 import { buildWithConfig } from '../config';
+import { useLocale } from '../i18n/LocaleContext';
+import { useBilingual } from '../i18n/useBilingual';
+import { anyFallback } from '../i18n/Bilingual';
+import { FallbackBadge } from '../components/FallbackBadge';
 
 export default function BuildWith() {
-  if (!buildWithConfig.heading) {
-    return null;
-  }
+  const { locale } = useLocale();
+  const sectionLabel = useBilingual(buildWithConfig.sectionLabel);
+  const heading = useBilingual(buildWithConfig.heading);
+  const paragraphs = useBilingual(buildWithConfig.paragraphs);
+  const ctaLabel = useBilingual(buildWithConfig.cta.label);
+  const showBadge = anyFallback(
+    locale,
+    buildWithConfig.sectionLabel,
+    buildWithConfig.heading,
+    buildWithConfig.paragraphs,
+    buildWithConfig.cta.label,
+  );
 
   return (
     <section
@@ -53,7 +66,8 @@ export default function BuildWith() {
                 margin: 0,
               }}
             >
-              {buildWithConfig.sectionLabel}
+              {sectionLabel}
+              <FallbackBadge show={showBadge} />
             </p>
           </div>
         </Reveal>
@@ -71,12 +85,12 @@ export default function BuildWith() {
               textWrap: 'balance',
             }}
           >
-            {buildWithConfig.heading}
+            {heading}
           </h2>
         </Reveal>
 
         <div style={{ maxWidth: '64ch', marginBottom: '48px' }}>
-          {buildWithConfig.paragraphs.map((paragraph, index) => (
+          {paragraphs.map((paragraph, index) => (
             <Reveal key={index} delay={120 + index * 80}>
               {index === 0 ? (
                 <div style={{ margin: '0 0 24px 0', color: 'rgba(255,255,255,0.85)' }}>
@@ -120,7 +134,7 @@ export default function BuildWith() {
               borderRadius: '999px',
             }}
           >
-            {buildWithConfig.cta.label}
+            {ctaLabel}
           </MagneticAnchor>
         </Reveal>
       </div>

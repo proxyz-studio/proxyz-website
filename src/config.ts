@@ -70,10 +70,10 @@ export interface ServicesConfig {
 }
 
 export interface BuildWithConfig {
-  sectionLabel: string
-  heading: string
-  paragraphs: string[]
-  cta: NavigationLink
+  sectionLabel: Bilingual<string>
+  heading: Bilingual<string>
+  paragraphs: Bilingual<string[]>
+  cta: { label: Bilingual<string>; href: string }
 }
 
 export interface StudioOSConfig {
@@ -197,14 +197,14 @@ export const servicesConfig: ServicesConfig = {
 }
 
 export const buildWithConfig: BuildWithConfig = {
-  sectionLabel: "05 / BUILD WITH",
-  heading: "We don't sell this one. We choose it.",
-  paragraphs: [
+  sectionLabel: { en: "05 / BUILD WITH" },
+  heading: { en: "We don't sell this one. We choose it." },
+  paragraphs: { en: [
     "For the rare founder where the upside is real and the chemistry is right. We come in, rebuild the business end to end, and stay as a long term operating partner. Compensation is equity, earned against committed deliverables. Two or three active at a time. By invitation only.",
     "This isn't a tier on a menu. It's a partnership.",
-  ],
+  ] },
   cta: {
-    label: "Pitch us. →",
+    label: { en: "Pitch us. →" },
     href: "mailto:hello@proxyz.studio?subject=Build with PROXYZ",
   },
 }
