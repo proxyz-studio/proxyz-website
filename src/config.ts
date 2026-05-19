@@ -92,10 +92,10 @@ export interface BookingConfig {
 }
 
 export interface FooterConfig {
-  left: string
+  left: Bilingual<string>
   email: NavigationLink
   linkedin: NavigationLink
-  right: string
+  right: Bilingual<string>
 }
 
 export const siteConfig: SiteConfig = {
@@ -231,13 +231,13 @@ export const bookingConfig: BookingConfig = {
 }
 
 export const footerConfig: FooterConfig = {
-  left: "PROXYZ. An operator studio.",
+  left: { en: "PROXYZ. An operator studio." },
   email: {
     label: "hello@proxyz.studio",
     href: "mailto:hello@proxyz.studio",
   },
   linkedin: { label: "LinkedIn", href: "#" },
-  right: "© 2026. All rights reserved.",
+  right: { en: "© 2026. All rights reserved." },
 }
 
 export interface PortalFeature {
