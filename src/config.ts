@@ -1,3 +1,5 @@
+import type { Bilingual } from './i18n/Bilingual';
+
 export interface SiteConfig {
   language: string
   siteTitle: string
@@ -16,11 +18,11 @@ export interface NavigationConfig {
 }
 
 export interface HeroConfig {
-  eyebrow: string
-  titleLines: string[]
-  lead: string
-  primaryCta: NavigationLink
-  secondaryLink: NavigationLink
+  eyebrow: Bilingual<string>
+  titleLines: Bilingual<string[]>
+  lead: Bilingual<string>
+  primaryCta: { label: Bilingual<string>; href: string }
+  secondaryLink: { label: Bilingual<string>; href: string }
 }
 
 export interface DiagnosisConfig {
@@ -115,11 +117,11 @@ export const navigationConfig: NavigationConfig = {
 }
 
 export const heroConfig: HeroConfig = {
-  eyebrow: "ISSUE 01 / OPERATOR STUDIO",
-  titleLines: ["Your proxy", "on the", "inside."],
-  lead: "PROXYZ goes inside your company, rebuilds how it runs, automates the work that doesn't need a human, and stays as your AI operating partner. Anchored in Thailand. Working with operators wherever the upside is real.",
-  primaryCta: { label: "Book the Audit", href: "#booking" },
-  secondaryLink: { label: "What we do →", href: "#services" },
+  eyebrow: { en: "ISSUE 01 / OPERATOR STUDIO" },
+  titleLines: { en: ["Your proxy", "on the", "inside."] },
+  lead: { en: "PROXYZ goes inside your company, rebuilds how it runs, automates the work that doesn't need a human, and stays as your AI operating partner. Anchored in Thailand. Working with operators wherever the upside is real." },
+  primaryCta: { label: { en: "Book the Audit" }, href: "#booking" },
+  secondaryLink: { label: { en: "What we do →" }, href: "#services" },
 }
 
 export const diagnosisConfig: DiagnosisConfig = {
