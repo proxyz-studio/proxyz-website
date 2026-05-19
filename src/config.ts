@@ -77,11 +77,11 @@ export interface BuildWithConfig {
 }
 
 export interface StudioOSConfig {
-  sectionLabel: string
-  heading: string
-  lead: string
-  list: string[]
-  closing: string
+  sectionLabel: Bilingual<string>
+  heading: Bilingual<string>
+  lead: Bilingual<string>
+  list: Bilingual<string[]>
+  closing: Bilingual<string>
 }
 
 export interface BookingConfig {
@@ -210,18 +210,17 @@ export const buildWithConfig: BuildWithConfig = {
 }
 
 export const studioOSConfig: StudioOSConfig = {
-  sectionLabel: "06 / THE STUDIO OS",
-  heading: "The system every engagement installs.",
-  lead: "The Studio OS is the operating layer PROXYZ installs inside every client. It's not software. It's how the company runs.",
-  list: [
+  sectionLabel: { en: "06 / THE STUDIO OS" },
+  heading: { en: "The system every engagement installs." },
+  lead: { en: "The Studio OS is the operating layer PROXYZ installs inside every client. It's not software. It's how the company runs." },
+  list: { en: [
     "A meeting cadence that compresses decision time",
     "Decision rights that stop bottlenecks at the founder",
     "Dashboards built around the metrics that move the business",
     "An automation layer that runs the work that doesn't need a human",
     "An AI stack tailored to the operation, not someone else's playbook",
-  ],
-  closing:
-    "A real operator playbook, white labeled and rebuilt for every client. Whether we build for you or with you, the Studio OS is the system we install.",
+  ] },
+  closing: { en: "A real operator playbook, white labeled and rebuilt for every client. Whether we build for you or with you, the Studio OS is the system we install." },
 }
 
 export const bookingConfig: BookingConfig = {
