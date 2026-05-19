@@ -30,7 +30,7 @@ These remain plain strings even in the Thai version because they function as bra
 - Brand name `PROXYZ` and the wordmark (PROXY/Z color split, glitch animation)
 - Engagement-mode labels: `BUILD FOR`, `BUILD WITH`, `ACQUIRE`, `PARTNER`
 - Marquee strip words: `OPERATOR STUDIO`, `BANGKOK`, `PHUKET`, `BUILD FOR`, `BUILD WITH`, `THE PORTAL`, `PADEL Z`, `AI INSIDE`
-- Nav labels: `WHAT WE DO`, `STUDIO OS`, `MEDIA`, `PARTNERS`, `LOGIN`
+- Nav labels in `navigationConfig`: stored Title Case (`"What we do"`, `"Studio OS"`, `"Media"`, `"Partners"`, `"Login"`), rendered uppercase via CSS `text-transform: uppercase` in `Nav.tsx`. Do not wrap, do not change source casing.
 - The language toggle letters themselves (`EN`, `TH`)
 
 ## Translation targets (homepage prose only)
@@ -43,7 +43,7 @@ These fields get wrapped in `Bilingual<T>` and accept Thai copy. Thai may be omi
 - TwoWays section: heading, both lane descriptions
 - Services section: descriptive prose under each engagement-mode label (the labels stay English)
 - BuildWith section: heading, body, supporting copy
-- StudioOS homepage section: heading, body (the on-homepage preview, not the dedicated `/studio-os` page)
+- StudioOS homepage section: heading, body (the on-homepage preview, not the dedicated Portal page at `/portal`)
 - Booking section: heading, body, button label
 - Footer: any prose copy. Footer nav labels stay English.
 
@@ -182,7 +182,7 @@ The first-pass workflow is direct editing of `src/config.ts`:
 - **Locale persistence across browsers / devices**: not in scope. localStorage is per-browser. If a user clears storage or switches devices, they get English again until they re-toggle.
 - **Toggling in the middle of a session**: instant. No fade, no loading state. React re-renders with the new locale and content swaps.
 - **Server-side rendering / static prerender**: the site is a Vite SPA, all rendering is client-side. No SSR considerations.
-- **`navigationConfig` source-string format**: nav labels in `config.ts` are stored as Title Case strings (e.g., `'What we do'`); the uppercase rendering happens via CSS `text-transform: uppercase` in `Nav.tsx`. Do not change the source format — leave the strings Title Case and let CSS handle the visual case.
+- **`navigationConfig` source-string format**: covered in the Always-English-elements section. Repeated here for emphasis: leave nav source strings in Title Case, let CSS handle the uppercase rendering. Do not wrap nav labels in `Bilingual<T>`.
 
 ## Out of scope (explicit non-goals for v1)
 
