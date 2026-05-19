@@ -43,13 +43,20 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   // Initial state: synchronous read of localStorage so first paint is correct.
   const [locale, setLocaleState] = useState<Locale>(() => readStoredLocale());
 
-  // Defensive: if localStorage was read pre-hydration, this is a no-op.
-  // If anything else changes the stored value, we don't try to sync — locale
-  // ownership lives in this provider for the duration of the session.
+  // Persist on every change AND on first mount. On first visit (no stored
+  // value) this establishes the storage key with the default 'en', so
+  // subsequent reads are deterministic. We do not sync from external
+  // storage changes; locale ownership lives in this provider for the
+  // duration of the session.
   useEffect(() => {
     writeStoredLocale(locale);
   }, [locale]);
 
+  // useCallback gives setLocale a stable reference across renders. The
+  // <LanguageToggle /> uses it directly in onClick (where stability is
+  // not required), but any future consumer that puts setLocale in a
+  // useEffect dep array or passes it into React.memo'd children will
+  // rely on this stability.
   const setLocale = useCallback((next: Locale) => {
     setLocaleState(next);
   }, []);

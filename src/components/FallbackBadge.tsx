@@ -11,6 +11,7 @@ export function FallbackBadge({ show }: { show: boolean }) {
   if (!show) return null;
   return (
     <span
+      role="img"
       aria-label="English shown; Thai translation not yet available"
       style={{
         fontFamily: "'IBM Plex Mono', monospace",
