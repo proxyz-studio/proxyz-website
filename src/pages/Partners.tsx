@@ -35,14 +35,14 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
         position: 'relative',
       }}
     >
-      {/* Big outlined chapter number — sits above the card's top border,
-          clear of the status pill and the meta row. */}
+      {/* Big outlined chapter number — owns the upper-right area now that the
+          status pill has been moved below the partner name. */}
       <div
         aria-hidden
         className="partner-marginalia"
         style={{
           position: 'absolute',
-          top: '-32px',
+          top: '-12px',
           right: 0,
           opacity: 0.32,
           pointerEvents: 'none',
@@ -52,21 +52,21 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
         <Marginalia
           number={String(index + 1).padStart(2, '0')}
           color="light"
-          size="clamp(80px, 10vw, 150px)"
+          size="clamp(96px, 12vw, 180px)"
         />
       </div>
 
-      {/* Header strip */}
+      {/* Header strip — small marker + name, pill drops to a new row below */}
       <div
         className="partner-header"
         style={{
           position: 'relative',
           zIndex: 1,
           display: 'grid',
-          gridTemplateColumns: 'auto 1fr auto',
+          gridTemplateColumns: 'auto 1fr',
           gap: '32px',
           alignItems: 'baseline',
-          marginBottom: '36px',
+          marginBottom: '20px',
         }}
       >
         <span
@@ -99,6 +99,15 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
             partner.name
           )}
         </h2>
+      </div>
+      <div
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          paddingLeft: 'calc(32px + 1.6ch)',
+          marginBottom: '36px',
+        }}
+      >
         <span
           className="partner-status-pill"
           style={{
@@ -111,7 +120,7 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
             padding: '6px 12px',
             borderRadius: '999px',
             whiteSpace: 'nowrap',
-            justifySelf: 'end',
+            display: 'inline-block',
           }}
         >
           ● {partner.stage}
