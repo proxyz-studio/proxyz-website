@@ -44,6 +44,15 @@
     --radius: 0px;
     --accent-pink: #ff4193;
     --accent-blue: #1e90ff;
+
+    /* Lazy Tiger uses PROXYZ Brand Guide plus a single second accent:
+       neon lime. Pink stays primary; lime gets used sparingly for emphasis. */
+    --lt-pink: #FF4193;
+    --lt-lime: #D2FF3B;
+    --lt-accent: #FF4193;
+  }
+  body {
+    transition: background-color 400ms cubic-bezier(0.2, 0.7, 0.1, 1);
   }
 
   body {
@@ -635,6 +644,86 @@
   }
   .ff-why {
     grid-template-columns: 1fr !important;
+  }
+}
+
+/* ---------- LAZY TIGER PAGE ---------- */
+
+/* 60 BPM = one cycle per second. Subtle 0.5% scale range, paired with rim-light intensity. */
+@keyframes lt-helmet-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.005); }
+}
+
+@keyframes lt-rim-breathe {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 0.85; }
+}
+
+@keyframes lt-cursor-blink {
+  0%, 60% { opacity: 1; }
+  61%, 100% { opacity: 0; }
+}
+
+@keyframes lt-hr-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  20%      { transform: scale(1.35); opacity: 1; }
+  40%      { transform: scale(1); opacity: 0.85; }
+}
+
+@keyframes lt-waveform {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
+
+@keyframes lt-glow-orange {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(255,110,31,0.5)); }
+  50%      { filter: drop-shadow(0 0 14px rgba(255,110,31,0.85)); }
+}
+
+.lt-cursor-blink {
+  display: inline-block;
+  width: 0.6ch;
+  height: 1em;
+  background: var(--accent-pink);
+  vertical-align: text-bottom;
+  margin-left: 4px;
+  animation: lt-cursor-blink 1s steps(2) infinite;
+}
+
+.lt-tiger-stripe-text {
+  background: linear-gradient(180deg, var(--tiger-copper-2) 0%, var(--tiger-copper-1) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Responsive — Lazy Tiger sections */
+@media (max-width: 960px) {
+  .lt-two-col { grid-template-columns: 1fr !important; gap: 32px !important; }
+  .lt-three-col { grid-template-columns: 1fr !important; gap: 24px !important; }
+  .lt-merch-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .lt-hardware-row { grid-template-columns: 1fr 1fr !important; gap: 20px !important; }
+  .lt-leaderboard-host { grid-template-columns: 1fr !important; gap: 32px !important; }
+}
+
+@media (max-width: 640px) {
+  .lt-merch-grid { grid-template-columns: 1fr !important; }
+  .lt-hardware-row { grid-template-columns: 1fr !important; }
+  .lt-team-grid { grid-template-columns: 1fr !important; gap: 24px !important; }
+  .lt-other-partners { grid-template-columns: 1fr 1fr !important; gap: 12px !important; }
+  .lt-section-padding { padding: 80px 24px !important; }
+  .lt-hero-padding { padding: 140px 24px 80px !important; }
+}
+
+/* Reduced motion — kill animations that depend on continuous loops */
+@media (prefers-reduced-motion: reduce) {
+  .lt-helmet-breathe,
+  .lt-rim,
+  .lt-hr-pulse,
+  .lt-waveform-track,
+  .lt-cursor-blink {
+    animation: none !important;
   }
 }
 

@@ -17,6 +17,11 @@ import PadelZ from './pages/PadelZ';
 import Partners from './pages/Partners';
 import FastFix from './pages/FastFix';
 
+// Code-split the Lazy Tiger page — heavy on bespoke components (helmet, leaderboard,
+// merch grid, GSAP Asia map). Only loaded when a visitor lands on /partners/lazy-tiger.
+const LazyTiger = lazy(() => import('./pages/LazyTiger'));
+const LazyTigerStyles = lazy(() => import('./pages/LazyTigerStyles'));
+
 // Preview routes are dev-only — code-split so production users don't pay for motion lib etc.
 const HeroPreview = lazy(() => import('./pages/HeroPreview'));
 const VisualPreview = lazy(() => import('./pages/VisualPreview'));
@@ -87,6 +92,14 @@ function App() {
         <Route path="/media/padel-z" element={<PadelZ />} />
         <Route path="/partners" element={<Partners />} />
         <Route path="/partners/fast-fix" element={<FastFix />} />
+        <Route
+          path="/partners/lazy-tiger"
+          element={<Suspense fallback={null}><LazyTiger /></Suspense>}
+        />
+        <Route
+          path="/preview/lazy-tiger-styles"
+          element={<Suspense fallback={null}><LazyTigerStyles /></Suspense>}
+        />
         <Route path="/preview/hero" element={<Suspense fallback={null}><HeroPreview /></Suspense>} />
         <Route path="/preview/visual" element={<Suspense fallback={null}><VisualPreview /></Suspense>} />
         <Route path="/preview/glow" element={<Suspense fallback={null}><GlowPreview /></Suspense>} />

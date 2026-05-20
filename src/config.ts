@@ -831,3 +831,581 @@ export const fastFixPageConfig: FastFixPageConfig = {
     href: "mailto:hello@proxyz.studio?subject=Fast-Fix",
   },
 }
+
+/* ===========================================================================
+ * Lazy Tiger × PROXYZ — prospect page config
+ * Source of truth: 2026-05-20-lazy-tiger-prospect-page-copy-v1.md
+ * All prose is verbatim from the copy doc. Do not paraphrase.
+ * ========================================================================= */
+
+export type LayerModality = 'cardio' | 'reformer' | 'yoga';
+
+export interface LeaderboardMember {
+  rank: number;
+  name: string;
+  hr: number;
+  score: number;
+  modality: LayerModality;
+}
+
+export interface LayerSection {
+  num: string;
+  name: string;
+  tagline: string;
+  body: string;
+}
+
+export interface AsiaCity {
+  label: string;
+  timing: string;
+  type: 'operating' | 'license';
+  /** SVG viewBox 0..1000 x 0..640 */
+  x: number;
+  y: number;
+}
+
+export interface HardwarePhase {
+  version: string;
+  device: string;
+  timing: string;
+  spec: string;
+}
+
+export interface DiligenceCard {
+  label: string;
+  headline: string;
+  body: string;
+}
+
+export interface TeamMember {
+  name: string;
+  role: string;
+  bio: string;
+  initials: string;
+  /** Path under public/ to a headshot photo. Falls back to the initials circle when absent. */
+  photo?: string;
+}
+
+export interface OtherPartnerCard {
+  name: string;
+  sector: string;
+  status: string;
+  href?: string;
+  current?: boolean;
+}
+
+export interface LoyaltyTier {
+  /** Tier name shown on the ladder. */
+  name: 'Cub' | 'Tiger' | 'Black Tiger';
+  /** Visual tone — drives the rung color in the ladder. */
+  tone: 'bronze' | 'pink' | 'lime';
+  /** Short positioning line under the tier name. */
+  blurb: string;
+  /** Perks listed under the tier. */
+  perks: string[];
+}
+
+export interface QuadrantPlacement {
+  /** Brand name to render in the quadrant cell. */
+  brand: string;
+  /** Quadrant: tl = brand-coupled+full-stack, tr = brand-agnostic+full-stack (empty),
+   *  bl = brand-coupled+partial-layer, br = brand-agnostic+partial-layer. */
+  quadrant: 'tl' | 'tr' | 'bl' | 'br';
+}
+
+export interface HotelMarker {
+  city: string;
+  hotel: string;
+  status: 'active' | 'pending' | 'mapped';
+  /** Same coordinate system as AsiaCity (viewBox ~200..900 x 50..600). */
+  x: number;
+  y: number;
+}
+
+export interface LazyTigerPageConfig {
+  hero: {
+    eyebrow: string;
+    titleLines: string[];
+    subline: string;
+  };
+  brief: {
+    headline: string;
+    paragraphs: string[];
+  };
+  gap: {
+    headline: string;
+    subhead: string;
+    body: string;
+    aboveLabel: string;
+    belowLabel: string;
+    midLabel: string;
+  };
+  frame: {
+    titleLines: string[];
+    subline: string;
+  };
+  layers: LayerSection[];
+  loyalty: {
+    num: string;
+    name: string;
+    tagline: string;
+    paragraphs: string[];
+    tiers: LoyaltyTier[];
+  };
+  compound: {
+    headline: string;
+    beats: string[];
+    closing: string;
+    centerLabel: string;
+  };
+  asia: {
+    headline: string;
+    subline: string;
+    sequence: string[];
+    cities: AsiaCity[];
+  };
+  hardware: {
+    headline: string;
+    subline: string;
+    phases: HardwarePhase[];
+    body: string;
+  };
+  partnership: {
+    headline: string;
+    openingLine: string;
+    lazyTigerLabel: string;
+    lazyTigerBullets: string[];
+    proxyzLabel: string;
+    proxyzBullets: string[];
+  };
+  formatQuadrant: {
+    eyebrow: string;
+    headline: string;
+    paragraphs: string[];
+    xLeftLabel: string;
+    xRightLabel: string;
+    yTopLabel: string;
+    yBottomLabel: string;
+    placements: QuadrantPlacement[];
+    emptyQuadrantLabel: string;
+  };
+  hotelNetwork: {
+    eyebrow: string;
+    headline: string;
+    paragraphs: string[];
+    markers: HotelMarker[];
+  };
+  engagement: {
+    headline: string;
+    paragraphs: string[];
+  };
+  diligence: {
+    headline: string;
+    subline: string;
+    cards: DiligenceCard[];
+    sourceLine: string;
+  };
+  currentStage: {
+    headline: string;
+    paragraphs: string[];
+  };
+  team: {
+    headline: string;
+    members: TeamMember[];
+  };
+  otherPartners: {
+    headline: string;
+    cards: OtherPartnerCard[];
+  };
+  footer: {
+    closing: string;
+    sub: string;
+  };
+  leaderboard: LeaderboardMember[];
+  merch: string[];
+  coachChat: { speaker: 'coach' | 'member'; text: string }[];
+}
+
+export const lazyTigerPageConfig: LazyTigerPageConfig = {
+  hero: {
+    eyebrow: 'PROXYZ × LAZY TIGER',
+    titleLines: ['Operating-system install', 'for the gamified cardio category.'],
+    subline: 'Build-with engagement. Active preview.',
+  },
+
+  brief: {
+    headline: "What we're working on.",
+    paragraphs: [
+      'Lazy Tiger is a Bangkok boutique fitness brand built around gamified Bike, Ski, and Row cardio with a Yoga adjunct. Founded by Cathal Kiely, launching at the InterContinental Bangkok in mid-2026, with an Asia expansion plan from Singapore to Hong Kong and beyond.',
+      "We're building this with the founding team to make Lazy Tiger the gamified-cardio brand the world wants to install.",
+    ],
+  },
+
+  gap: {
+    headline: 'Great studios fail at scale for one reason.',
+    subhead: "The experience doesn't travel with the member.",
+    body:
+      'The product inside the room is excellent. What happens between sessions? What happens when the member travels? What happens at studio three, in Singapore, with a new instructor and a different crowd? Every boutique brand that has tried to scale has hit this. SoulCycle. Peloton. Barry’s. The ones that survived got lucky with timing or pivoted to software. The ones that didn’t had great in-room experiences and no connective tissue.\n\nThat connective tissue is what we build.',
+    midLabel: 'Member experience',
+    aboveLabel: 'Inside the studio.',
+    belowLabel: 'Everywhere else.',
+  },
+
+  frame: {
+    titleLines: ["Lazy Tiger isn't a fitness studio.", "It's a brand operating system."],
+    subline: 'Four stacked flywheels. Each layer feeds the next.',
+  },
+
+  layers: [
+    {
+      num: 'LAYER 01',
+      name: 'Sensor network',
+      tagline: 'We read what members already wear.',
+      body:
+        'Polar SDK is the spine. Polar H10 chest straps in the studio capture beat-to-beat heart rate accurate to under a millisecond. Apple HealthKit, Oura Cloud, and the Terra API aggregator layer the take-home wearables on top. The result: a cardiac-truth data layer that no rhythm-cycling competitor can match. Most premium boutique brands estimate heart rate from wrist sensors that degrade above 75 percent max HR. Lazy Tiger sees the actual heart.',
+    },
+    {
+      num: 'LAYER 02',
+      name: 'Gaming flywheel',
+      tagline: 'Apex Legends ranking, applied to the cardio studio.',
+      body:
+        'The Bike, Ski, and Row machines are the hero hardware. Reactive lighting, music sync, and a live leaderboard wall turn every class into a session with stakes. Tiger Score is the composite metric, heart rate reserve weighted by modality, normalized across body type and fitness level, recalibrated seasonally. The gaming layer drives weekly engagement. The leaderboard drives the rivalry. The rivalry drives retention.\n\nAnd every personal record is unpredictable in advance because Tiger Score depends on sleep, stress, effort, and HRV. That uncertainty is the hook. The same psychological mechanic that drives the best games, applied to the work the body is already doing.',
+    },
+    {
+      num: 'LAYER 03',
+      name: 'Merch flywheel',
+      tagline: 'AI-designed drops that compound brand identity.',
+      body:
+        'Apparel and accessories designed through an AI loop (Vizcom, Midjourney, Dynamic Mockups, Shopify), manufactured small-batch in Vietnam, dropped on a quarterly cadence with member-tier exclusivity. The Tiger Helmet becomes the badge of belonging. Drops compound demand between sessions. Members who hit milestones unlock earned merch the public cannot buy. The flywheel sells brand identity, not unit economics.',
+    },
+    {
+      num: 'LAYER 04',
+      name: 'Tiger Coach',
+      tagline: 'A coach that knows the member across years.',
+      body:
+        'The AI Coach lives in the Lazy Tiger app. v1 runs on a VPS, tiered between Gemini 2.5 Flash for daily check-ins and Claude Sonnet for weekly periodization. Every conversation, every session, every recovery prompt accumulates into a personalized memory layer. The Coach knows your last six weeks of training load. It knows your sleep, your HRV, your weakness on the Row. It adapts the next session before you ask. Year three, the Coach is the relationship a competitor cannot clone.',
+    },
+  ],
+
+  loyalty: {
+    num: 'LAYER 05',
+    name: 'The loyalty layer',
+    tagline: 'The members who show up the most get the most.',
+    paragraphs: [
+      "Tiger Score isn't just a leaderboard number. It's how members compound value the more they show up. Every class earns Tiger Score. Tiger Score earns loyalty status. Loyalty status unlocks earned drops, premium content, VIP coaching tiers, and partner hotel access. We reward members for doing the thing that was already good for them.",
+      'Three tiers. Cub. Tiger. Black Tiger. Founding members start as Tiger for the first six months. The earn rate is calibrated to effort, not attendance. The system rewards intensity over presence.',
+    ],
+    tiers: [
+      {
+        name: 'Cub',
+        tone: 'bronze',
+        blurb: 'Where every member starts.',
+        perks: [
+          'Tiger Score visible',
+          'Leaderboard access',
+          'Member app',
+          'Monthly drop preview',
+        ],
+      },
+      {
+        name: 'Tiger',
+        tone: 'pink',
+        blurb: 'Founding members start here for six months.',
+        perks: [
+          'Everything in Cub',
+          '14-day class booking window',
+          'Founding-member drop access',
+          'AI Coach tier upgrade',
+          'Partner hotel guest passes',
+        ],
+      },
+      {
+        name: 'Black Tiger',
+        tone: 'lime',
+        blurb: 'For the members who show up the hardest.',
+        perks: [
+          'Everything in Tiger',
+          'VIP Coaching Tier eligibility',
+          'Founder events',
+          'Annual Tournament invitation',
+          'Cross-city access at every Lazy Tiger location',
+        ],
+      },
+    ],
+  },
+
+  compound: {
+    headline: 'Four beats. One member.',
+    beats: [
+      'Sensors give us the body.',
+      'Gaming gives us the session.',
+      'Merch gives us the identity.',
+      'Tiger Coach gives us the relationship.',
+    ],
+    closing:
+      "Year one it's a system. Year three it's a moat. Every member session deepens what the next member experience can be.",
+    centerLabel: 'The compounding member graph.',
+  },
+
+  asia: {
+    headline: 'Three operating cities in 24 months.',
+    subline: 'The rest come through master-license partners we sign together. The format travels; we don’t have to.',
+    sequence: [
+      'Bangkok / Flagship          → mid-2026',
+      'Bangkok / Second site       → Q1 2027',
+      'Singapore                   → Q3 2027',
+      'Hong Kong                   → 2028',
+      'Tokyo · Manila · Jakarta · KL  → master-license, year 3+',
+    ],
+    cities: [
+      { label: 'Bangkok', timing: 'mid-2026', type: 'operating', x: 540, y: 410 },
+      { label: 'Singapore', timing: 'Q3 2027', type: 'operating', x: 590, y: 510 },
+      { label: 'Hong Kong', timing: '2028', type: 'operating', x: 680, y: 360 },
+      { label: 'Tokyo', timing: 'year 3+', type: 'license', x: 800, y: 290 },
+      { label: 'Manila', timing: 'year 3+', type: 'license', x: 730, y: 440 },
+      { label: 'Jakarta', timing: 'year 3+', type: 'license', x: 640, y: 560 },
+      { label: 'KL', timing: 'year 3+', type: 'license', x: 560, y: 480 },
+    ],
+  },
+
+  hardware: {
+    headline: 'Phil Knight sold shoes out of a car trunk before he built Nike.',
+    subline: 'We earn the right to build the dream.',
+    phases: [
+      {
+        version: 'v1',
+        device: 'Phone',
+        timing: 'Today',
+        spec: 'Tiger Coach in the pocket. Daily check-ins, weekly periodization, full session history.',
+      },
+      {
+        version: 'v2',
+        device: 'Studio kiosk',
+        timing: 'Year 2',
+        spec: 'Lounge-side check-in. Tiger Score on the wall. Pre-class briefing and post-class debrief.',
+      },
+      {
+        version: 'v3',
+        device: 'Member pod',
+        timing: 'Year 2 to 3',
+        spec: 'Locker-room voice pod. Recovery prompts, scheduling, member-only audio drops.',
+      },
+      {
+        version: 'v4',
+        device: 'Tiger Glass',
+        timing: 'Year 3+',
+        spec: 'Earned wearable. Heart rate, recovery, and Coach prompts in the field of view.',
+      },
+    ],
+    body:
+      'The Tiger Coach ships in software first. As revenue compounds, the hardware comes back layer by layer. A kiosk in the studio lounge. A voice-pod in the locker room. A wearable that members earn rather than buy. Each upgrade is gated by what the previous wave generated.',
+  },
+
+  partnership: {
+    headline: 'Two operators building one operating system together.',
+    openingLine:
+      "Cathal brings the brand and the room. PROXYZ brings the system that makes the room scale. Together we build the format other operators will want to install.",
+    lazyTigerLabel: 'LAZY TIGER',
+    lazyTigerBullets: [
+      'The brand. The format. The founder vision.',
+      'The InterContinental Bangkok partnership.',
+      'The capital for studio buildouts.',
+      'The instructor and class IP.',
+      'The Thai network on the studio side.',
+    ],
+    proxyzLabel: 'PROXYZ',
+    proxyzBullets: [
+      'The operating system that scales it.',
+      'The Portal install, the AI Coach, the data layer.',
+      'The strategic + technical post-launch operator.',
+      'The programming pipeline that codifies the IP.',
+      'The Thai network on the operator side, plus EOS / Traction methodology.',
+    ],
+  },
+
+  formatQuadrant: {
+    eyebrow: '13 · THE LONG GAME',
+    headline: 'What we’re building lives past the Bangkok flagship.',
+    paragraphs: [
+      "The boutique fitness world has plenty of brand operating systems. None of them are brand-agnostic. F45 forces you to be F45. Orangetheory forces you to be Orangetheory. Xponential forces you into one of their nine brands. Mindbody and Glofox give you booking software but no gamification, no scoring, no AI coaching.",
+      "We’re building something that doesn't exist yet: the operating system a boutique fitness brand can install while keeping its own identity. Lazy Tiger Bangkok is the first installation. The Asia rollout is the proof. Five years from now, the system Cathal and PROXYZ build together is the format other operators globally choose to run on.",
+    ],
+    xLeftLabel: 'Brand-coupled',
+    xRightLabel: 'Brand-agnostic',
+    yTopLabel: 'Full-stack',
+    yBottomLabel: 'Partial-layer',
+    placements: [
+      { brand: 'F45', quadrant: 'tl' },
+      { brand: 'Orangetheory', quadrant: 'tl' },
+      { brand: 'Xponential', quadrant: 'tl' },
+      { brand: 'Technogym Mywellness', quadrant: 'bl' },
+      { brand: 'Mindbody', quadrant: 'br' },
+      { brand: 'Glofox', quadrant: 'br' },
+    ],
+    emptyQuadrantLabel: 'Lazy Tiger × PROXYZ. The format we’re building.',
+  },
+
+  hotelNetwork: {
+    eyebrow: '14 · THE HOTEL NETWORK',
+    headline: 'The hotel that hosts the flagship is the first partner.',
+    paragraphs: [
+      'The InterContinental Bangkok is the flagship. It is also the first Lazy Tiger hotel partner. IHG One Rewards has 130 million enrolled members globally. The Platinum and Diamond tiers are the right wallet for Lazy Tiger, and they travel.',
+      'The bilateral mechanic is simple. IHG top-tier members get a complimentary Lazy Tiger class per stay, booked through the concierge. IHG pays per class redeemed. Lazy Tiger gets two to seven new paying members per month at zero acquisition cost. The hotel gets a wellness amenity its competitors can’t match. Everybody wins.',
+      'That’s one hotel partnership. Singapore comes next. Then Hong Kong. Then a turnkey playbook Cathal and PROXYZ walk into every premium hotel partnership across Asia.',
+    ],
+    markers: [
+      { city: 'Bangkok', hotel: 'InterContinental Bangkok', status: 'active', x: 540, y: 410 },
+      { city: 'Singapore', hotel: 'InterContinental Singapore', status: 'pending', x: 590, y: 510 },
+      { city: 'Hong Kong', hotel: 'Regent Hong Kong', status: 'pending', x: 680, y: 360 },
+    ],
+  },
+
+  engagement: {
+    headline: 'How we come in.',
+    paragraphs: [
+      "We engage under PROXYZ’s Build-with mode: a partnership that aligns our work with Lazy Tiger’s outcomes across the Asia rollout. The commercial details we work out together, in the room, the way operators do.",
+      'What we do not do: SaaS-tier billing, per-seat pricing, metered AI. Pricing is engagement-mode-based. Always.',
+      'What we always do: transparent diligence, board observer rights at install, exit-design discipline from day one.',
+    ],
+  },
+
+  diligence: {
+    headline: "What we're bringing to the room.",
+    subline:
+      'Three pieces of the operating system already designed. Surfaced here because depth is the work.',
+    cards: [
+      {
+        label: 'LOYALTY · MEMBER VALUE LAYER',
+        headline:
+          'A three-tier loyalty system that rewards intensity, not attendance.',
+        body:
+          'Cub. Tiger. Black Tiger. The earn rate is calibrated to Tiger Score, not class count. Founding members start as Tiger for six months. Black Tiger unlocks VIP Coaching, partner hotel passes, cross-city access, and the annual Lazy Tiger International Tournament invitation. The system rewards the members who show up the hardest, not just the most often.',
+      },
+      {
+        label: 'PARTNERSHIPS · HOTEL NETWORK PLAYBOOK',
+        headline: 'The InterContinental is the first hotel partner, not the only one.',
+        body:
+          'IHG One Rewards has 130 million enrolled members globally. The bilateral mechanic at the Bangkok flagship sends top-tier IHG guests into Lazy Tiger as a complimentary perk. IHG pays per redemption. Lazy Tiger gets paying members at zero acquisition cost. The same playbook runs at the Singapore and Hong Kong properties when they come online.',
+      },
+      {
+        label: 'POSITIONING · THE FORMAT THE WORLD WANTS TO INSTALL',
+        headline:
+          "There's an empty quadrant in the global boutique fitness landscape. We're building toward it.",
+        body:
+          "F45, Orangetheory, and Xponential force operators to adopt their brand. Mindbody and Glofox give you software but no gamification or scoring. No one currently sells a full-stack brand-agnostic operating system to boutique fitness brands. Lazy Tiger and PROXYZ are building it. Bangkok is the first installation. The Asia rollout is the proof. The empty quadrant is the long game.",
+      },
+    ],
+    sourceLine: 'Lazy Tiger × PROXYZ, 2026-05-20',
+  },
+
+  currentStage: {
+    headline: 'Currently in conversation.',
+    paragraphs: [
+      'Active engagement preview. The pressure-test, the architecture, the rollout sequencing, the financial model — all of it is on the table with Cathal as we figure out the right shape together.',
+      'We share our work in motion because that’s how we operate.',
+    ],
+  },
+
+  team: {
+    headline: 'The PROXYZ team on Lazy Tiger.',
+    members: [
+      {
+        name: 'Arnon (Tew) Saksri',
+        role: 'Founder, PROXYZ Studio',
+        bio: 'Architect of the Lazy Tiger engagement. Bridges design and AI automation across PROXYZ’s portfolio. Based in Bangkok.',
+        initials: 'AT',
+        photo: '/lazy-tiger/team/tew.jpg',
+      },
+      {
+        name: 'iLing Sorum',
+        role: 'Head of Sales + Media',
+        bio: 'Onboarding as PROXYZ’s Integrator across cities. Owns the relationship surface area for partners through the engagement lifecycle.',
+        initials: 'iL',
+        photo: '/lazy-tiger/team/iling.jpg',
+      },
+    ],
+  },
+
+  otherPartners: {
+    headline: 'Other partners in the studio.',
+    cards: [
+      {
+        name: 'LAZY TIGER',
+        sector: 'Bangkok · Boutique fitness',
+        status: 'Active preview',
+        current: true,
+      },
+      {
+        name: 'FAST-FIX',
+        sector: 'Phuket · Hospitality maintenance',
+        status: 'Active discussion',
+        href: '/partners/fast-fix',
+      },
+      {
+        name: 'PUSHERS',
+        sector: 'Thailand',
+        status: 'In conversation',
+      },
+      {
+        name: 'WILDER',
+        sector: 'In progress',
+        status: 'Active engagement',
+      },
+    ],
+  },
+
+  footer: {
+    closing: 'DRIVE EACH OTHER.',
+    sub: 'PROXYZ Studio operates from Bangkok.\nEngagements: Acquire · Partner · Build-with · Build-for.',
+  },
+
+  /* 20 scripted leaderboard members. HR ranges (60-185), Tiger Score baselines.
+     Component animates ranks + scores; this is the seed. */
+  leaderboard: [
+    { rank: 1, name: 'Nawat P.', hr: 168, score: 9420, modality: 'cardio' },
+    { rank: 2, name: 'Cathal K.', hr: 162, score: 9385, modality: 'cardio' },
+    { rank: 3, name: 'Pim S.', hr: 174, score: 9201, modality: 'cardio' },
+    { rank: 4, name: 'Marcus L.', hr: 159, score: 8944, modality: 'reformer' },
+    { rank: 5, name: 'Aoy T.', hr: 171, score: 8810, modality: 'cardio' },
+    { rank: 6, name: 'Daniel R.', hr: 165, score: 8702, modality: 'cardio' },
+    { rank: 7, name: 'Sarawut V.', hr: 154, score: 8534, modality: 'reformer' },
+    { rank: 8, name: 'Mai N.', hr: 178, score: 8401, modality: 'cardio' },
+    { rank: 9, name: 'Hugo D.', hr: 161, score: 8298, modality: 'cardio' },
+    { rank: 10, name: 'Apinya C.', hr: 144, score: 8120, modality: 'yoga' },
+    { rank: 11, name: 'Liam O.', hr: 152, score: 7984, modality: 'reformer' },
+    { rank: 12, name: 'Yui W.', hr: 169, score: 7820, modality: 'cardio' },
+    { rank: 13, name: 'Tom H.', hr: 148, score: 7711, modality: 'yoga' },
+    { rank: 14, name: 'Bee K.', hr: 163, score: 7544, modality: 'cardio' },
+    { rank: 15, name: 'Erica Z.', hr: 138, score: 7380, modality: 'yoga' },
+    { rank: 16, name: 'Joon S.', hr: 156, score: 7215, modality: 'reformer' },
+    { rank: 17, name: 'Ploy A.', hr: 172, score: 7088, modality: 'cardio' },
+    { rank: 18, name: 'Andrew B.', hr: 145, score: 6924, modality: 'reformer' },
+    { rank: 19, name: 'Mint J.', hr: 140, score: 6781, modality: 'yoga' },
+    { rank: 20, name: 'Niko F.', hr: 167, score: 6602, modality: 'cardio' },
+  ],
+
+  merch: [
+    'Tiger Helmet Tee',
+    'Drive Each Other Hoodie',
+    'Neon Orange Cropped Jacket',
+    'Cardio Studio Singlet',
+    'Reformer Studio Long-sleeve',
+    'Yoga Studio Mat Tote',
+    'Master Logo Cap',
+    'Tron Stripe Cycling Shorts',
+    'Apex Member-Tier Anorak',
+  ],
+
+  coachChat: [
+    {
+      speaker: 'coach',
+      text: 'Your HRV dropped 12 percent overnight. Same Wednesday pattern as last week.',
+    },
+    { speaker: 'member', text: 'I felt it. Pulled an 11 hour day.' },
+    {
+      speaker: 'coach',
+      text: 'I’ve adjusted your Thursday session. Zone 2 on the Bike, 30 minutes. No leaderboard pressure tonight.',
+    },
+    { speaker: 'member', text: 'Thanks.' },
+  ],
+};
