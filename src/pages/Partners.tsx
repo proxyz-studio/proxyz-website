@@ -35,14 +35,14 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
         position: 'relative',
       }}
     >
-      {/* Big outlined chapter number — owns the upper-right area now that the
-          status pill has been moved below the partner name. */}
+      {/* Big outlined chapter number — sits inside the article so the
+          divider line above the card doesn't cut through the digits. */}
       <div
         aria-hidden
         className="partner-marginalia"
         style={{
           position: 'absolute',
-          top: '-12px',
+          top: '24px',
           right: 0,
           opacity: 0.32,
           pointerEvents: 'none',
