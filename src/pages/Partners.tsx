@@ -35,47 +35,54 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
         position: 'relative',
       }}
     >
-      {/* Header strip */}
+      {/* Header strip — chapter number above the name, status pill on the right */}
       <div
         className="partner-header"
         style={{
           display: 'grid',
-          gridTemplateColumns: 'auto 1fr auto',
+          gridTemplateColumns: '1fr auto',
           gap: '32px',
-          alignItems: 'baseline',
+          alignItems: 'end',
           marginBottom: '36px',
         }}
       >
-        <span
-          style={{
-            fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: '12px',
-            letterSpacing: '0.12em',
-            color: 'rgba(255,255,255,0.4)',
-          }}
-        >
-          {String(index + 1).padStart(2, '0')}
-        </span>
-        <h2
-          style={{
-            fontFamily: "'Fragment Mono', monospace",
-            fontSize: 'clamp(40px, 5.4vw, 80px)',
-            fontWeight: 400,
-            lineHeight: 0.96,
-            letterSpacing: '0.015em',
-            textTransform: 'uppercase',
-            margin: 0,
-            color: '#fff',
-          }}
-        >
-          {partner.detailHref ? (
-            <Link to={partner.detailHref} style={{ color: '#fff', textDecoration: 'none' }}>
-              {partner.name}
-            </Link>
-          ) : (
-            partner.name
-          )}
-        </h2>
+        <div>
+          <span
+            style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 'clamp(28px, 3vw, 44px)',
+              fontWeight: 400,
+              letterSpacing: '0.04em',
+              color: 'var(--accent-pink)',
+              display: 'block',
+              fontVariantNumeric: 'tabular-nums',
+              marginBottom: '6px',
+              lineHeight: 1,
+            }}
+          >
+            №{String(index + 1).padStart(2, '0')}
+          </span>
+          <h2
+            style={{
+              fontFamily: "'Fragment Mono', monospace",
+              fontSize: 'clamp(40px, 5.4vw, 80px)',
+              fontWeight: 400,
+              lineHeight: 0.96,
+              letterSpacing: '0.015em',
+              textTransform: 'uppercase',
+              margin: 0,
+              color: '#fff',
+            }}
+          >
+            {partner.detailHref ? (
+              <Link to={partner.detailHref} style={{ color: '#fff', textDecoration: 'none' }}>
+                {partner.name}
+              </Link>
+            ) : (
+              partner.name
+            )}
+          </h2>
+        </div>
         <span
           className="partner-status-pill"
           style={{
@@ -89,6 +96,7 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
             borderRadius: '999px',
             whiteSpace: 'nowrap',
             justifySelf: 'end',
+            marginBottom: '12px',
           }}
         >
           ● {partner.stage}
