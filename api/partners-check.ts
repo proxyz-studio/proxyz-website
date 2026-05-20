@@ -23,11 +23,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const partner = safeSlug(req.query.partner);
   const expected = createHmac('sha256', signingSecret).update(COOKIE_PAYLOAD).digest('hex');
 
-  // Try the per-partner cookie first, then fall back to the legacy shared
-  // cookie so existing FAST-FIX visitors with a cached unlock stay unlocked.
+  // Per-partner cookie is the only one accepted when a partner is specified.
+  // The legacy shared cookie is honored ONLY for fast-fix (the partner that
+  // existed before per-partner codes), and ONLY when no partner is named.
+  // Lazy Tiger is intentionally NOT covered by the legacy fallback — its
+  // unlock requires its own cookie, set by entering its own code.
   const candidates: string[] = [];
-  if (partner) candidates.push(`${COOKIE_PREFIX}_${partner.replace(/-/g, '_')}`);
-  candidates.push(COOKIE_PREFIX);
+  if (partner) {
+    candidates.push(`${COOKIE_PREFIX}_${partner.replace(/-/g, '_')}`);
+    if (partner === 'fast-fix') candidates.push(COOKIE_PREFIX);
+  } else {
+    candidates.push(COOKIE_PREFIX);
+  }
 
   for (const name of candidates) {
     const cookie = req.cookies?.[name];
