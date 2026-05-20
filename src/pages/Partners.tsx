@@ -35,15 +35,16 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
         position: 'relative',
       }}
     >
-      {/* Big outlined chapter number — top-right, matches homepage section pattern */}
+      {/* Big outlined chapter number — sits above the card's top border,
+          clear of the status pill and the meta row. */}
       <div
         aria-hidden
         className="partner-marginalia"
         style={{
           position: 'absolute',
-          top: '16px',
+          top: '-32px',
           right: 0,
-          opacity: 0.55,
+          opacity: 0.32,
           pointerEvents: 'none',
           zIndex: 0,
         }}
@@ -51,7 +52,7 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
         <Marginalia
           number={String(index + 1).padStart(2, '0')}
           color="light"
-          size="clamp(120px, 16vw, 240px)"
+          size="clamp(80px, 10vw, 150px)"
         />
       </div>
 
