@@ -112,7 +112,7 @@ export default function FastFix() {
   return (
     <>
       <Nav />
-      <PartnerGate>
+      <PartnerGate partner="fast-fix">
       <main style={{ background: '#000', color: '#fff' }}>
         {/* ====== HERO ====== */}
         <section

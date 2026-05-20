@@ -514,6 +514,30 @@ export const partnersPageConfig: PartnersPageConfig = {
       cta: { label: "View full pitch →", href: "/partners/fast-fix" },
       detailHref: "/partners/fast-fix",
     },
+    {
+      name: "Lazy Tiger",
+      sector: "Boutique fitness",
+      location: "Bangkok, Thailand",
+      stage: "Active discussion",
+      partnerLabel: "Founder",
+      partner: "Cathal Kiely",
+      proxyzRole:
+        "The operating system that scales the brand across Asia. Portal install, AI Coach, Tiger Score, loyalty layer, the programming pipeline that codifies the IP.",
+      partnerBrings:
+        "The brand, the format, the InterContinental Bangkok flagship, the capital for studio buildouts, the instructor and class IP, the Thai studio network.",
+      whyItMatters:
+        "Gamified-cardio is category-of-one in Bangkok for 18 to 24 months. The brand-agnostic operating system Cathal and PROXYZ build together is the format other boutique fitness brands globally will want to install. Bangkok is the first installation. The Asia rollout is the proof.",
+      milestones: [
+        { label: "Week 1–2 · Introductions", status: 'done' },
+        { label: "Week 3–6 · Pressure-test + architecture", status: 'done' },
+        { label: "Week 7–10 · Engagement letter + financial model", status: 'active' },
+        { label: "Week 11+ · Bangkok flagship launch", status: 'next' },
+      ],
+      lastUpdate:
+        "Loyalty layer, IHG hotel network playbook, and the empty-quadrant positioning landed on the page v1.1. Engagement letter draft next.",
+      cta: { label: "View full pitch →", href: "/partners/lazy-tiger" },
+      detailHref: "/partners/lazy-tiger",
+    },
   ],
   closingLabel: "BECOME A PARTNER",
   closingHeading: "Two to three slots per year.",

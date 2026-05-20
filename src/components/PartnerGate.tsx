@@ -5,7 +5,14 @@ type Status = 'checking' | 'locked' | 'unlocked';
 
 const FONT_MONO = "'IBM Plex Mono', monospace";
 
-export default function PartnerGate({ children }: { children: ReactNode }) {
+export default function PartnerGate({
+  children,
+  partner,
+}: {
+  children: ReactNode;
+  /** Partner slug — drives per-partner code lookup + cookie scoping. */
+  partner?: 'fast-fix' | 'lazy-tiger';
+}) {
   const [status, setStatus] = useState<Status>('checking');
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +30,10 @@ export default function PartnerGate({ children }: { children: ReactNode }) {
       return;
     }
     let cancelled = false;
-    fetch('/api/partners-check', { credentials: 'same-origin' })
+    const checkUrl = partner
+      ? `/api/partners-check?partner=${encodeURIComponent(partner)}`
+      : '/api/partners-check';
+    fetch(checkUrl, { credentials: 'same-origin' })
       .then((r) => r.json())
       .then((d) => {
         if (!cancelled) setStatus(d.ok ? 'unlocked' : 'locked');
@@ -34,7 +44,7 @@ export default function PartnerGate({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [partner]);
 
   useEffect(() => {
     if (status === 'locked') {
@@ -51,7 +61,7 @@ export default function PartnerGate({ children }: { children: ReactNode }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify({ code: value }),
+        body: JSON.stringify(partner ? { code: value, partner } : { code: value }),
       });
       if (r.ok) {
         setStatus('unlocked');

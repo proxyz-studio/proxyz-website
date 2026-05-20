@@ -17,6 +17,7 @@
 import { Link } from 'react-router-dom';
 import { useEffect } from 'react';
 import Nav from '../components/Nav';
+import PartnerGate from '../components/PartnerGate';
 import Reveal from '../components/Reveal';
 import { HeroMesh } from '../components/Glow';
 import { MagneticAnchor } from '../components/Spatial';
@@ -256,6 +257,7 @@ export default function LazyTiger() {
   return (
     <>
       <Nav />
+      <PartnerGate partner="lazy-tiger">
       <main style={{ background: '#000', color: '#fff', overflow: 'hidden' }}>
         {/* ================================================================
             SECTION 1 — HERO
@@ -1411,6 +1413,7 @@ export default function LazyTiger() {
         </section>
       </main>
       <Footer />
+      </PartnerGate>
     </>
   );
 }
