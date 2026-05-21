@@ -22,6 +22,10 @@ import FastFix from './pages/FastFix';
 const LazyTiger = lazy(() => import('./pages/LazyTiger'));
 const LazyTigerStyles = lazy(() => import('./pages/LazyTigerStyles'));
 
+// Legal pages — lazy because rarely visited but needed for LINE OA + Thai PDPA.
+const Privacy = lazy(() => import('./pages/Privacy'));
+const Terms = lazy(() => import('./pages/Terms'));
+
 // Preview routes are dev-only — code-split so production users don't pay for motion lib etc.
 const HeroPreview = lazy(() => import('./pages/HeroPreview'));
 const VisualPreview = lazy(() => import('./pages/VisualPreview'));
@@ -96,6 +100,8 @@ function App() {
           path="/partners/lazy-tiger"
           element={<Suspense fallback={null}><LazyTiger /></Suspense>}
         />
+        <Route path="/privacy" element={<Suspense fallback={null}><Privacy /></Suspense>} />
+        <Route path="/terms" element={<Suspense fallback={null}><Terms /></Suspense>} />
         <Route
           path="/preview/lazy-tiger-styles"
           element={<Suspense fallback={null}><LazyTigerStyles /></Suspense>}
