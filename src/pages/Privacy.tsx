@@ -9,6 +9,7 @@
  * Have a Thai-licensed lawyer review before B2C launch.
  */
 
+import { Link } from 'react-router-dom';
 import Nav from '../components/Nav';
 import Footer from '../sections/Footer';
 
@@ -262,9 +263,9 @@ export default function Privacy() {
               hello@proxyz.studio
             </a>
             . See also the{' '}
-            <a href="/terms" style={linkStyle}>
+            <Link to="/terms" style={linkStyle}>
               Terms of Service
-            </a>
+            </Link>
             .
           </p>
         </article>

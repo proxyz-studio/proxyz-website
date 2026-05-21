@@ -386,6 +386,10 @@
   .footer-grid > * {
     justify-self: center !important;
   }
+  .footer-legal {
+    padding: 12px 20px !important;
+    font-size: 10px !important;
+  }
 }
 
 @media (max-width: 480px) {

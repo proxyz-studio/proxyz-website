@@ -12,6 +12,7 @@
  * launches under this domain.
  */
 
+import { Link } from 'react-router-dom';
 import Nav from '../components/Nav';
 import Footer from '../sections/Footer';
 
@@ -241,9 +242,9 @@ export default function Terms() {
               hello@proxyz.studio
             </a>
             . See also the{' '}
-            <a href="/privacy" style={linkStyle}>
+            <Link to="/privacy" style={linkStyle}>
               Privacy Policy
-            </a>
+            </Link>
             .
           </p>
         </article>
