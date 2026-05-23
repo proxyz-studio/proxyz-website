@@ -1,0 +1,71 @@
+name: Smoke deploy
+
+on:
+  schedule:
+    - cron: '*/30 * * * *' # every 30 min
+  workflow_dispatch:
+  repository_dispatch:
+    types: [vercel.deployment.success]
+
+jobs:
+  probe:
+    name: Probe production
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Probe homepage
+        run: |
+          set -euo pipefail
+          URL="https://proxyz.studio"
+          HTTP=$(curl -s -o /tmp/body.html -w "%{http_code}" --max-time 30 "$URL")
+          if [ "$HTTP" != "200" ]; then
+            echo "::error::Homepage returned HTTP $HTTP"
+            exit 1
+          fi
+          BYTES=$(wc -c < /tmp/body.html)
+          if [ "$BYTES" -lt 1000 ]; then
+            echo "::error::Homepage body suspiciously short ($BYTES bytes)"
+            exit 1
+          fi
+          if ! grep -q "PROXYZ" /tmp/body.html; then
+            echo "::error::Homepage missing PROXYZ wordmark"
+            exit 1
+          fi
+          if ! grep -qE 'id="root"|<div id=' /tmp/body.html; then
+            echo "::error::Homepage missing React root mount point"
+            exit 1
+          fi
+          echo "OK: $URL is up, body $BYTES bytes, PROXYZ wordmark present"
+
+      - name: Probe pipeline page
+        run: |
+          set -euo pipefail
+          URL="https://proxyz.studio/pipeline"
+          HTTP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$URL")
+          if [ "$HTTP" != "200" ]; then
+            echo "::error::Pipeline page returned HTTP $HTTP"
+            exit 1
+          fi
+          echo "OK: $URL is up"
+
+      - name: Probe ventures page
+        run: |
+          set -euo pipefail
+          URL="https://proxyz.studio/ventures"
+          HTTP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$URL")
+          if [ "$HTTP" != "200" ]; then
+            echo "::error::Ventures page returned HTTP $HTTP"
+            exit 1
+          fi
+          echo "OK: $URL is up"
+
+      - name: Probe portal sign-in
+        run: |
+          set -euo pipefail
+          URL="https://proxyz.studio/portal"
+          HTTP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$URL")
+          if [ "$HTTP" != "200" ]; then
+            echo "::error::Portal page returned HTTP $HTTP"
+            exit 1
+          fi
+          echo "OK: $URL is up"
