@@ -60,6 +60,7 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
     "three": "^0.134.0",
+    "vanilla-tilt": "^1.8.1",
     "vanta": "^0.5.24",
     "vaul": "^1.1.2",
     "zod": "^4.3.5"

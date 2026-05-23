@@ -1,15 +1,44 @@
-import { useRef, type ReactNode, type AnchorHTMLAttributes } from 'react';
+import { useEffect, useRef, type ReactNode, type AnchorHTMLAttributes } from 'react';
 import { motion } from 'motion/react';
+import VanillaTilt from 'vanilla-tilt';
 
 function isTouchDevice() {
   if (typeof window === 'undefined') return false;
   return window.matchMedia('(hover: none)').matches;
 }
 
+function prefersReducedMotion() {
+  if (typeof window === 'undefined' || !window.matchMedia) return false;
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+/**
+ * 3D card tilt + optional glare on hover.
+ *
+ * Powered by Vanilla-Tilt (the named skill in P3 of Tew's plan). Same
+ * library + tuning the founder's brief uses for its venture cards.
+ * Skipped on touch devices and reduce-motion users.
+ *
+ * Backward-compatible with the previous hand-rolled implementation:
+ *   - maxTiltX (default 5)  → mapped to vanilla-tilt's max
+ *   - maxTiltY (default 7)  → averaged with maxTiltX for the symmetric
+ *                             tilt vanilla-tilt expects (its "max"
+ *                             applies on both axes). Existing call sites
+ *                             that pass both values get the average.
+ *   - as, style, className unchanged
+ *
+ * New props:
+ *   - glare (default true) — subtle gloss on the high edge
+ *   - maxGlare (default 0.08) — restrained per impeccable
+ *   - speed (default 720) — transition speed in ms
+ */
 export function TiltCard({
   children,
   maxTiltX = 5,
   maxTiltY = 7,
+  glare = true,
+  maxGlare = 0.08,
+  speed = 720,
   style,
   className,
   as: Tag = 'div',
@@ -17,34 +46,46 @@ export function TiltCard({
   children: ReactNode;
   maxTiltX?: number;
   maxTiltY?: number;
+  glare?: boolean;
+  maxGlare?: number;
+  speed?: number;
   style?: React.CSSProperties;
   className?: string;
   as?: 'div' | 'article' | 'section';
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  function onMove(e: React.MouseEvent) {
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
     if (isTouchDevice()) return;
-    const el = ref.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width - 0.5;
-    const y = (e.clientY - rect.top) / rect.height - 0.5;
-    el.style.transform = `perspective(900px) rotateX(${-y * maxTiltX}deg) rotateY(${x * maxTiltY}deg) translateZ(0)`;
-  }
-  function onLeave() {
-    const el = ref.current;
-    if (!el) return;
-    el.style.transform = 'perspective(900px) rotateX(0deg) rotateY(0deg) translateZ(0)';
-  }
+    if (prefersReducedMotion()) return;
+
+    const maxTilt = Math.round((maxTiltX + maxTiltY) / 2);
+    VanillaTilt.init(el, {
+      max: maxTilt,
+      speed,
+      glare,
+      'max-glare': maxGlare,
+      perspective: 1500,
+      easing: 'cubic-bezier(0.16, 1, 0.3, 1)', // ease-out-expo, matches motion tokens
+      'gyroscope': false,
+      reset: true,
+    });
+
+    return () => {
+      // Vanilla-Tilt attaches a `vanillaTilt` instance to the DOM node.
+      const inst = (el as HTMLElement & { vanillaTilt?: { destroy(): void } }).vanillaTilt;
+      if (inst) inst.destroy();
+    };
+  }, [maxTiltX, maxTiltY, glare, maxGlare, speed]);
+
   return (
     <Tag
       ref={ref as never}
       className={className}
-      onMouseMove={onMove}
-      onMouseLeave={onLeave}
       style={{
         transformStyle: 'preserve-3d',
-        transition: 'transform 240ms cubic-bezier(0.2, 0.7, 0.1, 1)',
         willChange: 'transform',
         ...style,
       }}

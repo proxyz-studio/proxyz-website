@@ -12,7 +12,7 @@
 import { useEffect } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import Reveal from '../components/Reveal';
-import { MagneticAnchor } from '../components/Spatial';
+import { MagneticAnchor, TiltCard } from '../components/Spatial';
 import { Marginalia } from '../components/Editorial';
 import { HeroMesh } from '../components/Glow';
 import Nav from '../components/Nav';
@@ -454,8 +454,11 @@ export default function VentureDetail() {
                 }}
               >
                 {d.modulesDetail.map((m) => (
-                  <div
+                  <TiltCard
                     key={m.name}
+                    maxTiltX={2}
+                    maxTiltY={3}
+                    glare={false}
                     style={{
                       padding: '28px 32px',
                       borderTop: `1px solid ${brand.accent}`,
@@ -528,7 +531,7 @@ export default function VentureDetail() {
                         </ul>
                       </div>
                     )}
-                  </div>
+                  </TiltCard>
                 ))}
               </div>
             </div>
