@@ -668,6 +668,43 @@ body.has-custom-cursor * {
   }
 }
 
+/* Ventures index + VentureDetail grids
+   Seven grid classes had no mobile rules — pages broke on phones.
+   - .venture-how-grid, .venture-modules-grid, .venture-team-grid (VentureDetail) → repeat(2,1fr) collapses to 1fr at ≤900px
+   - .venture-roadmap (VentureDetail) → repeat(4,1fr) collapses to 2 cols at ≤900px, 1 at ≤600px
+   - .venture-modules (Ventures index) → repeat(4,1fr) collapses to 2 cols at ≤900px, 1 at ≤600px
+   - .venture-foot (Ventures index) + .venture-closing (VentureDetail) → 1fr auto stacks to 1fr at ≤600px, CTA stretches full-width */
+@media (max-width: 900px) {
+  .venture-how-grid,
+  .venture-modules-grid,
+  .venture-team-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .venture-roadmap,
+  .venture-modules {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 14px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .venture-roadmap,
+  .venture-modules {
+    grid-template-columns: 1fr !important;
+  }
+  .venture-foot,
+  .venture-closing {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+  .venture-foot a,
+  .venture-foot > div > span,
+  .venture-closing a {
+    justify-self: stretch !important;
+    text-align: center !important;
+  }
+}
+
 /* ---------- BACKGROUND GLOWS (preview options) ---------- */
 
 /* Option D — slow mesh drift */
