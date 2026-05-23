@@ -17,6 +17,7 @@
 import { Link } from 'react-router-dom';
 import { useEffect } from 'react';
 import Nav from '../components/Nav';
+import PartnerSubNav from '../components/PartnerSubNav';
 import PartnerGate from '../components/PartnerGate';
 import Reveal from '../components/Reveal';
 import { HeroMesh } from '../components/Glow';
@@ -258,6 +259,18 @@ export default function LazyTiger() {
     <>
       <Nav />
       <PartnerGate partner="lazy-tiger">
+      <PartnerSubNav
+        name="LAZY-TIGER"
+        accent={PINK}
+        sections={[
+          { id: 'brief', label: 'Brief' },
+          { id: 'frame', label: 'Frame' },
+          { id: 'layers', label: 'Layers' },
+          { id: 'engagement', label: 'Engagement' },
+          { id: 'team', label: 'Team' },
+          { id: '/partners/lazy-tiger/cost-overview/', label: 'Cost overview →', external: true },
+        ]}
+      />
       <main style={{ background: '#000', color: '#fff', overflow: 'hidden' }}>
         {/* ================================================================
             SECTION 1 — HERO
@@ -347,39 +360,6 @@ export default function LazyTiger() {
                 <span className="lt-cursor-blink" />
               </p>
             </Reveal>
-
-            <Reveal delay={500}>
-              <div style={{ marginTop: '44px' }}>
-                <a
-                  href="/partners/lazy-tiger/cost-overview/"
-                  style={{
-                    fontFamily: FONT_MONO,
-                    fontSize: '12px',
-                    fontWeight: 400,
-                    color: PINK,
-                    background: 'transparent',
-                    textTransform: 'uppercase',
-                    textDecoration: 'none',
-                    letterSpacing: '0.16em',
-                    padding: '13px 26px',
-                    borderRadius: '999px',
-                    border: `1px solid ${PINK}`,
-                    transition: 'background 0.2s ease, color 0.2s ease',
-                    display: 'inline-block',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = PINK;
-                    e.currentTarget.style.color = '#000';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'transparent';
-                    e.currentTarget.style.color = PINK;
-                  }}
-                >
-                  View build &amp; operate cost overview →
-                </a>
-              </div>
-            </Reveal>
           </div>
         </section>
 
@@ -387,6 +367,7 @@ export default function LazyTiger() {
             SECTION 2 — THE BRIEF
         ================================================================ */}
         <section
+          id="brief"
           data-brand-mode="proxyz"
           className="lt-section-padding"
           style={{
@@ -494,6 +475,7 @@ export default function LazyTiger() {
             SECTION 4 — THE FRAME (Tiger mode begins)
         ================================================================ */}
         <section
+          id="frame"
           data-brand-mode="tiger"
           className="lt-section-padding"
           style={{
@@ -535,6 +517,7 @@ export default function LazyTiger() {
         {/* ================================================================
             SECTION 5 — LAYER 01: SENSOR NETWORK
         ================================================================ */}
+        <div id="layers" />
         <LayerSection layer={c.layers[0]} num={1}>
           <SensorNetworkDiagram />
           <div style={{ marginTop: '20px', opacity: 0.4 }}>
@@ -1107,6 +1090,7 @@ export default function LazyTiger() {
             SECTION 13 — THE ENGAGEMENT MODEL
         ================================================================ */}
         <section
+          id="engagement"
           data-brand-mode="proxyz"
           className="lt-section-padding"
           style={{
@@ -1235,6 +1219,7 @@ export default function LazyTiger() {
             SECTION 14 — TEAM
         ================================================================ */}
         <section
+          id="team"
           data-brand-mode="proxyz"
           className="lt-section-padding"
           style={{

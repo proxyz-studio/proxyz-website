@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import Nav from '../components/Nav';
+import PartnerSubNav from '../components/PartnerSubNav';
 import PartnerGate from '../components/PartnerGate';
 import Reveal from '../components/Reveal';
 import { MagneticAnchor, TiltCard } from '../components/Spatial';
@@ -113,6 +114,17 @@ export default function FastFix() {
     <>
       <Nav />
       <PartnerGate partner="fast-fix">
+      <PartnerSubNav
+        name="FAST-FIX"
+        sections={[
+          { id: 'model', label: 'Model' },
+          { id: 'os', label: 'OS' },
+          { id: 'contributions', label: 'Contributions' },
+          { id: 'partnership', label: 'Partnership' },
+          { id: 'why-now', label: 'Why now' },
+          { id: 'roadmap', label: 'Roadmap' },
+        ]}
+      />
       <main style={{ background: '#000', color: '#fff' }}>
         {/* ====== HERO ====== */}
         <section
@@ -214,6 +226,7 @@ export default function FastFix() {
 
         {/* ====== 01 · THE MODEL ====== */}
         <section
+          id="model"
           className="section-mobile"
           style={{ padding: '96px 40px', borderBottom: '1px solid rgba(255,255,255,0.30)' }}
         >
@@ -316,6 +329,7 @@ export default function FastFix() {
 
         {/* ====== 02 · THE OPERATING SYSTEM ====== */}
         <section
+          id="os"
           className="section-mobile"
           style={{ padding: '96px 40px', borderBottom: '1px solid rgba(255,255,255,0.30)' }}
         >
@@ -415,6 +429,7 @@ export default function FastFix() {
 
         {/* ====== 03 · CONTRIBUTIONS ====== */}
         <section
+          id="contributions"
           className="section-mobile"
           style={{ padding: '96px 40px', borderBottom: '1px solid rgba(255,255,255,0.30)' }}
         >
@@ -554,6 +569,7 @@ export default function FastFix() {
 
         {/* ====== 04 · THE PARTNERSHIP ====== */}
         <section
+          id="partnership"
           className="section-mobile"
           style={{ padding: '96px 40px', borderBottom: '1px solid rgba(255,255,255,0.30)' }}
         >
@@ -716,6 +732,7 @@ export default function FastFix() {
 
         {/* ====== 05 · WHY NOW (paper inversion) ====== */}
         <section
+          id="why-now"
           className="section-mobile"
           style={{
             padding: '96px 40px',
@@ -841,6 +858,7 @@ export default function FastFix() {
 
         {/* ====== 06 · ROADMAP ====== */}
         <section
+          id="roadmap"
           className="section-mobile"
           style={{ padding: '96px 40px', borderBottom: '1px solid rgba(255,255,255,0.30)' }}
         >
