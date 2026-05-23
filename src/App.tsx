@@ -27,6 +27,9 @@ const LazyTigerStyles = lazy(() => import('./pages/LazyTigerStyles'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const Terms = lazy(() => import('./pages/Terms'));
 
+// Venture detail pages — lazy. One component handles all slugs.
+const VentureDetail = lazy(() => import('./pages/VentureDetail'));
+
 // Preview routes are dev-only — code-split so production users don't pay for motion lib etc.
 const HeroPreview = lazy(() => import('./pages/HeroPreview'));
 const VisualPreview = lazy(() => import('./pages/VisualPreview'));
@@ -97,6 +100,10 @@ function App() {
         <Route path="/media/padel-z" element={<PadelZ />} />
         <Route path="/pipeline" element={<Pipeline />} />
         <Route path="/ventures" element={<Ventures />} />
+        <Route
+          path="/ventures/:slug"
+          element={<Suspense fallback={null}><VentureDetail /></Suspense>}
+        />
         <Route path="/pipeline/fast-fix" element={<FastFix />} />
         <Route
           path="/pipeline/lazy-tiger"

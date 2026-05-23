@@ -10,6 +10,7 @@
  * background, Plex Mono + Fragment Mono, hot pink + lime accents.
  */
 
+import { Link } from 'react-router-dom';
 import Reveal from '../components/Reveal';
 import { MagneticAnchor } from '../components/Spatial';
 import { Marginalia } from '../components/Editorial';
@@ -39,7 +40,23 @@ const statusPillStyle: Record<string, React.CSSProperties> = {
 };
 
 function VentureEntry({ venture, index }: { venture: VentureCard; index: number }) {
-  const hasLink = venture.status === 'live' && !!venture.href;
+  const hasExternalLink = venture.status === 'live' && !!venture.href;
+  const hasInternalLink = !!venture.internalHref;
+
+  const ctaStyle: React.CSSProperties = {
+    fontFamily: FONT_MONO,
+    fontSize: '12px',
+    fontWeight: 400,
+    color: '#000',
+    background: '#fff',
+    textTransform: 'uppercase',
+    textDecoration: 'none',
+    letterSpacing: '0.08em',
+    padding: '12px 22px',
+    borderRadius: '999px',
+    whiteSpace: 'nowrap',
+    justifySelf: 'end',
+  };
 
   return (
     <article
@@ -225,7 +242,7 @@ function VentureEntry({ venture, index }: { venture: VentureCard; index: number 
             }}
           >
             {venture.domain}
-            {!hasLink && (
+            {!hasExternalLink && (
               <span
                 style={{
                   marginLeft: '12px',
@@ -235,34 +252,27 @@ function VentureEntry({ venture, index }: { venture: VentureCard; index: number 
                   color: 'rgba(255,255,255,0.45)',
                 }}
               >
-                {venture.status === 'building' ? '· goes live at launch' : '· domain pending'}
+                {venture.status === 'building' ? '· launching soon' : '· domain pending'}
               </span>
             )}
           </p>
         </div>
-        {hasLink ? (
+        {hasExternalLink && (
           <MagneticAnchor
             href={venture.href!}
             target="_blank"
             rel="noopener noreferrer"
-            style={{
-              fontFamily: FONT_MONO,
-              fontSize: '12px',
-              fontWeight: 400,
-              color: '#000',
-              background: '#fff',
-              textTransform: 'uppercase',
-              textDecoration: 'none',
-              letterSpacing: '0.08em',
-              padding: '12px 22px',
-              borderRadius: '999px',
-              whiteSpace: 'nowrap',
-              justifySelf: 'end',
-            }}
+            style={ctaStyle}
           >
             Visit {venture.name.toLowerCase()} →
           </MagneticAnchor>
-        ) : (
+        )}
+        {!hasExternalLink && hasInternalLink && (
+          <Link to={venture.internalHref!} style={ctaStyle}>
+            Explore {venture.name.toLowerCase()} →
+          </Link>
+        )}
+        {!hasExternalLink && !hasInternalLink && (
           <span
             style={{
               fontFamily: FONT_MONO,

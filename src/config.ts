@@ -552,15 +552,58 @@ export const pipelinePageConfig: PipelinePageConfig = {
 
 export type VentureStatus = 'live' | 'building' | 'planning';
 
+export interface VentureHowStep {
+  num: string;
+  title: string;
+  body: string;
+}
+
+export interface VentureModuleDetail {
+  name: string;
+  body: string;
+}
+
+export interface VentureRoadmapItem {
+  label: string;
+  status: 'done' | 'active' | 'next';
+}
+
+export interface VentureTeamMember {
+  name: string;
+  role: string;
+}
+
+export interface VentureDetail {
+  /** Slug used in the URL: /ventures/<slug> */
+  slug: string;
+  /** Longer paragraphs for the detail page Overview section */
+  overview: string[];
+  /** Process steps */
+  howItWorks: VentureHowStep[];
+  /** Expanded module descriptions */
+  modulesDetail: VentureModuleDetail[];
+  /** Where this venture is on its arc */
+  roadmap: VentureRoadmapItem[];
+  /** Who runs it */
+  team: VentureTeamMember[];
+  /** Reference materials: research dossiers, decisions, etc. */
+  references?: { label: string; href: string }[];
+}
+
 export interface VentureCard {
   name: string;
   tagline: string;
   status: VentureStatus;
   statusLabel: string;
   domain: string;
+  /** Live outbound link to the venture's own domain. Null until the domain ships. */
   href: string | null;
+  /** Internal proxyz.studio detail page. Null if no detail page yet (e.g. PRYZM today). */
+  internalHref: string | null;
   pitch: string;
   modules: string[];
+  /** Richer content for the detail page. Optional — only filled when a detail page exists. */
+  detail?: VentureDetail;
 }
 
 export interface VenturesPageConfig {
@@ -584,23 +627,147 @@ export const venturesPageConfig: VenturesPageConfig = {
       name: "AUTOLOOM",
       tagline: "Thai SMB agent bundles. Service-for-cash, no SaaS tier.",
       status: "building",
-      statusLabel: "BUILDING · LAUNCH 28 MAY 2026",
+      statusLabel: "BUILDING · LAUNCHING SOON",
       domain: "autoloom.tech",
       href: null,
+      internalHref: "/ventures/autoloom",
       pitch:
         "Agent-as-a-Service bundles installed into Thai SMBs by industry. Marketing agencies, law, insurance, manufacturing, wholesalers, real estate. Each install ships in a week. LINE-native by default.",
       modules: ["Agent runtime", "LINE OA bridge", "Industry playbooks", "Install pipeline"],
+      detail: {
+        slug: "autoloom",
+        overview: [
+          "AUTOLOOM is PROXYZ's venture arm for installing agent bundles into Thai small and mid-sized businesses by industry. Each bundle is a tested set of agents, configured for a specific vertical, that ships in under a week and operates the customer's most expensive recurring workflow.",
+          "The pricing model is service-for-cash. No SaaS tier, no per-seat pricing, no metered AI. The customer pays once to install and a flat monthly fee to operate. The agents run on infrastructure PROXYZ owns; the customer never sees a cloud bill.",
+          "LINE OA is the default customer-facing channel. The bundle for any Thai vertical assumes the buyer's customer base is on LINE, and the install ships with a Composio HTTP and LINE Messaging API bridge as the first integration.",
+        ],
+        howItWorks: [
+          {
+            num: "01",
+            title: "Pick a bundle",
+            body: "Six industry bundles ship at launch: marketing agencies, law, insurance, manufacturing, wholesalers, real estate. Each one is built around the highest-value agent for that vertical, surrounded by supporting agents the install needs to land.",
+          },
+          {
+            num: "02",
+            title: "Install in under a week",
+            body: "The install team configures the agents for the customer's specific stack, wires LINE OA and email channels, runs the cohort tests, and hands off the operating runbook. No long discovery cycle, no committee, no SaaS contract.",
+          },
+          {
+            num: "03",
+            title: "Operate as service",
+            body: "PROXYZ runs the agents from PROXYZ infrastructure. The customer reports issues, requests new behaviors, reads the monthly outcome report. Updates ship through the same channel an employee would use.",
+          },
+          {
+            num: "04",
+            title: "Expand by vertical",
+            body: "Once a bundle is paying, the next one for the same vertical (next-tier agent, adjacent workflow) is one Audit away. Repeated installs into the same industry compound into a moat.",
+          },
+        ],
+        modulesDetail: [
+          {
+            name: "Agent runtime",
+            body: "The execution layer that runs each customer's agents. Sits behind a Composio MCP bridge so agents can call email, calendar, CRM, and LINE OA tools through a unified interface.",
+          },
+          {
+            name: "LINE OA bridge",
+            body: "Composio does not natively support the LINE Messaging API. AUTOLOOM ships with a 1 to 2 day reusable bridge built once, deployed per install. Blocking dependency for every Thai vertical.",
+          },
+          {
+            name: "Industry playbooks",
+            body: "Each bundle ships with a playbook for the vertical: the buyer profile, the pain it solves, the test cohort, the rollout sequence. Codified from six parallel research agents in May 2026.",
+          },
+          {
+            name: "Install pipeline",
+            body: "The studio side: discovery script, install checklist, handoff document, monthly outcome report template. Same shape across all six verticals so the install team scales.",
+          },
+        ],
+        roadmap: [
+          { label: "Phase 0 · Six-industry research synthesis", status: "done" },
+          { label: "Phase 1 · Magnus install (reference VM)", status: "active" },
+          { label: "Phase 2 · First five paid installs", status: "next" },
+          { label: "Phase 3 · Industry-specific scale", status: "next" },
+        ],
+        team: [
+          { name: "Tew", role: "Founder, architect, install lead" },
+          { name: "iLing", role: "Head of sales and discovery, T002 owner" },
+        ],
+        references: [
+          {
+            label: "Six-industry research rollup",
+            href: "https://obsidian.md (internal)",
+          },
+        ],
+      },
     },
     {
       name: "MAGNIZ",
       tagline: "Hosted agents per customer. One agent, one inbox, one operator.",
       status: "building",
-      statusLabel: "BUILDING · LAUNCH 28 MAY 2026",
+      statusLabel: "BUILDING · LAUNCHING SOON",
       domain: "magniz.io",
       href: null,
+      internalHref: "/ventures/magniz",
       pitch:
         "Individual hosted agents for operators who need their own. Each customer gets a dedicated Orgo VM running the Hermes runtime with full Agent Mail and LINE OA integration. End-state proof passed on 23 May 2026.",
       modules: ["Hermes runtime", "Agent Mail", "LINE OA", "Orgo isolation"],
+      detail: {
+        slug: "magniz",
+        overview: [
+          "MAGNIZ is PROXYZ's venture arm for hosting individual agents per customer. One agent, one inbox, one operator. Each customer owns the agent's identity, the agent's behavior, and the agent's outputs.",
+          "The hosting model is per-customer Orgo VMs running the Hermes runtime. Customer A cannot read Customer B's data because they live on different infrastructure. Agent Mail provides the inbox; LINE OA provides the customer-facing channel.",
+          "End-state proof passed on 23 May 2026: a real LINE inbound message produced both a Spanish-language reply (Liz) and an English-language reply (Tew) through the same agent. The runtime is production-ready.",
+        ],
+        howItWorks: [
+          {
+            num: "01",
+            title: "Discovery",
+            body: "Audit-style conversation to scope the agent's identity, role, and the systems it needs to touch. Outputs the install runbook.",
+          },
+          {
+            num: "02",
+            title: "Install",
+            body: "Spin up the customer's Orgo VM, deploy the Hermes runtime, provision the Agent Mail inbox under the customer's domain, wire the LINE OA channel. Hardening passes run automatically.",
+          },
+          {
+            num: "03",
+            title: "Train and operate",
+            body: "The agent's playbook is loaded into its Obsidian vault. The customer interacts with the agent through LINE or email; updates to the playbook flow back through the same channel.",
+          },
+          {
+            num: "04",
+            title: "Iterate",
+            body: "New behaviors, new tools, new escalation paths land as commits to the customer's vault. The same install pattern survives the agent's growth.",
+          },
+        ],
+        modulesDetail: [
+          {
+            name: "Hermes runtime",
+            body: "The execution layer that gives each agent its identity, memory, and tool access. One Hermes process per customer. Verified end-to-end on real LINE traffic.",
+          },
+          {
+            name: "Agent Mail",
+            body: "Inbox infrastructure. Each customer gets their own inbox under agents.magniz.io with SPF, DKIM, and DMARC configured. Native MCP server, no Composio bridge needed.",
+          },
+          {
+            name: "LINE OA",
+            body: "Customer-facing channel for Thai operators. Composio HTTP plus LINE Messaging API bridge that ships with the install. Same bridge AUTOLOOM uses.",
+          },
+          {
+            name: "Orgo isolation",
+            body: "Each customer runs on a separate Orgo VM. Isolation is by infrastructure, not by application logic. Cross-customer data exposure is impossible by construction.",
+          },
+        ],
+        roadmap: [
+          { label: "Phase 0 · Hermes-LINE end-state proof", status: "done" },
+          { label: "Phase 1 · Magnus reference install", status: "active" },
+          { label: "Phase 2 · First paid installs", status: "next" },
+          { label: "Phase 3 · Install kit hardening", status: "next" },
+        ],
+        team: [
+          { name: "Tew", role: "Founder, runtime architect" },
+          { name: "iLing", role: "Sales and operator onboarding" },
+        ],
+      },
     },
     {
       name: "PRYZM",
@@ -609,6 +776,7 @@ export const venturesPageConfig: VenturesPageConfig = {
       statusLabel: "PLANNING · INTERNAL TOOL TODAY",
       domain: "pryzm.io",
       href: null,
+      internalHref: null,
       pitch:
         "Started as PROXYZ's internal market-synthesis tool. Generates deep cohort comparisons, industry deployment plans, decision briefs from raw research. Targeted for externalization as a standalone venture.",
       modules: ["Cohort comparison", "Deployment plans", "Decision briefs", "Source aggregation"],
