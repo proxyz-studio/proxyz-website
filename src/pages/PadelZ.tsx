@@ -132,7 +132,7 @@ export default function PadelZ() {
                     gap: '8px',
                     padding: '8px 14px',
                     border: '1px solid rgba(255,255,255,0.30)',
-                    borderRadius: '999px',
+                    borderRadius: '2px',
                     fontFamily: FONT_MONO,
                     fontSize: '11px',
                     letterSpacing: '0.08em',
@@ -158,7 +158,7 @@ export default function PadelZ() {
                     textTransform: 'uppercase',
                     padding: '8px 14px',
                     border: '1px solid rgba(255,255,255,0.30)',
-                    borderRadius: '999px',
+                    borderRadius: '2px',
                     color: 'rgba(255,255,255,0.85)',
                   }}
                 >
@@ -604,7 +604,7 @@ export default function PadelZ() {
                       style={{
                         width: '16px',
                         height: '16px',
-                        borderRadius: '999px',
+                        borderRadius: '2px',
                         background: '#0A0A0A',
                         border: `1px solid ${MINT}`,
                         marginTop: '16px',
@@ -616,7 +616,7 @@ export default function PadelZ() {
                         style={{
                           position: 'absolute',
                           inset: '4px',
-                          borderRadius: '999px',
+                          borderRadius: '2px',
                           background: MINT,
                         }}
                       />
@@ -714,7 +714,7 @@ export default function PadelZ() {
                   gap: '10px',
                   padding: '14px 22px',
                   border: `1px solid ${MINT}`,
-                  borderRadius: '999px',
+                  borderRadius: '2px',
                   color: MINT,
                   fontFamily: FONT_MONO,
                   fontSize: '12px',

@@ -118,7 +118,7 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
             color: '#0A0A0A',
             background: 'var(--accent-pink)',
             padding: '6px 12px',
-            borderRadius: '999px',
+            borderRadius: '2px',
             whiteSpace: 'nowrap',
             display: 'inline-block',
           }}
@@ -416,7 +416,7 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
               textDecoration: 'none',
               letterSpacing: '0.08em',
               padding: '12px 22px',
-              borderRadius: '999px',
+              borderRadius: '2px',
               whiteSpace: 'nowrap',
               justifySelf: 'end',
             }}
@@ -436,7 +436,7 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
               textDecoration: 'none',
               letterSpacing: '0.08em',
               padding: '12px 22px',
-              borderRadius: '999px',
+              borderRadius: '2px',
               whiteSpace: 'nowrap',
               justifySelf: 'end',
             }}
@@ -500,29 +500,23 @@ export default function Pipeline() {
             </div>
             </Reveal>
             <Reveal delay={80}>
+            {/*
+              scanline-heading className: see Hero.tsx for the rationale.
+              Replaces gradient-text (impeccable absolute ban) with a
+              ::after pseudo-element overlay. Real DOM text underneath.
+            */}
             <h1
+              className="scanline-heading"
               style={{
                 fontFamily: "'Fragment Mono', monospace",
                 fontSize: 'clamp(44px, 6.4vw, 96px)',
                 fontWeight: 400,
                 lineHeight: 0.96,
-                color: 'transparent',
                 textTransform: 'uppercase',
                 margin: 0,
                 letterSpacing: '0.015em',
                 wordSpacing: '-0.45em',
                 textWrap: 'balance',
-                background:
-                  'repeating-linear-gradient(' +
-                  'to bottom, ' +
-                  '#fff 0px, ' +
-                  '#fff 2px, ' +
-                  'transparent 2px, ' +
-                  'transparent 5px' +
-                  ')',
-                WebkitBackgroundClip: 'text',
-                backgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
               }}
             >
               {c.titleLines.map((line, i) => (
@@ -580,7 +574,7 @@ export default function Pipeline() {
                     letterSpacing: '0.08em',
                     textTransform: 'uppercase',
                     padding: '6px 12px',
-                    borderRadius: '999px',
+                    borderRadius: '2px',
                     border:
                       i === 0
                         ? '1px solid var(--accent-pink)'
@@ -667,7 +661,7 @@ export default function Pipeline() {
                 textDecoration: 'none',
                 letterSpacing: '0.08em',
                 padding: '14px 26px',
-                borderRadius: '999px',
+                borderRadius: '2px',
               }}
             >
               {c.closingCta.label}

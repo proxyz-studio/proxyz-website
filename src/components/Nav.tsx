@@ -94,7 +94,7 @@ function NavLink({
           textDecoration: 'none',
           letterSpacing: '0.12em',
           padding: '10px 22px',
-          borderRadius: '999px',
+          borderRadius: '2px',
           transition: 'background 0.2s, color 0.2s',
         }
       : {

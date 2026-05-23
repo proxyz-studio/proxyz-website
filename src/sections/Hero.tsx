@@ -89,7 +89,16 @@ export default function Hero() {
           </p>
           </Reveal>
           <Reveal delay={80}>
+          {/*
+            scanline-heading className overlays horizontal scanlines via a
+            ::after pseudo-element rather than the previous gradient-text
+            (background-clip: text) technique. The text underneath is real,
+            accessible, copy-pasteable, and visible in high-contrast mode.
+            The inner .proxy-glitch span keeps its own inline scanline because
+            its chromatic ::before/::after duplicates depend on it.
+          */}
           <motion.h1
+            className="scanline-heading"
             style={{
               y: titleY,
               opacity: titleOpacity,
@@ -97,23 +106,11 @@ export default function Hero() {
               fontSize: 'clamp(44px, 5.6vw, 82px)',
               fontWeight: 400,
               lineHeight: 0.96,
-              color: 'transparent',
               textTransform: 'uppercase',
               margin: 0,
               letterSpacing: '0.015em',
               wordSpacing: '-0.45em',
               textWrap: 'balance',
-              background:
-                'repeating-linear-gradient(' +
-                'to bottom, ' +
-                '#fff 0px, ' +
-                '#fff 2px, ' +
-                'transparent 2px, ' +
-                'transparent 5px' +
-                ')',
-              WebkitBackgroundClip: 'text',
-              backgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
             }}
           >
             {titleLines.map((line, index) => {
@@ -193,7 +190,7 @@ export default function Hero() {
                 textDecoration: 'none',
                 letterSpacing: '0.08em',
                 padding: '12px 22px',
-                borderRadius: '999px',
+                borderRadius: '2px',
               }}
             >
               {primaryCtaLabel}

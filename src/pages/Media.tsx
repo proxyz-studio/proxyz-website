@@ -599,7 +599,7 @@ export default function Media() {
                 textDecoration: 'none',
                 letterSpacing: '0.08em',
                 padding: '14px 26px',
-                borderRadius: '999px',
+                borderRadius: '2px',
               }}
             >
               {c.cta.primaryCta.label}

@@ -42,29 +42,22 @@ export default function Portal() {
             >
               {c.eyebrow}
             </p>
+            {/*
+              scanline-heading className: same fix as Hero + Pipeline.
+              Pseudo-element overlay replaces gradient-text.
+            */}
             <h1
+              className="scanline-heading"
               style={{
                 fontFamily: "'Fragment Mono', 'Courier New', monospace",
                 fontSize: 'clamp(44px, 6.4vw, 96px)',
                 fontWeight: 400,
                 lineHeight: 0.96,
-                color: 'transparent',
                 textTransform: 'uppercase',
                 margin: 0,
                 letterSpacing: '0.015em',
                 wordSpacing: '-0.45em',
                 textWrap: 'balance',
-                background:
-                  'repeating-linear-gradient(' +
-                  'to bottom, ' +
-                  '#fff 0px, ' +
-                  '#fff 2px, ' +
-                  'transparent 2px, ' +
-                  'transparent 5px' +
-                  ')',
-                WebkitBackgroundClip: 'text',
-                backgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
               }}
             >
               {c.titleLines.map((line, index) => (
@@ -111,7 +104,7 @@ export default function Portal() {
                   textDecoration: 'none',
                   letterSpacing: '0.08em',
                   padding: '14px 26px',
-                  borderRadius: '999px',
+                  borderRadius: '2px',
                 }}
               >
                 {c.primaryCta.label}
@@ -424,7 +417,7 @@ export default function Portal() {
                 textDecoration: 'none',
                 letterSpacing: '0.08em',
                 padding: '14px 26px',
-                borderRadius: '999px',
+                borderRadius: '2px',
                 display: 'inline-block',
                 transition: 'opacity 0.2s',
               }}

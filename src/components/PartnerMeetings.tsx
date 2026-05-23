@@ -194,7 +194,7 @@ function MeetingCard({
                     color: accent,
                     border: `1px solid ${accent}`,
                     padding: '4px 10px',
-                    borderRadius: '999px',
+                    borderRadius: '2px',
                   }}
                 >
                   {person}

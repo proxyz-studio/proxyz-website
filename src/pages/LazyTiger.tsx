@@ -1456,7 +1456,7 @@ export default function LazyTiger() {
                     textDecoration: 'none',
                     letterSpacing: '0.16em',
                     padding: '14px 26px',
-                    borderRadius: '999px',
+                    borderRadius: '2px',
                   }}
                 >
                   Talk to PROXYZ →

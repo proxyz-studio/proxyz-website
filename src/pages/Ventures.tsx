@@ -51,7 +51,7 @@ function VentureEntry({ venture, index }: { venture: VentureCard; index: number 
     textDecoration: 'none',
     letterSpacing: '0.08em',
     padding: '12px 22px',
-    borderRadius: '999px',
+    borderRadius: '2px',
     whiteSpace: 'nowrap',
     justifySelf: 'end',
   };
@@ -138,7 +138,7 @@ function VentureEntry({ venture, index }: { venture: VentureCard; index: number 
             letterSpacing: '0.14em',
             textTransform: 'uppercase',
             padding: '6px 12px',
-            borderRadius: '999px',
+            borderRadius: '2px',
             whiteSpace: 'nowrap',
             display: 'inline-block',
             ...getStatusPillStyle(venture.status, brandAccent),
@@ -461,7 +461,7 @@ export default function Ventures() {
                 textDecoration: 'none',
                 letterSpacing: '0.08em',
                 padding: '14px 26px',
-                borderRadius: '999px',
+                borderRadius: '2px',
               }}
             >
               {c.closingCta.label}

@@ -210,7 +210,7 @@ function Hero({ venture }: { venture: VentureCard }) {
                 letterSpacing: '0.14em',
                 textTransform: 'uppercase',
                 padding: '8px 14px',
-                borderRadius: '999px',
+                borderRadius: '2px',
                 whiteSpace: 'nowrap',
                 ...getStatusPillStyle(venture.status, brand.accent),
               }}
@@ -224,7 +224,7 @@ function Hero({ venture }: { venture: VentureCard }) {
                 letterSpacing: '0.14em',
                 textTransform: 'uppercase',
                 padding: '8px 14px',
-                borderRadius: '999px',
+                borderRadius: '2px',
                 color: 'rgba(255,255,255,0.55)',
                 border: '1px solid rgba(255,255,255,0.22)',
               }}
@@ -728,7 +728,7 @@ export default function VentureDetail() {
                 textDecoration: 'none',
                 letterSpacing: '0.08em',
                 padding: '14px 26px',
-                borderRadius: '999px',
+                borderRadius: '2px',
                 whiteSpace: 'nowrap',
                 justifySelf: 'end',
               }}

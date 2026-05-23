@@ -139,9 +139,11 @@ export function MagneticAnchor({
       ref={ref}
       onMouseMove={onMove}
       onMouseLeave={onLeave}
-      whileHover={{ scale: 1.05 }}
+      whileHover={{ scale: 1.04 }}
       whileTap={{ scale: 0.96 }}
-      transition={{ type: 'spring', stiffness: 280, damping: 18 }}
+      // Exponential ease-out-quint per impeccable motion law:
+      // "no bounce, no elastic". Replaces the previous spring transition.
+      transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
       className={className}
       style={{
         display: 'inline-flex',
