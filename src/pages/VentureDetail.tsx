@@ -486,6 +486,48 @@ export default function VentureDetail() {
                     >
                       {m.body}
                     </p>
+                    {m.details && m.details.length > 0 && (
+                      <div
+                        style={{
+                          marginTop: '24px',
+                          paddingTop: '24px',
+                          borderTop: '1px dashed rgba(255,255,255,0.14)',
+                        }}
+                      >
+                        <p
+                          style={{
+                            fontFamily: FONT_MONO,
+                            fontSize: '10px',
+                            letterSpacing: '0.22em',
+                            textTransform: 'uppercase',
+                            color: brand.accent,
+                            margin: '0 0 16px 0',
+                            fontWeight: 600,
+                          }}
+                        >
+                          Tuning
+                        </p>
+                        <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
+                          {m.details.map((d) => (
+                            <li
+                              key={d.label}
+                              style={{
+                                marginBottom: '14px',
+                                fontFamily: FONT_MONO,
+                                fontSize: '13px',
+                                lineHeight: 1.65,
+                                color: 'rgba(255,255,255,0.74)',
+                              }}
+                            >
+                              <strong style={{ color: '#fff', fontWeight: 600 }}>
+                                {d.label}.
+                              </strong>{' '}
+                              {d.body}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

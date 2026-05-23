@@ -573,6 +573,8 @@ export interface VentureHowStep {
 export interface VentureModuleDetail {
   name: string;
   body: string;
+  /** Optional tuning / drill-down bullets shown inside the module card */
+  details?: { label: string; body: string }[];
 }
 
 export interface VentureRoadmapItem {
@@ -769,6 +771,24 @@ export const venturesPageConfig: VenturesPageConfig = {
           {
             name: "Hermes runtime",
             body: "The execution layer that gives each agent its identity, memory, and tool access. One Hermes process per customer. Verified end-to-end on real LINE traffic.",
+            details: [
+              {
+                label: "Multi-model routing",
+                body: "The runtime picks the cheapest capable model for each task and escalates only when a task warrants it. Token cost is a margin lever we own, not a customer surprise.",
+              },
+              {
+                label: "Skill loop",
+                body: "New skills get written from successful execution traces and persist. The agent's capability surface compounds with use.",
+              },
+              {
+                label: "Memory",
+                body: "Every prior session is searchable. The agent never starts cold and never re-learns what you already taught it.",
+              },
+              {
+                label: "Code-once pattern",
+                body: "Recurring tasks become deterministic code on the first run, then execute forever with no model spend.",
+              },
+            ],
           },
           {
             name: "Agent Mail",
