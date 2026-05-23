@@ -135,6 +135,63 @@ export default function Portal() {
           </div>
         </section>
 
+        {/* WHO RUNS ON IT — promoted from position 4 to position 2 per
+            audit (_output/2026-05-23-impeccable-portal-media-v1.md #4):
+            framing the Portal as "what we install at clients" has to
+            precede the module tour, or a cold reader parses MODULES as
+            a SaaS feature grid. */}
+        <section
+          className="section-mobile"
+          style={{
+            padding: '120px 40px',
+            borderBottom: '1px solid rgba(255,255,255,0.08)',
+          }}
+        >
+          <div style={{ maxWidth: '1360px', margin: '0 auto' }}>
+            <p
+              style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: '12px',
+                fontWeight: 400,
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                color: 'var(--accent-pink)',
+                margin: '0 0 48px 0',
+              }}
+            >
+              {c.whoLabel}
+            </p>
+            <h2
+              style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: 'clamp(32px, 4vw, 56px)',
+                fontWeight: 700,
+                lineHeight: 1.12,
+                letterSpacing: '-0.01em',
+                textTransform: 'uppercase',
+                margin: '0 0 36px 0',
+                maxWidth: '24ch',
+                textWrap: 'balance',
+              }}
+            >
+              {c.whoHeading}
+            </h2>
+            <p
+              style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: '16px',
+                fontWeight: 400,
+                lineHeight: 1.7,
+                color: 'rgba(255,255,255,0.7)',
+                margin: 0,
+                maxWidth: '64ch',
+              }}
+            >
+              {c.whoBody}
+            </p>
+          </div>
+        </section>
+
         {/* PILLARS */}
         <section
           className="section-mobile"
@@ -226,14 +283,16 @@ export default function Portal() {
           </div>
         </section>
 
-        {/* MODULES */}
+        {/* MODULES — dark register matches the rest of the page (audit #3
+            in 2026-05-23-impeccable-portal-media-v1.md). The earlier white
+            inversion read as a SaaS feature grid stitched onto an editorial
+            page; on dark with shared dividers it inherits the Pillars grid
+            pattern, so MODULES extends the rhythm instead of breaking it. */}
         <section
           className="section-mobile"
           style={{
-            background: '#F2F2F2',
-            color: '#0A0A0A',
             padding: '120px 40px',
-            borderTop: '1px solid #000',
+            borderBottom: '1px solid rgba(255,255,255,0.08)',
           }}
         >
           <div style={{ maxWidth: '1360px', margin: '0 auto' }}>
@@ -256,6 +315,7 @@ export default function Portal() {
                 fontSize: '17.5px',
                 fontWeight: 400,
                 lineHeight: 1.45,
+                color: 'var(--fg)',
                 margin: '0 0 56px 0',
                 maxWidth: '64ch',
               }}
@@ -269,7 +329,7 @@ export default function Portal() {
                 display: 'grid',
                 gridTemplateColumns: 'repeat(3, 1fr)',
                 gap: '0',
-                borderTop: '1px solid #000',
+                borderTop: '1px solid rgba(255,255,255,0.18)',
               }}
             >
               {c.modules.map((m, i) => {
@@ -285,12 +345,12 @@ export default function Portal() {
                       padding: '32px 28px',
                       paddingLeft: col === 0 ? 0 : '28px',
                       paddingRight: col === 2 ? 0 : '28px',
-                      borderRight: col === 2 ? 'none' : '1px solid #000',
-                      borderBottom: isLastRow ? 'none' : '1px solid #000',
+                      borderRight: col === 2 ? 'none' : '1px solid rgba(255,255,255,0.18)',
+                      borderBottom: isLastRow ? 'none' : '1px solid rgba(255,255,255,0.18)',
                       minHeight: '100%',
                     }}
                   >
-                    <PictoIcon name={moduleIcons[i] ?? 'arrow'} size={32} stroke="#0A0A0A" style={{ marginBottom: '16px' }} />
+                    <PictoIcon name={moduleIcons[i] ?? 'arrow'} size={32} stroke="#F2F2F2" style={{ marginBottom: '16px' }} />
                     <h3
                       style={{
                         fontFamily: "'IBM Plex Mono', monospace",
@@ -298,6 +358,7 @@ export default function Portal() {
                         fontWeight: 700,
                         letterSpacing: '-0.01em',
                         textTransform: 'uppercase',
+                        color: 'var(--fg)',
                         margin: '0 0 16px 0',
                       }}
                     >
@@ -310,7 +371,7 @@ export default function Portal() {
                         fontWeight: 400,
                         lineHeight: 1.6,
                         margin: 0,
-                        color: 'rgba(0,0,0,0.75)',
+                        color: 'rgba(255,255,255,0.78)',
                       }}
                     >
                       {m.description}
@@ -320,59 +381,6 @@ export default function Portal() {
                 );
               })}
             </div>
-          </div>
-        </section>
-
-        {/* WHO RUNS ON IT */}
-        <section
-          className="section-mobile"
-          style={{
-            padding: '120px 40px',
-            borderTop: '1px solid rgba(255,255,255,0.08)',
-          }}
-        >
-          <div style={{ maxWidth: '1360px', margin: '0 auto' }}>
-            <p
-              style={{
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '12px',
-                fontWeight: 400,
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                color: 'var(--accent-pink)',
-                margin: '0 0 48px 0',
-              }}
-            >
-              {c.whoLabel}
-            </p>
-            <h2
-              style={{
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: 'clamp(32px, 4vw, 56px)',
-                fontWeight: 700,
-                lineHeight: 1.12,
-                letterSpacing: '-0.01em',
-                textTransform: 'uppercase',
-                margin: '0 0 36px 0',
-                maxWidth: '24ch',
-                textWrap: 'balance',
-              }}
-            >
-              {c.whoHeading}
-            </h2>
-            <p
-              style={{
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '16px',
-                fontWeight: 400,
-                lineHeight: 1.7,
-                color: 'rgba(255,255,255,0.7)',
-                margin: 0,
-                maxWidth: '64ch',
-              }}
-            >
-              {c.whoBody}
-            </p>
           </div>
         </section>
 

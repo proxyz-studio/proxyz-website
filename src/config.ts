@@ -272,7 +272,7 @@ export const portalPageConfig: PortalPageConfig = {
     "The Portal is the working surface every PROXYZ engagement runs on. Meeting cadence, decisions, automations, AI agents, scorecards, all in one workspace. Built by operators for operators.",
   primaryCta: { label: "Open the Portal →", href: "https://portal.proxyz.studio/sign-in" },
   secondaryLink: { label: "Book the Audit", href: "/#booking" },
-  pillarsLabel: "01 / WHAT IT DOES",
+  pillarsLabel: "02 / WHAT IT DOES",
   pillars: [
     {
       name: "Compresses decision time",
@@ -290,7 +290,7 @@ export const portalPageConfig: PortalPageConfig = {
         "Meeting agent, drafting agent, research agent. Each tuned to the company. Each with a workspace memory and an audit trail.",
     },
   ],
-  modulesLabel: "02 / INSIDE THE PORTAL",
+  modulesLabel: "03 / INSIDE THE PORTAL",
   modulesIntro:
     "Every module is built around the same idea: the system runs the company, not the founder.",
   modules: [
@@ -325,7 +325,7 @@ export const portalPageConfig: PortalPageConfig = {
         "Vision and traction in one document. Core values, focus, ten-year target, three-year picture, annual plan, quarterly rocks. The company's true north.",
     },
   ],
-  whoLabel: "03 / WHO RUNS ON IT",
+  whoLabel: "01 / WHO RUNS ON IT",
   whoHeading: "Every PROXYZ engagement. Every partner company.",
   whoBody:
     "The Portal is what we install during The Install and The Blueprint. It's the operating surface for every Build-with venture. New workspace per company. Owner controls. Multi-org rollup for the studio team.",

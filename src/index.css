@@ -663,9 +663,6 @@ body.has-custom-cursor * {
   .portal-modules > div:last-child {
     border-bottom: none;
   }
-  .portal-modules > div {
-    border-bottom-color: #000 !important;
-  }
 }
 
 /* Ventures index + VentureDetail grids
