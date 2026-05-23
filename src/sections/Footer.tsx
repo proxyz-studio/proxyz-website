@@ -7,7 +7,7 @@ import { FallbackBadge } from '../components/FallbackBadge';
 import { ProxyzMark, withProxyzMark } from '../components/ProxyzMark';
 
 const LEGAL_LINK_STYLE: React.CSSProperties = {
-  color: '#000',
+  color: '#0A0A0A',
   textDecoration: 'none',
   borderBottom: '1px solid rgba(0,0,0,0.6)',
   paddingBottom: '1px',
@@ -30,8 +30,8 @@ export default function Footer() {
   return (
     <footer
       style={{
-        background: '#ffffff',
-        color: '#000000',
+        background: '#F2F2F2',
+        color: '#0A0A0A',
         borderTop: '1px solid #000',
         fontFamily: "'IBM Plex Mono', monospace",
         fontWeight: 400,
@@ -69,7 +69,7 @@ export default function Footer() {
           <a
             href={footerConfig.linkedin.href}
             style={{
-              color: '#000',
+              color: '#0A0A0A',
               textDecoration: 'none',
               borderBottom: '1px solid #000',
               paddingBottom: '2px',

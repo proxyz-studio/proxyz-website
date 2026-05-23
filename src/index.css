@@ -51,22 +51,181 @@
     --lt-pink: #FF4193;
     --lt-lime: #D2FF3B;
     --lt-accent: #FF4193;
+
+    /* ─── Motion token system (impeccable: exponential ease-outs only,
+       no bounce, no elastic) ──────────────────────────────────────── */
+    --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+    --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-out-expo:  cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-quart:  cubic-bezier(0.5, 0, 0.75, 0);
+    /* Legacy curve preserved for backward compatibility with existing
+       pvz-* / pmark-* keyframes. Migrating to --ease-out-quart over time. */
+    --ease-pvz: cubic-bezier(0.2, 0.7, 0.1, 1);
+
+    /* Durations: 100/300/500 rule. Exit ~75% of enter. */
+    --dur-instant:  120ms;
+    --dur-quick:    220ms;
+    --dur-base:     320ms;
+    --dur-layout:   480ms;
+    --dur-entrance: 720ms;
+    --dur-hero:     1100ms;
+    --dur-exit:     180ms;
   }
   body {
-    transition: background-color 400ms cubic-bezier(0.2, 0.7, 0.1, 1);
+    transition: background-color var(--dur-layout) var(--ease-out-quart);
   }
 
   body {
     font-family: 'IBM Plex Mono', monospace;
-    background: #000;
-    color: #fff;
+    background: #0A0A0A;
+    color: #F2F2F2;
     margin: 0;
     padding: 0;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
+  /* ─── Ambient backgrounds ──────────────────────────────────────
+     Two layers behind all content:
+
+     1. body::before — static dot-grid radial pattern. Always shows.
+        On mobile + reduce-motion, this is the only ambient.
+     2. .vanta-bg — animated pink network constellation, mounted as
+        a React component (VantaBackground.tsx). Loads only on
+        desktop (>=821px) with motion preference unset. Fades in on
+        top of the dot-grid when ready, so the constellation has a
+        textured floor and the page never goes flat-dark. */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+    background-size: 28px 28px;
+    pointer-events: none;
+    z-index: -1;
+  }
+  .vanta-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--dur-hero) var(--ease-out-quart);
+  }
+  .vanta-bg.is-ready {
+    opacity: 0.55;
+  }
+  /* Foreground content stays above the Vanta layer. */
+  #root > * {
+    position: relative;
+    z-index: 1;
+  }
 }
+
+/* ─── Lazy Tiger brand-mode swap ─────────────────────────────
+   body.lt-mode-tiger is toggled by useBrandShift based on which
+   [data-brand-mode] section the viewport midline currently sits
+   in. In tiger mode --lt-accent flips to the neon lime, so every
+   element that reads var(--lt-accent) (SectionEyebrow color, the
+   PartnerMeetings accent border, etc.) picks up the swap without
+   per-element wiring. Default --lt-accent stays pink in :root. */
+body.lt-mode-tiger {
+  --lt-accent: var(--lt-lime);
+}
+
+/* ─── SVG drawn connections ────────────────────────────────────
+   Apply the `svg-draw-lines` class to any <g> that wraps a set of
+   short <line> connector spokes (FastFix PortalHub, LazyTiger
+   SensorNetworkDiagram, etc). Each line draws itself in from the
+   center with stagger. stroke-dasharray 600 covers all spoke
+   lengths used in the site's diagrams; bump if you ship a larger
+   one. `forwards` keeps the final drawn state.
+
+   prefers-reduced-motion users see the final drawn state
+   immediately (no animation). */
+.svg-draw-lines line {
+  stroke-dasharray: 600;
+  stroke-dashoffset: 600;
+  animation: svg-draw-line 1.2s var(--ease-out-expo) forwards;
+}
+.svg-draw-lines line:nth-child(1) { animation-delay: 0.10s; }
+.svg-draw-lines line:nth-child(2) { animation-delay: 0.18s; }
+.svg-draw-lines line:nth-child(3) { animation-delay: 0.26s; }
+.svg-draw-lines line:nth-child(4) { animation-delay: 0.34s; }
+.svg-draw-lines line:nth-child(5) { animation-delay: 0.42s; }
+.svg-draw-lines line:nth-child(6) { animation-delay: 0.50s; }
+.svg-draw-lines line:nth-child(7) { animation-delay: 0.58s; }
+.svg-draw-lines line:nth-child(8) { animation-delay: 0.66s; }
+@keyframes svg-draw-line {
+  to { stroke-dashoffset: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .svg-draw-lines line {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ─── Custom cursor (desktop + motion-on only) ─────────────────
+   Hides the OS cursor and replaces it with a small pink crosshair
+   that follows the mouse and expands to a ring on hover. The
+   `.has-custom-cursor` class is added to <body> by CursorOverlay.tsx
+   only when desktop + pointer:fine + motion-on gates all pass. */
+body.has-custom-cursor,
+body.has-custom-cursor * {
+  cursor: none !important;
+}
+.custom-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: difference;
+  will-change: transform;
+}
+.custom-cursor::before,
+.custom-cursor::after {
+  content: '';
+  position: absolute;
+  background: var(--accent-pink);
+  transition:
+    width var(--dur-quick) var(--ease-out-expo),
+    height var(--dur-quick) var(--ease-out-expo),
+    border-radius var(--dur-quick) var(--ease-out-expo),
+    box-shadow var(--dur-quick) var(--ease-out-expo),
+    opacity var(--dur-instant) var(--ease-out-quart),
+    background var(--dur-quick) var(--ease-out-quart);
+}
+.custom-cursor::before {
+  width: 16px;
+  height: 1px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.custom-cursor::after {
+  width: 1px;
+  height: 16px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.custom-cursor.is-hover::before {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--accent-pink);
+}
+.custom-cursor.is-hover::after {
+  opacity: 0;
+}
+
 
 @keyframes blur-text {
   0% {
@@ -109,11 +268,13 @@
   background: linear-gradient(
     105deg,
     transparent 38%,
-    rgba(255, 255, 255, 0.28) 50%,
+    rgba(255, 255, 255, 0.22) 50%,
     transparent 62%
   );
   transform: translateX(-110%);
-  animation: pmark-shine 9s ease-in-out infinite;
+  /* Slowed 9s → 14s, alpha reduced 0.28 → 0.22, to quiet the always-on
+     ambient sweep per impeccable's "ambient loops finite or quiet" rule. */
+  animation: pmark-shine 14s cubic-bezier(0.65, 0, 0.35, 1) infinite;
   pointer-events: none;
   mix-blend-mode: overlay;
 }
@@ -513,8 +674,42 @@
   .portal-modules > div:last-child {
     border-bottom: none;
   }
-  .portal-modules > div {
-    border-bottom-color: #000 !important;
+}
+
+/* Ventures index + VentureDetail grids
+   Seven grid classes had no mobile rules — pages broke on phones.
+   - .venture-how-grid, .venture-modules-grid, .venture-team-grid (VentureDetail) → repeat(2,1fr) collapses to 1fr at ≤900px
+   - .venture-roadmap (VentureDetail) → repeat(4,1fr) collapses to 2 cols at ≤900px, 1 at ≤600px
+   - .venture-modules (Ventures index) → repeat(4,1fr) collapses to 2 cols at ≤900px, 1 at ≤600px
+   - .venture-foot (Ventures index) + .venture-closing (VentureDetail) → 1fr auto stacks to 1fr at ≤600px, CTA stretches full-width */
+@media (max-width: 900px) {
+  .venture-how-grid,
+  .venture-modules-grid,
+  .venture-team-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .venture-roadmap,
+  .venture-modules {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 14px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .venture-roadmap,
+  .venture-modules {
+    grid-template-columns: 1fr !important;
+  }
+  .venture-foot,
+  .venture-closing {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+  .venture-foot a,
+  .venture-foot > div > span,
+  .venture-closing a {
+    justify-self: stretch !important;
+    text-align: center !important;
   }
 }
 
@@ -636,6 +831,41 @@
 }
 .pvz-spotlight:hover::after {
   opacity: 1;
+}
+
+/* ─── Scanline heading ─────────────────────────────────────────
+   Editorial "horizontal scanlines through text" effect, used on
+   the studio's top-level h1s (Hero, Pipeline, Portal). Replaces
+   the inline `background-clip: text` + `repeating-linear-gradient`
+   that violated impeccable's gradient-text absolute ban.
+
+   Implementation: text renders normally as solid `var(--fg)`,
+   and a `::after` pseudo physically overlays horizontal bands
+   matching the page background. The text remains a real DOM node:
+   selectable, copy-pasteable, screen-reader friendly, visible in
+   high-contrast mode. Decorative scanlines come from the overlay. */
+.scanline-heading {
+  position: relative;
+  color: var(--fg);
+  display: inline-block;
+}
+.scanline-heading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 2px,
+    var(--bg) 2px,
+    var(--bg) 5px
+  );
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce), (forced-colors: active) {
+  /* In high-contrast / forced-colors mode the decorative overlay
+     interferes with the user's chosen contrast scheme. Drop it. */
+  .scanline-heading::after { display: none; }
 }
 
 /* Respect reduced-motion */

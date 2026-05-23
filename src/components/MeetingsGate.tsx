@@ -174,7 +174,7 @@ export default function MeetingsGate({
             background: '#0a0a0a',
             border: '1px solid rgba(255,255,255,0.3)',
             borderRadius: 0,
-            color: '#fff',
+            color: '#F2F2F2',
             outline: 'none',
             boxSizing: 'border-box',
             transition: 'border-color 0.15s',

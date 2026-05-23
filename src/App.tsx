@@ -17,6 +17,8 @@ import PadelZ from './pages/PadelZ';
 import Pipeline from './pages/Pipeline';
 import Ventures from './pages/Ventures';
 import FastFix from './pages/FastFix';
+import VantaBackground from './components/VantaBackground';
+import CursorOverlay from './components/CursorOverlay';
 
 // Code-split the Lazy Tiger page — heavy on bespoke components (helmet, leaderboard,
 // merch grid, GSAP Asia map). Only loaded when a visitor lands on /partners/lazy-tiger.
@@ -92,6 +94,13 @@ function App() {
 
   return (
     <>
+      {/* Animated pink network background — fixed layer behind all
+          routes, lazy-loaded, desktop + motion-on only. See
+          components/VantaBackground.tsx. */}
+      <VantaBackground />
+      {/* Custom cursor — pink crosshair with magnetic pull. Desktop +
+          motion-on + pointer:fine only; touch users get the OS cursor. */}
+      <CursorOverlay />
       <ScrollManager />
       <Routes>
         <Route path="/" element={<Home />} />

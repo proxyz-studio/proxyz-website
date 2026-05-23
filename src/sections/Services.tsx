@@ -36,7 +36,7 @@ function ServiceColumn({
         gap: '0',
       }}
     >
-        <PictoIcon name={iconName} size={36} stroke="#000" style={{ marginBottom: '24px' }} />
+        <PictoIcon name={iconName} size={36} stroke="#0A0A0A" style={{ marginBottom: '24px' }} />
         <p
           style={{
             fontFamily: "'IBM Plex Mono', monospace",
@@ -59,7 +59,7 @@ function ServiceColumn({
             lineHeight: 1.15,
             textTransform: 'uppercase',
             margin: '0 0 24px 0',
-            color: '#000',
+            color: '#0A0A0A',
           }}
         >
           {card.name}
@@ -71,7 +71,7 @@ function ServiceColumn({
             fontSize: '12px',
             fontWeight: 400,
             lineHeight: 1.55,
-            color: '#000',
+            color: '#0A0A0A',
             fontStyle: 'italic',
             margin: '0 0 24px 0',
           }}
@@ -85,7 +85,7 @@ function ServiceColumn({
             fontSize: '13px',
             fontWeight: 400,
             lineHeight: 1.6,
-            color: '#000',
+            color: '#0A0A0A',
             margin: '0 0 32px 0',
           }}
         >
@@ -101,7 +101,7 @@ function ServiceColumn({
               fontWeight: 400,
               textTransform: 'uppercase',
               letterSpacing: '0.04em',
-              color: '#000',
+              color: '#0A0A0A',
               textDecoration: 'none',
               borderBottom: '1px solid #000',
               paddingBottom: '2px',
@@ -143,8 +143,8 @@ export default function Services() {
       className="section-mobile"
       style={{
         position: 'relative',
-        background: '#ffffff',
-        color: '#000000',
+        background: '#F2F2F2',
+        color: '#0A0A0A',
         borderTop: '1px solid #000',
         overflow: 'hidden',
       }}
@@ -188,7 +188,7 @@ export default function Services() {
               fontSize: '17.5px',
               fontWeight: 400,
               lineHeight: 1.45,
-              color: '#000',
+              color: '#0A0A0A',
               margin: '0 0 24px 0',
               maxWidth: '64ch',
             }}

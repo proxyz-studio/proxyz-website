@@ -24,8 +24,8 @@ export default function Diagnosis() {
       className="section-mobile"
       style={{
         position: 'relative',
-        background: '#ffffff',
-        color: '#000000',
+        background: '#F2F2F2',
+        color: '#0A0A0A',
         padding: '120px 40px',
         fontFamily: "'IBM Plex Mono', monospace",
         overflow: 'hidden',

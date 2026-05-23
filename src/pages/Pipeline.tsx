@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Nav from '../components/Nav';
 import Reveal from '../components/Reveal';
@@ -6,6 +7,8 @@ import { Marginalia } from '../components/Editorial';
 import { HeroMesh } from '../components/Glow';
 import PictoIcon from '../components/PictoIcon';
 import Footer from '../sections/Footer';
+import { ProxyzMark } from '../components/ProxyzMark';
+import { useHeroParallax } from '../lib/scrollChoreography';
 import { pipelinePageConfig, type PartnerCard } from '../config';
 
 function isInternalRoute(href: string) {
@@ -88,11 +91,11 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
             letterSpacing: '0.015em',
             textTransform: 'uppercase',
             margin: 0,
-            color: '#fff',
+            color: '#F2F2F2',
           }}
         >
           {partner.detailHref ? (
-            <Link to={partner.detailHref} style={{ color: '#fff', textDecoration: 'none' }}>
+            <Link to={partner.detailHref} style={{ color: '#F2F2F2', textDecoration: 'none' }}>
               {partner.name}
             </Link>
           ) : (
@@ -115,10 +118,10 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
             fontSize: '10px',
             letterSpacing: '0.14em',
             textTransform: 'uppercase',
-            color: '#000',
+            color: '#0A0A0A',
             background: 'var(--accent-pink)',
             padding: '6px 12px',
-            borderRadius: '999px',
+            borderRadius: '2px',
             whiteSpace: 'nowrap',
             display: 'inline-block',
           }}
@@ -156,7 +159,7 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
             >
               Sector
             </p>
-            <p style={{ margin: 0, color: '#fff' }}>{partner.sector}</p>
+            <p style={{ margin: 0, color: '#F2F2F2' }}>{partner.sector}</p>
           </div>
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
@@ -173,7 +176,7 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
             >
               Location
             </p>
-            <p style={{ margin: 0, color: '#fff' }}>{partner.location}</p>
+            <p style={{ margin: 0, color: '#F2F2F2' }}>{partner.location}</p>
           </div>
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
@@ -190,7 +193,7 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
             >
               {partner.partnerLabel}
             </p>
-            <p style={{ margin: 0, color: '#fff' }}>{partner.partner}</p>
+            <p style={{ margin: 0, color: '#F2F2F2' }}>{partner.partner}</p>
           </div>
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
@@ -233,7 +236,7 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
               margin: '0 0 14px 0',
             }}
           >
-            What PROXYZ brings
+            What <ProxyzMark /> brings
           </p>
           <p
             style={{
@@ -293,7 +296,7 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: '15px',
             lineHeight: 1.65,
-            color: '#fff',
+            color: '#F2F2F2',
             margin: 0,
             maxWidth: '76ch',
           }}
@@ -336,7 +339,7 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
                 lineHeight: 1.5,
                 padding: '14px 16px',
                 border: `1px solid ${statusColor[m.status]}`,
-                color: m.status === 'next' ? 'rgba(255,255,255,0.5)' : '#fff',
+                color: m.status === 'next' ? 'rgba(255,255,255,0.5)' : '#F2F2F2',
                 background:
                   m.status === 'active' ? 'rgba(255,65,147,0.08)' : 'transparent',
                 display: 'flex',
@@ -410,13 +413,13 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: '12px',
               fontWeight: 400,
-              color: '#000',
-              background: '#fff',
+              color: '#0A0A0A',
+              background: '#F2F2F2',
               textTransform: 'uppercase',
               textDecoration: 'none',
               letterSpacing: '0.08em',
               padding: '12px 22px',
-              borderRadius: '999px',
+              borderRadius: '2px',
               whiteSpace: 'nowrap',
               justifySelf: 'end',
             }}
@@ -430,13 +433,13 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: '12px',
               fontWeight: 400,
-              color: '#000',
-              background: '#fff',
+              color: '#0A0A0A',
+              background: '#F2F2F2',
               textTransform: 'uppercase',
               textDecoration: 'none',
               letterSpacing: '0.08em',
               padding: '12px 22px',
-              borderRadius: '999px',
+              borderRadius: '2px',
               whiteSpace: 'nowrap',
               justifySelf: 'end',
             }}
@@ -451,13 +454,19 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
 
 export default function Pipeline() {
   const c = pipelinePageConfig;
+  // P5: scroll-driven hero parallax. The hero's inner content drifts up
+  // + fades as the user scrolls past, scrub-tied with 0.6s catch-up.
+  // Honors prefers-reduced-motion (no-op when set).
+  const heroRef = useRef<HTMLElement>(null);
+  useHeroParallax(heroRef, { drift: 120, fadeTo: 0.2, inner: '.pipeline-hero-inner' });
 
   return (
     <>
       <Nav />
-      <main style={{ background: '#000', color: '#fff' }}>
+      <main style={{ background: '#0A0A0A', color: '#F2F2F2' }}>
         {/* HERO */}
         <section
+          ref={heroRef}
           className="section-mobile"
           style={{
             position: 'relative',
@@ -481,7 +490,7 @@ export default function Pipeline() {
             <Marginalia number="03" color="light" />
           </div>
 
-          <div style={{ position: 'relative', zIndex: 2, maxWidth: '1360px', margin: '0 auto' }}>
+          <div className="pipeline-hero-inner" style={{ position: 'relative', zIndex: 2, maxWidth: '1360px', margin: '0 auto' }}>
             <Reveal>
             <div style={{ display: 'flex', alignItems: 'center', gap: '20px', margin: '0 0 22px 0' }}>
               <PictoIcon name="partnership" size={28} stroke="var(--accent-pink)" />
@@ -500,29 +509,23 @@ export default function Pipeline() {
             </div>
             </Reveal>
             <Reveal delay={80}>
+            {/*
+              scanline-heading className: see Hero.tsx for the rationale.
+              Replaces gradient-text (impeccable absolute ban) with a
+              ::after pseudo-element overlay. Real DOM text underneath.
+            */}
             <h1
+              className="scanline-heading"
               style={{
                 fontFamily: "'Fragment Mono', monospace",
                 fontSize: 'clamp(44px, 6.4vw, 96px)',
                 fontWeight: 400,
                 lineHeight: 0.96,
-                color: 'transparent',
                 textTransform: 'uppercase',
                 margin: 0,
                 letterSpacing: '0.015em',
                 wordSpacing: '-0.45em',
                 textWrap: 'balance',
-                background:
-                  'repeating-linear-gradient(' +
-                  'to bottom, ' +
-                  '#fff 0px, ' +
-                  '#fff 2px, ' +
-                  'transparent 2px, ' +
-                  'transparent 5px' +
-                  ')',
-                WebkitBackgroundClip: 'text',
-                backgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
               }}
             >
               {c.titleLines.map((line, i) => (
@@ -548,50 +551,24 @@ export default function Pipeline() {
             </p>
             </Reveal>
 
-            {/* Status filter strip (visual only for now) */}
+            {/* Static count label — used to be a row of "filter pills" with
+                pink selected styling and no onClick (false affordance per
+                audit _output/2026-05-23-impeccable-pipeline-v1.md). Replaced
+                with an honest one-line summary derived from the partner
+                count + their shared stage. */}
             <Reveal delay={260}>
-            <div
+            <p
               style={{
-                marginTop: '48px',
-                display: 'flex',
-                gap: '12px',
-                flexWrap: 'wrap',
-                alignItems: 'center',
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: '11px',
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                color: 'rgba(255,255,255,0.6)',
+                margin: '48px 0 0 0',
               }}
             >
-              <span
-                style={{
-                  fontFamily: "'IBM Plex Mono', monospace",
-                  fontSize: '10px',
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                  color: 'rgba(255,255,255,0.45)',
-                  marginRight: '8px',
-                }}
-              >
-                {c.filterLabel}
-              </span>
-              {c.filterValues.map((v, i) => (
-                <span
-                  key={v}
-                  style={{
-                    fontFamily: "'IBM Plex Mono', monospace",
-                    fontSize: '11px',
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                    padding: '6px 12px',
-                    borderRadius: '999px',
-                    border:
-                      i === 0
-                        ? '1px solid var(--accent-pink)'
-                        : '1px solid rgba(255,255,255,0.18)',
-                    color: i === 0 ? 'var(--accent-pink)' : 'rgba(255,255,255,0.6)',
-                  }}
-                >
-                  {v}
-                </span>
-              ))}
-            </div>
+              {c.partners.length} companies · active discussion
+            </p>
             </Reveal>
           </div>
         </section>
@@ -613,8 +590,8 @@ export default function Pipeline() {
           style={{
             padding: '120px 40px',
             borderTop: '1px solid rgba(255,255,255,0.08)',
-            background: '#fff',
-            color: '#000',
+            background: '#F2F2F2',
+            color: '#0A0A0A',
           }}
         >
           <div style={{ maxWidth: '1360px', margin: '0 auto' }}>
@@ -661,13 +638,13 @@ export default function Pipeline() {
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: '13px',
                 fontWeight: 400,
-                color: '#fff',
-                background: '#000',
+                color: '#F2F2F2',
+                background: '#0A0A0A',
                 textTransform: 'uppercase',
                 textDecoration: 'none',
                 letterSpacing: '0.08em',
                 padding: '14px 26px',
-                borderRadius: '999px',
+                borderRadius: '2px',
               }}
             >
               {c.closingCta.label}

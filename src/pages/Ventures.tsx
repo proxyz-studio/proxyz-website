@@ -10,6 +10,7 @@
  * background, Plex Mono + Fragment Mono, hot pink + lime accents.
  */
 
+import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import Reveal from '../components/Reveal';
 import { MagneticAnchor } from '../components/Spatial';
@@ -18,6 +19,7 @@ import { HeroMesh } from '../components/Glow';
 import PictoIcon from '../components/PictoIcon';
 import Nav from '../components/Nav';
 import Footer from '../sections/Footer';
+import { useHeroParallax } from '../lib/scrollChoreography';
 import { venturesPageConfig, type VentureCard } from '../config';
 
 const FONT_MONO = "'IBM Plex Mono', monospace";
@@ -27,8 +29,8 @@ const FONT_DISPLAY = "'Fragment Mono', monospace";
 const PROXYZ_PINK = '#FF4193';
 
 function getStatusPillStyle(status: string, brandAccent: string): React.CSSProperties {
-  if (status === 'live') return { color: '#000', background: '#D2FF3B' };
-  if (status === 'building') return { color: '#000', background: brandAccent };
+  if (status === 'live') return { color: '#0A0A0A', background: '#D2FF3B' };
+  if (status === 'building') return { color: '#0A0A0A', background: brandAccent };
   return {
     color: 'rgba(255,255,255,0.78)',
     background: 'transparent',
@@ -45,13 +47,13 @@ function VentureEntry({ venture, index }: { venture: VentureCard; index: number 
     fontFamily: FONT_MONO,
     fontSize: '12px',
     fontWeight: 400,
-    color: '#000',
-    background: '#fff',
+    color: '#0A0A0A',
+    background: '#F2F2F2',
     textTransform: 'uppercase',
     textDecoration: 'none',
     letterSpacing: '0.08em',
     padding: '12px 22px',
-    borderRadius: '999px',
+    borderRadius: '2px',
     whiteSpace: 'nowrap',
     justifySelf: 'end',
   };
@@ -115,7 +117,7 @@ function VentureEntry({ venture, index }: { venture: VentureCard; index: number 
             letterSpacing: '0.015em',
             textTransform: 'uppercase',
             margin: 0,
-            color: '#fff',
+            color: '#F2F2F2',
           }}
         >
           {venture.name}
@@ -138,7 +140,7 @@ function VentureEntry({ venture, index }: { venture: VentureCard; index: number 
             letterSpacing: '0.14em',
             textTransform: 'uppercase',
             padding: '6px 12px',
-            borderRadius: '999px',
+            borderRadius: '2px',
             whiteSpace: 'nowrap',
             display: 'inline-block',
             ...getStatusPillStyle(venture.status, brandAccent),
@@ -291,13 +293,16 @@ function VentureEntry({ venture, index }: { venture: VentureCard; index: number 
 
 export default function Ventures() {
   const c = venturesPageConfig;
+  const heroRef = useRef<HTMLElement>(null);
+  useHeroParallax(heroRef, { drift: 120, fadeTo: 0.2, inner: '.ventures-hero-inner' });
 
   return (
     <>
       <Nav />
-      <main style={{ background: '#000', color: '#fff' }}>
+      <main style={{ background: '#0A0A0A', color: '#F2F2F2' }}>
         {/* HERO */}
         <section
+          ref={heroRef}
           className="section-mobile"
           style={{
             position: 'relative',
@@ -321,7 +326,7 @@ export default function Ventures() {
             <Marginalia number="04" color="light" />
           </div>
 
-          <div style={{ position: 'relative', zIndex: 2, maxWidth: '1360px', margin: '0 auto' }}>
+          <div className="ventures-hero-inner" style={{ position: 'relative', zIndex: 2, maxWidth: '1360px', margin: '0 auto' }}>
             <Reveal>
               <div style={{ display: 'flex', alignItems: 'center', gap: '20px', margin: '0 0 22px 0' }}>
                 <PictoIcon name="spark" size={28} stroke="var(--accent-pink)" />
@@ -407,8 +412,8 @@ export default function Ventures() {
           style={{
             padding: '120px 40px',
             borderTop: '1px solid rgba(255,255,255,0.08)',
-            background: '#fff',
-            color: '#000',
+            background: '#F2F2F2',
+            color: '#0A0A0A',
           }}
         >
           <div style={{ maxWidth: '1360px', margin: '0 auto' }}>
@@ -455,13 +460,13 @@ export default function Ventures() {
                 fontFamily: FONT_MONO,
                 fontSize: '13px',
                 fontWeight: 400,
-                color: '#fff',
-                background: '#000',
+                color: '#F2F2F2',
+                background: '#0A0A0A',
                 textTransform: 'uppercase',
                 textDecoration: 'none',
                 letterSpacing: '0.08em',
                 padding: '14px 26px',
-                borderRadius: '999px',
+                borderRadius: '2px',
               }}
             >
               {c.closingCta.label}

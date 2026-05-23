@@ -29,8 +29,8 @@ export default function BuildWith() {
       className="section-mobile"
       style={{
         position: 'relative',
-        background: '#000',
-        color: '#fff',
+        background: '#0A0A0A',
+        color: '#F2F2F2',
         padding: '120px 40px',
         fontFamily: "'IBM Plex Mono', monospace",
         overflow: 'hidden',
@@ -125,13 +125,13 @@ export default function BuildWith() {
             style={{
               fontSize: '12px',
               fontWeight: 400,
-              color: '#fff',
+              color: '#F2F2F2',
               background: 'var(--accent-pink)',
               textTransform: 'uppercase',
               textDecoration: 'none',
               letterSpacing: '0.08em',
               padding: '14px 26px',
-              borderRadius: '999px',
+              borderRadius: '2px',
             }}
           >
             {ctaLabel}

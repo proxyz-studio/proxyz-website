@@ -98,7 +98,7 @@ export default function PartnerSubNav({
               paddingBottom: '1px',
             }}
             onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.color = '#fff';
+              (e.currentTarget as HTMLElement).style.color = '#F2F2F2';
               (e.currentTarget as HTMLElement).style.borderBottomColor = accent;
             }}
             onMouseLeave={(e) => {

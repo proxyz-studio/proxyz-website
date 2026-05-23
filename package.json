@@ -59,6 +59,9 @@
     "recharts": "^2.15.4",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
+    "three": "^0.134.0",
+    "vanilla-tilt": "^1.8.1",
+    "vanta": "^0.5.24",
     "vaul": "^1.1.2",
     "zod": "^4.3.5"
   },
@@ -67,6 +70,7 @@
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
+    "@types/three": "^0.134.0",
     "@vercel/node": "^5.8.2",
     "@vitejs/plugin-react": "^5.1.1",
     "autoprefixer": "^10.4.23",

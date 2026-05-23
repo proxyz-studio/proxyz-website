@@ -77,7 +77,7 @@ function TierColumn({ tier, index, total }: { tier: LoyaltyTier; index: number; 
                 color: color,
                 border: `1px solid ${color}`,
                 padding: '4px 10px',
-                borderRadius: '999px',
+                borderRadius: '2px',
               }}
             >
               Apex

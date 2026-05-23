@@ -9,14 +9,16 @@
  * outgrows a single scroll.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import Reveal from '../components/Reveal';
-import { MagneticAnchor } from '../components/Spatial';
+import { MagneticAnchor, TiltCard } from '../components/Spatial';
 import { Marginalia } from '../components/Editorial';
 import { HeroMesh } from '../components/Glow';
 import Nav from '../components/Nav';
 import Footer from '../sections/Footer';
+import { ProxyzMark } from '../components/ProxyzMark';
+import { useHeroParallax } from '../lib/scrollChoreography';
 import { venturesPageConfig, type VentureBrand, type VentureCard } from '../config';
 
 const FONT_MONO = "'IBM Plex Mono', monospace";
@@ -50,8 +52,8 @@ const SECTIONS = [
 ] as const;
 
 function getStatusPillStyle(status: string, brandAccent: string): React.CSSProperties {
-  if (status === 'live') return { color: '#000', background: '#D2FF3B' };
-  if (status === 'building') return { color: '#000', background: brandAccent };
+  if (status === 'live') return { color: '#0A0A0A', background: '#D2FF3B' };
+  if (status === 'building') return { color: '#0A0A0A', background: brandAccent };
   return {
     color: 'rgba(255,255,255,0.78)',
     background: 'transparent',
@@ -77,9 +79,9 @@ function SubNav({ venture }: { venture: VentureCard }) {
         // the viewport top, so it pins right below the main nav.
         top: '82px',
         zIndex: 30,
-        background: 'rgba(0,0,0,0.85)',
-        backdropFilter: 'blur(10px)',
-        WebkitBackdropFilter: 'blur(10px)',
+        // Solid tinted-dark fill — impeccable bans glass / backdrop-blur as
+        // default decoration. Matches the main Nav treatment.
+        background: 'rgba(10,10,10,0.94)',
         borderTop: '1px solid rgba(255,255,255,0.08)',
         borderBottom: '1px solid rgba(255,255,255,0.08)',
         padding: '14px 40px',
@@ -124,7 +126,7 @@ function SubNav({ venture }: { venture: VentureCard }) {
               paddingBottom: '1px',
             }}
             onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.color = '#fff';
+              (e.currentTarget as HTMLElement).style.color = '#F2F2F2';
               (e.currentTarget as HTMLElement).style.borderBottomColor = brand.accent;
             }}
             onMouseLeave={(e) => {
@@ -142,8 +144,11 @@ function SubNav({ venture }: { venture: VentureCard }) {
 
 function Hero({ venture }: { venture: VentureCard }) {
   const brand = resolveBrand(venture.brand);
+  const heroRef = useRef<HTMLElement>(null);
+  useHeroParallax(heroRef, { drift: 100, fadeTo: 0.25, inner: '.venture-detail-hero-inner' });
   return (
     <section
+      ref={heroRef}
       className="section-mobile"
       style={{
         position: 'relative',
@@ -153,7 +158,7 @@ function Hero({ venture }: { venture: VentureCard }) {
       }}
     >
       <HeroMesh />
-      <div style={{ position: 'relative', zIndex: 2, maxWidth: '1360px', margin: '0 auto' }}>
+      <div className="venture-detail-hero-inner" style={{ position: 'relative', zIndex: 2, maxWidth: '1360px', margin: '0 auto' }}>
         <Reveal>
           <p
             style={{
@@ -165,7 +170,7 @@ function Hero({ venture }: { venture: VentureCard }) {
               margin: '0 0 22px 0',
             }}
           >
-            PROXYZ Ventures / {venture.name}
+            <ProxyzMark /> Ventures / {venture.name}
           </p>
         </Reveal>
 
@@ -179,7 +184,7 @@ function Hero({ venture }: { venture: VentureCard }) {
               letterSpacing: '0.015em',
               textTransform: 'uppercase',
               margin: 0,
-              color: '#fff',
+              color: '#F2F2F2',
             }}
           >
             {venture.name}
@@ -210,7 +215,7 @@ function Hero({ venture }: { venture: VentureCard }) {
                 letterSpacing: '0.14em',
                 textTransform: 'uppercase',
                 padding: '8px 14px',
-                borderRadius: '999px',
+                borderRadius: '2px',
                 whiteSpace: 'nowrap',
                 ...getStatusPillStyle(venture.status, brand.accent),
               }}
@@ -224,7 +229,7 @@ function Hero({ venture }: { venture: VentureCard }) {
                 letterSpacing: '0.14em',
                 textTransform: 'uppercase',
                 padding: '8px 14px',
-                borderRadius: '999px',
+                borderRadius: '2px',
                 color: 'rgba(255,255,255,0.55)',
                 border: '1px solid rgba(255,255,255,0.22)',
               }}
@@ -270,7 +275,7 @@ function SectionHeading({ id, label, number }: { id: string; label: string; numb
           letterSpacing: '0.015em',
           textTransform: 'uppercase',
           margin: 0,
-          color: '#fff',
+          color: '#F2F2F2',
           scrollMarginTop: '80px',
         }}
       >
@@ -299,7 +304,7 @@ export default function VentureDetail() {
   return (
     <>
       <Nav />
-      <main style={{ background: '#000', color: '#fff' }}>
+      <main style={{ background: '#0A0A0A', color: '#F2F2F2' }}>
         <Hero venture={venture} />
         <SubNav venture={venture} />
 
@@ -454,8 +459,11 @@ export default function VentureDetail() {
                 }}
               >
                 {d.modulesDetail.map((m) => (
-                  <div
+                  <TiltCard
                     key={m.name}
+                    maxTiltX={2}
+                    maxTiltY={3}
+                    glare={false}
                     style={{
                       padding: '28px 32px',
                       borderTop: `1px solid ${brand.accent}`,
@@ -469,7 +477,7 @@ export default function VentureDetail() {
                         letterSpacing: '0.12em',
                         textTransform: 'uppercase',
                         fontWeight: 600,
-                        color: '#fff',
+                        color: '#F2F2F2',
                         margin: '0 0 12px 0',
                       }}
                     >
@@ -519,7 +527,7 @@ export default function VentureDetail() {
                                 color: 'rgba(255,255,255,0.74)',
                               }}
                             >
-                              <strong style={{ color: '#fff', fontWeight: 600 }}>
+                              <strong style={{ color: '#F2F2F2', fontWeight: 600 }}>
                                 {d.label}.
                               </strong>{' '}
                               {d.body}
@@ -528,7 +536,7 @@ export default function VentureDetail() {
                         </ul>
                       </div>
                     )}
-                  </div>
+                  </TiltCard>
                 ))}
               </div>
             </div>
@@ -576,7 +584,7 @@ export default function VentureDetail() {
                       lineHeight: 1.5,
                       padding: '20px 18px',
                       border: `1px solid ${getRoadmapStatusColor(r.status, brand.accent)}`,
-                      color: r.status === 'next' ? 'rgba(255,255,255,0.5)' : '#fff',
+                      color: r.status === 'next' ? 'rgba(255,255,255,0.5)' : '#F2F2F2',
                       background: r.status === 'active' ? brand.accentTint : 'transparent',
                       display: 'flex',
                       gap: '12px',
@@ -637,8 +645,10 @@ export default function VentureDetail() {
                     key={member.name}
                     style={{
                       padding: '24px 28px',
-                      borderLeft: `2px solid ${brand.accent}`,
-                      background: 'rgba(255,255,255,0.03)',
+                      // Full 1px border + accent-tinted background instead of
+                      // a 2px colored side-stripe (impeccable absolute ban).
+                      border: `1px solid ${brand.accent}`,
+                      background: `${brand.accent}0F`, // ~6% accent tint
                     }}
                   >
                     <h3
@@ -720,13 +730,13 @@ export default function VentureDetail() {
               style={{
                 fontFamily: FONT_MONO,
                 fontSize: '12px',
-                color: '#000',
-                background: '#fff',
+                color: '#0A0A0A',
+                background: '#F2F2F2',
                 textTransform: 'uppercase',
                 textDecoration: 'none',
                 letterSpacing: '0.08em',
                 padding: '14px 26px',
-                borderRadius: '999px',
+                borderRadius: '2px',
                 whiteSpace: 'nowrap',
                 justifySelf: 'end',
               }}

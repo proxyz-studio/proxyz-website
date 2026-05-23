@@ -59,7 +59,7 @@ export default function Marquee({
               fontWeight: 400,
               letterSpacing: '-0.01em',
               textTransform: 'uppercase',
-              color: i % 3 === 0 ? PINK : i % 3 === 1 ? '#fff' : MINT,
+              color: i % 3 === 0 ? PINK : i % 3 === 1 ? '#F2F2F2' : MINT,
               opacity: i % 3 === 1 ? 0.85 : 1,
             }}
           >

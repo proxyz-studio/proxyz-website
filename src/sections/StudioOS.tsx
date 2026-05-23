@@ -32,8 +32,8 @@ export default function StudioOS() {
       className="section-mobile"
       style={{
         position: 'relative',
-        background: '#ffffff',
-        color: '#000000',
+        background: '#F2F2F2',
+        color: '#0A0A0A',
         padding: '120px 40px',
         fontFamily: "'IBM Plex Mono', monospace",
         borderTop: '1px solid #000',
@@ -56,7 +56,7 @@ export default function StudioOS() {
       <div style={{ position: 'relative', maxWidth: '1360px', margin: '0 auto' }}>
         <Reveal>
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px', margin: '0 0 64px 0' }}>
-            <PictoIcon name="studioOs" size={32} stroke="#000" />
+            <PictoIcon name="studioOs" size={32} stroke="#0A0A0A" />
             <p
               style={{
                 fontSize: '12px',
@@ -92,7 +92,7 @@ export default function StudioOS() {
 
         <Reveal delay={140}>
           <div style={{ margin: '0 0 48px 0', maxWidth: '64ch' }}>
-            <DropCap color="#000" letter={lead.charAt(0)}>{withProxyzMark(lead.slice(1), 'studio-lead')}</DropCap>
+            <DropCap color="#0A0A0A" letter={lead.charAt(0)}>{withProxyzMark(lead.slice(1), 'studio-lead')}</DropCap>
           </div>
         </Reveal>
 
@@ -116,7 +116,7 @@ export default function StudioOS() {
                   borderBottom: '1px solid #000',
                 }}
               >
-                <PictoIcon name={listIcons[index] ?? 'principle'} size={28} stroke="#000" />
+                <PictoIcon name={listIcons[index] ?? 'principle'} size={28} stroke="#0A0A0A" />
                 <span
                   style={{
                     fontSize: '15px',

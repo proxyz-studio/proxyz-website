@@ -27,8 +27,8 @@ export default function Booking() {
       className="section-mobile"
       style={{
         position: 'relative',
-        background: '#000',
-        color: '#fff',
+        background: '#0A0A0A',
+        color: '#F2F2F2',
         padding: '120px 40px',
         fontFamily: "'IBM Plex Mono', monospace",
         overflow: 'hidden',

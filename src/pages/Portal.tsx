@@ -1,9 +1,11 @@
+import { useRef } from 'react';
 import Nav from '../components/Nav';
 import Reveal from '../components/Reveal';
 import PictoIcon from '../components/PictoIcon';
 import { TiltCard, MagneticAnchor } from '../components/Spatial';
 import { HeroMesh, EdgeRule } from '../components/Glow';
 import Footer from '../sections/Footer';
+import { useHeroParallax } from '../lib/scrollChoreography';
 import { portalPageConfig } from '../config';
 
 const moduleIcons = ['meetings', 'todos', 'rocks', 'issues', 'scorecard', 'vto'] as const;
@@ -11,13 +13,17 @@ const pillarIcons = ['time', 'install', 'spark'] as const;
 
 export default function Portal() {
   const c = portalPageConfig;
+  // P5: scroll-driven hero parallax — content drifts up + fades on scroll.
+  const heroRef = useRef<HTMLElement>(null);
+  useHeroParallax(heroRef, { drift: 120, fadeTo: 0.2, inner: '.portal-hero-inner' });
 
   return (
     <>
       <Nav />
-      <main style={{ background: '#000', color: '#fff' }}>
+      <main style={{ background: '#0A0A0A', color: '#F2F2F2' }}>
         {/* HERO */}
         <section
+          ref={heroRef}
           className="section-mobile"
           style={{
             position: 'relative',
@@ -27,7 +33,7 @@ export default function Portal() {
           }}
         >
           <HeroMesh />
-          <div style={{ position: 'relative', zIndex: 1, maxWidth: '1360px', margin: '0 auto' }}>
+          <div className="portal-hero-inner" style={{ position: 'relative', zIndex: 1, maxWidth: '1360px', margin: '0 auto' }}>
             <p
               style={{
                 fontFamily: "'IBM Plex Mono', monospace",
@@ -42,29 +48,22 @@ export default function Portal() {
             >
               {c.eyebrow}
             </p>
+            {/*
+              scanline-heading className: same fix as Hero + Pipeline.
+              Pseudo-element overlay replaces gradient-text.
+            */}
             <h1
+              className="scanline-heading"
               style={{
                 fontFamily: "'Fragment Mono', 'Courier New', monospace",
                 fontSize: 'clamp(44px, 6.4vw, 96px)',
                 fontWeight: 400,
                 lineHeight: 0.96,
-                color: 'transparent',
                 textTransform: 'uppercase',
                 margin: 0,
                 letterSpacing: '0.015em',
                 wordSpacing: '-0.45em',
                 textWrap: 'balance',
-                background:
-                  'repeating-linear-gradient(' +
-                  'to bottom, ' +
-                  '#fff 0px, ' +
-                  '#fff 2px, ' +
-                  'transparent 2px, ' +
-                  'transparent 5px' +
-                  ')',
-                WebkitBackgroundClip: 'text',
-                backgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
               }}
             >
               {c.titleLines.map((line, index) => (
@@ -105,13 +104,13 @@ export default function Portal() {
                 style={{
                   fontSize: '13px',
                   fontWeight: 400,
-                  color: '#000',
+                  color: '#0A0A0A',
                   background: 'var(--accent-pink)',
                   textTransform: 'uppercase',
                   textDecoration: 'none',
                   letterSpacing: '0.08em',
                   padding: '14px 26px',
-                  borderRadius: '999px',
+                  borderRadius: '2px',
                 }}
               >
                 {c.primaryCta.label}
@@ -121,7 +120,7 @@ export default function Portal() {
                 style={{
                   fontSize: '12px',
                   fontWeight: 400,
-                  color: '#fff',
+                  color: '#F2F2F2',
                   textTransform: 'uppercase',
                   textDecoration: 'none',
                   letterSpacing: '0.08em',
@@ -133,6 +132,63 @@ export default function Portal() {
                 {c.secondaryLink.label}
               </a>
             </div>
+          </div>
+        </section>
+
+        {/* WHO RUNS ON IT — promoted from position 4 to position 2 per
+            audit (_output/2026-05-23-impeccable-portal-media-v1.md #4):
+            framing the Portal as "what we install at clients" has to
+            precede the module tour, or a cold reader parses MODULES as
+            a SaaS feature grid. */}
+        <section
+          className="section-mobile"
+          style={{
+            padding: '120px 40px',
+            borderBottom: '1px solid rgba(255,255,255,0.08)',
+          }}
+        >
+          <div style={{ maxWidth: '1360px', margin: '0 auto' }}>
+            <p
+              style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: '12px',
+                fontWeight: 400,
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                color: 'var(--accent-pink)',
+                margin: '0 0 48px 0',
+              }}
+            >
+              {c.whoLabel}
+            </p>
+            <h2
+              style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: 'clamp(32px, 4vw, 56px)',
+                fontWeight: 700,
+                lineHeight: 1.12,
+                letterSpacing: '-0.01em',
+                textTransform: 'uppercase',
+                margin: '0 0 36px 0',
+                maxWidth: '24ch',
+                textWrap: 'balance',
+              }}
+            >
+              {c.whoHeading}
+            </h2>
+            <p
+              style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: '16px',
+                fontWeight: 400,
+                lineHeight: 1.7,
+                color: 'rgba(255,255,255,0.7)',
+                margin: 0,
+                maxWidth: '64ch',
+              }}
+            >
+              {c.whoBody}
+            </p>
           </div>
         </section>
 
@@ -181,7 +237,7 @@ export default function Portal() {
                       i === c.pillars.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.18)',
                   }}
                 >
-                  <PictoIcon name={pillarIcons[i] ?? 'spark'} size={32} stroke="#fff" style={{ marginBottom: '18px' }} />
+                  <PictoIcon name={pillarIcons[i] ?? 'spark'} size={32} stroke="#F2F2F2" style={{ marginBottom: '18px' }} />
                   <p
                     style={{
                       fontFamily: "'IBM Plex Mono', monospace",
@@ -227,14 +283,16 @@ export default function Portal() {
           </div>
         </section>
 
-        {/* MODULES */}
+        {/* MODULES — dark register matches the rest of the page (audit #3
+            in 2026-05-23-impeccable-portal-media-v1.md). The earlier white
+            inversion read as a SaaS feature grid stitched onto an editorial
+            page; on dark with shared dividers it inherits the Pillars grid
+            pattern, so MODULES extends the rhythm instead of breaking it. */}
         <section
           className="section-mobile"
           style={{
-            background: '#fff',
-            color: '#000',
             padding: '120px 40px',
-            borderTop: '1px solid #000',
+            borderBottom: '1px solid rgba(255,255,255,0.08)',
           }}
         >
           <div style={{ maxWidth: '1360px', margin: '0 auto' }}>
@@ -257,6 +315,7 @@ export default function Portal() {
                 fontSize: '17.5px',
                 fontWeight: 400,
                 lineHeight: 1.45,
+                color: 'var(--fg)',
                 margin: '0 0 56px 0',
                 maxWidth: '64ch',
               }}
@@ -270,7 +329,7 @@ export default function Portal() {
                 display: 'grid',
                 gridTemplateColumns: 'repeat(3, 1fr)',
                 gap: '0',
-                borderTop: '1px solid #000',
+                borderTop: '1px solid rgba(255,255,255,0.18)',
               }}
             >
               {c.modules.map((m, i) => {
@@ -286,12 +345,12 @@ export default function Portal() {
                       padding: '32px 28px',
                       paddingLeft: col === 0 ? 0 : '28px',
                       paddingRight: col === 2 ? 0 : '28px',
-                      borderRight: col === 2 ? 'none' : '1px solid #000',
-                      borderBottom: isLastRow ? 'none' : '1px solid #000',
+                      borderRight: col === 2 ? 'none' : '1px solid rgba(255,255,255,0.18)',
+                      borderBottom: isLastRow ? 'none' : '1px solid rgba(255,255,255,0.18)',
                       minHeight: '100%',
                     }}
                   >
-                    <PictoIcon name={moduleIcons[i] ?? 'arrow'} size={32} stroke="#000" style={{ marginBottom: '16px' }} />
+                    <PictoIcon name={moduleIcons[i] ?? 'arrow'} size={32} stroke="#F2F2F2" style={{ marginBottom: '16px' }} />
                     <h3
                       style={{
                         fontFamily: "'IBM Plex Mono', monospace",
@@ -299,6 +358,7 @@ export default function Portal() {
                         fontWeight: 700,
                         letterSpacing: '-0.01em',
                         textTransform: 'uppercase',
+                        color: 'var(--fg)',
                         margin: '0 0 16px 0',
                       }}
                     >
@@ -311,7 +371,7 @@ export default function Portal() {
                         fontWeight: 400,
                         lineHeight: 1.6,
                         margin: 0,
-                        color: 'rgba(0,0,0,0.75)',
+                        color: 'rgba(255,255,255,0.78)',
                       }}
                     >
                       {m.description}
@@ -321,59 +381,6 @@ export default function Portal() {
                 );
               })}
             </div>
-          </div>
-        </section>
-
-        {/* WHO RUNS ON IT */}
-        <section
-          className="section-mobile"
-          style={{
-            padding: '120px 40px',
-            borderTop: '1px solid rgba(255,255,255,0.08)',
-          }}
-        >
-          <div style={{ maxWidth: '1360px', margin: '0 auto' }}>
-            <p
-              style={{
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '12px',
-                fontWeight: 400,
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                color: 'var(--accent-pink)',
-                margin: '0 0 48px 0',
-              }}
-            >
-              {c.whoLabel}
-            </p>
-            <h2
-              style={{
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: 'clamp(32px, 4vw, 56px)',
-                fontWeight: 700,
-                lineHeight: 1.12,
-                letterSpacing: '-0.01em',
-                textTransform: 'uppercase',
-                margin: '0 0 36px 0',
-                maxWidth: '24ch',
-                textWrap: 'balance',
-              }}
-            >
-              {c.whoHeading}
-            </h2>
-            <p
-              style={{
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '16px',
-                fontWeight: 400,
-                lineHeight: 1.7,
-                color: 'rgba(255,255,255,0.7)',
-                margin: 0,
-                maxWidth: '64ch',
-              }}
-            >
-              {c.whoBody}
-            </p>
           </div>
         </section>
 
@@ -418,13 +425,13 @@ export default function Portal() {
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: '13px',
                 fontWeight: 400,
-                color: '#000',
-                background: '#fff',
+                color: '#0A0A0A',
+                background: '#F2F2F2',
                 textTransform: 'uppercase',
                 textDecoration: 'none',
                 letterSpacing: '0.08em',
                 padding: '14px 26px',
-                borderRadius: '999px',
+                borderRadius: '2px',
                 display: 'inline-block',
                 transition: 'opacity 0.2s',
               }}
