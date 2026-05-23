@@ -6,7 +6,7 @@ import { Marginalia } from '../components/Editorial';
 import { HeroMesh } from '../components/Glow';
 import PictoIcon from '../components/PictoIcon';
 import Footer from '../sections/Footer';
-import { partnersPageConfig, type PartnerCard } from '../config';
+import { pipelinePageConfig, type PartnerCard } from '../config';
 
 function isInternalRoute(href: string) {
   return href.startsWith('/') && !href.startsWith('/#');
@@ -449,8 +449,8 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
   );
 }
 
-export default function Partners() {
-  const c = partnersPageConfig;
+export default function Pipeline() {
+  const c = pipelinePageConfig;
 
   return (
     <>

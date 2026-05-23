@@ -14,7 +14,7 @@ import Marquee from './components/Marquee';
 import Portal from './pages/Portal';
 import Media from './pages/Media';
 import PadelZ from './pages/PadelZ';
-import Partners from './pages/Partners';
+import Pipeline from './pages/Pipeline';
 import FastFix from './pages/FastFix';
 
 // Code-split the Lazy Tiger page — heavy on bespoke components (helmet, leaderboard,
@@ -94,10 +94,10 @@ function App() {
         <Route path="/portal" element={<Portal />} />
         <Route path="/media" element={<Media />} />
         <Route path="/media/padel-z" element={<PadelZ />} />
-        <Route path="/partners" element={<Partners />} />
-        <Route path="/partners/fast-fix" element={<FastFix />} />
+        <Route path="/pipeline" element={<Pipeline />} />
+        <Route path="/pipeline/fast-fix" element={<FastFix />} />
         <Route
-          path="/partners/lazy-tiger"
+          path="/pipeline/lazy-tiger"
           element={<Suspense fallback={null}><LazyTiger /></Suspense>}
         />
         <Route path="/privacy" element={<Suspense fallback={null}><Privacy /></Suspense>} />

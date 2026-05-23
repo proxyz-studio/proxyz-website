@@ -137,10 +137,10 @@ export default function FastFix() {
               }}
             >
               <Link
-                to="/partners"
+                to="/pipeline"
                 style={{ color: 'rgba(255,255,255,0.55)', textDecoration: 'none', marginRight: '12px' }}
               >
-                ← Partners
+                ← Pipeline
               </Link>
               {c.eyebrow}
             </p>

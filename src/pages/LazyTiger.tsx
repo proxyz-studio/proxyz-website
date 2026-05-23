@@ -289,8 +289,8 @@ export default function LazyTiger() {
                   margin: '0 0 60px 0',
                 }}
               >
-                <Link to="/partners" style={{ color: 'rgba(255,255,255,0.45)', textDecoration: 'none', marginRight: '14px' }}>
-                  ← Partners
+                <Link to="/pipeline" style={{ color: 'rgba(255,255,255,0.45)', textDecoration: 'none', marginRight: '14px' }}>
+                  ← Pipeline
                 </Link>
                 {c.hero.eyebrow}
               </p>

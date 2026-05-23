@@ -111,7 +111,7 @@ export const navigationConfig: NavigationConfig = {
     { label: "What we do", href: "/#services" },
     { label: "Studio OS", href: "/portal" },
     { label: "Media", href: "/media" },
-    { label: "Partners", href: "/partners" },
+    { label: "Pipeline", href: "/pipeline" },
   ],
   primaryCta: { label: "Login", href: "https://portal.proxyz.studio/sign-in" },
 }
@@ -469,7 +469,7 @@ export interface PartnerCard {
   detailHref?: string
 }
 
-export interface PartnersPageConfig {
+export interface PipelinePageConfig {
   eyebrow: string
   titleLines: string[]
   lead: string
@@ -482,11 +482,11 @@ export interface PartnersPageConfig {
   closingCta: NavigationLink
 }
 
-export const partnersPageConfig: PartnersPageConfig = {
-  eyebrow: "ISSUE 03 / THE PARTNERS",
-  titleLines: ["Live partner", "engagements."],
+export const pipelinePageConfig: PipelinePageConfig = {
+  eyebrow: "ISSUE 03 / THE PIPELINE",
+  titleLines: ["Companies", "in play."],
   lead:
-    "PROXYZ runs a Build-with arm in parallel with the studio. Two to three companies at a time. Equity, not retainer. Co-built end to end. This is the working table.",
+    "PROXYZ runs a Build-with arm in parallel with the studio. Two to three companies at a time. Equity, not retainer. Co-built end to end. These are the conversations in motion — not closed partnerships. This is the working table.",
   filterLabel: "Status",
   filterValues: ["Active discussion", "Diligence", "Building", "Operating"],
   partners: [
@@ -511,8 +511,8 @@ export const partnersPageConfig: PartnersPageConfig = {
       ],
       lastUpdate:
         "Market sizing, moat archetype, equity-partner-model research complete. Pitch document draft v1 with Cathal for review.",
-      cta: { label: "View full pitch →", href: "/partners/fast-fix" },
-      detailHref: "/partners/fast-fix",
+      cta: { label: "View full pitch →", href: "/pipeline/fast-fix" },
+      detailHref: "/pipeline/fast-fix",
     },
     {
       name: "Lazy Tiger",
@@ -535,11 +535,11 @@ export const partnersPageConfig: PartnersPageConfig = {
       ],
       lastUpdate:
         "Loyalty layer, IHG hotel network playbook, and the empty-quadrant positioning landed on the page v1.1. Engagement letter draft next.",
-      cta: { label: "View full pitch →", href: "/partners/lazy-tiger" },
-      detailHref: "/partners/lazy-tiger",
+      cta: { label: "View full pitch →", href: "/pipeline/lazy-tiger" },
+      detailHref: "/pipeline/lazy-tiger",
     },
   ],
-  closingLabel: "BECOME A PARTNER",
+  closingLabel: "BUILD WITH PROXYZ",
   closingHeading: "Two to three slots per year.",
   closingBody:
     "Build-with isn't a tier on a menu. It's a partnership. If the upside is real and the chemistry is right, we want to talk.",
@@ -1363,7 +1363,7 @@ export const lazyTigerPageConfig: LazyTigerPageConfig = {
         name: 'FAST-FIX',
         sector: 'Phuket · Hospitality maintenance',
         status: 'Active discussion',
-        href: '/partners/fast-fix',
+        href: '/pipeline/fast-fix',
       },
       {
         name: 'PUSHERS',

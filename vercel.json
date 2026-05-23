@@ -1,4 +1,8 @@
 {
+  "redirects": [
+    { "source": "/partners", "destination": "/pipeline", "permanent": true },
+    { "source": "/partners/:slug", "destination": "/pipeline/:slug", "permanent": true }
+  ],
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]

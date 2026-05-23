@@ -491,7 +491,7 @@ export default function LazyTigerStyles() {
         className="lt-chooser"
       >
         <Link
-          to="/partners/lazy-tiger"
+          to="/pipeline/lazy-tiger"
           style={{
             fontSize: '11px',
             letterSpacing: '0.18em',
