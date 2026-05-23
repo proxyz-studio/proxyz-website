@@ -1389,7 +1389,15 @@ export default function LazyTiger() {
             </Reveal>
 
             <Reveal delay={360}>
-              <div style={{ marginTop: '48px' }}>
+              <div
+                style={{
+                  marginTop: '48px',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  flexWrap: 'wrap',
+                  gap: '14px',
+                }}
+              >
                 <MagneticAnchor
                   href="mailto:hello@proxyz.studio?subject=Lazy Tiger × PROXYZ"
                   style={{
@@ -1407,6 +1415,33 @@ export default function LazyTiger() {
                 >
                   Talk to PROXYZ →
                 </MagneticAnchor>
+                <a
+                  href="/partners/lazy-tiger/cost-overview/"
+                  style={{
+                    fontFamily: FONT_MONO,
+                    fontSize: '12px',
+                    fontWeight: 400,
+                    color: PINK,
+                    background: 'transparent',
+                    textTransform: 'uppercase',
+                    textDecoration: 'none',
+                    letterSpacing: '0.16em',
+                    padding: '13px 26px',
+                    borderRadius: '999px',
+                    border: `1px solid ${PINK}`,
+                    transition: 'background 0.2s ease, color 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = PINK;
+                    e.currentTarget.style.color = '#000';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = PINK;
+                  }}
+                >
+                  View cost overview →
+                </a>
               </div>
             </Reveal>
           </div>
