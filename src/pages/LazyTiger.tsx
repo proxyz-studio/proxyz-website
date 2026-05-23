@@ -1579,38 +1579,13 @@ function DeviceIcon({ kind, index }: { kind: string; index: number }) {
 }
 
 function MasterLogo() {
-  // Stylized copper tiger-and-rider mark, inspired by the deck's heritage etching.
   return (
-    <svg viewBox="0 0 240 120" width="240" height="120" aria-label="Lazy Tiger master logo">
-      <defs>
-        <linearGradient id="master-grad" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor={PINK} />
-          <stop offset="100%" stopColor={LIME} />
-        </linearGradient>
-      </defs>
-      {/* Stylized leaping tiger silhouette */}
-      <path
-        d="M 20 80
-           L 30 70 L 36 60 L 48 55 L 60 56 L 76 50 L 88 46
-           L 102 42 L 118 38 L 134 40 L 150 42 L 168 46 L 184 52
-           L 196 60 L 208 70 L 218 76 L 222 88 L 210 90 L 198 86
-           L 184 92 L 168 98 L 152 100 L 134 102 L 118 100
-           L 102 102 L 86 100 L 70 96 L 56 92 L 42 86 L 28 88 Z"
-        fill="url(#master-grad)"
-      />
-      {/* Rider — abstract figure on top */}
-      <path
-        d="M 124 30 Q 130 22 138 28 L 142 36 L 152 38 L 148 46 L 138 44 L 132 50 L 122 46 Z"
-        fill="url(#master-grad)"
-      />
-      {/* Stripes — short curving accents */}
-      <g stroke="#000" strokeWidth="1.5" fill="none" opacity="0.55">
-        <path d="M 70 70 Q 68 78 72 86" />
-        <path d="M 96 68 Q 94 78 98 88" />
-        <path d="M 122 66 Q 120 78 124 90" />
-        <path d="M 148 68 Q 146 80 150 92" />
-        <path d="M 174 74 Q 172 84 176 94" />
-      </g>
-    </svg>
+    <img
+      src="/lazy-tiger/master-logo.png"
+      alt="Lazy Tiger master logo — copper tiger and rider"
+      width={320}
+      height={170}
+      style={{ display: 'block', height: 'auto', maxWidth: '100%' }}
+    />
   );
 }
