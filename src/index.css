@@ -131,6 +131,65 @@
   .nav-burger-mobile-only { display: inline-flex !important; }
 }
 
+/* ─── Custom cursor (desktop + motion-on only) ─────────────────
+   Hides the OS cursor and replaces it with a small pink crosshair
+   that follows the mouse and expands to a ring on hover. The
+   `.has-custom-cursor` class is added to <body> by CursorOverlay.tsx
+   only when desktop + pointer:fine + motion-on gates all pass. */
+body.has-custom-cursor,
+body.has-custom-cursor * {
+  cursor: none !important;
+}
+.custom-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: difference;
+  will-change: transform;
+}
+.custom-cursor::before,
+.custom-cursor::after {
+  content: '';
+  position: absolute;
+  background: var(--accent-pink);
+  transition:
+    width var(--dur-quick) var(--ease-out-expo),
+    height var(--dur-quick) var(--ease-out-expo),
+    border-radius var(--dur-quick) var(--ease-out-expo),
+    box-shadow var(--dur-quick) var(--ease-out-expo),
+    opacity var(--dur-instant) var(--ease-out-quart),
+    background var(--dur-quick) var(--ease-out-quart);
+}
+.custom-cursor::before {
+  width: 16px;
+  height: 1px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.custom-cursor::after {
+  width: 1px;
+  height: 16px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.custom-cursor.is-hover::before {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--accent-pink);
+}
+.custom-cursor.is-hover::after {
+  opacity: 0;
+}
+
 /* ─── Floating language toggle (bottom-right) ─────────────────── */
 .language-toggle-floating {
   position: fixed;
