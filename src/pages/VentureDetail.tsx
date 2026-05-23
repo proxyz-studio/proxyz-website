@@ -17,10 +17,29 @@ import { Marginalia } from '../components/Editorial';
 import { HeroMesh } from '../components/Glow';
 import Nav from '../components/Nav';
 import Footer from '../sections/Footer';
-import { venturesPageConfig, type VentureCard } from '../config';
+import { venturesPageConfig, type VentureBrand, type VentureCard } from '../config';
 
 const FONT_MONO = "'IBM Plex Mono', monospace";
 const FONT_DISPLAY = "'Fragment Mono', monospace";
+
+/** PROXYZ default accent values, used when a venture has no brand override. */
+const PROXYZ_PINK = '#FF4193';
+const PROXYZ_PINK_SOFT = 'rgba(255,65,147,0.04)';
+const PROXYZ_PINK_TINT = 'rgba(255,65,147,0.08)';
+
+interface ResolvedBrand {
+  accent: string;
+  accentSoft: string;
+  accentTint: string;
+}
+
+function resolveBrand(brand: VentureBrand | undefined): ResolvedBrand {
+  return {
+    accent: brand?.accent ?? PROXYZ_PINK,
+    accentSoft: brand?.accentSoft ?? PROXYZ_PINK_SOFT,
+    accentTint: brand?.accentTint ?? PROXYZ_PINK_TINT,
+  };
+}
 
 const SECTIONS = [
   { id: 'overview', label: 'Overview' },
@@ -30,23 +49,24 @@ const SECTIONS = [
   { id: 'team', label: 'Team' },
 ] as const;
 
-const statusPillStyle: Record<string, React.CSSProperties> = {
-  live: { color: '#000', background: '#D2FF3B' },
-  building: { color: '#000', background: 'var(--accent-pink)' },
-  planning: {
+function getStatusPillStyle(status: string, brandAccent: string): React.CSSProperties {
+  if (status === 'live') return { color: '#000', background: '#D2FF3B' };
+  if (status === 'building') return { color: '#000', background: brandAccent };
+  return {
     color: 'rgba(255,255,255,0.78)',
     background: 'transparent',
     border: '1px solid rgba(255,255,255,0.32)',
-  },
-};
+  };
+}
 
-const roadmapStatusColor: Record<string, string> = {
-  done: '#5BC9B8',
-  active: 'var(--accent-pink)',
-  next: 'rgba(255,255,255,0.35)',
-};
+function getRoadmapStatusColor(status: string, brandAccent: string): string {
+  if (status === 'done') return '#5BC9B8';
+  if (status === 'active') return brandAccent;
+  return 'rgba(255,255,255,0.35)';
+}
 
 function SubNav({ venture }: { venture: VentureCard }) {
+  const brand = resolveBrand(venture.brand);
   return (
     <nav
       aria-label={`${venture.name} sections`}
@@ -105,8 +125,7 @@ function SubNav({ venture }: { venture: VentureCard }) {
             }}
             onMouseEnter={(e) => {
               (e.currentTarget as HTMLElement).style.color = '#fff';
-              (e.currentTarget as HTMLElement).style.borderBottomColor =
-                'var(--accent-pink)';
+              (e.currentTarget as HTMLElement).style.borderBottomColor = brand.accent;
             }}
             onMouseLeave={(e) => {
               (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.6)';
@@ -122,6 +141,7 @@ function SubNav({ venture }: { venture: VentureCard }) {
 }
 
 function Hero({ venture }: { venture: VentureCard }) {
+  const brand = resolveBrand(venture.brand);
   return (
     <section
       className="section-mobile"
@@ -141,7 +161,7 @@ function Hero({ venture }: { venture: VentureCard }) {
               fontSize: '11px',
               letterSpacing: '0.18em',
               textTransform: 'uppercase',
-              color: 'var(--accent-pink)',
+              color: brand.accent,
               margin: '0 0 22px 0',
             }}
           >
@@ -172,7 +192,7 @@ function Hero({ venture }: { venture: VentureCard }) {
               fontFamily: FONT_MONO,
               fontSize: 'clamp(20px, 2.2vw, 28px)',
               lineHeight: 1.4,
-              color: 'var(--accent-pink)',
+              color: brand.accent,
               margin: '24px 0 0 0',
               maxWidth: '76ch',
             }}
@@ -192,7 +212,7 @@ function Hero({ venture }: { venture: VentureCard }) {
                 padding: '8px 14px',
                 borderRadius: '999px',
                 whiteSpace: 'nowrap',
-                ...statusPillStyle[venture.status],
+                ...getStatusPillStyle(venture.status, brand.accent),
               }}
             >
               ● {venture.statusLabel}
@@ -274,6 +294,7 @@ export default function VentureDetail() {
   }
 
   const d = venture.detail;
+  const brand = resolveBrand(venture.brand);
 
   return (
     <>
@@ -367,7 +388,7 @@ export default function VentureDetail() {
                         fontSize: '11px',
                         letterSpacing: '0.18em',
                         textTransform: 'uppercase',
-                        color: 'var(--accent-pink)',
+                        color: brand.accent,
                         margin: '0 0 16px 0',
                       }}
                     >
@@ -437,8 +458,8 @@ export default function VentureDetail() {
                     key={m.name}
                     style={{
                       padding: '28px 32px',
-                      borderTop: '1px solid var(--accent-pink)',
-                      background: 'rgba(255,65,147,0.04)',
+                      borderTop: `1px solid ${brand.accent}`,
+                      background: brand.accentSoft,
                     }}
                   >
                     <h3
@@ -512,10 +533,9 @@ export default function VentureDetail() {
                       fontSize: '13px',
                       lineHeight: 1.5,
                       padding: '20px 18px',
-                      border: `1px solid ${roadmapStatusColor[r.status]}`,
+                      border: `1px solid ${getRoadmapStatusColor(r.status, brand.accent)}`,
                       color: r.status === 'next' ? 'rgba(255,255,255,0.5)' : '#fff',
-                      background:
-                        r.status === 'active' ? 'rgba(255,65,147,0.08)' : 'transparent',
+                      background: r.status === 'active' ? brand.accentTint : 'transparent',
                       display: 'flex',
                       gap: '12px',
                       alignItems: 'flex-start',
@@ -525,7 +545,7 @@ export default function VentureDetail() {
                       style={{
                         width: '8px',
                         height: '8px',
-                        background: roadmapStatusColor[r.status],
+                        background: getRoadmapStatusColor(r.status, brand.accent),
                         borderRadius: '50%',
                         marginTop: '6px',
                         flexShrink: 0,
@@ -575,7 +595,7 @@ export default function VentureDetail() {
                     key={member.name}
                     style={{
                       padding: '24px 28px',
-                      borderLeft: '2px solid var(--accent-pink)',
+                      borderLeft: `2px solid ${brand.accent}`,
                       background: 'rgba(255,255,255,0.03)',
                     }}
                   >

@@ -552,6 +552,18 @@ export const pipelinePageConfig: PipelinePageConfig = {
 
 export type VentureStatus = 'live' | 'building' | 'planning';
 
+/** Per-venture brand colors. When set, override the PROXYZ hot-pink default
+ * across the venture's card on /ventures and its full detail page at
+ * /ventures/<slug>. PROXYZ pink (#FF4193) is the fallback. */
+export interface VentureBrand {
+  /** Primary accent color — replaces var(--accent-pink) for this venture only. */
+  accent: string;
+  /** Soft tint of the accent for backgrounds (recommend ~4% alpha). */
+  accentSoft: string;
+  /** Slightly stronger tint of the accent for hover / active states (~8% alpha). */
+  accentTint: string;
+}
+
 export interface VentureHowStep {
   num: string;
   title: string;
@@ -602,6 +614,9 @@ export interface VentureCard {
   internalHref: string | null;
   pitch: string;
   modules: string[];
+  /** Optional brand override. When absent, the card and detail page use the
+   * PROXYZ default hot pink accent. */
+  brand?: VentureBrand;
   /** Richer content for the detail page. Optional — only filled when a detail page exists. */
   detail?: VentureDetail;
 }
@@ -710,6 +725,11 @@ export const venturesPageConfig: VenturesPageConfig = {
       pitch:
         "Individual hosted agents for operators who need their own. Each customer gets a dedicated Orgo VM running the Hermes runtime with full Agent Mail and LINE OA integration. End-state proof passed on 23 May 2026.",
       modules: ["Hermes runtime", "Agent Mail", "LINE OA", "Orgo isolation"],
+      brand: {
+        accent: "#D2FF3B",
+        accentSoft: "rgba(210,255,59,0.04)",
+        accentTint: "rgba(210,255,59,0.08)",
+      },
       detail: {
         slug: "magniz",
         overview: [

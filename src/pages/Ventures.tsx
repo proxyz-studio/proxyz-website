@@ -23,25 +23,23 @@ import { venturesPageConfig, type VentureCard } from '../config';
 const FONT_MONO = "'IBM Plex Mono', monospace";
 const FONT_DISPLAY = "'Fragment Mono', monospace";
 
-const statusPillStyle: Record<string, React.CSSProperties> = {
-  live: {
-    color: '#000',
-    background: '#D2FF3B',
-  },
-  building: {
-    color: '#000',
-    background: 'var(--accent-pink)',
-  },
-  planning: {
+/** PROXYZ default accent — used when a venture has no brand override. */
+const PROXYZ_PINK = '#FF4193';
+
+function getStatusPillStyle(status: string, brandAccent: string): React.CSSProperties {
+  if (status === 'live') return { color: '#000', background: '#D2FF3B' };
+  if (status === 'building') return { color: '#000', background: brandAccent };
+  return {
     color: 'rgba(255,255,255,0.78)',
     background: 'transparent',
     border: '1px solid rgba(255,255,255,0.32)',
-  },
-};
+  };
+}
 
 function VentureEntry({ venture, index }: { venture: VentureCard; index: number }) {
   const hasExternalLink = venture.status === 'live' && !!venture.href;
   const hasInternalLink = !!venture.internalHref;
+  const brandAccent = venture.brand?.accent ?? PROXYZ_PINK;
 
   const ctaStyle: React.CSSProperties = {
     fontFamily: FONT_MONO,
@@ -143,7 +141,7 @@ function VentureEntry({ venture, index }: { venture: VentureCard; index: number 
             borderRadius: '999px',
             whiteSpace: 'nowrap',
             display: 'inline-block',
-            ...statusPillStyle[venture.status],
+            ...getStatusPillStyle(venture.status, brandAccent),
           }}
         >
           ● {venture.statusLabel}
@@ -156,7 +154,7 @@ function VentureEntry({ venture, index }: { venture: VentureCard; index: number 
           fontFamily: FONT_MONO,
           fontSize: 'clamp(18px, 1.8vw, 22px)',
           lineHeight: 1.45,
-          color: 'var(--accent-pink)',
+          color: brandAccent,
           margin: '0 0 28px 0',
           maxWidth: '76ch',
         }}
