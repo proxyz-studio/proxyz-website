@@ -27,8 +27,8 @@ const FONT_DISPLAY = "'Fragment Mono', monospace";
 const PROXYZ_PINK = '#FF4193';
 
 function getStatusPillStyle(status: string, brandAccent: string): React.CSSProperties {
-  if (status === 'live') return { color: '#000', background: '#D2FF3B' };
-  if (status === 'building') return { color: '#000', background: brandAccent };
+  if (status === 'live') return { color: '#0A0A0A', background: '#D2FF3B' };
+  if (status === 'building') return { color: '#0A0A0A', background: brandAccent };
   return {
     color: 'rgba(255,255,255,0.78)',
     background: 'transparent',
@@ -45,8 +45,8 @@ function VentureEntry({ venture, index }: { venture: VentureCard; index: number 
     fontFamily: FONT_MONO,
     fontSize: '12px',
     fontWeight: 400,
-    color: '#000',
-    background: '#fff',
+    color: '#0A0A0A',
+    background: '#F2F2F2',
     textTransform: 'uppercase',
     textDecoration: 'none',
     letterSpacing: '0.08em',
@@ -115,7 +115,7 @@ function VentureEntry({ venture, index }: { venture: VentureCard; index: number 
             letterSpacing: '0.015em',
             textTransform: 'uppercase',
             margin: 0,
-            color: '#fff',
+            color: '#F2F2F2',
           }}
         >
           {venture.name}
@@ -295,7 +295,7 @@ export default function Ventures() {
   return (
     <>
       <Nav />
-      <main style={{ background: '#000', color: '#fff' }}>
+      <main style={{ background: '#0A0A0A', color: '#F2F2F2' }}>
         {/* HERO */}
         <section
           className="section-mobile"
@@ -407,8 +407,8 @@ export default function Ventures() {
           style={{
             padding: '120px 40px',
             borderTop: '1px solid rgba(255,255,255,0.08)',
-            background: '#fff',
-            color: '#000',
+            background: '#F2F2F2',
+            color: '#0A0A0A',
           }}
         >
           <div style={{ maxWidth: '1360px', margin: '0 auto' }}>
@@ -455,8 +455,8 @@ export default function Ventures() {
                 fontFamily: FONT_MONO,
                 fontSize: '13px',
                 fontWeight: 400,
-                color: '#fff',
-                background: '#000',
+                color: '#F2F2F2',
+                background: '#0A0A0A',
                 textTransform: 'uppercase',
                 textDecoration: 'none',
                 letterSpacing: '0.08em',

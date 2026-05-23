@@ -15,7 +15,7 @@ export default function Portal() {
   return (
     <>
       <Nav />
-      <main style={{ background: '#000', color: '#fff' }}>
+      <main style={{ background: '#0A0A0A', color: '#F2F2F2' }}>
         {/* HERO */}
         <section
           className="section-mobile"
@@ -105,7 +105,7 @@ export default function Portal() {
                 style={{
                   fontSize: '13px',
                   fontWeight: 400,
-                  color: '#000',
+                  color: '#0A0A0A',
                   background: 'var(--accent-pink)',
                   textTransform: 'uppercase',
                   textDecoration: 'none',
@@ -121,7 +121,7 @@ export default function Portal() {
                 style={{
                   fontSize: '12px',
                   fontWeight: 400,
-                  color: '#fff',
+                  color: '#F2F2F2',
                   textTransform: 'uppercase',
                   textDecoration: 'none',
                   letterSpacing: '0.08em',
@@ -181,7 +181,7 @@ export default function Portal() {
                       i === c.pillars.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.18)',
                   }}
                 >
-                  <PictoIcon name={pillarIcons[i] ?? 'spark'} size={32} stroke="#fff" style={{ marginBottom: '18px' }} />
+                  <PictoIcon name={pillarIcons[i] ?? 'spark'} size={32} stroke="#F2F2F2" style={{ marginBottom: '18px' }} />
                   <p
                     style={{
                       fontFamily: "'IBM Plex Mono', monospace",
@@ -231,8 +231,8 @@ export default function Portal() {
         <section
           className="section-mobile"
           style={{
-            background: '#fff',
-            color: '#000',
+            background: '#F2F2F2',
+            color: '#0A0A0A',
             padding: '120px 40px',
             borderTop: '1px solid #000',
           }}
@@ -291,7 +291,7 @@ export default function Portal() {
                       minHeight: '100%',
                     }}
                   >
-                    <PictoIcon name={moduleIcons[i] ?? 'arrow'} size={32} stroke="#000" style={{ marginBottom: '16px' }} />
+                    <PictoIcon name={moduleIcons[i] ?? 'arrow'} size={32} stroke="#0A0A0A" style={{ marginBottom: '16px' }} />
                     <h3
                       style={{
                         fontFamily: "'IBM Plex Mono', monospace",
@@ -418,8 +418,8 @@ export default function Portal() {
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: '13px',
                 fontWeight: 400,
-                color: '#000',
-                background: '#fff',
+                color: '#0A0A0A',
+                background: '#F2F2F2',
                 textTransform: 'uppercase',
                 textDecoration: 'none',
                 letterSpacing: '0.08em',

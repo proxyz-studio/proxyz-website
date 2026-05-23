@@ -168,7 +168,7 @@ function MeetingCard({
               fontWeight: 400,
               lineHeight: 1.25,
               letterSpacing: '-0.01em',
-              color: '#fff',
+              color: '#F2F2F2',
               margin: '0 0 14px 0',
             }}
           >

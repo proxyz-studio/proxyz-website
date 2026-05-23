@@ -16,7 +16,7 @@ export default function Media() {
   return (
     <>
       <Nav />
-      <main style={{ background: '#000', color: '#fff' }}>
+      <main style={{ background: '#0A0A0A', color: '#F2F2F2' }}>
 
         {/* HERO */}
         <section
@@ -272,7 +272,7 @@ export default function Media() {
                         : '1px solid rgba(255,255,255,0.18)',
                   }}
                 >
-                  <PictoIcon name={flywheelIcons[i] ?? 'arrow'} size={32} stroke="#fff" style={{ marginBottom: '20px' }} />
+                  <PictoIcon name={flywheelIcons[i] ?? 'arrow'} size={32} stroke="#F2F2F2" style={{ marginBottom: '20px' }} />
                   <p
                     style={{
                       fontFamily: "'IBM Plex Mono', monospace",
@@ -364,7 +364,7 @@ export default function Media() {
                 const _delay = i * 80;
                 const inner = (
                   <>
-                    <PictoIcon name="orbit" size={36} stroke="#fff" style={{ marginBottom: '24px' }} />
+                    <PictoIcon name="orbit" size={36} stroke="#F2F2F2" style={{ marginBottom: '24px' }} />
                     <p
                       style={{
                         fontFamily: "'IBM Plex Mono', monospace",
@@ -386,7 +386,7 @@ export default function Media() {
                         lineHeight: 1.1,
                         textTransform: 'uppercase',
                         margin: '0 0 12px 0',
-                        color: '#fff',
+                        color: '#F2F2F2',
                       }}
                     >
                       {(() => {
@@ -593,7 +593,7 @@ export default function Media() {
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: '13px',
                 fontWeight: 400,
-                color: '#000',
+                color: '#0A0A0A',
                 background: 'var(--accent-pink)',
                 textTransform: 'uppercase',
                 textDecoration: 'none',

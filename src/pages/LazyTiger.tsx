@@ -90,7 +90,7 @@ function DisplayHeading({
         margin: 0,
         textWrap: 'balance',
         textAlign: align,
-        color: '#fff',
+        color: '#F2F2F2',
       }}
     >
       {children}
@@ -187,13 +187,13 @@ function HRWaveform() {
 function WearableIcon({ label, x, y }: { label: string; x: number; y: number }) {
   return (
     <g transform={`translate(${x}, ${y})`}>
-      <circle r="22" fill="#000" stroke={PINK} strokeWidth="1" />
+      <circle r="22" fill="#0A0A0A" stroke={PINK} strokeWidth="1" />
       <text
         textAnchor="middle"
         y="4"
         fontFamily={FONT_MONO}
         fontSize="9"
-        fill="#fff"
+        fill="#F2F2F2"
         letterSpacing="0.04em"
       >
         {label}
@@ -226,11 +226,11 @@ function SensorNetworkDiagram() {
       </g>
       {/* Center node — "Polar SDK spine" */}
       <circle cx="300" cy="190" r="80" fill="url(#sensor-glow)" />
-      <circle cx="300" cy="190" r="48" fill="#000" stroke={PINK} strokeWidth="1.5" />
+      <circle cx="300" cy="190" r="48" fill="#0A0A0A" stroke={PINK} strokeWidth="1.5" />
       <text x="300" y="184" textAnchor="middle" fontFamily={FONT_MONO} fontSize="10" fill={PINK} letterSpacing="0.18em">
         POLAR
       </text>
-      <text x="300" y="200" textAnchor="middle" fontFamily={FONT_MONO} fontSize="10" fill="#fff" letterSpacing="0.18em">
+      <text x="300" y="200" textAnchor="middle" fontFamily={FONT_MONO} fontSize="10" fill="#F2F2F2" letterSpacing="0.18em">
         SDK
       </text>
       {/* Wearable nodes */}
@@ -273,7 +273,7 @@ export default function LazyTiger() {
           { id: '/partners/lazy-tiger/cost-overview/', label: 'Cost overview →', external: true },
         ]}
       />
-      <main style={{ background: '#000', color: '#fff', overflow: 'hidden' }}>
+      <main style={{ background: '#0A0A0A', color: '#F2F2F2', overflow: 'hidden' }}>
         {/* ================================================================
             SECTION 1 — HERO
         ================================================================ */}
@@ -283,7 +283,7 @@ export default function LazyTiger() {
           style={{
             position: 'relative',
             padding: '180px 40px 100px',
-            background: '#000',
+            background: '#0A0A0A',
             borderBottom: '1px solid rgba(255,255,255,0.08)',
             overflow: 'hidden',
             minHeight: '100vh',
@@ -335,7 +335,7 @@ export default function LazyTiger() {
                   lineHeight: 0.98,
                   letterSpacing: '-0.02em',
                   margin: 0,
-                  color: '#fff',
+                  color: '#F2F2F2',
                   textWrap: 'balance',
                 }}
               >
@@ -374,7 +374,7 @@ export default function LazyTiger() {
           className="lt-section-padding"
           style={{
             padding: '120px 40px',
-            background: '#000',
+            background: '#0A0A0A',
             borderBottom: '1px solid rgba(255,255,255,0.06)',
           }}
         >
@@ -497,7 +497,7 @@ export default function LazyTiger() {
               >
                 {c.gap.midLabel}
               </span>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: FONT_MONO, fontSize: '12px', color: '#fff' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: FONT_MONO, fontSize: '12px', color: '#F2F2F2' }}>
                 <span>{c.gap.aboveLabel}</span>
                 <span style={{ color: 'rgba(255,255,255,0.35)' }}>{c.gap.belowLabel}</span>
               </div>
@@ -515,7 +515,7 @@ export default function LazyTiger() {
           className="lt-section-padding"
           style={{
             padding: '160px 40px 120px',
-            background: '#000',
+            background: '#0A0A0A',
             textAlign: 'center',
           }}
         >
@@ -532,7 +532,7 @@ export default function LazyTiger() {
                   lineHeight: 1.05,
                   letterSpacing: '-0.015em',
                   margin: 0,
-                  color: '#fff',
+                  color: '#F2F2F2',
                   textWrap: 'balance',
                 }}
               >
@@ -589,7 +589,7 @@ export default function LazyTiger() {
           className="lt-section-padding"
           style={{
             padding: '160px 40px',
-            background: '#000',
+            background: '#0A0A0A',
             borderBottom: '1px solid rgba(255,255,255,0.1)',
             position: 'relative',
             overflow: 'hidden',
@@ -621,7 +621,7 @@ export default function LazyTiger() {
                       lineHeight: 1.08,
                       letterSpacing: '-0.015em',
                       margin: '16px 0 20px 0',
-                      color: '#fff',
+                      color: '#F2F2F2',
                     }}
                   >
                     {c.loyalty.name}
@@ -669,7 +669,7 @@ export default function LazyTiger() {
           className="lt-section-padding"
           style={{
             padding: '160px 40px',
-            background: '#000',
+            background: '#0A0A0A',
             borderTop: '1px solid rgba(255,110,31,0.12)',
             borderBottom: '1px solid rgba(255,110,31,0.12)',
             textAlign: 'center',
@@ -696,7 +696,7 @@ export default function LazyTiger() {
                         fontWeight: 500,
                         fontSize: 'clamp(20px, 2.2vw, 30px)',
                         lineHeight: 1.3,
-                        color: i === c.compound.beats.length - 1 ? LIME : '#fff',
+                        color: i === c.compound.beats.length - 1 ? LIME : '#F2F2F2',
                         margin: '0 0 18px 0',
                         textAlign: 'left',
                         letterSpacing: '0.01em',
@@ -740,7 +740,7 @@ export default function LazyTiger() {
           className="lt-section-padding"
           style={{
             padding: '160px 40px',
-            background: '#000',
+            background: '#0A0A0A',
             borderBottom: '1px solid rgba(255,110,31,0.12)',
           }}
         >
@@ -771,7 +771,7 @@ export default function LazyTiger() {
           className="lt-section-padding"
           style={{
             padding: '160px 40px',
-            background: '#000',
+            background: '#0A0A0A',
             borderBottom: '1px solid rgba(255,110,31,0.12)',
           }}
         >
@@ -831,7 +831,7 @@ export default function LazyTiger() {
                         fontWeight: 500,
                         fontSize: '22px',
                         margin: 0,
-                        color: '#fff',
+                        color: '#F2F2F2',
                         letterSpacing: '0.02em',
                       }}
                     >
@@ -943,7 +943,7 @@ export default function LazyTiger() {
                           fontFamily: FONT_MONO,
                           fontSize: '15px',
                           lineHeight: 1.6,
-                          color: '#fff',
+                          color: '#F2F2F2',
                           paddingLeft: '24px',
                           position: 'relative',
                           opacity: 0,
@@ -980,7 +980,7 @@ export default function LazyTiger() {
                           fontFamily: FONT_MONO,
                           fontSize: '15px',
                           lineHeight: 1.6,
-                          color: '#fff',
+                          color: '#F2F2F2',
                           paddingLeft: '24px',
                           position: 'relative',
                           opacity: 0,
@@ -1184,11 +1184,12 @@ export default function LazyTiger() {
                   <article
                     style={{
                       padding: '32px 28px',
-                      background: '#000',
-                      borderLeft: `2px solid ${PINK}`,
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      borderLeftWidth: '3px',
-                      borderLeftColor: PINK,
+                      background: '#0A0A0A',
+                      // Replaces the 3px side-stripe (impeccable absolute ban)
+                      // with a pink-tinted full-border treatment. The label
+                      // span inside already carries the pink accent.
+                      border: `1px solid ${PINK}`,
+                      boxShadow: 'inset 0 0 0 1px rgba(255, 65, 147, 0.06)',
                       display: 'flex',
                       flexDirection: 'column',
                       gap: '20px',
@@ -1213,7 +1214,7 @@ export default function LazyTiger() {
                         lineHeight: 1.2,
                         margin: 0,
                         fontWeight: 500,
-                        color: '#fff',
+                        color: '#F2F2F2',
                         letterSpacing: '0.005em',
                       }}
                     >
@@ -1315,7 +1316,7 @@ export default function LazyTiger() {
                           fontFamily: FONT_DISPLAY,
                           fontSize: '26px',
                           fontWeight: 500,
-                          color: '#000',
+                          color: '#0A0A0A',
                           letterSpacing: '0.05em',
                         }}
                       >
@@ -1347,7 +1348,7 @@ export default function LazyTiger() {
                           fontFamily: FONT_DISPLAY,
                           fontSize: '20px',
                           margin: 0,
-                          color: '#fff',
+                          color: '#F2F2F2',
                           fontWeight: 500,
                         }}
                       >
@@ -1391,7 +1392,7 @@ export default function LazyTiger() {
           data-brand-mode="proxyz"
           style={{
             padding: '160px 40px 120px',
-            background: '#000',
+            background: '#0A0A0A',
             borderTop: '1px solid rgba(255,255,255,0.08)',
             textAlign: 'center',
             position: 'relative',
@@ -1449,7 +1450,7 @@ export default function LazyTiger() {
                     fontFamily: FONT_MONO,
                     fontSize: '12px',
                     fontWeight: 400,
-                    color: '#000',
+                    color: '#0A0A0A',
                     background: PINK,
                     textTransform: 'uppercase',
                     textDecoration: 'none',
@@ -1491,7 +1492,7 @@ function LayerSection({
       className="lt-section-padding"
       style={{
         padding: '160px 40px',
-        background: '#000',
+        background: '#0A0A0A',
         borderBottom: '1px solid rgba(255,110,31,0.1)',
         position: 'relative',
         overflow: 'hidden',
@@ -1522,7 +1523,7 @@ function LayerSection({
                   lineHeight: 1.1,
                   letterSpacing: '0.005em',
                   margin: '16px 0 20px 0',
-                  color: '#fff',
+                  color: '#F2F2F2',
                 }}
               >
                 {layer.name}

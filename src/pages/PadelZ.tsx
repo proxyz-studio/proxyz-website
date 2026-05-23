@@ -61,7 +61,7 @@ export default function PadelZ() {
     <>
       <Nav />
       <MediaGate slug="padel-z" projectName="Padel Z">
-        <main style={{ background: '#000', color: '#fff' }}>
+        <main style={{ background: '#0A0A0A', color: '#F2F2F2' }}>
           {/* HERO */}
           <section
             className="section-mobile"
@@ -253,8 +253,8 @@ export default function PadelZ() {
             className="section-mobile"
             style={{
               padding: '96px 40px',
-              background: '#fff',
-              color: '#000',
+              background: '#F2F2F2',
+              color: '#0A0A0A',
               borderBottom: '1px solid #000',
             }}
           >
@@ -290,7 +290,7 @@ export default function PadelZ() {
                       letterSpacing: '-0.015em',
                       margin: 0,
                       textWrap: 'balance',
-                      color: '#000',
+                      color: '#0A0A0A',
                     }}
                   >
                     The audience rail
@@ -605,7 +605,7 @@ export default function PadelZ() {
                         width: '16px',
                         height: '16px',
                         borderRadius: '999px',
-                        background: '#000',
+                        background: '#0A0A0A',
                         border: `1px solid ${MINT}`,
                         marginTop: '16px',
                         marginBottom: '8px',
@@ -635,7 +635,7 @@ export default function PadelZ() {
                       style={{
                         fontFamily: FONT_MONO,
                         fontSize: '17px',
-                        color: '#fff',
+                        color: '#F2F2F2',
                         fontWeight: 500,
                         letterSpacing: '-0.005em',
                       }}
@@ -682,7 +682,7 @@ export default function PadelZ() {
                   letterSpacing: '-0.015em',
                   maxWidth: '22ch',
                   margin: '0 auto',
-                  color: '#fff',
+                  color: '#F2F2F2',
                   textWrap: 'balance',
                 }}
               >

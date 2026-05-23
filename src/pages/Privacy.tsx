@@ -149,7 +149,7 @@ export default function Privacy() {
   return (
     <>
       <Nav />
-      <main style={{ background: '#000', color: '#fff', minHeight: '100vh' }}>
+      <main style={{ background: '#0A0A0A', color: '#F2F2F2', minHeight: '100vh' }}>
         <article
           style={{
             maxWidth: '760px',
@@ -178,7 +178,7 @@ export default function Privacy() {
               textTransform: 'uppercase',
               letterSpacing: '0.015em',
               margin: 0,
-              color: '#fff',
+              color: '#F2F2F2',
               textWrap: 'balance',
             }}
           >

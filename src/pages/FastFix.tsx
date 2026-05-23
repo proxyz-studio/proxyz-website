@@ -55,9 +55,9 @@ function PortalHub({ labels, coreLabel }: { labels: string[]; coreLabel: string 
         <text x="124" y="124" textAnchor="end">{labels[7]}</text>
       </g>
 
-      <circle cx="280" cy="280" r="50" fill="#0a0a0a" stroke="#ffffff" strokeWidth="1" />
+      <circle cx="280" cy="280" r="50" fill="#0a0a0a" stroke="#F2F2F2" strokeWidth="1" />
       <text x="280" y="272" fontFamily="IBM Plex Mono, monospace" fontSize="10" fill="#ff4193" textAnchor="middle" letterSpacing="2">THE</text>
-      <text x="280" y="292" fontFamily="IBM Plex Mono, monospace" fontSize="13" fill="#ffffff" textAnchor="middle" letterSpacing="2">{coreLabel.replace('THE ', '')}</text>
+      <text x="280" y="292" fontFamily="IBM Plex Mono, monospace" fontSize="13" fill="#F2F2F2" textAnchor="middle" letterSpacing="2">{coreLabel.replace('THE ', '')}</text>
     </svg>
   );
 }
@@ -125,7 +125,7 @@ export default function FastFix() {
           { id: 'roadmap', label: 'Roadmap' },
         ]}
       />
-      <main style={{ background: '#000', color: '#fff' }}>
+      <main style={{ background: '#0A0A0A', color: '#F2F2F2' }}>
         {/* ====== HERO ====== */}
         <section
           className="section-mobile"
@@ -253,16 +253,33 @@ export default function FastFix() {
                 ))}
                 <div
                   style={{
-                    borderLeft: '1px solid var(--accent-pink)',
-                    padding: '4px 0 4px 24px',
+                    // Replaces the 1px side-stripe blockquote with a pink
+                    // pull-quote: pink eyebrow above + larger body type.
+                    // Honors impeccable's "side-stripe → leading marker"
+                    // rewrite path.
+                    padding: '24px 28px',
                     margin: '32px 0 0 0',
-                    color: 'rgba(255,255,255,0.85)',
+                    background: 'rgba(255, 65, 147, 0.06)',
+                    border: '1px solid rgba(255, 65, 147, 0.30)',
+                    color: '#F2F2F2',
                     fontFamily: FONT_MONO,
                     fontSize: '17px',
                     lineHeight: 1.55,
                     fontStyle: 'italic',
                   }}
                 >
+                  <div
+                    style={{
+                      fontSize: '10px',
+                      letterSpacing: '0.18em',
+                      textTransform: 'uppercase',
+                      color: 'var(--accent-pink)',
+                      fontStyle: 'normal',
+                      marginBottom: '10px',
+                    }}
+                  >
+                    Model quote
+                  </div>
                   {c.modelQuote}
                 </div>
               </div>
@@ -304,7 +321,7 @@ export default function FastFix() {
                       fontFamily: FONT_MONO,
                       fontSize: '16px',
                       fontWeight: 500,
-                      color: '#fff',
+                      color: '#F2F2F2',
                       letterSpacing: '-0.005em',
                     }}
                   >
@@ -415,7 +432,7 @@ export default function FastFix() {
                           →
                         </span>
                         <span>
-                          <strong style={{ color: '#fff', fontWeight: 600 }}>{bold}.</strong>
+                          <strong style={{ color: '#F2F2F2', fontWeight: 600 }}>{bold}.</strong>
                           {rest}
                         </span>
                       </li>
@@ -486,7 +503,7 @@ export default function FastFix() {
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '20px',
-                    background: '#000',
+                    background: '#0A0A0A',
                   }}
                 >
                   <span
@@ -505,7 +522,7 @@ export default function FastFix() {
                       fontSize: '22px',
                       lineHeight: 1.15,
                       fontWeight: 400,
-                      color: '#fff',
+                      color: '#F2F2F2',
                       letterSpacing: '-0.01em',
                     }}
                   >
@@ -644,7 +661,7 @@ export default function FastFix() {
                 className="ff-engine-center"
                 style={{
                   padding: '32px 28px',
-                  background: '#000',
+                  background: '#0A0A0A',
                   textAlign: 'center',
                   display: 'flex',
                   flexDirection: 'column',
@@ -666,7 +683,7 @@ export default function FastFix() {
                     justifyContent: 'center',
                     fontSize: '14px',
                     letterSpacing: '0.18em',
-                    color: '#fff',
+                    color: '#F2F2F2',
                     fontFamily: FONT_MONO,
                   }}
                 >
@@ -736,8 +753,8 @@ export default function FastFix() {
           className="section-mobile"
           style={{
             padding: '96px 40px',
-            background: '#fff',
-            color: '#000',
+            background: '#F2F2F2',
+            color: '#0A0A0A',
             borderBottom: '1px solid #000',
           }}
         >
@@ -765,7 +782,7 @@ export default function FastFix() {
                     letterSpacing: '-0.015em',
                     margin: 0,
                     textWrap: 'balance',
-                    color: '#000',
+                    color: '#0A0A0A',
                   }}
                 >
                   {c.whyHeadingLines.map((line, i) => (
@@ -832,7 +849,7 @@ export default function FastFix() {
                       fontFamily: FONT_MONO,
                       fontSize: '20px',
                       lineHeight: 1.2,
-                      color: '#000',
+                      color: '#0A0A0A',
                       fontWeight: 400,
                       letterSpacing: '-0.01em',
                     }}
@@ -922,7 +939,7 @@ export default function FastFix() {
                       width: '16px',
                       height: '16px',
                       borderRadius: '999px',
-                      background: '#000',
+                      background: '#0A0A0A',
                       border: '1px solid var(--accent-pink)',
                       marginTop: '16px',
                       marginBottom: '8px',
@@ -952,7 +969,7 @@ export default function FastFix() {
                     style={{
                       fontFamily: FONT_MONO,
                       fontSize: '17px',
-                      color: '#fff',
+                      color: '#F2F2F2',
                       fontWeight: 500,
                       letterSpacing: '-0.005em',
                     }}
@@ -999,7 +1016,7 @@ export default function FastFix() {
                 letterSpacing: '-0.015em',
                 maxWidth: '22ch',
                 margin: '0 auto',
-                color: '#fff',
+                color: '#F2F2F2',
                 textWrap: 'balance',
               }}
             >

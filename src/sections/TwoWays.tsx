@@ -24,7 +24,7 @@ function WayCardRow({ card, index }: { card: WayCard; index: number }) {
         gap: '24px',
       }}
     >
-        <PictoIcon name={cardIcons[index] ?? 'arrow'} size={40} stroke="#000" />
+        <PictoIcon name={cardIcons[index] ?? 'arrow'} size={40} stroke="#0A0A0A" />
         <h3
           style={{
             fontSize: '26px',
@@ -55,7 +55,7 @@ function WayCardRow({ card, index }: { card: WayCard; index: number }) {
             fontWeight: 400,
             textTransform: 'uppercase',
             letterSpacing: '0.08em',
-            color: '#000',
+            color: '#0A0A0A',
             textDecoration: 'none',
             borderBottom: '1px solid #000',
             paddingBottom: '2px',
@@ -96,8 +96,8 @@ export default function TwoWays() {
       className="section-mobile"
       style={{
         position: 'relative',
-        background: '#ffffff',
-        color: '#000000',
+        background: '#F2F2F2',
+        color: '#0A0A0A',
         padding: '120px 40px',
         fontFamily: "'IBM Plex Mono', monospace",
         borderTop: '1px solid #000',

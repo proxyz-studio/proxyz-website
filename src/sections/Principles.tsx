@@ -22,7 +22,7 @@ function PrincipleRow({ item, index }: { item: PrincipleItem; index: number }) {
         gap: '20px',
       }}
     >
-      <PictoIcon name={principleIcons[index] ?? 'principle'} size={36} stroke="#fff" />
+      <PictoIcon name={principleIcons[index] ?? 'principle'} size={36} stroke="#F2F2F2" />
       <p
         style={{
           fontSize: '12px',
@@ -70,8 +70,8 @@ export default function Principles() {
       className="section-mobile"
       style={{
         position: 'relative',
-        background: '#000',
-        color: '#fff',
+        background: '#0A0A0A',
+        color: '#F2F2F2',
         padding: '120px 40px',
         fontFamily: "'IBM Plex Mono', monospace",
         borderTop: '1px solid #000',

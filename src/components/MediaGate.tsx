@@ -94,7 +94,7 @@ export default function MediaGate({
       <div
         style={{
           minHeight: 'calc(100vh - 83px)',
-          background: '#000',
+          background: '#0A0A0A',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -118,8 +118,8 @@ export default function MediaGate({
     <div
       style={{
         minHeight: 'calc(100vh - 83px)',
-        background: '#000',
-        color: '#fff',
+        background: '#0A0A0A',
+        color: '#F2F2F2',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -190,7 +190,7 @@ export default function MediaGate({
               background: '#0a0a0a',
               border: '1px solid rgba(255,255,255,0.30)',
               borderRadius: '0',
-              color: '#fff',
+              color: '#F2F2F2',
               outline: 'none',
               transition: 'border-color 0.15s',
               boxSizing: 'border-box',

@@ -88,11 +88,11 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
             letterSpacing: '0.015em',
             textTransform: 'uppercase',
             margin: 0,
-            color: '#fff',
+            color: '#F2F2F2',
           }}
         >
           {partner.detailHref ? (
-            <Link to={partner.detailHref} style={{ color: '#fff', textDecoration: 'none' }}>
+            <Link to={partner.detailHref} style={{ color: '#F2F2F2', textDecoration: 'none' }}>
               {partner.name}
             </Link>
           ) : (
@@ -115,7 +115,7 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
             fontSize: '10px',
             letterSpacing: '0.14em',
             textTransform: 'uppercase',
-            color: '#000',
+            color: '#0A0A0A',
             background: 'var(--accent-pink)',
             padding: '6px 12px',
             borderRadius: '999px',
@@ -156,7 +156,7 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
             >
               Sector
             </p>
-            <p style={{ margin: 0, color: '#fff' }}>{partner.sector}</p>
+            <p style={{ margin: 0, color: '#F2F2F2' }}>{partner.sector}</p>
           </div>
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
@@ -173,7 +173,7 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
             >
               Location
             </p>
-            <p style={{ margin: 0, color: '#fff' }}>{partner.location}</p>
+            <p style={{ margin: 0, color: '#F2F2F2' }}>{partner.location}</p>
           </div>
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
@@ -190,7 +190,7 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
             >
               {partner.partnerLabel}
             </p>
-            <p style={{ margin: 0, color: '#fff' }}>{partner.partner}</p>
+            <p style={{ margin: 0, color: '#F2F2F2' }}>{partner.partner}</p>
           </div>
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
@@ -293,7 +293,7 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: '15px',
             lineHeight: 1.65,
-            color: '#fff',
+            color: '#F2F2F2',
             margin: 0,
             maxWidth: '76ch',
           }}
@@ -336,7 +336,7 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
                 lineHeight: 1.5,
                 padding: '14px 16px',
                 border: `1px solid ${statusColor[m.status]}`,
-                color: m.status === 'next' ? 'rgba(255,255,255,0.5)' : '#fff',
+                color: m.status === 'next' ? 'rgba(255,255,255,0.5)' : '#F2F2F2',
                 background:
                   m.status === 'active' ? 'rgba(255,65,147,0.08)' : 'transparent',
                 display: 'flex',
@@ -410,8 +410,8 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: '12px',
               fontWeight: 400,
-              color: '#000',
-              background: '#fff',
+              color: '#0A0A0A',
+              background: '#F2F2F2',
               textTransform: 'uppercase',
               textDecoration: 'none',
               letterSpacing: '0.08em',
@@ -430,8 +430,8 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: '12px',
               fontWeight: 400,
-              color: '#000',
-              background: '#fff',
+              color: '#0A0A0A',
+              background: '#F2F2F2',
               textTransform: 'uppercase',
               textDecoration: 'none',
               letterSpacing: '0.08em',
@@ -455,7 +455,7 @@ export default function Pipeline() {
   return (
     <>
       <Nav />
-      <main style={{ background: '#000', color: '#fff' }}>
+      <main style={{ background: '#0A0A0A', color: '#F2F2F2' }}>
         {/* HERO */}
         <section
           className="section-mobile"
@@ -613,8 +613,8 @@ export default function Pipeline() {
           style={{
             padding: '120px 40px',
             borderTop: '1px solid rgba(255,255,255,0.08)',
-            background: '#fff',
-            color: '#000',
+            background: '#F2F2F2',
+            color: '#0A0A0A',
           }}
         >
           <div style={{ maxWidth: '1360px', margin: '0 auto' }}>
@@ -661,8 +661,8 @@ export default function Pipeline() {
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: '13px',
                 fontWeight: 400,
-                color: '#fff',
-                background: '#000',
+                color: '#F2F2F2',
+                background: '#0A0A0A',
                 textTransform: 'uppercase',
                 textDecoration: 'none',
                 letterSpacing: '0.08em',
