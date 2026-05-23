@@ -123,6 +123,39 @@
   }
 }
 
+/* ─── SVG drawn connections ────────────────────────────────────
+   Apply the `svg-draw-lines` class to any <g> that wraps a set of
+   short <line> connector spokes (FastFix PortalHub, LazyTiger
+   SensorNetworkDiagram, etc). Each line draws itself in from the
+   center with stagger. stroke-dasharray 600 covers all spoke
+   lengths used in the site's diagrams; bump if you ship a larger
+   one. `forwards` keeps the final drawn state.
+
+   prefers-reduced-motion users see the final drawn state
+   immediately (no animation). */
+.svg-draw-lines line {
+  stroke-dasharray: 600;
+  stroke-dashoffset: 600;
+  animation: svg-draw-line 1.2s var(--ease-out-expo) forwards;
+}
+.svg-draw-lines line:nth-child(1) { animation-delay: 0.10s; }
+.svg-draw-lines line:nth-child(2) { animation-delay: 0.18s; }
+.svg-draw-lines line:nth-child(3) { animation-delay: 0.26s; }
+.svg-draw-lines line:nth-child(4) { animation-delay: 0.34s; }
+.svg-draw-lines line:nth-child(5) { animation-delay: 0.42s; }
+.svg-draw-lines line:nth-child(6) { animation-delay: 0.50s; }
+.svg-draw-lines line:nth-child(7) { animation-delay: 0.58s; }
+.svg-draw-lines line:nth-child(8) { animation-delay: 0.66s; }
+@keyframes svg-draw-line {
+  to { stroke-dashoffset: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .svg-draw-lines line {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
 /* ─── Custom cursor (desktop + motion-on only) ─────────────────
    Hides the OS cursor and replaces it with a small pink crosshair
    that follows the mouse and expands to a ring on hover. The

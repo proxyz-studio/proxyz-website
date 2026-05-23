@@ -22,7 +22,7 @@ function PortalHub({ labels, coreLabel }: { labels: string[]; coreLabel: string 
       <circle cx="280" cy="280" r="150" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
       <circle cx="280" cy="280" r="95" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
 
-      <g stroke="rgba(255,255,255,0.20)" strokeWidth="1">
+      <g className="svg-draw-lines" stroke="rgba(255,255,255,0.20)" strokeWidth="1">
         <line x1="280" y1="280" x2="280" y2="80" />
         <line x1="280" y1="280" x2="421" y2="139" />
         <line x1="280" y1="280" x2="480" y2="280" />
