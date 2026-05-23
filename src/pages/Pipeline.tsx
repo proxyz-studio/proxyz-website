@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Nav from '../components/Nav';
 import Reveal from '../components/Reveal';
@@ -6,6 +7,7 @@ import { Marginalia } from '../components/Editorial';
 import { HeroMesh } from '../components/Glow';
 import PictoIcon from '../components/PictoIcon';
 import Footer from '../sections/Footer';
+import { useHeroParallax } from '../lib/scrollChoreography';
 import { pipelinePageConfig, type PartnerCard } from '../config';
 
 function isInternalRoute(href: string) {
@@ -451,6 +453,11 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
 
 export default function Pipeline() {
   const c = pipelinePageConfig;
+  // P5: scroll-driven hero parallax. The hero's inner content drifts up
+  // + fades as the user scrolls past, scrub-tied with 0.6s catch-up.
+  // Honors prefers-reduced-motion (no-op when set).
+  const heroRef = useRef<HTMLElement>(null);
+  useHeroParallax(heroRef, { drift: 120, fadeTo: 0.2, inner: '.pipeline-hero-inner' });
 
   return (
     <>
@@ -458,6 +465,7 @@ export default function Pipeline() {
       <main style={{ background: '#0A0A0A', color: '#F2F2F2' }}>
         {/* HERO */}
         <section
+          ref={heroRef}
           className="section-mobile"
           style={{
             position: 'relative',
@@ -481,7 +489,7 @@ export default function Pipeline() {
             <Marginalia number="03" color="light" />
           </div>
 
-          <div style={{ position: 'relative', zIndex: 2, maxWidth: '1360px', margin: '0 auto' }}>
+          <div className="pipeline-hero-inner" style={{ position: 'relative', zIndex: 2, maxWidth: '1360px', margin: '0 auto' }}>
             <Reveal>
             <div style={{ display: 'flex', alignItems: 'center', gap: '20px', margin: '0 0 22px 0' }}>
               <PictoIcon name="partnership" size={28} stroke="var(--accent-pink)" />

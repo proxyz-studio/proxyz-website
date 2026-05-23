@@ -1,9 +1,11 @@
+import { useRef } from 'react';
 import Nav from '../components/Nav';
 import Reveal from '../components/Reveal';
 import PictoIcon from '../components/PictoIcon';
 import { TiltCard, MagneticAnchor } from '../components/Spatial';
 import { HeroMesh, EdgeRule } from '../components/Glow';
 import Footer from '../sections/Footer';
+import { useHeroParallax } from '../lib/scrollChoreography';
 import { portalPageConfig } from '../config';
 
 const moduleIcons = ['meetings', 'todos', 'rocks', 'issues', 'scorecard', 'vto'] as const;
@@ -11,6 +13,9 @@ const pillarIcons = ['time', 'install', 'spark'] as const;
 
 export default function Portal() {
   const c = portalPageConfig;
+  // P5: scroll-driven hero parallax — content drifts up + fades on scroll.
+  const heroRef = useRef<HTMLElement>(null);
+  useHeroParallax(heroRef, { drift: 120, fadeTo: 0.2, inner: '.portal-hero-inner' });
 
   return (
     <>
@@ -18,6 +23,7 @@ export default function Portal() {
       <main style={{ background: '#0A0A0A', color: '#F2F2F2' }}>
         {/* HERO */}
         <section
+          ref={heroRef}
           className="section-mobile"
           style={{
             position: 'relative',
@@ -27,7 +33,7 @@ export default function Portal() {
           }}
         >
           <HeroMesh />
-          <div style={{ position: 'relative', zIndex: 1, maxWidth: '1360px', margin: '0 auto' }}>
+          <div className="portal-hero-inner" style={{ position: 'relative', zIndex: 1, maxWidth: '1360px', margin: '0 auto' }}>
             <p
               style={{
                 fontFamily: "'IBM Plex Mono', monospace",
