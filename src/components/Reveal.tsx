@@ -44,11 +44,15 @@ export default function Reveal({
 }) {
   const { ref, inView } = useInView<HTMLElement>();
 
+  // Motion tokens from src/index.css :root. Consuming via var() keeps
+  // every Reveal in sync with the rest of the site's motion system.
   const baseStyle: React.CSSProperties = {
     opacity: inView ? 1 : 0,
     transform: inView ? 'translateY(0)' : 'translateY(28px)',
-    transition: `opacity 320ms cubic-bezier(0.2, 0.7, 0.1, 1) ${delay}ms, transform 320ms cubic-bezier(0.2, 0.7, 0.1, 1) ${delay}ms`,
-    willChange: 'opacity, transform',
+    transition:
+      `opacity var(--dur-base) var(--ease-out-quart) ${delay}ms, ` +
+      `transform var(--dur-base) var(--ease-out-expo) ${delay}ms`,
+    willChange: inView ? undefined : 'opacity, transform',
     ...style,
   };
 

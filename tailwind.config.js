@@ -63,6 +63,25 @@ module.exports = {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
       },
+      // Motion tokens exposed as Tailwind utilities. Values mirror the
+      // CSS custom properties in src/index.css :root. Use class names like
+      // `duration-base`, `ease-out-expo` across components.
+      transitionDuration: {
+        instant:  "120ms",
+        quick:    "220ms",
+        base:     "320ms",
+        layout:   "480ms",
+        entrance: "720ms",
+        hero:     "1100ms",
+        exit:     "180ms",
+      },
+      transitionTimingFunction: {
+        "out-quart": "cubic-bezier(0.25, 1, 0.5, 1)",
+        "out-quint": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "out-expo":  "cubic-bezier(0.16, 1, 0.3, 1)",
+        "in-quart":  "cubic-bezier(0.5, 0, 0.75, 0)",
+        pvz:         "cubic-bezier(0.2, 0.7, 0.1, 1)", // legacy, kept for compat
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],
