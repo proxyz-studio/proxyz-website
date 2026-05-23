@@ -4,6 +4,7 @@
     { "source": "/partners/:slug", "destination": "/pipeline/:slug", "permanent": true }
   ],
   "rewrites": [
+    { "source": "/brief/ananda", "destination": "/brief/ananda.html" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
