@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import Nav from '../components/Nav';
 import Reveal from '../components/Reveal';
@@ -6,12 +7,15 @@ import { Marginalia } from '../components/Editorial';
 import { HeroMesh } from '../components/Glow';
 import PictoIcon from '../components/PictoIcon';
 import Footer from '../sections/Footer';
+import { useHeroParallax } from '../lib/scrollChoreography';
 import { mediaPageConfig } from '../config';
 
 const flywheelIcons = ['stage', 'spark', 'arrow', 'orbit'] as const;
 
 export default function Media() {
   const c = mediaPageConfig;
+  const heroRef = useRef<HTMLElement>(null);
+  useHeroParallax(heroRef, { drift: 120, fadeTo: 0.2, inner: '.media-hero-inner' });
 
   return (
     <>
@@ -20,6 +24,7 @@ export default function Media() {
 
         {/* HERO */}
         <section
+          ref={heroRef}
           className="section-mobile"
           style={{
             position: 'relative',
@@ -43,7 +48,7 @@ export default function Media() {
             <Marginalia number="04" color="light" />
           </div>
 
-          <div style={{ position: 'relative', zIndex: 2, maxWidth: '1360px', margin: '0 auto' }}>
+          <div className="media-hero-inner" style={{ position: 'relative', zIndex: 2, maxWidth: '1360px', margin: '0 auto' }}>
             <Reveal>
             <div style={{ display: 'flex', alignItems: 'center', gap: '20px', margin: '0 0 22px 0' }}>
               <PictoIcon name="stage" size={28} stroke="var(--accent-pink)" />

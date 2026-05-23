@@ -9,7 +9,7 @@
  * outgrows a single scroll.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import Reveal from '../components/Reveal';
 import { MagneticAnchor, TiltCard } from '../components/Spatial';
@@ -17,6 +17,7 @@ import { Marginalia } from '../components/Editorial';
 import { HeroMesh } from '../components/Glow';
 import Nav from '../components/Nav';
 import Footer from '../sections/Footer';
+import { useHeroParallax } from '../lib/scrollChoreography';
 import { venturesPageConfig, type VentureBrand, type VentureCard } from '../config';
 
 const FONT_MONO = "'IBM Plex Mono', monospace";
@@ -142,8 +143,11 @@ function SubNav({ venture }: { venture: VentureCard }) {
 
 function Hero({ venture }: { venture: VentureCard }) {
   const brand = resolveBrand(venture.brand);
+  const heroRef = useRef<HTMLElement>(null);
+  useHeroParallax(heroRef, { drift: 100, fadeTo: 0.25, inner: '.venture-detail-hero-inner' });
   return (
     <section
+      ref={heroRef}
       className="section-mobile"
       style={{
         position: 'relative',
@@ -153,7 +157,7 @@ function Hero({ venture }: { venture: VentureCard }) {
       }}
     >
       <HeroMesh />
-      <div style={{ position: 'relative', zIndex: 2, maxWidth: '1360px', margin: '0 auto' }}>
+      <div className="venture-detail-hero-inner" style={{ position: 'relative', zIndex: 2, maxWidth: '1360px', margin: '0 auto' }}>
         <Reveal>
           <p
             style={{

@@ -10,6 +10,7 @@
  * background, Plex Mono + Fragment Mono, hot pink + lime accents.
  */
 
+import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import Reveal from '../components/Reveal';
 import { MagneticAnchor } from '../components/Spatial';
@@ -18,6 +19,7 @@ import { HeroMesh } from '../components/Glow';
 import PictoIcon from '../components/PictoIcon';
 import Nav from '../components/Nav';
 import Footer from '../sections/Footer';
+import { useHeroParallax } from '../lib/scrollChoreography';
 import { venturesPageConfig, type VentureCard } from '../config';
 
 const FONT_MONO = "'IBM Plex Mono', monospace";
@@ -291,6 +293,8 @@ function VentureEntry({ venture, index }: { venture: VentureCard; index: number 
 
 export default function Ventures() {
   const c = venturesPageConfig;
+  const heroRef = useRef<HTMLElement>(null);
+  useHeroParallax(heroRef, { drift: 120, fadeTo: 0.2, inner: '.ventures-hero-inner' });
 
   return (
     <>
@@ -298,6 +302,7 @@ export default function Ventures() {
       <main style={{ background: '#0A0A0A', color: '#F2F2F2' }}>
         {/* HERO */}
         <section
+          ref={heroRef}
           className="section-mobile"
           style={{
             position: 'relative',
@@ -321,7 +326,7 @@ export default function Ventures() {
             <Marginalia number="04" color="light" />
           </div>
 
-          <div style={{ position: 'relative', zIndex: 2, maxWidth: '1360px', margin: '0 auto' }}>
+          <div className="ventures-hero-inner" style={{ position: 'relative', zIndex: 2, maxWidth: '1360px', margin: '0 auto' }}>
             <Reveal>
               <div style={{ display: 'flex', alignItems: 'center', gap: '20px', margin: '0 0 22px 0' }}>
                 <PictoIcon name="spark" size={28} stroke="var(--accent-pink)" />
