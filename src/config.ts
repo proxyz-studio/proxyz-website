@@ -649,6 +649,12 @@ export const venturesPageConfig: VenturesPageConfig = {
       pitch:
         "Agent-as-a-Service bundles installed into Thai SMBs by industry. Marketing agencies, law, insurance, manufacturing, wholesalers, real estate. Each install ships in a week. LINE-native by default.",
       modules: ["Agent runtime", "LINE OA bridge", "Industry playbooks", "Install pipeline"],
+      brand: {
+        // The "Y" letter on the PROXYZ tricolor wordmark — teal/mint #5BC9B8.
+        accent: "#5BC9B8",
+        accentSoft: "rgba(91,201,184,0.04)",
+        accentTint: "rgba(91,201,184,0.08)",
+      },
       detail: {
         slug: "autoloom",
         overview: [
