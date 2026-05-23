@@ -19,6 +19,7 @@ import { useEffect } from 'react';
 import Nav from '../components/Nav';
 import PartnerSubNav from '../components/PartnerSubNav';
 import PartnerGate from '../components/PartnerGate';
+import PartnerMeetings from '../components/PartnerMeetings';
 import Reveal from '../components/Reveal';
 import { HeroMesh } from '../components/Glow';
 import { MagneticAnchor } from '../components/Spatial';
@@ -263,6 +264,7 @@ export default function LazyTiger() {
         name="LAZY-TIGER"
         accent={PINK}
         sections={[
+          { id: 'meetings', label: 'Meetings' },
           { id: 'brief', label: 'Brief' },
           { id: 'frame', label: 'Frame' },
           { id: 'layers', label: 'Layers' },
@@ -360,6 +362,39 @@ export default function LazyTiger() {
                 <span className="lt-cursor-blink" />
               </p>
             </Reveal>
+          </div>
+        </section>
+
+        {/* ================================================================
+            SECTION 1.5 — MEETINGS (gated to Tew + Cathal via MeetingsGate)
+        ================================================================ */}
+        <section
+          id="meetings"
+          data-brand-mode="proxyz"
+          className="lt-section-padding"
+          style={{
+            padding: '120px 40px',
+            background: '#000',
+            borderBottom: '1px solid rgba(255,255,255,0.06)',
+          }}
+        >
+          <div style={{ maxWidth: '880px', margin: '0 auto' }}>
+            <Reveal>
+              <SectionEyebrow>MEETINGS · NOTES FROM THE ROOM</SectionEyebrow>
+            </Reveal>
+            <Reveal delay={80}>
+              <DisplayHeading size="lg">What we've discussed.</DisplayHeading>
+            </Reveal>
+            <Reveal delay={160}>
+              <div style={{ marginTop: '24px', maxWidth: '60ch' }}>
+                <BodyParagraph>
+                  Summaries of every working conversation between Tew, Cathal,
+                  and the rest of the build team. Scoped to the people in the
+                  room.
+                </BodyParagraph>
+              </div>
+            </Reveal>
+            <PartnerMeetings partner="lazy-tiger" accent={PINK} />
           </div>
         </section>
 
