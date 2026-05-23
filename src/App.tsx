@@ -15,6 +15,7 @@ import Portal from './pages/Portal';
 import Media from './pages/Media';
 import PadelZ from './pages/PadelZ';
 import Pipeline from './pages/Pipeline';
+import Ventures from './pages/Ventures';
 import FastFix from './pages/FastFix';
 
 // Code-split the Lazy Tiger page — heavy on bespoke components (helmet, leaderboard,
@@ -95,6 +96,7 @@ function App() {
         <Route path="/media" element={<Media />} />
         <Route path="/media/padel-z" element={<PadelZ />} />
         <Route path="/pipeline" element={<Pipeline />} />
+        <Route path="/ventures" element={<Ventures />} />
         <Route path="/pipeline/fast-fix" element={<FastFix />} />
         <Route
           path="/pipeline/lazy-tiger"

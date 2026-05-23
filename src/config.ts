@@ -112,6 +112,7 @@ export const navigationConfig: NavigationConfig = {
     { label: "Studio OS", href: "/portal" },
     { label: "Media", href: "/media" },
     { label: "Pipeline", href: "/pipeline" },
+    { label: "Ventures", href: "/ventures" },
   ],
   primaryCta: { label: "Login", href: "https://portal.proxyz.studio/sign-in" },
 }
@@ -546,6 +547,80 @@ export const pipelinePageConfig: PipelinePageConfig = {
   closingCta: {
     label: "Pitch us →",
     href: "mailto:hello@proxyz.studio?subject=Build with PROXYZ",
+  },
+}
+
+export type VentureStatus = 'live' | 'building' | 'planning';
+
+export interface VentureCard {
+  name: string;
+  tagline: string;
+  status: VentureStatus;
+  statusLabel: string;
+  domain: string;
+  href: string | null;
+  pitch: string;
+  modules: string[];
+}
+
+export interface VenturesPageConfig {
+  eyebrow: string;
+  titleLines: string[];
+  lead: string;
+  ventures: VentureCard[];
+  closingLabel: string;
+  closingHeading: string;
+  closingBody: string;
+  closingCta: { label: string; href: string };
+}
+
+export const venturesPageConfig: VenturesPageConfig = {
+  eyebrow: "ISSUE 04 / THE VENTURES",
+  titleLines: ["What we", "build."],
+  lead:
+    "PROXYZ runs an operator studio and a venture studio in parallel. The studio installs the operating system into companies we acquire, partner with, or take equity in. The venture arm builds and runs our own brands. Each one lives at its own domain. This is what's in motion.",
+  ventures: [
+    {
+      name: "AUTOLOOM",
+      tagline: "Thai SMB agent bundles. Service-for-cash, no SaaS tier.",
+      status: "building",
+      statusLabel: "BUILDING · LAUNCH 28 MAY 2026",
+      domain: "autoloom.tech",
+      href: null,
+      pitch:
+        "Agent-as-a-Service bundles installed into Thai SMBs by industry. Marketing agencies, law, insurance, manufacturing, wholesalers, real estate. Each install ships in a week. LINE-native by default.",
+      modules: ["Agent runtime", "LINE OA bridge", "Industry playbooks", "Install pipeline"],
+    },
+    {
+      name: "MAGNIZ",
+      tagline: "Hosted agents per customer. One agent, one inbox, one operator.",
+      status: "building",
+      statusLabel: "BUILDING · LAUNCH 28 MAY 2026",
+      domain: "magniz.io",
+      href: null,
+      pitch:
+        "Individual hosted agents for operators who need their own. Each customer gets a dedicated Orgo VM running the Hermes runtime with full Agent Mail and LINE OA integration. End-state proof passed on 23 May 2026.",
+      modules: ["Hermes runtime", "Agent Mail", "LINE OA", "Orgo isolation"],
+    },
+    {
+      name: "PRYZM",
+      tagline: "Synthesis intelligence. Research to decision in one motion.",
+      status: "planning",
+      statusLabel: "PLANNING · INTERNAL TOOL TODAY",
+      domain: "pryzm.io",
+      href: null,
+      pitch:
+        "Started as PROXYZ's internal market-synthesis tool. Generates deep cohort comparisons, industry deployment plans, decision briefs from raw research. Targeted for externalization as a standalone venture.",
+      modules: ["Cohort comparison", "Deployment plans", "Decision briefs", "Source aggregation"],
+    },
+  ],
+  closingLabel: "BUILD WITH PROXYZ",
+  closingHeading: "We build our own. Then we install it.",
+  closingBody:
+    "Every venture on this page is also a proving ground. The patterns that survive end up inside the operating system we install into the companies we take equity in. If you want the same treatment for your business, the door is the Audit.",
+  closingCta: {
+    label: "Book the Audit →",
+    href: "/#booking",
   },
 }
 
