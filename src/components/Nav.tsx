@@ -1,22 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { navigationConfig } from '../config';
-import NavVertical from './NavVertical';
-
-/**
- * Editorial floating navigation.
- *
- * Layout (no full-width horizontal ribbon):
- *   - Top-left: PROXYZ tricolor wordmark, fixed position.
- *   - Top-right (desktop): <NavVertical /> with hover-arrow menu items.
- *     Hidden below 820px viewport via CSS class.
- *   - Top-right (mobile): burger button. Tap → full-viewport sheet.
- *
- * The language toggle moves OUT of Nav entirely — it's now mounted in
- * App.tsx as a fixed bottom-right element (see LanguageToggleFloating).
- *
- * z-index map: NavVertical = 50, mobile burger = 51, mobile sheet = 49.
- */
+import LanguageToggle from './LanguageToggle';
 
 function isExternal(href: string) {
   return /^https?:\/\//i.test(href);
@@ -88,6 +73,102 @@ function MobileNavLink({
   );
 }
 
+function NavLink({
+  href,
+  label,
+  variant = 'link',
+}: {
+  href: string;
+  label: string;
+  variant?: 'link' | 'cta';
+}) {
+  const linkStyle =
+    variant === 'cta'
+      ? {
+          fontSize: '13px',
+          fontWeight: 500 as const,
+          color: '#F2D78C',
+          background: 'transparent',
+          border: '1px solid #F2D78C',
+          textTransform: 'uppercase' as const,
+          textDecoration: 'none',
+          letterSpacing: '0.12em',
+          padding: '10px 22px',
+          borderRadius: '2px',
+          transition: 'background 0.2s, color 0.2s',
+        }
+      : {
+          fontSize: '12px',
+          fontWeight: 400 as const,
+          color: '#F2F2F2',
+          textTransform: 'uppercase' as const,
+          textDecoration: 'none',
+          letterSpacing: '0.08em',
+          borderBottom: '1px solid transparent',
+          transition: 'border-color 0.2s',
+          paddingBottom: '2px',
+        };
+
+  const hoverIn = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (variant === 'cta') {
+      (e.currentTarget as HTMLElement).style.background = '#F2D78C';
+      (e.currentTarget as HTMLElement).style.color = '#0A0A0A';
+    } else {
+      (e.target as HTMLElement).style.borderBottomColor = '#F2F2F2';
+    }
+  };
+  const hoverOut = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (variant === 'cta') {
+      (e.currentTarget as HTMLElement).style.background = 'transparent';
+      (e.currentTarget as HTMLElement).style.color = '#F2D78C';
+    } else {
+      (e.target as HTMLElement).style.borderBottomColor = 'transparent';
+    }
+  };
+
+  if (isExternal(href)) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={variant === 'cta' ? 'hero-nav-cta' : undefined}
+        style={linkStyle}
+        onMouseEnter={hoverIn}
+        onMouseLeave={hoverOut}
+      >
+        {label}
+      </a>
+    );
+  }
+
+  if (isRoute(href)) {
+    return (
+      <Link
+        to={href}
+        className={variant === 'cta' ? 'hero-nav-cta' : undefined}
+        style={linkStyle}
+        onMouseEnter={hoverIn}
+        onMouseLeave={hoverOut}
+      >
+        {label}
+      </Link>
+    );
+  }
+
+  return (
+    <a
+      href={href}
+      className={variant === 'cta' ? 'hero-nav-cta' : undefined}
+      style={linkStyle}
+      onMouseEnter={hoverIn}
+      onMouseLeave={hoverOut}
+    >
+      {label}
+    </a>
+  );
+}
+
 export default function Nav() {
   const { pathname } = useLocation();
   const homeHref = pathname === '/' ? '#hero' : '/';
@@ -113,71 +194,110 @@ export default function Nav() {
 
   const closeMobile = () => setMobileOpen(false);
 
-  const brandStyle: React.CSSProperties = {
-    position: 'fixed',
-    top: '24px',
-    left: '40px',
-    zIndex: 50,
-    display: 'inline-flex',
-    alignItems: 'center',
-    textDecoration: 'none',
-  };
-
-  const brandImg = (
-    <img
-      src="/proxyz-tricolor.svg"
-      alt={navigationConfig.brandName}
-      style={{ height: '42px', width: 'auto', display: 'block' }}
-    />
-  );
-
   return (
     <>
-      {/* Brand wordmark — fixed top-left. No horizontal ribbon behind it. */}
-      {isRoute(homeHref) ? (
-        <Link to={homeHref} className="hero-nav-brand" aria-label={navigationConfig.brandName} style={brandStyle}>
-          {brandImg}
-        </Link>
-      ) : (
-        <a href={homeHref} className="hero-nav-brand" aria-label={navigationConfig.brandName} style={brandStyle}>
-          {brandImg}
-        </a>
-      )}
-
-      {/* Desktop vertical menu — top-right, hover-arrow effect. Hidden on
-          mobile via CSS (.nav-vertical-hidden-on-mobile media query). */}
-      <div className="nav-vertical-desktop-only">
-        <NavVertical />
-      </div>
-
-      {/* Mobile burger button — top-right, mobile only via CSS. */}
-      <button
-        type="button"
-        className="hero-nav-toggle nav-burger-mobile-only"
-        aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
-        aria-expanded={mobileOpen}
-        aria-controls="hero-nav-mobile-panel"
-        onClick={() => setMobileOpen((v) => !v)}
+      <nav
+        className="hero-nav"
         style={{
           position: 'fixed',
-          top: '24px',
-          right: '24px',
-          zIndex: 51,
-          background: 'rgba(10, 10, 10, 0.85)',
-          border: '1px solid rgba(255, 255, 255, 0.12)',
-          padding: '8px',
-          margin: 0,
-          cursor: 'pointer',
-          color: '#F2F2F2',
-          display: 'none',
+          top: 0,
+          left: 0,
+          width: '100%',
+          zIndex: 50,
+          display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
-          justifyContent: 'center',
-          minWidth: '44px',
-          minHeight: '44px',
+          padding: '20px 40px',
+          // Solid tinted-dark fill instead of glass / backdrop-blur.
+          // Impeccable bans glassmorphism as default decoration. This is the
+          // most visible persistent element on the site; keeping it solid.
+          background: 'rgba(10,10,10,0.94)',
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          fontFamily: "'IBM Plex Mono', monospace",
+          boxSizing: 'border-box',
         }}
       >
-        {mobileOpen ? <CloseIcon /> : <BurgerIcon />}
-      </button>
+        {isRoute(homeHref) ? (
+          <Link
+            to={homeHref}
+            className="hero-nav-brand"
+            aria-label={navigationConfig.brandName}
+            style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}
+          >
+            <img
+              src="/proxyz-tricolor.svg"
+              alt={navigationConfig.brandName}
+              style={{ height: '42px', width: 'auto', display: 'block' }}
+            />
+          </Link>
+        ) : (
+          <a
+            href={homeHref}
+            className="hero-nav-brand"
+            aria-label={navigationConfig.brandName}
+            style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}
+          >
+            <img
+              src="/proxyz-tricolor.svg"
+              alt={navigationConfig.brandName}
+              style={{ height: '42px', width: 'auto', display: 'block' }}
+            />
+          </a>
+        )}
+
+        <div
+          className="hero-nav-links"
+          style={{ display: 'flex', gap: '24px', alignItems: 'center' }}
+        >
+          {navigationConfig.links.map((item) => (
+            <NavLink key={`${item.label}-${item.href}`} href={item.href} label={item.label} />
+          ))}
+          <LanguageToggle />
+          {navigationConfig.primaryCta && (
+            <NavLink
+              href={navigationConfig.primaryCta.href}
+              label={navigationConfig.primaryCta.label}
+              variant="cta"
+            />
+          )}
+        </div>
+
+        <div
+          className="hero-nav-mobile-actions"
+          style={{ display: 'none', alignItems: 'center', gap: '12px' }}
+        >
+          {navigationConfig.primaryCta && (
+            <NavLink
+              href={navigationConfig.primaryCta.href}
+              label={navigationConfig.primaryCta.label}
+              variant="cta"
+            />
+          )}
+          <button
+            type="button"
+            className="hero-nav-toggle"
+            aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={mobileOpen}
+            aria-controls="hero-nav-mobile-panel"
+            onClick={() => setMobileOpen((v) => !v)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              padding: '8px',
+              margin: 0,
+              cursor: 'pointer',
+              color: '#F2F2F2',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minWidth: '40px',
+              minHeight: '40px',
+            }}
+          >
+            {mobileOpen ? <CloseIcon /> : <BurgerIcon />}
+          </button>
+        </div>
+      </nav>
 
       {mobileOpen && (
         <div
@@ -192,7 +312,8 @@ export default function Nav() {
             left: 0,
             right: 0,
             bottom: 0,
-            paddingTop: '88px',
+            paddingTop: '72px',
+            // Mobile menu panel: solid near-opaque dark, no blur.
             background: 'rgba(10,10,10,0.98)',
             zIndex: 49,
             fontFamily: "'IBM Plex Mono', monospace",
@@ -209,13 +330,9 @@ export default function Nav() {
                 onNavigate={closeMobile}
               />
             ))}
-            {navigationConfig.primaryCta && (
-              <MobileNavLink
-                href={navigationConfig.primaryCta.href}
-                label={navigationConfig.primaryCta.label}
-                onNavigate={closeMobile}
-              />
-            )}
+            <div style={{ paddingTop: '28px' }}>
+              <LanguageToggle />
+            </div>
           </div>
         </div>
       )}
