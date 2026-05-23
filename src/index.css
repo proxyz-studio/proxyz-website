@@ -77,13 +77,49 @@
 
   body {
     font-family: 'IBM Plex Mono', monospace;
-    background: #000;
-    color: #fff;
+    background: #0A0A0A;
+    color: #F2F2F2;
     margin: 0;
     padding: 0;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ─── Ambient backgrounds ──────────────────────────────────────
+     Two layers behind all content:
+
+     1. body::before — static dot-grid radial pattern. Always shows.
+        On mobile + reduce-motion, this is the only ambient.
+     2. .vanta-bg — animated pink network constellation, mounted as
+        a React component (VantaBackground.tsx). Loads only on
+        desktop (>=821px) with motion preference unset. Fades in on
+        top of the dot-grid when ready, so the constellation has a
+        textured floor and the page never goes flat-dark. */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+    background-size: 28px 28px;
+    pointer-events: none;
+    z-index: -1;
+  }
+  .vanta-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--dur-hero) var(--ease-out-quart);
+  }
+  .vanta-bg.is-ready {
+    opacity: 0.55;
+  }
+  /* Foreground content stays above the Vanta layer. */
+  #root > * {
+    position: relative;
+    z-index: 1;
   }
 }
 
