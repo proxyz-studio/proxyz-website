@@ -62,14 +62,7 @@ export default function LanguageToggle() {
     <div
       role="group"
       aria-label="Language selector"
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '6px',
-        // No marginLeft; parent .hero-nav-links flex container already
-        // applies gap: 24px between siblings, matching the rest of the
-        // nav cluster's rhythm.
-      }}
+      className="language-toggle-floating"
     >
       <ToggleButton
         label="EN"

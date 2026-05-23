@@ -18,6 +18,7 @@ import Pipeline from './pages/Pipeline';
 import Ventures from './pages/Ventures';
 import FastFix from './pages/FastFix';
 import VantaBackground from './components/VantaBackground';
+import LanguageToggle from './components/LanguageToggle';
 
 // Code-split the Lazy Tiger page — heavy on bespoke components (helmet, leaderboard,
 // merch grid, GSAP Asia map). Only loaded when a visitor lands on /partners/lazy-tiger.
@@ -126,6 +127,9 @@ function App() {
         <Route path="/preview/motion" element={<Suspense fallback={null}><MotionPreview /></Suspense>} />
         <Route path="/preview/showcase" element={<Suspense fallback={null}><ShowcasePreview /></Suspense>} />
       </Routes>
+      {/* Floating language toggle, bottom-right of viewport. Self-hides
+          on routes other than '/' per its internal pathname check. */}
+      <LanguageToggle />
     </>
   );
 }
