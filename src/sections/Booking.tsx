@@ -5,6 +5,7 @@ import PictoIcon from '../components/PictoIcon';
 import { bookingConfig } from '../config';
 import { useLocale } from '../i18n/LocaleContext';
 import { useBilingual } from '../i18n/useBilingual';
+import { withProxyzMark } from '../components/ProxyzMark';
 import { anyFallback } from '../i18n/Bilingual';
 import { FallbackBadge } from '../components/FallbackBadge';
 
@@ -94,7 +95,7 @@ export default function Booking() {
               color: 'rgba(255,255,255,0.85)',
             }}
           >
-            {body}
+            {withProxyzMark(body, 'booking-body')}
           </p>
         </Reveal>
 

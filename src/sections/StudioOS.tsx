@@ -4,6 +4,7 @@ import PictoIcon from '../components/PictoIcon';
 import { studioOSConfig } from '../config';
 import { useLocale } from '../i18n/LocaleContext';
 import { useBilingual } from '../i18n/useBilingual';
+import { withProxyzMark } from '../components/ProxyzMark';
 import { anyFallback } from '../i18n/Bilingual';
 import { FallbackBadge } from '../components/FallbackBadge';
 
@@ -91,7 +92,7 @@ export default function StudioOS() {
 
         <Reveal delay={140}>
           <div style={{ margin: '0 0 48px 0', maxWidth: '64ch' }}>
-            <DropCap color="#000">{lead}</DropCap>
+            <DropCap color="#000" letter={lead.charAt(0)}>{withProxyzMark(lead.slice(1), 'studio-lead')}</DropCap>
           </div>
         </Reveal>
 

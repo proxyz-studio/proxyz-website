@@ -4,6 +4,7 @@ import { useLocale } from '../i18n/LocaleContext';
 import { useBilingual } from '../i18n/useBilingual';
 import { anyFallback } from '../i18n/Bilingual';
 import { FallbackBadge } from '../components/FallbackBadge';
+import { ProxyzMark, withProxyzMark } from '../components/ProxyzMark';
 
 const LEGAL_LINK_STYLE: React.CSSProperties = {
   color: '#000',
@@ -49,7 +50,7 @@ export default function Footer() {
         }}
       >
         <span style={{ textTransform: 'uppercase' }}>
-          {left}
+          {withProxyzMark(left, 'footer-left')}
           <FallbackBadge show={showBadge} />
         </span>
 
@@ -80,7 +81,7 @@ export default function Footer() {
         </div>
 
         <span style={{ justifySelf: 'end', textTransform: 'uppercase' }}>
-          {right}
+          {withProxyzMark(right, 'footer-right')}
         </span>
       </div>
 
@@ -100,7 +101,7 @@ export default function Footer() {
           color: 'rgba(0,0,0,0.72)',
         }}
       >
-        <span>© {year} PROXYZ Studio</span>
+        <span>© {year} <ProxyzMark /> Studio</span>
         <span style={LEGAL_DIVIDER_STYLE}>·</span>
         <Link to="/privacy" style={LEGAL_LINK_STYLE}>
           Privacy

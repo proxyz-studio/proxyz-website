@@ -7,6 +7,7 @@ import { useLocale } from '../i18n/LocaleContext';
 import { useBilingual } from '../i18n/useBilingual';
 import { anyFallback } from '../i18n/Bilingual';
 import { FallbackBadge } from '../components/FallbackBadge';
+import { withProxyzMark } from '../components/ProxyzMark';
 
 const cardIcons = ['install', 'partnership'] as const;
 
@@ -45,7 +46,7 @@ function WayCardRow({ card, index }: { card: WayCard; index: number }) {
             maxWidth: '40ch',
           }}
         >
-          {body}
+          {withProxyzMark(body, 'two-body')}
         </p>
         <a
           href={card.link.href}
@@ -128,7 +129,7 @@ export default function TwoWays() {
               margin: '0 0 64px 0',
             }}
           >
-            {sectionLabel}
+            {withProxyzMark(sectionLabel, 'two-label')}
             <FallbackBadge show={showBadge} />
           </p>
         </Reveal>

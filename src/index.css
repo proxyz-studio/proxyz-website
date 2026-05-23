@@ -77,6 +77,80 @@
   }
 }
 
+/* ─── PROXYZ wordmark (ProxyzMark.tsx) ────────────────────────
+   Tricolor logo rendered inline. PRO inherits the parent text
+   color so the wordmark adapts to any section background; X / Y / Z
+   are the brand accents from proxyz-tricolor.svg. */
+.pmark {
+  display: inline-block;
+  position: relative;
+  vertical-align: baseline;
+  font-style: normal;
+  font-weight: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  white-space: nowrap;
+  color: inherit;
+  /* Mask clips the shine pseudo to the wordmark bounds without
+     forcing the inline-block baseline to bottom-margin-edge (which
+     is what `overflow: hidden` would do, breaking text alignment). */
+  -webkit-mask-image: linear-gradient(#000, #000);
+  mask-image: linear-gradient(#000, #000);
+}
+.pmark .pmark-x { color: #F2D78C; }
+.pmark .pmark-y { color: #5BC9B8; }
+.pmark .pmark-z { color: var(--accent-pink); }
+
+.pmark::after {
+  content: '';
+  position: absolute;
+  inset: 0 -4px;
+  background: linear-gradient(
+    105deg,
+    transparent 38%,
+    rgba(255, 255, 255, 0.28) 50%,
+    transparent 62%
+  );
+  transform: translateX(-110%);
+  animation: pmark-shine 9s ease-in-out infinite;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+@keyframes pmark-shine {
+  0%, 88%, 100% { transform: translateX(-110%); }
+  50% { transform: translateX(110%); }
+}
+
+.pmark:hover .pmark-x { animation: pmark-jitter 0.32s ease; }
+.pmark:hover .pmark-y { animation: pmark-jitter 0.32s ease 0.06s; }
+.pmark:hover .pmark-z { animation: pmark-jitter 0.32s ease 0.12s; }
+@keyframes pmark-jitter {
+  0%, 100% { transform: translateY(0); }
+  30%      { transform: translateY(-2px); }
+  70%      { transform: translateY(2px); }
+}
+
+.pmark:hover {
+  animation: pmark-chromatic 0.5s ease;
+}
+@keyframes pmark-chromatic {
+  0%   { filter: drop-shadow(0 0 0 transparent); }
+  20%  { filter: drop-shadow(-2px 0 0 rgba(91, 201, 184, 0.7))
+                drop-shadow( 2px 0 0 rgba(255, 65, 147, 0.7)); }
+  50%  { filter: drop-shadow( 2px 0 0 rgba(242, 215, 140, 0.6))
+                drop-shadow(-2px 0 0 rgba(255, 65, 147, 0.6)); }
+  100% { filter: drop-shadow(0 0 0 transparent); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pmark::after { display: none; }
+  .pmark:hover,
+  .pmark:hover .pmark-x,
+  .pmark:hover .pmark-y,
+  .pmark:hover .pmark-z { animation: none; }
+}
+
 @keyframes pulse {
   0%, 100% {
     opacity: 1;

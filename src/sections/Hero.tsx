@@ -9,6 +9,7 @@ import { useLocale } from '../i18n/LocaleContext';
 import { useBilingual } from '../i18n/useBilingual';
 import { anyFallback } from '../i18n/Bilingual';
 import { FallbackBadge } from '../components/FallbackBadge';
+import { withProxyzMark } from '../components/ProxyzMark';
 
 export default function Hero() {
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -166,7 +167,7 @@ export default function Hero() {
               maxWidth: '52ch',
             }}
           >
-            {lead}
+            {withProxyzMark(lead, 'hero-lead')}
           </motion.p>
           </Reveal>
 

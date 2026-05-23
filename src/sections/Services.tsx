@@ -5,6 +5,7 @@ import PictoIcon from '../components/PictoIcon';
 import { servicesConfig, type ServiceCard } from '../config';
 import { useLocale } from '../i18n/LocaleContext';
 import { useBilingual } from '../i18n/useBilingual';
+import { withProxyzMark } from '../components/ProxyzMark';
 import { anyFallback } from '../i18n/Bilingual';
 import { FallbackBadge } from '../components/FallbackBadge';
 
@@ -75,7 +76,7 @@ function ServiceColumn({
             margin: '0 0 24px 0',
           }}
         >
-          For: {card.forLabel}
+          For: {withProxyzMark(card.forLabel, 'service-for')}
         </p>
 
         <p
@@ -88,7 +89,7 @@ function ServiceColumn({
             margin: '0 0 32px 0',
           }}
         >
-          {body}
+          {withProxyzMark(body, 'service-body')}
         </p>
 
         <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
