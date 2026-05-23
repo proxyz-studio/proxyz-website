@@ -123,6 +123,17 @@
   }
 }
 
+/* ─── Lazy Tiger brand-mode swap ─────────────────────────────
+   body.lt-mode-tiger is toggled by useBrandShift based on which
+   [data-brand-mode] section the viewport midline currently sits
+   in. In tiger mode --lt-accent flips to the neon lime, so every
+   element that reads var(--lt-accent) (SectionEyebrow color, the
+   PartnerMeetings accent border, etc.) picks up the swap without
+   per-element wiring. Default --lt-accent stays pink in :root. */
+body.lt-mode-tiger {
+  --lt-accent: var(--lt-lime);
+}
+
 /* ─── SVG drawn connections ────────────────────────────────────
    Apply the `svg-draw-lines` class to any <g> that wraps a set of
    short <line> connector spokes (FastFix PortalHub, LazyTiger

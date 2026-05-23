@@ -37,6 +37,7 @@ import TierLadder from '../components/lt/TierLadder';
 import QuadrantGrid from '../components/lt/QuadrantGrid';
 import HotelMap from '../components/lt/HotelMap';
 import { CardioCircle, ReformerTriangle, YogaSquare } from '../components/lt/StudioShapes';
+import { useBrandShift } from '../components/lt/useBrandShift';
 
 /* Brand: PROXYZ Brand Guide for this page. Editorial dark background,
    IBM Plex Mono for everything, hot pink as primary accent, neon lime
@@ -247,6 +248,12 @@ function SensorNetworkDiagram() {
 
 export default function LazyTiger() {
   const c = lazyTigerPageConfig;
+
+  // Wires the scroll-driven brand-mode swap declared as interactive
+  // moment #5 in the file header. Without this call, every section's
+  // data-brand-mode attribute was inert and --lt-accent never moved
+  // from its initial value, so SectionEyebrow color stayed static.
+  useBrandShift();
 
   // Update document title + meta
   useEffect(() => {
@@ -1019,7 +1026,7 @@ export default function LazyTiger() {
         </section>
 
         {/* ================================================================
-            SECTION 12.5 — THE FORMAT OTHERS WILL WANT TO INSTALL
+            SECTION 13 — THE FORMAT OTHERS WILL WANT TO INSTALL
         ================================================================ */}
         <section
           data-brand-mode="proxyz"
@@ -1076,7 +1083,7 @@ export default function LazyTiger() {
         </section>
 
         {/* ================================================================
-            SECTION 12.6 — THE HOTEL NETWORK OPPORTUNITY
+            SECTION 14 — THE HOTEL NETWORK OPPORTUNITY
         ================================================================ */}
         <section
           data-brand-mode="proxyz"
@@ -1123,7 +1130,7 @@ export default function LazyTiger() {
         </section>
 
         {/* ================================================================
-            SECTION 13 — THE ENGAGEMENT MODEL
+            SECTION 15 — THE ENGAGEMENT MODEL
         ================================================================ */}
         <section
           id="engagement"
@@ -1155,7 +1162,7 @@ export default function LazyTiger() {
         </section>
 
         {/* ================================================================
-            SECTION 14 — DILIGENCE IN MOTION
+            SECTION 16 — DILIGENCE IN MOTION
         ================================================================ */}
         <section
           data-brand-mode="proxyz"
@@ -1253,7 +1260,7 @@ export default function LazyTiger() {
         </section>
 
         {/* ================================================================
-            SECTION 14 — TEAM
+            SECTION 17 — TEAM
         ================================================================ */}
         <section
           id="team"
@@ -1387,7 +1394,7 @@ export default function LazyTiger() {
         </section>
 
         {/* ================================================================
-            SECTION 15 — FOOTER
+            SECTION 18 — FOOTER
         ================================================================ */}
         <section
           data-brand-mode="proxyz"
