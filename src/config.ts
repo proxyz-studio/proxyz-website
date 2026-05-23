@@ -474,8 +474,6 @@ export interface PipelinePageConfig {
   eyebrow: string
   titleLines: string[]
   lead: string
-  filterLabel: string
-  filterValues: string[]
   partners: PartnerCard[]
   closingLabel: string
   closingHeading: string
@@ -488,8 +486,6 @@ export const pipelinePageConfig: PipelinePageConfig = {
   titleLines: ["Companies", "in play."],
   lead:
     "PROXYZ runs a Build-with arm in parallel with the studio. Two to three companies at a time. Equity, not retainer. Co-built end to end. These are the conversations in motion — not closed partnerships. This is the working table.",
-  filterLabel: "Status",
-  filterValues: ["Active discussion", "Diligence", "Building", "Operating"],
   partners: [
     {
       name: "Fast-Fix",

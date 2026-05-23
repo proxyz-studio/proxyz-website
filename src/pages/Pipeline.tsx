@@ -551,50 +551,24 @@ export default function Pipeline() {
             </p>
             </Reveal>
 
-            {/* Status filter strip (visual only for now) */}
+            {/* Static count label — used to be a row of "filter pills" with
+                pink selected styling and no onClick (false affordance per
+                audit _output/2026-05-23-impeccable-pipeline-v1.md). Replaced
+                with an honest one-line summary derived from the partner
+                count + their shared stage. */}
             <Reveal delay={260}>
-            <div
+            <p
               style={{
-                marginTop: '48px',
-                display: 'flex',
-                gap: '12px',
-                flexWrap: 'wrap',
-                alignItems: 'center',
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: '11px',
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                color: 'rgba(255,255,255,0.6)',
+                margin: '48px 0 0 0',
               }}
             >
-              <span
-                style={{
-                  fontFamily: "'IBM Plex Mono', monospace",
-                  fontSize: '10px',
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                  color: 'rgba(255,255,255,0.45)',
-                  marginRight: '8px',
-                }}
-              >
-                {c.filterLabel}
-              </span>
-              {c.filterValues.map((v, i) => (
-                <span
-                  key={v}
-                  style={{
-                    fontFamily: "'IBM Plex Mono', monospace",
-                    fontSize: '11px',
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                    padding: '6px 12px',
-                    borderRadius: '2px',
-                    border:
-                      i === 0
-                        ? '1px solid var(--accent-pink)'
-                        : '1px solid rgba(255,255,255,0.18)',
-                    color: i === 0 ? 'var(--accent-pink)' : 'rgba(255,255,255,0.6)',
-                  }}
-                >
-                  {v}
-                </span>
-              ))}
-            </div>
+              {c.partners.length} companies · active discussion
+            </p>
             </Reveal>
           </div>
         </section>
