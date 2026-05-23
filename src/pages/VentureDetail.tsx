@@ -17,6 +17,7 @@ import { Marginalia } from '../components/Editorial';
 import { HeroMesh } from '../components/Glow';
 import Nav from '../components/Nav';
 import Footer from '../sections/Footer';
+import { ProxyzMark } from '../components/ProxyzMark';
 import { useHeroParallax } from '../lib/scrollChoreography';
 import { venturesPageConfig, type VentureBrand, type VentureCard } from '../config';
 
@@ -169,7 +170,7 @@ function Hero({ venture }: { venture: VentureCard }) {
               margin: '0 0 22px 0',
             }}
           >
-            PROXYZ Ventures / {venture.name}
+            <ProxyzMark /> Ventures / {venture.name}
           </p>
         </Reveal>
 

@@ -7,6 +7,7 @@ import { Marginalia } from '../components/Editorial';
 import { HeroMesh } from '../components/Glow';
 import PictoIcon from '../components/PictoIcon';
 import Footer from '../sections/Footer';
+import { ProxyzMark } from '../components/ProxyzMark';
 import { useHeroParallax } from '../lib/scrollChoreography';
 import { pipelinePageConfig, type PartnerCard } from '../config';
 
@@ -235,7 +236,7 @@ function PartnerEntry({ partner, index }: { partner: PartnerCard; index: number 
               margin: '0 0 14px 0',
             }}
           >
-            What PROXYZ brings
+            What <ProxyzMark /> brings
           </p>
           <p
             style={{

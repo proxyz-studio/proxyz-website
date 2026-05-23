@@ -15,6 +15,7 @@
 import { Link } from 'react-router-dom';
 import Nav from '../components/Nav';
 import Footer from '../sections/Footer';
+import { ProxyzMark } from '../components/ProxyzMark';
 
 const FONT_MONO = "'IBM Plex Mono', monospace";
 const FONT_DISPLAY = "'Fragment Mono', 'Courier New', monospace";
@@ -37,7 +38,7 @@ const SECTIONS: Section[] = [
     heading: 'Who we are',
     body: (
       <>
-        PROXYZ Studio is a venture-operator studio based in Bangkok,
+        <ProxyzMark /> Studio is a venture-operator studio based in Bangkok,
         Thailand. It is owned and operated by Arnon (Tew) Saksri. Contact:{' '}
         <a href="mailto:hello@proxyz.studio" style={linkStyle}>
           hello@proxyz.studio
@@ -62,7 +63,7 @@ const SECTIONS: Section[] = [
     body: (
       <>
         When you book the Audit, the deliverables are described in the
-        booking confirmation you receive. When PROXYZ engages a company
+        booking confirmation you receive. When <ProxyzMark /> engages a company
         through one of our four modes (Acquire, Partner, Build with,
         Build for), the specific terms live in the engagement contract,
         not on this page.
@@ -74,7 +75,7 @@ const SECTIONS: Section[] = [
     body: (
       <>
         All copy, design, code, photography, and visual identity on
-        proxyz.studio are owned by PROXYZ Studio unless explicitly credited
+        proxyz.studio are owned by <ProxyzMark /> Studio unless explicitly credited
         otherwise. You may share links to public pages. You may not
         republish substantial portions of the content as your own.
       </>
@@ -94,7 +95,7 @@ const SECTIONS: Section[] = [
     heading: 'Limitation of liability',
     body: (
       <>
-        PROXYZ Studio is not liable for damages arising from your use of
+        <ProxyzMark /> Studio is not liable for damages arising from your use of
         the site, except where Thai law does not permit such limitation.
         For paid engagements, the relevant contract sets the liability
         terms, not this page.
@@ -146,7 +147,7 @@ export default function Terms() {
               margin: '0 0 22px 0',
             }}
           >
-            PROXYZ Studio / Legal
+            <ProxyzMark /> Studio / Legal
           </p>
           <h1
             style={{

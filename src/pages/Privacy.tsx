@@ -12,6 +12,7 @@
 import { Link } from 'react-router-dom';
 import Nav from '../components/Nav';
 import Footer from '../sections/Footer';
+import { ProxyzMark } from '../components/ProxyzMark';
 
 const FONT_MONO = "'IBM Plex Mono', monospace";
 const FONT_DISPLAY = "'Fragment Mono', 'Courier New', monospace";
@@ -167,7 +168,7 @@ export default function Privacy() {
               margin: '0 0 22px 0',
             }}
           >
-            PROXYZ Studio / Legal
+            <ProxyzMark /> Studio / Legal
           </p>
           <h1
             style={{
@@ -206,7 +207,7 @@ export default function Privacy() {
               margin: '48px 0 0 0',
             }}
           >
-            This page tells you what PROXYZ Studio collects, why, and what
+            This page tells you what <ProxyzMark /> Studio collects, why, and what
             you can ask us to do about it. We aim for a short, honest policy
             instead of a long one written for lawyers.
           </p>

@@ -23,6 +23,7 @@ import PartnerMeetings from '../components/PartnerMeetings';
 import Reveal from '../components/Reveal';
 import { HeroMesh } from '../components/Glow';
 import { MagneticAnchor } from '../components/Spatial';
+import { ProxyzMark } from '../components/ProxyzMark';
 import Footer from '../sections/Footer';
 import { lazyTigerPageConfig } from '../config';
 
@@ -1459,7 +1460,7 @@ export default function LazyTiger() {
                     borderRadius: '2px',
                   }}
                 >
-                  Talk to PROXYZ →
+                  Talk to <ProxyzMark /> →
                 </MagneticAnchor>
               </div>
             </Reveal>

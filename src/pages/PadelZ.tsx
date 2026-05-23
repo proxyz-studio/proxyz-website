@@ -4,6 +4,7 @@ import MediaGate from '../components/MediaGate';
 import Reveal from '../components/Reveal';
 import { MagneticAnchor, TiltCard } from '../components/Spatial';
 import { HeroMesh, HeadlineHalo } from '../components/Glow';
+import { ProxyzMark } from '../components/ProxyzMark';
 import Footer from '../sections/Footer';
 
 const FONT_MONO = "'IBM Plex Mono', monospace";
@@ -295,7 +296,7 @@ export default function PadelZ() {
                   >
                     The audience rail
                     <br />
-                    for every PROXYZ
+                    for every <ProxyzMark />
                     <br />
                     Phuket operator.
                   </h2>
@@ -311,7 +312,7 @@ export default function PadelZ() {
                     }}
                   >
                     Padel Z is more than a media property. It's the
-                    distribution layer for every PROXYZ operating company in
+                    distribution layer for every <ProxyzMark /> operating company in
                     Phuket. Active players are villa owners, expats with
                     discretionary spend, business owners who need real
                     services.
@@ -326,7 +327,7 @@ export default function PadelZ() {
                     }}
                   >
                     Today, Fast-Fix gets a launch audience day one. Tomorrow,
-                    every new PROXYZ Phuket operator rides the same rail.
+                    every new <ProxyzMark /> Phuket operator rides the same rail.
                     Owned audience, applied across the portfolio.
                   </p>
                 </div>
@@ -702,7 +703,7 @@ export default function PadelZ() {
                   marginRight: 'auto',
                 }}
               >
-                Padel Z is the first beat in a PROXYZ media studio designed
+                Padel Z is the first beat in a <ProxyzMark /> media studio designed
                 to compound across every operator we own in Phuket and
                 beyond.
               </p>
