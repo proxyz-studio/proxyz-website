@@ -107,9 +107,9 @@ export default function Booking() {
           <iframe
             src={`https://cal.com/${bookingConfig.calLink}?theme=dark`}
             width="100%"
-            height={700}
+            height={1200}
             frameBorder={0}
-            title="Book the Audit"
+            title="Book the Walkthrough"
             style={{
               display: 'block',
               border: '1px solid rgba(255,255,255,0.10)',
