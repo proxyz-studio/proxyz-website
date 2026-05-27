@@ -18,9 +18,10 @@ import Pipeline from './pages/Pipeline';
 import Ventures from './pages/Ventures';
 import FastFix from './pages/FastFix';
 import VantaBackground from './components/VantaBackground';
-// CursorOverlay disabled (too subtle to see); kept for easy re-enable.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import CursorOverlay from './components/CursorOverlay';
+// CursorOverlay disabled — to re-enable: re-add the import below and
+// uncomment the <CursorOverlay /> render in <App />. Component file
+// kept at ./components/CursorOverlay.tsx.
+// import CursorOverlay from './components/CursorOverlay';
 import ScrollProgress from './components/ScrollProgress';
 
 // Code-split the Lazy Tiger page — heavy on bespoke components (helmet, leaderboard,
