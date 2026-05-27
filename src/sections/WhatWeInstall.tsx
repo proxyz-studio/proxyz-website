@@ -1,7 +1,7 @@
 import Reveal from '../components/Reveal';
 import { Marginalia, DropCap } from '../components/Editorial';
 import PictoIcon from '../components/PictoIcon';
-import { studioOSConfig } from '../config';
+import { whatWeInstallConfig } from '../config';
 import { useLocale } from '../i18n/LocaleContext';
 import { useBilingual } from '../i18n/useBilingual';
 import { withProxyzMark } from '../components/ProxyzMark';
@@ -10,25 +10,25 @@ import { FallbackBadge } from '../components/FallbackBadge';
 
 const listIcons = ['meetings', 'principle', 'scorecard', 'install', 'spark'] as const;
 
-export default function StudioOS() {
+export default function WhatWeInstall() {
   const { locale } = useLocale();
-  const sectionLabel = useBilingual(studioOSConfig.sectionLabel);
-  const heading = useBilingual(studioOSConfig.heading);
-  const lead = useBilingual(studioOSConfig.lead);
-  const list = useBilingual(studioOSConfig.list);
-  const closing = useBilingual(studioOSConfig.closing);
+  const sectionLabel = useBilingual(whatWeInstallConfig.sectionLabel);
+  const heading = useBilingual(whatWeInstallConfig.heading);
+  const lead = useBilingual(whatWeInstallConfig.lead);
+  const list = useBilingual(whatWeInstallConfig.list);
+  const closing = useBilingual(whatWeInstallConfig.closing);
   const showBadge = anyFallback(
     locale,
-    studioOSConfig.sectionLabel,
-    studioOSConfig.heading,
-    studioOSConfig.lead,
-    studioOSConfig.list,
-    studioOSConfig.closing,
+    whatWeInstallConfig.sectionLabel,
+    whatWeInstallConfig.heading,
+    whatWeInstallConfig.lead,
+    whatWeInstallConfig.list,
+    whatWeInstallConfig.closing,
   );
 
   return (
     <section
-      id="studio-os"
+      id="what-we-install"
       className="section-mobile"
       style={{
         position: 'relative',
@@ -50,7 +50,7 @@ export default function StudioOS() {
           pointerEvents: 'none',
         }}
       >
-        <Marginalia number="06" color="dark" />
+        <Marginalia number="04" color="dark" />
       </div>
 
       <div style={{ position: 'relative', maxWidth: '1360px', margin: '0 auto' }}>
@@ -92,7 +92,7 @@ export default function StudioOS() {
 
         <Reveal delay={140}>
           <div style={{ margin: '0 0 48px 0', maxWidth: '64ch' }}>
-            <DropCap color="#0A0A0A" letter={lead.charAt(0)}>{withProxyzMark(lead.slice(1), 'studio-lead')}</DropCap>
+            <DropCap color="#0A0A0A" letter={lead.charAt(0)}>{withProxyzMark(lead.slice(1), 'whatweinstall-lead')}</DropCap>
           </div>
         </Reveal>
 

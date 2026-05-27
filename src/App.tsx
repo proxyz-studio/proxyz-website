@@ -4,10 +4,9 @@ import { siteConfig } from './config';
 import Hero from './sections/Hero';
 import Diagnosis from './sections/Diagnosis';
 import Principles from './sections/Principles';
-import TwoWays from './sections/TwoWays';
-import Services from './sections/Services';
-import BuildWith from './sections/BuildWith';
-import StudioOS from './sections/StudioOS';
+import HowItWorks from './sections/HowItWorks';
+import WhatWeInstall from './sections/WhatWeInstall';
+import Proof from './sections/Proof';
 import Booking from './sections/Booking';
 import Footer from './sections/Footer';
 import Marquee from './components/Marquee';
@@ -66,11 +65,10 @@ function Home() {
         <Hero />
         <Diagnosis />
         <Principles />
-        <TwoWays />
-        <Services />
+        <HowItWorks />
+        <WhatWeInstall />
         <Marquee />
-        <BuildWith />
-        <StudioOS />
+        <Proof />
         <Booking />
       </main>
       <Footer />

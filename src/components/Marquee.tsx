@@ -6,11 +6,11 @@ const PINK = '#ff4193';
 const MINT = '#5BC9B8';
 
 const DEFAULT_WORDS = [
-  'OPERATOR STUDIO',
+  'VENTURE STUDIO',
   'BANGKOK',
   'PHUKET',
-  'BUILD FOR',
-  'BUILD WITH',
+  'AUTOLOOM',
+  'PRYZM',
   'THE PORTAL',
   'PADEL Z',
   'AI INSIDE',

@@ -114,7 +114,7 @@ export default function Hero() {
             }}
           >
             {titleLines.map((line, index) => {
-              const match = /^(.*?)\b(proxy)\b(.*)$/i.exec(line);
+              const match = /^(.*?)\b(system)\b(.*)$/i.exec(line);
               return (
                 <span key={`${line}-${index}`}>
                   {match ? (
