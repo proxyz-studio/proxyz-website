@@ -18,6 +18,8 @@ import Pipeline from './pages/Pipeline';
 import Ventures from './pages/Ventures';
 import FastFix from './pages/FastFix';
 import VantaBackground from './components/VantaBackground';
+// CursorOverlay disabled (too subtle to see); kept for easy re-enable.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import CursorOverlay from './components/CursorOverlay';
 import ScrollProgress from './components/ScrollProgress';
 
@@ -102,9 +104,10 @@ function App() {
           routes, lazy-loaded, desktop + motion-on only. See
           components/VantaBackground.tsx. */}
       <VantaBackground />
-      {/* Custom cursor — pink crosshair with magnetic pull. Desktop +
-          motion-on + pointer:fine only; touch users get the OS cursor. */}
-      <CursorOverlay />
+      {/* Custom cursor disabled — was a 16px pink crosshair with mix-blend
+          difference, too subtle to see against most backgrounds. Native
+          OS cursor restored. Re-enable by uncommenting <CursorOverlay />. */}
+      {/* <CursorOverlay /> */}
       {/* Scroll progress bar — fixed pink 2px line across the top of the
           viewport, fills as the visitor scrolls. Always on. */}
       <ScrollProgress />
