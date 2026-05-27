@@ -96,7 +96,7 @@ export default function PartnerGate({
       <div
         style={{
           minHeight: 'calc(100vh - 83px)',
-          background: '#000',
+          background: '#0A0A0A',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -104,7 +104,7 @@ export default function PartnerGate({
           fontSize: '11px',
           letterSpacing: '0.18em',
           textTransform: 'uppercase',
-          color: 'rgba(255,255,255,0.4)',
+          color: '#5E5E5E',
         }}
       >
         Verifying access…
@@ -120,8 +120,8 @@ export default function PartnerGate({
     <div
       style={{
         minHeight: 'calc(100vh - 83px)',
-        background: '#000',
-        color: '#fff',
+        background: '#0A0A0A',
+        color: '#F2F2F2',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -189,23 +189,30 @@ export default function PartnerGate({
               textAlign: 'center',
               width: '100%',
               padding: '20px 0',
-              background: '#0a0a0a',
-              border: '1px solid rgba(255,255,255,0.30)',
+              background: '#0A0A0A',
+              border: '2px solid #232323',
               borderRadius: '0',
-              color: '#fff',
+              color: '#F2F2F2',
               outline: 'none',
-              transition: 'border-color 0.15s',
+              transition: 'border-color var(--dur-quick) var(--ease-out-quart)',
               boxSizing: 'border-box',
             }}
             onFocus={(e) => {
+              // Replaces the default browser outline with a clear 2px pink
+              // border ring. Visible to keyboard users; meets WCAG 2.4.7.
               (e.target as HTMLInputElement).style.borderColor = 'var(--accent-pink)';
             }}
             onBlur={(e) => {
-              (e.target as HTMLInputElement).style.borderColor = 'rgba(255,255,255,0.30)';
+              (e.target as HTMLInputElement).style.borderColor = '#232323';
             }}
           />
 
-          <div style={{ minHeight: '20px', marginTop: '14px' }}>
+          <div
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            style={{ minHeight: '20px', marginTop: '14px' }}
+          >
             {error && (
               <p
                 style={{
@@ -248,7 +255,7 @@ export default function PartnerGate({
           }}
         >
           <Link
-            to="/partners"
+            to="/pipeline"
             style={{
               color: 'rgba(255,255,255,0.55)',
               textDecoration: 'none',
@@ -256,7 +263,7 @@ export default function PartnerGate({
               paddingBottom: '2px',
             }}
           >
-            ← Back to partners
+            ← Pipeline
           </Link>
           <a
             href="mailto:hello@proxyz.studio?subject=Partner access"

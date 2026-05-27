@@ -42,7 +42,7 @@ function MobileNavLink({
   const style = {
     fontSize: '20px',
     fontWeight: 400 as const,
-    color: '#fff',
+    color: '#F2F2F2',
     textTransform: 'uppercase' as const,
     textDecoration: 'none',
     letterSpacing: '0.08em',
@@ -94,13 +94,13 @@ function NavLink({
           textDecoration: 'none',
           letterSpacing: '0.12em',
           padding: '10px 22px',
-          borderRadius: '999px',
+          borderRadius: '2px',
           transition: 'background 0.2s, color 0.2s',
         }
       : {
           fontSize: '12px',
           fontWeight: 400 as const,
-          color: '#fff',
+          color: '#F2F2F2',
           textTransform: 'uppercase' as const,
           textDecoration: 'none',
           letterSpacing: '0.08em',
@@ -112,9 +112,9 @@ function NavLink({
   const hoverIn = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (variant === 'cta') {
       (e.currentTarget as HTMLElement).style.background = '#F2D78C';
-      (e.currentTarget as HTMLElement).style.color = '#000';
+      (e.currentTarget as HTMLElement).style.color = '#0A0A0A';
     } else {
-      (e.target as HTMLElement).style.borderBottomColor = '#fff';
+      (e.target as HTMLElement).style.borderBottomColor = '#F2F2F2';
     }
   };
   const hoverOut = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -208,9 +208,10 @@ export default function Nav() {
           justifyContent: 'space-between',
           alignItems: 'center',
           padding: '20px 40px',
-          background: 'rgba(0,0,0,0.72)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
+          // Solid tinted-dark fill instead of glass / backdrop-blur.
+          // Impeccable bans glassmorphism as default decoration. This is the
+          // most visible persistent element on the site; keeping it solid.
+          background: 'rgba(10,10,10,0.94)',
           borderBottom: '1px solid rgba(255,255,255,0.08)',
           fontFamily: "'IBM Plex Mono', monospace",
           boxSizing: 'border-box',
@@ -285,7 +286,7 @@ export default function Nav() {
               padding: '8px',
               margin: 0,
               cursor: 'pointer',
-              color: '#fff',
+              color: '#F2F2F2',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -312,9 +313,8 @@ export default function Nav() {
             right: 0,
             bottom: 0,
             paddingTop: '72px',
-            background: 'rgba(0,0,0,0.97)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
+            // Mobile menu panel: solid near-opaque dark, no blur.
+            background: 'rgba(10,10,10,0.98)',
             zIndex: 49,
             fontFamily: "'IBM Plex Mono', monospace",
             overflowY: 'auto',

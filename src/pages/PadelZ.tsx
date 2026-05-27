@@ -4,6 +4,7 @@ import MediaGate from '../components/MediaGate';
 import Reveal from '../components/Reveal';
 import { MagneticAnchor, TiltCard } from '../components/Spatial';
 import { HeroMesh, HeadlineHalo } from '../components/Glow';
+import { ProxyzMark } from '../components/ProxyzMark';
 import Footer from '../sections/Footer';
 
 const FONT_MONO = "'IBM Plex Mono', monospace";
@@ -61,7 +62,7 @@ export default function PadelZ() {
     <>
       <Nav />
       <MediaGate slug="padel-z" projectName="Padel Z">
-        <main style={{ background: '#000', color: '#fff' }}>
+        <main style={{ background: '#0A0A0A', color: '#F2F2F2' }}>
           {/* HERO */}
           <section
             className="section-mobile"
@@ -132,7 +133,7 @@ export default function PadelZ() {
                     gap: '8px',
                     padding: '8px 14px',
                     border: '1px solid rgba(255,255,255,0.30)',
-                    borderRadius: '999px',
+                    borderRadius: '2px',
                     fontFamily: FONT_MONO,
                     fontSize: '11px',
                     letterSpacing: '0.08em',
@@ -158,7 +159,7 @@ export default function PadelZ() {
                     textTransform: 'uppercase',
                     padding: '8px 14px',
                     border: '1px solid rgba(255,255,255,0.30)',
-                    borderRadius: '999px',
+                    borderRadius: '2px',
                     color: 'rgba(255,255,255,0.85)',
                   }}
                 >
@@ -253,8 +254,8 @@ export default function PadelZ() {
             className="section-mobile"
             style={{
               padding: '96px 40px',
-              background: '#fff',
-              color: '#000',
+              background: '#F2F2F2',
+              color: '#0A0A0A',
               borderBottom: '1px solid #000',
             }}
           >
@@ -290,12 +291,12 @@ export default function PadelZ() {
                       letterSpacing: '-0.015em',
                       margin: 0,
                       textWrap: 'balance',
-                      color: '#000',
+                      color: '#0A0A0A',
                     }}
                   >
                     The audience rail
                     <br />
-                    for every PROXYZ
+                    for every <ProxyzMark />
                     <br />
                     Phuket operator.
                   </h2>
@@ -311,7 +312,7 @@ export default function PadelZ() {
                     }}
                   >
                     Padel Z is more than a media property. It's the
-                    distribution layer for every PROXYZ operating company in
+                    distribution layer for every <ProxyzMark /> operating company in
                     Phuket. Active players are villa owners, expats with
                     discretionary spend, business owners who need real
                     services.
@@ -326,7 +327,7 @@ export default function PadelZ() {
                     }}
                   >
                     Today, Fast-Fix gets a launch audience day one. Tomorrow,
-                    every new PROXYZ Phuket operator rides the same rail.
+                    every new <ProxyzMark /> Phuket operator rides the same rail.
                     Owned audience, applied across the portfolio.
                   </p>
                 </div>
@@ -604,8 +605,8 @@ export default function PadelZ() {
                       style={{
                         width: '16px',
                         height: '16px',
-                        borderRadius: '999px',
-                        background: '#000',
+                        borderRadius: '2px',
+                        background: '#0A0A0A',
                         border: `1px solid ${MINT}`,
                         marginTop: '16px',
                         marginBottom: '8px',
@@ -616,7 +617,7 @@ export default function PadelZ() {
                         style={{
                           position: 'absolute',
                           inset: '4px',
-                          borderRadius: '999px',
+                          borderRadius: '2px',
                           background: MINT,
                         }}
                       />
@@ -635,7 +636,7 @@ export default function PadelZ() {
                       style={{
                         fontFamily: FONT_MONO,
                         fontSize: '17px',
-                        color: '#fff',
+                        color: '#F2F2F2',
                         fontWeight: 500,
                         letterSpacing: '-0.005em',
                       }}
@@ -682,7 +683,7 @@ export default function PadelZ() {
                   letterSpacing: '-0.015em',
                   maxWidth: '22ch',
                   margin: '0 auto',
-                  color: '#fff',
+                  color: '#F2F2F2',
                   textWrap: 'balance',
                 }}
               >
@@ -702,7 +703,7 @@ export default function PadelZ() {
                   marginRight: 'auto',
                 }}
               >
-                Padel Z is the first beat in a PROXYZ media studio designed
+                Padel Z is the first beat in a <ProxyzMark /> media studio designed
                 to compound across every operator we own in Phuket and
                 beyond.
               </p>
@@ -714,7 +715,7 @@ export default function PadelZ() {
                   gap: '10px',
                   padding: '14px 22px',
                   border: `1px solid ${MINT}`,
-                  borderRadius: '999px',
+                  borderRadius: '2px',
                   color: MINT,
                   fontFamily: FONT_MONO,
                   fontSize: '12px',

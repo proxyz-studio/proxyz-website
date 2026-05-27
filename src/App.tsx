@@ -4,10 +4,10 @@ import { siteConfig } from './config';
 import Hero from './sections/Hero';
 import Diagnosis from './sections/Diagnosis';
 import Principles from './sections/Principles';
-import TwoWays from './sections/TwoWays';
-import Services from './sections/Services';
-import BuildWith from './sections/BuildWith';
-import StudioOS from './sections/StudioOS';
+import HowItWorks from './sections/HowItWorks';
+import WhatWeInstall from './sections/WhatWeInstall';
+import Proof from './sections/Proof';
+import Team from './sections/Team';
 import Booking from './sections/Booking';
 import Footer from './sections/Footer';
 import Marquee from './components/Marquee';
@@ -17,6 +17,12 @@ import PadelZ from './pages/PadelZ';
 import Pipeline from './pages/Pipeline';
 import Ventures from './pages/Ventures';
 import FastFix from './pages/FastFix';
+import VantaBackground from './components/VantaBackground';
+// CursorOverlay disabled — to re-enable: re-add the import below and
+// uncomment the <CursorOverlay /> render in <App />. Component file
+// kept at ./components/CursorOverlay.tsx.
+// import CursorOverlay from './components/CursorOverlay';
+import ScrollProgress from './components/ScrollProgress';
 
 // Code-split the Lazy Tiger page — heavy on bespoke components (helmet, leaderboard,
 // merch grid, GSAP Asia map). Only loaded when a visitor lands on /partners/lazy-tiger.
@@ -26,6 +32,9 @@ const LazyTigerStyles = lazy(() => import('./pages/LazyTigerStyles'));
 // Legal pages — lazy because rarely visited but needed for LINE OA + Thai PDPA.
 const Privacy = lazy(() => import('./pages/Privacy'));
 const Terms = lazy(() => import('./pages/Terms'));
+
+// FAQ page — linked from the footer, not the primary nav.
+const Faq = lazy(() => import('./pages/Faq'));
 
 // Venture detail pages — lazy. One component handles all slugs.
 const VentureDetail = lazy(() => import('./pages/VentureDetail'));
@@ -64,11 +73,11 @@ function Home() {
         <Hero />
         <Diagnosis />
         <Principles />
-        <TwoWays />
-        <Services />
+        <HowItWorks />
+        <WhatWeInstall />
         <Marquee />
-        <BuildWith />
-        <StudioOS />
+        <Proof />
+        <Team />
         <Booking />
       </main>
       <Footer />
@@ -92,6 +101,17 @@ function App() {
 
   return (
     <>
+      {/* Animated pink network background — fixed layer behind all
+          routes, lazy-loaded, desktop + motion-on only. See
+          components/VantaBackground.tsx. */}
+      <VantaBackground />
+      {/* Custom cursor disabled — was a 16px pink crosshair with mix-blend
+          difference, too subtle to see against most backgrounds. Native
+          OS cursor restored. Re-enable by uncommenting <CursorOverlay />. */}
+      {/* <CursorOverlay /> */}
+      {/* Scroll progress bar — fixed pink 2px line across the top of the
+          viewport, fills as the visitor scrolls. Always on. */}
+      <ScrollProgress />
       <ScrollManager />
       <Routes>
         <Route path="/" element={<Home />} />
@@ -111,6 +131,7 @@ function App() {
         />
         <Route path="/privacy" element={<Suspense fallback={null}><Privacy /></Suspense>} />
         <Route path="/terms" element={<Suspense fallback={null}><Terms /></Suspense>} />
+        <Route path="/faq" element={<Suspense fallback={null}><Faq /></Suspense>} />
         <Route
           path="/preview/lazy-tiger-styles"
           element={<Suspense fallback={null}><LazyTigerStyles /></Suspense>}

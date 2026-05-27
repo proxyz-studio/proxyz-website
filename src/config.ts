@@ -43,45 +43,42 @@ export interface PrinciplesConfig {
   items: PrincipleItem[]
 }
 
-export interface WayCard {
+export interface StepCard {
+  step: string
   name: string
-  body: Bilingual<string>
-  link: { label: Bilingual<string>; href: string }
-}
-
-export interface TwoWaysConfig {
-  sectionLabel: Bilingual<string>
-  heading: Bilingual<string>
-  cards: WayCard[]
-}
-
-export interface ServiceCard {
-  name: string
-  label: string
-  forLabel: string
+  duration: string
   body: Bilingual<string>
   cta: { label: Bilingual<string>; href: string }
+  /** Optional accent badge (e.g. "FREE · YOURS TO KEEP" on the Walkthrough). */
+  badge?: string
 }
 
-export interface ServicesConfig {
+export interface HowItWorksConfig {
   sectionLabel: Bilingual<string>
+  heading: Bilingual<string>
   intro: Bilingual<string>
-  cards: ServiceCard[]
+  steps: StepCard[]
 }
 
-export interface BuildWithConfig {
-  sectionLabel: Bilingual<string>
-  heading: Bilingual<string>
-  paragraphs: Bilingual<string[]>
-  cta: { label: Bilingual<string>; href: string }
-}
-
-export interface StudioOSConfig {
+export interface WhatWeInstallConfig {
   sectionLabel: Bilingual<string>
   heading: Bilingual<string>
   lead: Bilingual<string>
   list: Bilingual<string[]>
   closing: Bilingual<string>
+}
+
+export interface ProofVentureCard {
+  name: string
+  body: Bilingual<string>
+}
+
+export interface ProofConfig {
+  sectionLabel: Bilingual<string>
+  heading: Bilingual<string>
+  lead: Bilingual<string>
+  cards: ProofVentureCard[]
+  tailLink: { label: Bilingual<string>; href: string }
 }
 
 export interface BookingConfig {
@@ -91,6 +88,25 @@ export interface BookingConfig {
   calLink: string
 }
 
+export interface StudioTeamMember {
+  name: string
+  role: string
+  bio: Bilingual<string>
+  /** Optional brand accent for the name (defaults to white). */
+  accent?: string
+  /** Optional avatar path under public/ (e.g. "/team/tew.jpg").
+   *  If missing or fails to load, the section falls back to an
+   *  initials circle automatically. */
+  photo?: string
+}
+
+export interface StudioTeamConfig {
+  sectionLabel: Bilingual<string>
+  heading: Bilingual<string>
+  intro: Bilingual<string>
+  members: StudioTeamMember[]
+}
+
 export interface FooterConfig {
   left: Bilingual<string>
   email: NavigationLink
@@ -98,18 +114,32 @@ export interface FooterConfig {
   right: Bilingual<string>
 }
 
+export interface FaqItem {
+  question: Bilingual<string>
+  /** Each entry renders as a separate paragraph. Use a string that begins
+   *  with "- " for bullet list paragraphs. */
+  answer: Bilingual<string[]>
+}
+
+export interface FaqConfig {
+  eyebrow: Bilingual<string>
+  heading: Bilingual<string>
+  intro: Bilingual<string>
+  items: FaqItem[]
+}
+
 export const siteConfig: SiteConfig = {
   language: "en",
   siteTitle: "PROXYZ",
   siteDescription:
-    "PROXYZ goes inside your company, rebuilds how it runs, automates the work that doesn't need a human, and stays as your AI operating partner. Anchored in Thailand.",
+    "We're a venture studio. We've built an AI system that runs the boring half of a business. Our own companies run on it. We install it for others.",
 }
 
 export const navigationConfig: NavigationConfig = {
   brandName: "PROXYZ",
   links: [
-    { label: "What we do", href: "/#services" },
-    { label: "Studio OS", href: "/portal" },
+    { label: "What we do", href: "/#how-it-works" },
+    { label: "The Portal", href: "/portal" },
     { label: "Media", href: "/media" },
     { label: "Pipeline", href: "/pipeline" },
     { label: "Ventures", href: "/ventures" },
@@ -118,18 +148,18 @@ export const navigationConfig: NavigationConfig = {
 }
 
 export const heroConfig: HeroConfig = {
-  eyebrow: { en: "ISSUE 01 / OPERATOR STUDIO" },
-  titleLines: { en: ["Your proxy", "on the", "inside."] },
-  lead: { en: "PROXYZ goes inside your company, rebuilds how it runs, automates the work that doesn't need a human, and stays as your AI operating partner. Anchored in Thailand. Working with operators wherever the upside is real." },
-  primaryCta: { label: { en: "Book the Audit" }, href: "#booking" },
-  secondaryLink: { label: { en: "What we do →" }, href: "#services" },
+  eyebrow: { en: "ISSUE 01 / VENTURE STUDIO" },
+  titleLines: { en: ["The system", "runs the company.", "Not the founder."] },
+  lead: { en: "We're a venture studio. We've built an AI system that runs the boring half of a business. Routing work. Remembering decisions. Writing reports. Answering inbound. Our own companies run on it. We install it for others." },
+  primaryCta: { label: { en: "Book the Walkthrough" }, href: "#booking" },
+  secondaryLink: { label: { en: "How it works →" }, href: "#how-it-works" },
 }
 
 export const diagnosisConfig: DiagnosisConfig = {
   sectionLabel: { en: "01 / THE DIAGNOSIS" },
   heading: { en: "Most companies don't have an AI problem. They have an operations problem." },
   paragraphs: { en: [
-    "Tribal knowledge in someone's head. Decisions made in group chats. Spreadsheets duct taped to email. AI bolted on top of broken process and called transformation.",
+    "One person knows how it all works. Decisions made in group chats. Spreadsheets emailed around. AI bolted on top of broken process and called transformation.",
     "Companies don't run badly because the technology is missing. They run badly because the operating system is.",
   ] },
 }
@@ -138,101 +168,212 @@ export const principlesConfig: PrinciplesConfig = {
   sectionLabel: { en: "02 / WHAT WE BELIEVE" },
   heading: { en: "Three principles." },
   items: [
-    { number: "01.", text: { en: "Automate first. Agentic where it earns it." } },
-    { number: "02.", text: { en: "The system runs the company. Not the founder." } },
-    { number: "03.", text: { en: "Thailand is not a market. It's an ecosystem." } },
+    { number: "01.", text: { en: "Automate first. AI where it earns its keep." } },
+    { number: "02.", text: { en: "AI does the routine. People do the thinking." } },
+    { number: "03.", text: { en: "We stay. No drive-by consulting." } },
   ],
 }
 
-export const twoWaysConfig: TwoWaysConfig = {
-  sectionLabel: { en: "03 / TWO WAYS TO WORK WITH PROXYZ" },
-  heading: { en: "Build for. Build with." },
-  cards: [
+export const howItWorksConfig: HowItWorksConfig = {
+  sectionLabel: { en: "03 / HOW IT WORKS" },
+  heading: { en: "One path. Starts with 60 minutes." },
+  intro: { en: "Every relationship begins with the same first step." },
+  steps: [
     {
-      name: "Build for.",
-      body: { en: "We come in. We install. We stay as your operator." },
-      link: { label: { en: "See the services →" }, href: "#services" },
+      step: "Step 01",
+      name: "The Walkthrough",
+      duration: "60 minutes",
+      badge: "FREE · YOURS TO KEEP",
+      body: { en: "We sit with you, walk the business, and leave you with a one page memo on the three highest leverage things you could fix. Yours to keep, even if we never work together." },
+      cta: { label: { en: "Book the Walkthrough" }, href: "#booking" },
     },
     {
-      name: "Build with.",
-      body: { en: "We come in. We build alongside. We own a piece." },
-      link: { label: { en: "See the venture arm →" }, href: "#build-with" },
-    },
-  ],
-}
-
-export const servicesConfig: ServicesConfig = {
-  sectionLabel: { en: "04 / BUILD FOR" },
-  intro: { en: "We come in, install systems, automate the work, and stay long term." },
-  cards: [
-    {
-      name: "The Audit",
-      label: "60 MINUTES",
-      forLabel: "Anyone serious about running better.",
-      body: { en: "A working session, not a sales call. We sit with you, walk the business, and leave you with a one page memo on the three highest leverage points in your operation. Yours to keep, even if we never work together." },
-      cta: { label: { en: "Book the Audit" }, href: "#booking" },
-    },
-    {
-      name: "The Blueprint",
-      label: "90 DAYS",
-      forLabel: "Founders launching a new venture.",
-      body: { en: "We take your idea and turn it into a structured, validated, ready to operate company. Legal structure, deal architecture, partners, financial model, operating system spec, AI stack from day one. You walk out with a build ready blueprint and the introductions to make it real." },
-      cta: { label: { en: "Start with the Audit" }, href: "#booking" },
-    },
-    {
+      step: "Step 02",
       name: "The Install",
-      label: "90 TO 120 DAYS",
-      forLabel: "Existing companies modernizing their operation.",
-      body: { en: "We install the Studio OS, automate the work that doesn't need a human, layer in AI where it earns its place, and train your team. You come out running on something that scales without the founder in every meeting." },
-      cta: { label: { en: "Start with the Audit" }, href: "#booking" },
+      duration: "90 to 120 days",
+      body: { en: "We install the system. Automate the work that does not need a person. Layer in AI where it earns its keep. Train your team. You come out running on something that scales without the founder in every meeting." },
+      cta: { label: { en: "Start with the Walkthrough" }, href: "#booking" },
     },
     {
-      name: "The Partnership",
-      label: "MONTHLY RETAINER",
-      forLabel:
-        "Companies who want PROXYZ on retainer as the AI landscape shifts.",
-      body: { en: "We stay as your fractional AI operating partner. Quarterly roadmap reviews, stack updates, team training, and a direct line as the landscape changes. This is what makes \"future proof\" something other than a slogan." },
+      step: "Step 03",
+      name: "On Call",
+      duration: "Monthly retainer",
+      body: { en: "After the install, we stay on retainer. Quarterly roadmap reviews. Stack updates. Team training. The system keeps getting better as the AI landscape changes." },
       cta: { label: { en: "Add to any engagement" }, href: "#booking" },
     },
   ],
 }
 
-export const buildWithConfig: BuildWithConfig = {
-  sectionLabel: { en: "05 / BUILD WITH" },
-  heading: { en: "We don't sell this one. We choose it." },
-  paragraphs: { en: [
-    "For the rare founder where the upside is real and the chemistry is right. We come in, rebuild the business end to end, and stay as a long term operating partner. Compensation is equity, earned against committed deliverables. Two or three active at a time. By invitation only.",
-    "This isn't a tier on a menu. It's a partnership.",
+export const whatWeInstallConfig: WhatWeInstallConfig = {
+  sectionLabel: { en: "04 / WHAT WE INSTALL" },
+  heading: { en: "What the system actually is." },
+  lead: { en: "The Portal is the software we install. The system around it is what makes it run. A few moving parts, working together." },
+  list: { en: [
+    "A meeting rhythm that turns conversations into decisions in writing",
+    "Clear ownership so the founder is not the bottleneck on every call",
+    "Dashboards built around the few numbers that actually move the business",
+    "AI agents that do the routine work nobody should be doing by hand",
+    "A research and content pipeline so the company stops starting from scratch every week",
   ] },
-  cta: {
-    label: { en: "Pitch us. →" },
-    href: "mailto:hello@proxyz.studio?subject=Build with PROXYZ",
-  },
+  closing: { en: "We rebuild this for every company we work with. Some parts are templated. The rest is custom to how you actually run." },
 }
 
-export const studioOSConfig: StudioOSConfig = {
-  sectionLabel: { en: "06 / THE STUDIO OS" },
-  heading: { en: "The system every engagement installs." },
-  lead: { en: "The Studio OS is the operating layer PROXYZ installs inside every client. It's not software. It's how the company runs." },
-  list: { en: [
-    "A meeting cadence that compresses decision time",
-    "Decision rights that stop bottlenecks at the founder",
-    "Dashboards built around the metrics that move the business",
-    "An automation layer that runs the work that doesn't need a human",
-    "An AI stack tailored to the operation, not someone else's playbook",
-  ] },
-  closing: { en: "A real operator playbook, white labeled and rebuilt for every client. Whether we build for you or with you, the Studio OS is the system we install." },
+export const proofConfig: ProofConfig = {
+  sectionLabel: { en: "05 / WHY WE GET TO SAY THIS" },
+  heading: { en: "We've run this on our own companies first." },
+  lead: { en: "Before we installed it for anyone else, we built it for ourselves. Our own companies run on the system today." },
+  cards: [
+    {
+      name: "AUTOLOOM",
+      body: { en: "Thai SMB packages. Web, AI agents, LINE automation, after-hours support." },
+    },
+    {
+      name: "PRYZM",
+      body: { en: "Research as a service, run by AI agents." },
+    },
+  ],
+  tailLink: { label: { en: "See all our ventures" }, href: "/ventures" },
+}
+
+export const teamConfig: StudioTeamConfig = {
+  sectionLabel: { en: "06 / THE TEAM" },
+  heading: { en: "Two of us. Two roles." },
+  intro: { en: "Senior people only. No junior layer between you and the system." },
+  members: [
+    {
+      name: "Arnon Saksri (Tew)",
+      role: "Founder",
+      bio: { en: "Architect of the system and the deals around it. Built PROXYZ from inside our own companies before installing it for anyone else. Based in Bangkok, working across Thailand." },
+      photo: "/team/tew.jpg",
+    },
+    {
+      name: "i'Ling Sorum",
+      role: "Head of Sales and Media",
+      bio: { en: "The person you'll meet on the Walkthrough. Runs sales, the media arm, and the day-to-day of the studio." },
+      photo: "/team/iling.jpg",
+    },
+  ],
 }
 
 export const bookingConfig: BookingConfig = {
-  sectionLabel: { en: "07 / BOOK YOUR AUDIT" },
+  sectionLabel: { en: "07 / BOOK THE WALKTHROUGH" },
   heading: { en: "60 minutes. One page memo. Yours to keep." },
   body: { en: "Every PROXYZ engagement starts here. Pick a time below." },
   calLink: "proxyz/audit",
 }
 
+export const faqConfig: FaqConfig = {
+  eyebrow: { en: "PROXYZ / FAQ" },
+  heading: { en: "Pre-engagement questions, answered straight." },
+  intro: { en: "Everything visitors typically ask before booking the Walkthrough. If your question is not here, hello@proxyz.studio." },
+  items: [
+    {
+      question: { en: "What is PROXYZ?" },
+      answer: { en: [
+        "PROXYZ is a venture studio. We partner with, invest in, and operate businesses alongside their founders. We bring an operating system called the Portal, plus four service capabilities: AI adoption, automation, EOS based management, and growth consulting. We take equity. We do not charge monthly fees or meter usage.",
+      ] },
+    },
+    {
+      question: { en: "How is this different from a VC, accelerator, or consulting firm?" },
+      answer: { en: [
+        "A VC writes a check and joins your board. We move into the operation with you.",
+        "An accelerator runs you through a 90 day cohort and waves goodbye. We stay.",
+        "A consulting firm invoices you and leaves when the project ends. We hold equity, so we leave when you succeed.",
+      ] },
+    },
+    {
+      question: { en: "What are the four ways you work with companies?" },
+      answer: { en: [
+        "Every engagement starts with the Walkthrough. No commercial path is named before it. Once we understand what you need, we work through one of four modes:",
+        "- Acquire. Full buyout. PROXYZ takes the company over and operates it.",
+        "- Partner. Joint operation with equity stake. We co run alongside the founder.",
+        "- Build with. Install for equity. We deploy the Portal and our capabilities in exchange for equity. No day to day operating role.",
+        "- Build for. Service only. Fixed scope, cash invoice. No equity. We do the work, deliver, and leave.",
+      ] },
+    },
+    {
+      question: { en: "What is the Portal?" },
+      answer: { en: [
+        "The Portal is our internal operating system. It runs on Next.js, deployed on Vercel, built natively around EOS (the Entrepreneurial Operating System). It gives your team a single place for meetings, scorecards, rocks, issues, and AI assisted execution. It is the same system we use internally at PROXYZ. When we install it into a company, you get the product and the team who built it.",
+      ] },
+    },
+    {
+      question: { en: "Do you charge fees, or is it equity only?" },
+      answer: { en: [
+        "Equity only in Acquire, Partner, and Build with engagements. No monthly retainer. No per seat licensing. No billing per AI call or automation run. Our model: we take a stake, we install the system, we run alongside you. If your business grows, we grow with it.",
+        "Build for is the exception: fixed scope, cash invoice, no equity.",
+      ] },
+    },
+    {
+      question: { en: "How much equity do you take?" },
+      answer: { en: [
+        "It depends on the engagement mode and the state of the business when we come in. We do not publish a standard percentage. The equity conversation happens after the Walkthrough, when we understand what you need and what we are contributing.",
+        "What we will not do: take equity before we have done the work to understand what we are actually getting into. The Walkthrough is the prerequisite.",
+      ] },
+    },
+    {
+      question: { en: "Do I lose control of my business?" },
+      answer: { en: [
+        "No. In Partner mode, you remain the operator. Your IP stays yours. Business decisions stay with you. What changes is that you have better information to make those decisions, and a partner who is invested in the outcome alongside you.",
+        "We hold equity. We need your business to succeed as much as you do. If we recommend something and you disagree, you say so. We discuss it. We do not override you.",
+      ] },
+    },
+    {
+      question: { en: "Who owns the IP?" },
+      answer: { en: [
+        "You do. Your existing IP, customer data, and trade secrets do not transfer to PROXYZ. The Portal is our IP. We license it into your business as part of the engagement. If you ever want to continue using it without PROXYZ, everything is documented so you could.",
+      ] },
+    },
+    {
+      question: { en: "Who is PROXYZ right for?" },
+      answer: { en: [
+        "Operators and founders running businesses with real revenue and a team in place, who are hitting a ceiling. Coordination breaks down. The founder is the bottleneck. Growth has stalled. The operation runs on the founder's memory rather than a system.",
+        "We work best with companies at the 10 to 80 person stage, though the Walkthrough determines fit. If you want to run the business yourself with zero outside involvement, we are not the right fit.",
+      ] },
+    },
+    {
+      question: { en: "What do I actually get?" },
+      answer: { en: [
+        "Four capabilities, deployed based on what the Walkthrough finds:",
+        "- AI adoption. AI agents, automation, AI native operations that remove repetitive work from your team's day.",
+        "- Automation. n8n integrations, system connections, eliminating manual steps across your tools.",
+        "- EOS / Traction. Vision/Traction Organizer, Rocks, Scorecard, the L10 meeting structure, accountability rhythm layered with PROXYZ specific modules.",
+        "- Growth consulting. Positioning, go to market, founder led sales playbooks, channel strategy.",
+        "Plus the Portal, which ties all of it together and gives your team a single operating environment.",
+      ] },
+    },
+    {
+      question: { en: "What is the Walkthrough?" },
+      answer: { en: [
+        "The starting point for every engagement. 60 minutes. We spend time understanding how your business actually works: revenue, team structure, tools, bottlenecks, decision making. The Walkthrough tells us what capability mix fits. It tells you whether PROXYZ makes sense. You leave with a one page memo on the three highest leverage things you could fix. Yours to keep.",
+        "No fee. No obligation. No commercial path is named until we both understand what we are looking at.",
+      ] },
+    },
+    {
+      question: { en: "Will AI replace my team?" },
+      answer: { en: [
+        "No. AI replaces specific tasks, not people. Answering the same question twelve times a day. Copying numbers between systems. Sending recurring reminders.",
+        "What stays with your team: judgment, relationships, and reading the room. The manager who spots when something is wrong before the data shows it. Every system we build sits on top of your operation, not instead of it.",
+      ] },
+    },
+    {
+      question: { en: "What if I want out?" },
+      answer: { en: [
+        "We build an exit process into every Partner and Build with agreement. It is not designed to trap you.",
+        "The systems we install are documented. Nothing is a black box. If you want to continue running the Portal without PROXYZ, we walk you through what would need to change. We would rather have that conversation upfront than have it be a surprise later.",
+      ] },
+    },
+    {
+      question: { en: "What is the first step?" },
+      answer: { en: [
+        "Book the Walkthrough. No pitch deck required. We set up a call, understand what you are working with, and tell you honestly what we think.",
+      ] },
+    },
+  ],
+}
+
 export const footerConfig: FooterConfig = {
-  left: { en: "PROXYZ. An operator studio." },
+  left: { en: "PROXYZ. A venture studio in Thailand." },
   email: {
     label: "hello@proxyz.studio",
     href: "mailto:hello@proxyz.studio",
@@ -272,7 +413,7 @@ export const portalPageConfig: PortalPageConfig = {
     "The Portal is the working surface every PROXYZ engagement runs on. Meeting cadence, decisions, automations, AI agents, scorecards, all in one workspace. Built by operators for operators.",
   primaryCta: { label: "Open the Portal →", href: "https://portal.proxyz.studio/sign-in" },
   secondaryLink: { label: "Book the Audit", href: "/#booking" },
-  pillarsLabel: "01 / WHAT IT DOES",
+  pillarsLabel: "02 / WHAT IT DOES",
   pillars: [
     {
       name: "Compresses decision time",
@@ -290,7 +431,7 @@ export const portalPageConfig: PortalPageConfig = {
         "Meeting agent, drafting agent, research agent. Each tuned to the company. Each with a workspace memory and an audit trail.",
     },
   ],
-  modulesLabel: "02 / INSIDE THE PORTAL",
+  modulesLabel: "03 / INSIDE THE PORTAL",
   modulesIntro:
     "Every module is built around the same idea: the system runs the company, not the founder.",
   modules: [
@@ -325,7 +466,7 @@ export const portalPageConfig: PortalPageConfig = {
         "Vision and traction in one document. Core values, focus, ten-year target, three-year picture, annual plan, quarterly rocks. The company's true north.",
     },
   ],
-  whoLabel: "03 / WHO RUNS ON IT",
+  whoLabel: "01 / WHO RUNS ON IT",
   whoHeading: "Every PROXYZ engagement. Every partner company.",
   whoBody:
     "The Portal is what we install during The Install and The Blueprint. It's the operating surface for every Build-with venture. New workspace per company. Owner controls. Multi-org rollup for the studio team.",
@@ -474,8 +615,6 @@ export interface PipelinePageConfig {
   eyebrow: string
   titleLines: string[]
   lead: string
-  filterLabel: string
-  filterValues: string[]
   partners: PartnerCard[]
   closingLabel: string
   closingHeading: string
@@ -488,8 +627,6 @@ export const pipelinePageConfig: PipelinePageConfig = {
   titleLines: ["Companies", "in play."],
   lead:
     "PROXYZ runs a Build-with arm in parallel with the studio. Two to three companies at a time. Equity, not retainer. Co-built end to end. These are the conversations in motion — not closed partnerships. This is the working table.",
-  filterLabel: "Status",
-  filterValues: ["Active discussion", "Diligence", "Building", "Operating"],
   partners: [
     {
       name: "Fast-Fix",

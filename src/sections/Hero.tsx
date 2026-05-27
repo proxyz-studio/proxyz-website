@@ -56,7 +56,7 @@ export default function Hero() {
           position: 'relative',
           width: '40%',
           minWidth: '320px',
-          background: '#000',
+          background: '#0A0A0A',
           overflow: 'hidden',
         }}
       >
@@ -89,7 +89,16 @@ export default function Hero() {
           </p>
           </Reveal>
           <Reveal delay={80}>
+          {/*
+            scanline-heading className overlays horizontal scanlines via a
+            ::after pseudo-element rather than the previous gradient-text
+            (background-clip: text) technique. The text underneath is real,
+            accessible, copy-pasteable, and visible in high-contrast mode.
+            The inner .proxy-glitch span keeps its own inline scanline because
+            its chromatic ::before/::after duplicates depend on it.
+          */}
           <motion.h1
+            className="scanline-heading"
             style={{
               y: titleY,
               opacity: titleOpacity,
@@ -97,27 +106,15 @@ export default function Hero() {
               fontSize: 'clamp(44px, 5.6vw, 82px)',
               fontWeight: 400,
               lineHeight: 0.96,
-              color: 'transparent',
               textTransform: 'uppercase',
               margin: 0,
               letterSpacing: '0.015em',
               wordSpacing: '-0.45em',
               textWrap: 'balance',
-              background:
-                'repeating-linear-gradient(' +
-                'to bottom, ' +
-                '#fff 0px, ' +
-                '#fff 2px, ' +
-                'transparent 2px, ' +
-                'transparent 5px' +
-                ')',
-              WebkitBackgroundClip: 'text',
-              backgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
             }}
           >
             {titleLines.map((line, index) => {
-              const match = /^(.*?)\b(proxy)\b(.*)$/i.exec(line);
+              const match = /^(.*?)\b(system)\b(.*)$/i.exec(line);
               return (
                 <span key={`${line}-${index}`}>
                   {match ? (
@@ -159,12 +156,14 @@ export default function Hero() {
             style={{
               opacity: leadOpacity,
               fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: '13px',
+              fontSize: '16px',
               fontWeight: 400,
-              lineHeight: 1.7,
-              color: 'rgba(255,255,255,0.66)',
+              lineHeight: 1.65,
+              color: 'rgba(255,255,255,0.92)',
               margin: '40px 0 0 0',
-              maxWidth: '52ch',
+              maxWidth: '54ch',
+              paddingLeft: '18px',
+              borderLeft: '2px solid var(--accent-pink)',
             }}
           >
             {withProxyzMark(lead, 'hero-lead')}
@@ -187,13 +186,13 @@ export default function Hero() {
               style={{
                 fontSize: '12px',
                 fontWeight: 400,
-                color: '#000',
-                background: '#fff',
+                color: '#0A0A0A',
+                background: '#F2F2F2',
                 textTransform: 'uppercase',
                 textDecoration: 'none',
                 letterSpacing: '0.08em',
                 padding: '12px 22px',
-                borderRadius: '999px',
+                borderRadius: '2px',
               }}
             >
               {primaryCtaLabel}
@@ -203,7 +202,7 @@ export default function Hero() {
               style={{
                 fontSize: '12px',
                 fontWeight: 400,
-                color: '#fff',
+                color: '#F2F2F2',
                 textTransform: 'uppercase',
                 textDecoration: 'none',
                 letterSpacing: '0.08em',
@@ -212,7 +211,7 @@ export default function Hero() {
                 transition: 'border-color 0.2s',
               }}
               onMouseEnter={(e) => {
-                (e.target as HTMLElement).style.borderBottomColor = '#fff';
+                (e.target as HTMLElement).style.borderBottomColor = '#F2F2F2';
               }}
               onMouseLeave={(e) => {
                 (e.target as HTMLElement).style.borderBottomColor = 'rgba(255,255,255,0.4)';
@@ -230,7 +229,7 @@ export default function Hero() {
         style={{
           position: 'relative',
           width: '60%',
-          background: '#000',
+          background: '#0A0A0A',
           overflow: 'hidden',
         }}
       >

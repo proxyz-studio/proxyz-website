@@ -1,7 +1,8 @@
 import Reveal from '../components/Reveal';
 import { Marginalia, DropCap } from '../components/Editorial';
 import PictoIcon from '../components/PictoIcon';
-import { studioOSConfig } from '../config';
+import BackgroundGrid from '../components/BackgroundGrid';
+import { whatWeInstallConfig } from '../config';
 import { useLocale } from '../i18n/LocaleContext';
 import { useBilingual } from '../i18n/useBilingual';
 import { withProxyzMark } from '../components/ProxyzMark';
@@ -10,36 +11,38 @@ import { FallbackBadge } from '../components/FallbackBadge';
 
 const listIcons = ['meetings', 'principle', 'scorecard', 'install', 'spark'] as const;
 
-export default function StudioOS() {
+export default function WhatWeInstall() {
   const { locale } = useLocale();
-  const sectionLabel = useBilingual(studioOSConfig.sectionLabel);
-  const heading = useBilingual(studioOSConfig.heading);
-  const lead = useBilingual(studioOSConfig.lead);
-  const list = useBilingual(studioOSConfig.list);
-  const closing = useBilingual(studioOSConfig.closing);
+  const sectionLabel = useBilingual(whatWeInstallConfig.sectionLabel);
+  const heading = useBilingual(whatWeInstallConfig.heading);
+  const lead = useBilingual(whatWeInstallConfig.lead);
+  const list = useBilingual(whatWeInstallConfig.list);
+  const closing = useBilingual(whatWeInstallConfig.closing);
   const showBadge = anyFallback(
     locale,
-    studioOSConfig.sectionLabel,
-    studioOSConfig.heading,
-    studioOSConfig.lead,
-    studioOSConfig.list,
-    studioOSConfig.closing,
+    whatWeInstallConfig.sectionLabel,
+    whatWeInstallConfig.heading,
+    whatWeInstallConfig.lead,
+    whatWeInstallConfig.list,
+    whatWeInstallConfig.closing,
   );
 
   return (
     <section
-      id="studio-os"
+      id="what-we-install"
       className="section-mobile"
       style={{
         position: 'relative',
-        background: '#ffffff',
-        color: '#000000',
+        background: '#F2F2F2',
+        color: '#0A0A0A',
         padding: '120px 40px',
         fontFamily: "'IBM Plex Mono', monospace",
         borderTop: '1px solid #000',
         overflow: 'hidden',
       }}
     >
+      <BackgroundGrid color="#0A0A0A" opacity={0.04} spacing={96} />
+
       <div
         aria-hidden
         style={{
@@ -48,15 +51,16 @@ export default function StudioOS() {
           right: '40px',
           opacity: 0.5,
           pointerEvents: 'none',
+          zIndex: 1,
         }}
       >
-        <Marginalia number="06" color="dark" />
+        <Marginalia number="04" color="dark" />
       </div>
 
-      <div style={{ position: 'relative', maxWidth: '1360px', margin: '0 auto' }}>
+      <div style={{ position: 'relative', zIndex: 2, maxWidth: '1360px', margin: '0 auto' }}>
         <Reveal>
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px', margin: '0 0 64px 0' }}>
-            <PictoIcon name="studioOs" size={32} stroke="#000" />
+            <PictoIcon name="studioOs" size={32} stroke="#0A0A0A" />
             <p
               style={{
                 fontSize: '12px',
@@ -92,7 +96,7 @@ export default function StudioOS() {
 
         <Reveal delay={140}>
           <div style={{ margin: '0 0 48px 0', maxWidth: '64ch' }}>
-            <DropCap color="#000" letter={lead.charAt(0)}>{withProxyzMark(lead.slice(1), 'studio-lead')}</DropCap>
+            <DropCap color="#0A0A0A">{withProxyzMark(lead, 'whatweinstall-lead')}</DropCap>
           </div>
         </Reveal>
 
@@ -116,7 +120,7 @@ export default function StudioOS() {
                   borderBottom: '1px solid #000',
                 }}
               >
-                <PictoIcon name={listIcons[index] ?? 'principle'} size={28} stroke="#000" />
+                <PictoIcon name={listIcons[index] ?? 'principle'} size={28} stroke="#0A0A0A" />
                 <span
                   style={{
                     fontSize: '15px',
