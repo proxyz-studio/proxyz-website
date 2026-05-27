@@ -96,7 +96,7 @@ export default function WhatWeInstall() {
 
         <Reveal delay={140}>
           <div style={{ margin: '0 0 48px 0', maxWidth: '64ch' }}>
-            <DropCap color="#0A0A0A" letter={lead.charAt(0)}>{withProxyzMark(lead.slice(1), 'whatweinstall-lead')}</DropCap>
+            <DropCap color="#0A0A0A">{withProxyzMark(lead, 'whatweinstall-lead')}</DropCap>
           </div>
         </Reveal>
 
