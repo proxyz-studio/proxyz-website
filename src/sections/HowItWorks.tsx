@@ -51,31 +51,34 @@ function StepColumn({
       >
         <PictoIcon name={iconName} size={36} stroke="#0A0A0A" style={{ marginBottom: '24px' }} />
 
-        {card.badge && (
-          <motion.span
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true, margin: '-80px' }}
-            transition={{ duration: 0.4, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-            style={{
-              display: 'inline-block',
-              alignSelf: 'flex-start',
-              fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: '10px',
-              fontWeight: 600,
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-              color: '#FFFFFF',
-              background: 'var(--accent-pink)',
-              padding: '5px 10px',
-              margin: '0 0 14px 0',
-              borderRadius: '2px',
-              lineHeight: 1,
-            }}
-          >
-            {card.badge}
-          </motion.span>
-        )}
+        {/* Always reserve the badge slot so eyebrow/title across all 3 step
+            cards align horizontally. Cards without a badge get an invisible
+            placeholder of the same height. */}
+        <motion.span
+          initial={card.badge ? { opacity: 0, scale: 0.9 } : false}
+          whileInView={card.badge ? { opacity: 1, scale: 1 } : undefined}
+          viewport={{ once: true, margin: '-80px' }}
+          transition={{ duration: 0.4, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+          aria-hidden={!card.badge}
+          style={{
+            display: 'inline-block',
+            alignSelf: 'flex-start',
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: '10px',
+            fontWeight: 600,
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+            color: card.badge ? '#FFFFFF' : 'transparent',
+            background: card.badge ? 'var(--accent-pink)' : 'transparent',
+            padding: '5px 10px',
+            margin: '0 0 14px 0',
+            borderRadius: '2px',
+            lineHeight: 1,
+            visibility: card.badge ? 'visible' : 'hidden',
+          }}
+        >
+          {card.badge || 'PLACEHOLDER'}
+        </motion.span>
 
         <motion.p
           initial={{ opacity: 0, x: -16 }}
