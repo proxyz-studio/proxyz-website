@@ -88,6 +88,21 @@ export interface BookingConfig {
   calLink: string
 }
 
+export interface StudioTeamMember {
+  name: string
+  role: string
+  bio: Bilingual<string>
+  /** Optional brand accent for the name (defaults to white). */
+  accent?: string
+}
+
+export interface StudioTeamConfig {
+  sectionLabel: Bilingual<string>
+  heading: Bilingual<string>
+  intro: Bilingual<string>
+  members: StudioTeamMember[]
+}
+
 export interface FooterConfig {
   left: Bilingual<string>
   email: NavigationLink
@@ -202,8 +217,26 @@ export const proofConfig: ProofConfig = {
   tailLink: { label: { en: "See all our ventures" }, href: "/ventures" },
 }
 
+export const teamConfig: StudioTeamConfig = {
+  sectionLabel: { en: "06 / THE TEAM" },
+  heading: { en: "Two of us. Two roles." },
+  intro: { en: "Senior people only. No junior layer between you and the system." },
+  members: [
+    {
+      name: "Tew Saksri",
+      role: "Founder",
+      bio: { en: "Architect of the system and the deals around it. Built PROXYZ from inside our own companies before installing it for anyone else. Based in Bangkok, working across Thailand." },
+    },
+    {
+      name: "iLing Sorum",
+      role: "Head of Sales and Media",
+      bio: { en: "The person you'll meet on the Walkthrough. Runs sales, the media arm, and the day-to-day of the studio." },
+    },
+  ],
+}
+
 export const bookingConfig: BookingConfig = {
-  sectionLabel: { en: "06 / BOOK THE WALKTHROUGH" },
+  sectionLabel: { en: "07 / BOOK THE WALKTHROUGH" },
   heading: { en: "60 minutes. One page memo. Yours to keep." },
   body: { en: "Every PROXYZ engagement starts here. Pick a time below." },
   calLink: "proxyz/audit",

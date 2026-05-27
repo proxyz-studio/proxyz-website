@@ -7,6 +7,7 @@ import Principles from './sections/Principles';
 import HowItWorks from './sections/HowItWorks';
 import WhatWeInstall from './sections/WhatWeInstall';
 import Proof from './sections/Proof';
+import Team from './sections/Team';
 import Booking from './sections/Booking';
 import Footer from './sections/Footer';
 import Marquee from './components/Marquee';
@@ -70,6 +71,7 @@ function Home() {
         <WhatWeInstall />
         <Marquee />
         <Proof />
+        <Team />
         <Booking />
       </main>
       <Footer />
