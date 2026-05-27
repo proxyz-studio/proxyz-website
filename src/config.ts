@@ -227,7 +227,7 @@ export const teamConfig: StudioTeamConfig = {
   intro: { en: "Senior people only. No junior layer between you and the system." },
   members: [
     {
-      name: "Tew Saksri",
+      name: "Arnon Saksri (Tew)",
       role: "Founder",
       bio: { en: "Architect of the system and the deals around it. Built PROXYZ from inside our own companies before installing it for anyone else. Based in Bangkok, working across Thailand." },
       photo: "/team/tew.jpg",
