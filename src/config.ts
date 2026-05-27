@@ -94,6 +94,10 @@ export interface StudioTeamMember {
   bio: Bilingual<string>
   /** Optional brand accent for the name (defaults to white). */
   accent?: string
+  /** Optional avatar path under public/ (e.g. "/team/tew.jpg").
+   *  If missing or fails to load, the section falls back to an
+   *  initials circle automatically. */
+  photo?: string
 }
 
 export interface StudioTeamConfig {
@@ -226,11 +230,13 @@ export const teamConfig: StudioTeamConfig = {
       name: "Tew Saksri",
       role: "Founder",
       bio: { en: "Architect of the system and the deals around it. Built PROXYZ from inside our own companies before installing it for anyone else. Based in Bangkok, working across Thailand." },
+      photo: "/team/tew.jpg",
     },
     {
-      name: "iLing Sorum",
+      name: "i'Ling Sorum",
       role: "Head of Sales and Media",
       bio: { en: "The person you'll meet on the Walkthrough. Runs sales, the media arm, and the day-to-day of the studio." },
+      photo: "/team/iling.jpg",
     },
   ],
 }

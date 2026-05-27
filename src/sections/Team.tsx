@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion } from 'motion/react';
 import Reveal from '../components/Reveal';
 import { Marginalia } from '../components/Editorial';
@@ -9,11 +10,62 @@ import { useBilingual } from '../i18n/useBilingual';
 import { anyFallback } from '../i18n/Bilingual';
 import { FallbackBadge } from '../components/FallbackBadge';
 
+function Avatar({ photo, initials }: { photo?: string; initials: string }) {
+  const [imgError, setImgError] = useState(false);
+  const showPhoto = photo && !imgError;
+
+  return (
+    <div
+      style={{
+        width: '88px',
+        height: '88px',
+        borderRadius: '50%',
+        overflow: 'hidden',
+        background: showPhoto ? 'transparent' : 'var(--accent-pink)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: '24px',
+        border: '1px solid rgba(255,255,255,0.18)',
+        flexShrink: 0,
+      }}
+    >
+      {showPhoto ? (
+        <img
+          src={photo}
+          alt=""
+          loading="lazy"
+          onError={() => setImgError(true)}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            display: 'block',
+          }}
+        />
+      ) : (
+        <span
+          style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: '28px',
+            fontWeight: 700,
+            color: '#FFFFFF',
+            letterSpacing: '-0.02em',
+          }}
+        >
+          {initials}
+        </span>
+      )}
+    </div>
+  );
+}
+
 function MemberCard({ member, isLast, index }: { member: StudioTeamMember; isLast: boolean; index: number }) {
   const bio = useBilingual(member.bio);
   const initials = member.name
-    .split(' ')
-    .map((part) => part[0])
+    .split(/\s|'/)
+    .filter(Boolean)
+    .map((part) => part[0]?.toUpperCase() ?? '')
     .join('')
     .slice(0, 2);
 
@@ -39,18 +91,27 @@ function MemberCard({ member, isLast, index }: { member: StudioTeamMember; isLas
           background: 'transparent',
         }}
       >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.88 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true, margin: '-80px' }}
+          transition={{ duration: 0.5, delay: 0.05 * index, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <Avatar photo={member.photo} initials={initials} />
+        </motion.div>
+
         <motion.p
           initial={{ opacity: 0, x: -16 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true, margin: '-80px' }}
-          transition={{ duration: 0.5, delay: 0.05 * index, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.5, delay: 0.1 + 0.05 * index, ease: [0.16, 1, 0.3, 1] }}
           style={{
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: '11px',
             fontWeight: 400,
             letterSpacing: '0.14em',
             color: 'var(--accent-pink)',
-            margin: '0 0 24px 0',
+            margin: '0 0 16px 0',
             textTransform: 'uppercase',
           }}
         >
