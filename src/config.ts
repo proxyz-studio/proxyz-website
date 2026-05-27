@@ -159,7 +159,7 @@ export const diagnosisConfig: DiagnosisConfig = {
   sectionLabel: { en: "01 / THE DIAGNOSIS" },
   heading: { en: "Most companies don't have an AI problem. They have an operations problem." },
   paragraphs: { en: [
-    "One person knows how it all works. Decisions made in group chats. Spreadsheets emailed around. AI bolted on top of broken process and called transformation.",
+    "One person knows how it all works. Decisions made in group chats. Spreadsheets emailed around. AI bolted onto broken processes and called it transformation.",
     "Companies don't run badly because the technology is missing. They run badly because the operating system is.",
   ] },
 }
