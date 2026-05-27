@@ -46,6 +46,15 @@
     --accent-pink: #ff4193;
     --accent-blue: #1e90ff;
 
+    /* Editorial-dark hero variables. .scanline-heading::after uses
+       var(--bg) for the horizontal cut-through bands, and var(--fg) for
+       the title color. Without these defined, the gradient resolves
+       invalid and the scanline overlay disappears (the proxy-glitch
+       inner effect on the matched word still works because it uses
+       hardcoded #fff). */
+    --bg: #0a0a0a;
+    --fg: #f2f2f2;
+
     /* Lazy Tiger uses PROXYZ Brand Guide plus a single second accent:
        neon lime. Pink stays primary; lime gets used sparingly for emphasis. */
     --lt-pink: #FF4193;
