@@ -25,7 +25,7 @@ export default function PictoIcon({
   name,
   size = 40,
   stroke = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 2.5,
   className,
   style,
 }: {

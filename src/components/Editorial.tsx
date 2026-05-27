@@ -7,7 +7,7 @@ const PINK = '#ff4193';
 export function Marginalia({
   number,
   color,
-  size = 'clamp(72px, 10vw, 140px)',
+  size = 'clamp(96px, 14vw, 200px)',
   style,
 }: {
   number: string;
@@ -24,7 +24,7 @@ export function Marginalia({
         fontSize: size,
         lineHeight: 0.85,
         color: 'transparent',
-        WebkitTextStroke: `1px ${stroke}`,
+        WebkitTextStroke: `2px ${stroke}`,
         fontWeight: 400,
         letterSpacing: '-0.02em',
         userSelect: 'none',

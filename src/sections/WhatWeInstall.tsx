@@ -120,7 +120,7 @@ export default function WhatWeInstall() {
                   borderBottom: '1px solid #000',
                 }}
               >
-                <PictoIcon name={listIcons[index] ?? 'principle'} size={28} stroke="#0A0A0A" />
+                <PictoIcon name={listIcons[index] ?? 'principle'} size={32} stroke="var(--accent-pink)" strokeWidth={2.5} />
                 <span
                   style={{
                     fontSize: '15px',
