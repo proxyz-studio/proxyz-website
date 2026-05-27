@@ -8,15 +8,24 @@ import { useBilingual } from '../i18n/useBilingual';
 import { anyFallback } from '../i18n/Bilingual';
 import { FallbackBadge } from '../components/FallbackBadge';
 
-// Brand color per venture — drives both the letter color and the hover glow.
-// AUTOLOOM splits at index 4: AUTO white, LOOM teal.
-// PRYZM is fully lime.
+// Brand treatment per venture — drives the letter color, the hover glow,
+// and optional brand-specific typography. AUTOLOOM uses Quicksand Bold to
+// match the autoloom-v1 nav wordmark. PRYZM stays on the h3 default font.
 type BrandTreatment = {
   accent: string;
   accentStart: number;
+  fontFamily?: string;
+  fontWeight?: number;
+  letterSpacing?: string;
 };
 const brandTreatment: Record<string, BrandTreatment> = {
-  AUTOLOOM: { accent: '#5BC9B8', accentStart: 4 },
+  AUTOLOOM: {
+    accent: '#5BC9B8',
+    accentStart: 4,
+    fontFamily: "'Quicksand', system-ui, sans-serif",
+    fontWeight: 700,
+    letterSpacing: '-0.02em',
+  },
   PRYZM: { accent: '#D2FF3B', accentStart: 0 },
 };
 
@@ -37,6 +46,9 @@ function BrandLetters({ name, treatment }: { name: string; treatment: BrandTreat
           style={{
             display: 'inline-block',
             color: i >= treatment.accentStart ? treatment.accent : '#F2F2F2',
+            fontFamily: treatment.fontFamily,
+            fontWeight: treatment.fontWeight,
+            letterSpacing: treatment.letterSpacing,
           }}
         >
           {letter}
