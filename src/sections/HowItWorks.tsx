@@ -1,3 +1,4 @@
+import { motion } from 'motion/react';
 import Reveal from '../components/Reveal';
 import { Marginalia } from '../components/Editorial';
 import { TiltCard } from '../components/Spatial';
@@ -24,88 +25,106 @@ function StepColumn({
   const ctaLabel = useBilingual(card.cta.label);
 
   return (
-    <TiltCard
-      maxTiltX={3}
-      maxTiltY={4}
+    <motion.div
+      initial={{ y: 0, boxShadow: '0 0 0 0 rgba(0,0,0,0)' }}
+      whileHover={{
+        y: -4,
+        boxShadow: '0 18px 48px -12px rgba(255, 65, 147, 0.22)',
+      }}
+      transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
       style={{
+        position: 'relative',
         borderRight: isLast ? 'none' : '1px solid #000',
-        minHeight: '100%',
-        padding: '40px 24px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0',
       }}
     >
-      <PictoIcon name={iconName} size={36} stroke="#0A0A0A" style={{ marginBottom: '24px' }} />
-
-      <p
+      <TiltCard
+        maxTiltX={3}
+        maxTiltY={4}
         style={{
-          fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: '11px',
-          fontWeight: 400,
-          letterSpacing: '0.08em',
-          color: 'var(--accent-pink)',
-          margin: '0 0 18px 0',
-          textTransform: 'uppercase',
+          minHeight: '100%',
+          padding: '40px 24px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0',
         }}
       >
-        {card.step} / {card.duration}
-      </p>
+        <PictoIcon name={iconName} size={36} stroke="#0A0A0A" style={{ marginBottom: '24px' }} />
 
-      <h3
-        style={{
-          fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: '26px',
-          fontWeight: 700,
-          letterSpacing: '-0.01em',
-          lineHeight: 1.15,
-          textTransform: 'uppercase',
-          margin: '0 0 24px 0',
-          color: '#0A0A0A',
-        }}
-      >
-        {card.name}
-      </h3>
-
-      <p
-        style={{
-          fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: '13px',
-          fontWeight: 400,
-          lineHeight: 1.6,
-          color: '#0A0A0A',
-          margin: '0 0 32px 0',
-        }}
-      >
-        {withProxyzMark(body, 'how-it-works-body')}
-      </p>
-
-      <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
-        <a
-          href={card.cta.href}
+        <motion.p
+          initial={{ opacity: 0, x: -16 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true, margin: '-80px' }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           style={{
             fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: '12px',
+            fontSize: '11px',
             fontWeight: 400,
+            letterSpacing: '0.08em',
+            color: 'var(--accent-pink)',
+            margin: '0 0 18px 0',
             textTransform: 'uppercase',
-            letterSpacing: '0.04em',
-            color: '#0A0A0A',
-            textDecoration: 'none',
-            borderBottom: '1px solid #000',
-            paddingBottom: '2px',
-            display: 'inline-block',
-          }}
-          onMouseEnter={(e) => {
-            (e.target as HTMLElement).style.borderBottomWidth = '2px';
-          }}
-          onMouseLeave={(e) => {
-            (e.target as HTMLElement).style.borderBottomWidth = '1px';
           }}
         >
-          {ctaLabel}
-        </a>
-      </div>
-    </TiltCard>
+          {card.step} / {card.duration}
+        </motion.p>
+
+        <h3
+          style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: '26px',
+            fontWeight: 700,
+            letterSpacing: '-0.01em',
+            lineHeight: 1.15,
+            textTransform: 'uppercase',
+            margin: '0 0 24px 0',
+            color: '#0A0A0A',
+          }}
+        >
+          {card.name}
+        </h3>
+
+        <p
+          style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: '13px',
+            fontWeight: 400,
+            lineHeight: 1.6,
+            color: '#0A0A0A',
+            margin: '0 0 32px 0',
+          }}
+        >
+          {withProxyzMark(body, 'how-it-works-body')}
+        </p>
+
+        <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
+          <motion.a
+            href={card.cta.href}
+            whileHover={{ x: 3 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: '12px',
+              fontWeight: 400,
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+              color: '#0A0A0A',
+              textDecoration: 'none',
+              borderBottom: '1px solid #000',
+              paddingBottom: '2px',
+              display: 'inline-block',
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.borderBottomWidth = '2px';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.borderBottomWidth = '1px';
+            }}
+          >
+            {ctaLabel}
+          </motion.a>
+        </div>
+      </TiltCard>
+    </motion.div>
   );
 }
 

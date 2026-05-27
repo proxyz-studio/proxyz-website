@@ -1,3 +1,4 @@
+import { motion } from 'motion/react';
 import Reveal from '../components/Reveal';
 import { Marginalia } from '../components/Editorial';
 import { TiltCard } from '../components/Spatial';
@@ -7,60 +8,104 @@ import { useBilingual } from '../i18n/useBilingual';
 import { anyFallback } from '../i18n/Bilingual';
 import { FallbackBadge } from '../components/FallbackBadge';
 
+// Brand color per venture — drives both the letter color and the hover glow.
+// AUTOLOOM splits at index 4: AUTO white, LOOM teal.
+// PRYZM is fully lime.
+type BrandTreatment = {
+  accent: string;
+  accentStart: number;
+};
+const brandTreatment: Record<string, BrandTreatment> = {
+  AUTOLOOM: { accent: '#5BC9B8', accentStart: 4 },
+  PRYZM: { accent: '#D2FF3B', accentStart: 0 },
+};
+
+function BrandLetters({ name, treatment }: { name: string; treatment: BrandTreatment }) {
+  return (
+    <>
+      {name.split('').map((letter, i) => (
+        <motion.span
+          key={`${letter}-${i}`}
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-80px' }}
+          transition={{
+            duration: 0.45,
+            delay: 0.04 * i,
+            ease: [0.16, 1, 0.3, 1],
+          }}
+          style={{
+            display: 'inline-block',
+            color: i >= treatment.accentStart ? treatment.accent : '#F2F2F2',
+          }}
+        >
+          {letter}
+        </motion.span>
+      ))}
+    </>
+  );
+}
+
 function VentureColumn({ card, isLast }: { card: ProofVentureCard; isLast: boolean }) {
   const body = useBilingual(card.body);
+  const treatment = brandTreatment[card.name];
+  const accent = treatment?.accent ?? '#F2F2F2';
 
   return (
-    <TiltCard
-      maxTiltX={3}
-      maxTiltY={4}
+    <motion.div
+      initial={{ boxShadow: '0 0 0 0 rgba(0,0,0,0)' }}
+      whileHover={{ boxShadow: `0 0 60px 0 ${accent}33` }}
+      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       style={{
+        position: 'relative',
         borderRight: isLast ? 'none' : '1px solid rgba(255,255,255,0.12)',
-        minHeight: '100%',
-        padding: '40px 32px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0',
-        background: 'transparent',
       }}
     >
-      <h3
+      <TiltCard
+        maxTiltX={3}
+        maxTiltY={4}
         style={{
-          fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: '32px',
-          fontWeight: 700,
-          letterSpacing: '-0.005em',
-          lineHeight: 1.1,
-          textTransform: 'uppercase',
-          margin: '0 0 24px 0',
-          color: '#F2F2F2',
+          minHeight: '100%',
+          padding: '40px 32px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0',
+          background: 'transparent',
         }}
       >
-        {card.name === 'AUTOLOOM' ? (
-          <>
-            <span>AUTO</span>
-            <span style={{ color: '#5BC9B8' }}>LOOM</span>
-          </>
-        ) : card.name === 'PRYZM' ? (
-          <span style={{ color: '#D2FF3B' }}>{card.name}</span>
-        ) : (
-          card.name
-        )}
-      </h3>
+        <h3
+          style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: '32px',
+            fontWeight: 700,
+            letterSpacing: '-0.005em',
+            lineHeight: 1.1,
+            textTransform: 'uppercase',
+            margin: '0 0 24px 0',
+            color: '#F2F2F2',
+          }}
+        >
+          {treatment ? (
+            <BrandLetters name={card.name} treatment={treatment} />
+          ) : (
+            card.name
+          )}
+        </h3>
 
-      <p
-        style={{
-          fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: '14px',
-          fontWeight: 400,
-          lineHeight: 1.6,
-          color: 'rgba(255,255,255,0.7)',
-          margin: 0,
-        }}
-      >
-        {body}
-      </p>
-    </TiltCard>
+        <p
+          style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: '14px',
+            fontWeight: 400,
+            lineHeight: 1.6,
+            color: 'rgba(255,255,255,0.7)',
+            margin: 0,
+          }}
+        >
+          {body}
+        </p>
+      </TiltCard>
+    </motion.div>
   );
 }
 
@@ -173,8 +218,10 @@ export default function Proof() {
         </div>
 
         <Reveal delay={400}>
-          <a
+          <motion.a
             href={proofConfig.tailLink.href}
+            whileHover={{ x: 4 }}
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
             style={{
               fontSize: '12px',
               fontWeight: 400,
@@ -188,14 +235,14 @@ export default function Proof() {
               display: 'inline-block',
             }}
             onMouseEnter={(e) => {
-              (e.target as HTMLElement).style.borderBottomColor = '#F2F2F2';
+              (e.currentTarget as HTMLElement).style.borderBottomColor = '#F2F2F2';
             }}
             onMouseLeave={(e) => {
-              (e.target as HTMLElement).style.borderBottomColor = 'rgba(255,255,255,0.4)';
+              (e.currentTarget as HTMLElement).style.borderBottomColor = 'rgba(255,255,255,0.4)';
             }}
           >
             {tailLinkLabel} →
-          </a>
+          </motion.a>
         </Reveal>
       </div>
     </section>

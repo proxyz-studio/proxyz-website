@@ -18,6 +18,7 @@ import Ventures from './pages/Ventures';
 import FastFix from './pages/FastFix';
 import VantaBackground from './components/VantaBackground';
 import CursorOverlay from './components/CursorOverlay';
+import ScrollProgress from './components/ScrollProgress';
 
 // Code-split the Lazy Tiger page — heavy on bespoke components (helmet, leaderboard,
 // merch grid, GSAP Asia map). Only loaded when a visitor lands on /partners/lazy-tiger.
@@ -99,6 +100,9 @@ function App() {
       {/* Custom cursor — pink crosshair with magnetic pull. Desktop +
           motion-on + pointer:fine only; touch users get the OS cursor. */}
       <CursorOverlay />
+      {/* Scroll progress bar — fixed pink 2px line across the top of the
+          viewport, fills as the visitor scrolls. Always on. */}
+      <ScrollProgress />
       <ScrollManager />
       <Routes>
         <Route path="/" element={<Home />} />
