@@ -30,6 +30,9 @@ const LazyTigerStyles = lazy(() => import('./pages/LazyTigerStyles'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const Terms = lazy(() => import('./pages/Terms'));
 
+// FAQ page — linked from the footer, not the primary nav.
+const Faq = lazy(() => import('./pages/Faq'));
+
 // Venture detail pages — lazy. One component handles all slugs.
 const VentureDetail = lazy(() => import('./pages/VentureDetail'));
 
@@ -124,6 +127,7 @@ function App() {
         />
         <Route path="/privacy" element={<Suspense fallback={null}><Privacy /></Suspense>} />
         <Route path="/terms" element={<Suspense fallback={null}><Terms /></Suspense>} />
+        <Route path="/faq" element={<Suspense fallback={null}><Faq /></Suspense>} />
         <Route
           path="/preview/lazy-tiger-styles"
           element={<Suspense fallback={null}><LazyTigerStyles /></Suspense>}

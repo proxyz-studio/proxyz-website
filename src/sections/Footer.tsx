@@ -103,6 +103,10 @@ export default function Footer() {
       >
         <span>© {year} <ProxyzMark /> Studio</span>
         <span style={LEGAL_DIVIDER_STYLE}>·</span>
+        <Link to="/faq" style={LEGAL_LINK_STYLE}>
+          FAQ
+        </Link>
+        <span style={LEGAL_DIVIDER_STYLE}>·</span>
         <Link to="/privacy" style={LEGAL_LINK_STYLE}>
           Privacy
         </Link>

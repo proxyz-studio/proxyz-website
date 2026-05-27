@@ -114,6 +114,20 @@ export interface FooterConfig {
   right: Bilingual<string>
 }
 
+export interface FaqItem {
+  question: Bilingual<string>
+  /** Each entry renders as a separate paragraph. Use a string that begins
+   *  with "- " for bullet list paragraphs. */
+  answer: Bilingual<string[]>
+}
+
+export interface FaqConfig {
+  eyebrow: Bilingual<string>
+  heading: Bilingual<string>
+  intro: Bilingual<string>
+  items: FaqItem[]
+}
+
 export const siteConfig: SiteConfig = {
   language: "en",
   siteTitle: "PROXYZ",
@@ -246,6 +260,116 @@ export const bookingConfig: BookingConfig = {
   heading: { en: "60 minutes. One page memo. Yours to keep." },
   body: { en: "Every PROXYZ engagement starts here. Pick a time below." },
   calLink: "proxyz/audit",
+}
+
+export const faqConfig: FaqConfig = {
+  eyebrow: { en: "PROXYZ / FAQ" },
+  heading: { en: "Pre-engagement questions, answered straight." },
+  intro: { en: "Everything visitors typically ask before booking the Walkthrough. If your question is not here, hello@proxyz.studio." },
+  items: [
+    {
+      question: { en: "What is PROXYZ?" },
+      answer: { en: [
+        "PROXYZ is a venture studio. We partner with, invest in, and operate businesses alongside their founders. We bring an operating system called the Portal, plus four service capabilities: AI adoption, automation, EOS based management, and growth consulting. We take equity. We do not charge monthly fees or meter usage.",
+      ] },
+    },
+    {
+      question: { en: "How is this different from a VC, accelerator, or consulting firm?" },
+      answer: { en: [
+        "A VC writes a check and joins your board. We move into the operation with you.",
+        "An accelerator runs you through a 90 day cohort and waves goodbye. We stay.",
+        "A consulting firm invoices you and leaves when the project ends. We hold equity, so we leave when you succeed.",
+      ] },
+    },
+    {
+      question: { en: "What are the four ways you work with companies?" },
+      answer: { en: [
+        "Every engagement starts with the Walkthrough. No commercial path is named before it. Once we understand what you need, we work through one of four modes:",
+        "- Acquire. Full buyout. PROXYZ takes the company over and operates it.",
+        "- Partner. Joint operation with equity stake. We co run alongside the founder.",
+        "- Build with. Install for equity. We deploy the Portal and our capabilities in exchange for equity. No day to day operating role.",
+        "- Build for. Service only. Fixed scope, cash invoice. No equity. We do the work, deliver, and leave.",
+      ] },
+    },
+    {
+      question: { en: "What is the Portal?" },
+      answer: { en: [
+        "The Portal is our internal operating system. It runs on Next.js, deployed on Vercel, built natively around EOS (the Entrepreneurial Operating System). It gives your team a single place for meetings, scorecards, rocks, issues, and AI assisted execution. It is the same system we use internally at PROXYZ. When we install it into a company, you get the product and the team who built it.",
+      ] },
+    },
+    {
+      question: { en: "Do you charge fees, or is it equity only?" },
+      answer: { en: [
+        "Equity only in Acquire, Partner, and Build with engagements. No monthly retainer. No per seat licensing. No billing per AI call or automation run. Our model: we take a stake, we install the system, we run alongside you. If your business grows, we grow with it.",
+        "Build for is the exception: fixed scope, cash invoice, no equity.",
+      ] },
+    },
+    {
+      question: { en: "How much equity do you take?" },
+      answer: { en: [
+        "It depends on the engagement mode and the state of the business when we come in. We do not publish a standard percentage. The equity conversation happens after the Walkthrough, when we understand what you need and what we are contributing.",
+        "What we will not do: take equity before we have done the work to understand what we are actually getting into. The Walkthrough is the prerequisite.",
+      ] },
+    },
+    {
+      question: { en: "Do I lose control of my business?" },
+      answer: { en: [
+        "No. In Partner mode, you remain the operator. Your IP stays yours. Business decisions stay with you. What changes is that you have better information to make those decisions, and a partner who is invested in the outcome alongside you.",
+        "We hold equity. We need your business to succeed as much as you do. If we recommend something and you disagree, you say so. We discuss it. We do not override you.",
+      ] },
+    },
+    {
+      question: { en: "Who owns the IP?" },
+      answer: { en: [
+        "You do. Your existing IP, customer data, and trade secrets do not transfer to PROXYZ. The Portal is our IP. We license it into your business as part of the engagement. If you ever want to continue using it without PROXYZ, everything is documented so you could.",
+      ] },
+    },
+    {
+      question: { en: "Who is PROXYZ right for?" },
+      answer: { en: [
+        "Operators and founders running businesses with real revenue and a team in place, who are hitting a ceiling. Coordination breaks down. The founder is the bottleneck. Growth has stalled. The operation runs on the founder's memory rather than a system.",
+        "We work best with companies at the 10 to 80 person stage, though the Walkthrough determines fit. If you want to run the business yourself with zero outside involvement, we are not the right fit.",
+      ] },
+    },
+    {
+      question: { en: "What do I actually get?" },
+      answer: { en: [
+        "Four capabilities, deployed based on what the Walkthrough finds:",
+        "- AI adoption. AI agents, automation, AI native operations that remove repetitive work from your team's day.",
+        "- Automation. n8n integrations, system connections, eliminating manual steps across your tools.",
+        "- EOS / Traction. Vision/Traction Organizer, Rocks, Scorecard, the L10 meeting structure, accountability rhythm layered with PROXYZ specific modules.",
+        "- Growth consulting. Positioning, go to market, founder led sales playbooks, channel strategy.",
+        "Plus the Portal, which ties all of it together and gives your team a single operating environment.",
+      ] },
+    },
+    {
+      question: { en: "What is the Walkthrough?" },
+      answer: { en: [
+        "The starting point for every engagement. 60 minutes. We spend time understanding how your business actually works: revenue, team structure, tools, bottlenecks, decision making. The Walkthrough tells us what capability mix fits. It tells you whether PROXYZ makes sense. You leave with a one page memo on the three highest leverage things you could fix. Yours to keep.",
+        "No fee. No obligation. No commercial path is named until we both understand what we are looking at.",
+      ] },
+    },
+    {
+      question: { en: "Will AI replace my team?" },
+      answer: { en: [
+        "No. AI replaces specific tasks, not people. Answering the same question twelve times a day. Copying numbers between systems. Sending recurring reminders.",
+        "What stays with your team: judgment, relationships, and reading the room. The manager who spots when something is wrong before the data shows it. Every system we build sits on top of your operation, not instead of it.",
+      ] },
+    },
+    {
+      question: { en: "What if I want out?" },
+      answer: { en: [
+        "We build an exit process into every Partner and Build with agreement. It is not designed to trap you.",
+        "The systems we install are documented. Nothing is a black box. If you want to continue running the Portal without PROXYZ, we walk you through what would need to change. We would rather have that conversation upfront than have it be a surprise later.",
+      ] },
+    },
+    {
+      question: { en: "What is the first step?" },
+      answer: { en: [
+        "Book the Walkthrough. No pitch deck required. We set up a call, understand what you are working with, and tell you honestly what we think.",
+      ] },
+    },
+  ],
 }
 
 export const footerConfig: FooterConfig = {
