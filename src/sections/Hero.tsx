@@ -156,12 +156,14 @@ export default function Hero() {
             style={{
               opacity: leadOpacity,
               fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: '13px',
+              fontSize: '16px',
               fontWeight: 400,
-              lineHeight: 1.7,
-              color: 'rgba(255,255,255,0.66)',
+              lineHeight: 1.65,
+              color: 'rgba(255,255,255,0.92)',
               margin: '40px 0 0 0',
-              maxWidth: '52ch',
+              maxWidth: '54ch',
+              paddingLeft: '18px',
+              borderLeft: '2px solid var(--accent-pink)',
             }}
           >
             {withProxyzMark(lead, 'hero-lead')}

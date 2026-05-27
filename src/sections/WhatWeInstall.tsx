@@ -1,6 +1,7 @@
 import Reveal from '../components/Reveal';
 import { Marginalia, DropCap } from '../components/Editorial';
 import PictoIcon from '../components/PictoIcon';
+import BackgroundGrid from '../components/BackgroundGrid';
 import { whatWeInstallConfig } from '../config';
 import { useLocale } from '../i18n/LocaleContext';
 import { useBilingual } from '../i18n/useBilingual';
@@ -40,6 +41,8 @@ export default function WhatWeInstall() {
         overflow: 'hidden',
       }}
     >
+      <BackgroundGrid color="#0A0A0A" opacity={0.04} spacing={96} />
+
       <div
         aria-hidden
         style={{
@@ -48,12 +51,13 @@ export default function WhatWeInstall() {
           right: '40px',
           opacity: 0.5,
           pointerEvents: 'none',
+          zIndex: 1,
         }}
       >
         <Marginalia number="04" color="dark" />
       </div>
 
-      <div style={{ position: 'relative', maxWidth: '1360px', margin: '0 auto' }}>
+      <div style={{ position: 'relative', zIndex: 2, maxWidth: '1360px', margin: '0 auto' }}>
         <Reveal>
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px', margin: '0 0 64px 0' }}>
             <PictoIcon name="studioOs" size={32} stroke="#0A0A0A" />

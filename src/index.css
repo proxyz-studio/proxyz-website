@@ -901,6 +901,22 @@ body.has-custom-cursor * {
   90%  { opacity: 1; }
   100% { top: 100%; opacity: 0; }
 }
+
+/* Diagonal drifting line pattern for section backgrounds.
+   Pattern slides across the section every 30 seconds. Subtle by design —
+   the visible component sets a low opacity (default 0.05) so the lines
+   never compete with foreground copy or interactive elements. */
+@keyframes background-grid-drift {
+  0%   { background-position: 0 0; }
+  100% { background-position: 119px 119px; }
+}
+.background-grid-drift {
+  animation: background-grid-drift 30s linear infinite;
+  will-change: background-position;
+}
+@media (prefers-reduced-motion: reduce) {
+  .background-grid-drift { animation: none; }
+}
 @media (prefers-reduced-motion: reduce), (forced-colors: active) {
   /* In high-contrast / forced-colors mode the decorative overlay
      interferes with the user's chosen contrast scheme. Drop it.

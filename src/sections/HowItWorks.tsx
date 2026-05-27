@@ -3,6 +3,7 @@ import Reveal from '../components/Reveal';
 import { Marginalia } from '../components/Editorial';
 import { TiltCard } from '../components/Spatial';
 import PictoIcon from '../components/PictoIcon';
+import BackgroundGrid from '../components/BackgroundGrid';
 import { howItWorksConfig, type StepCard } from '../config';
 import { useLocale } from '../i18n/LocaleContext';
 import { useBilingual } from '../i18n/useBilingual';
@@ -49,6 +50,32 @@ function StepColumn({
         }}
       >
         <PictoIcon name={iconName} size={36} stroke="#0A0A0A" style={{ marginBottom: '24px' }} />
+
+        {card.badge && (
+          <motion.span
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true, margin: '-80px' }}
+            transition={{ duration: 0.4, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+            style={{
+              display: 'inline-block',
+              alignSelf: 'flex-start',
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: '10px',
+              fontWeight: 600,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              color: '#FFFFFF',
+              background: 'var(--accent-pink)',
+              padding: '5px 10px',
+              margin: '0 0 14px 0',
+              borderRadius: '2px',
+              lineHeight: 1,
+            }}
+          >
+            {card.badge}
+          </motion.span>
+        )}
 
         <motion.p
           initial={{ opacity: 0, x: -16 }}
@@ -158,6 +185,8 @@ export default function HowItWorks() {
         overflow: 'hidden',
       }}
     >
+      <BackgroundGrid color="#0A0A0A" opacity={0.04} spacing={96} />
+
       <div
         aria-hidden
         style={{
@@ -166,13 +195,13 @@ export default function HowItWorks() {
           right: '40px',
           opacity: 0.5,
           pointerEvents: 'none',
-          zIndex: 0,
+          zIndex: 1,
         }}
       >
         <Marginalia number="03" color="dark" />
       </div>
 
-      <div style={{ position: 'relative', padding: '40px 40px 32px' }}>
+      <div style={{ position: 'relative', zIndex: 2, padding: '40px 40px 32px' }}>
         <Reveal>
           <p
             style={{
@@ -229,9 +258,12 @@ export default function HowItWorks() {
       <div
         className="how-it-works-grid services-grid"
         style={{
+          position: 'relative',
+          zIndex: 2,
           display: 'grid',
           gridTemplateColumns: 'repeat(3, 1fr)',
           borderTop: '1px solid #000',
+          background: '#F2F2F2',
         }}
       >
         {howItWorksConfig.steps.map((card, index) => (

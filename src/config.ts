@@ -49,6 +49,8 @@ export interface StepCard {
   duration: string
   body: Bilingual<string>
   cta: { label: Bilingual<string>; href: string }
+  /** Optional accent badge (e.g. "FREE · YOURS TO KEEP" on the Walkthrough). */
+  badge?: string
 }
 
 export interface HowItWorksConfig {
@@ -148,6 +150,7 @@ export const howItWorksConfig: HowItWorksConfig = {
       step: "Step 01",
       name: "The Walkthrough",
       duration: "60 minutes",
+      badge: "FREE · YOURS TO KEEP",
       body: { en: "We sit with you, walk the business, and leave you with a one page memo on the three highest leverage things you could fix. Yours to keep, even if we never work together." },
       cta: { label: { en: "Book the Walkthrough" }, href: "#booking" },
     },

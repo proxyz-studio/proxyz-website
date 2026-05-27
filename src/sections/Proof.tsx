@@ -2,6 +2,7 @@ import { motion } from 'motion/react';
 import Reveal from '../components/Reveal';
 import { Marginalia } from '../components/Editorial';
 import { TiltCard } from '../components/Spatial';
+import BackgroundGrid from '../components/BackgroundGrid';
 import { proofConfig, type ProofVentureCard } from '../config';
 import { useLocale } from '../i18n/LocaleContext';
 import { useBilingual } from '../i18n/useBilingual';
@@ -150,6 +151,8 @@ export default function Proof() {
         overflow: 'hidden',
       }}
     >
+      <BackgroundGrid color="#FF4193" opacity={0.06} spacing={96} />
+
       <div
         aria-hidden
         style={{
@@ -158,12 +161,13 @@ export default function Proof() {
           right: '40px',
           opacity: 0.4,
           pointerEvents: 'none',
+          zIndex: 1,
         }}
       >
         <Marginalia number="05" color="light" />
       </div>
 
-      <div style={{ position: 'relative', maxWidth: '1360px', margin: '0 auto' }}>
+      <div style={{ position: 'relative', zIndex: 2, maxWidth: '1360px', margin: '0 auto' }}>
         <Reveal>
           <p
             style={{

@@ -1,3 +1,4 @@
+import { motion } from 'motion/react';
 import Reveal from '../components/Reveal';
 import { Marginalia } from '../components/Editorial';
 import { EdgeRule } from '../components/Glow';
@@ -15,32 +16,48 @@ function PrincipleRow({ item, index }: { item: PrincipleItem; index: number }) {
   return (
     <div
       style={{
-        borderTop: '1px solid rgba(255,255,255,0.3)',
-        paddingTop: '24px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '20px',
+        gap: '24px',
+        paddingTop: '36px',
       }}
     >
-      <PictoIcon name={principleIcons[index] ?? 'principle'} size={36} stroke="#F2F2F2" />
+      <motion.div
+        initial={{ scaleX: 0 }}
+        whileInView={{ scaleX: 1 }}
+        viewport={{ once: true, margin: '-80px' }}
+        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.08 * index }}
+        style={{
+          height: '2px',
+          background: 'var(--accent-pink)',
+          transformOrigin: 'left center',
+          width: '64px',
+        }}
+      />
+
+      <PictoIcon name={principleIcons[index] ?? 'principle'} size={40} stroke="#F2F2F2" />
+
       <p
         style={{
-          fontSize: '12px',
-          fontWeight: 400,
-          letterSpacing: '0.08em',
+          fontSize: 'clamp(28px, 3vw, 36px)',
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
           color: 'var(--accent-pink)',
           margin: 0,
+          lineHeight: 1,
         }}
       >
         {item.number}
       </p>
+
       <p
         style={{
-          fontSize: '18px',
-          fontWeight: 400,
-          lineHeight: 1.45,
+          fontSize: 'clamp(20px, 1.6vw, 24px)',
+          fontWeight: 500,
+          lineHeight: 1.35,
           margin: 0,
           textWrap: 'balance',
+          color: '#F2F2F2',
         }}
       >
         {text}
@@ -72,7 +89,7 @@ export default function Principles() {
         position: 'relative',
         background: '#0A0A0A',
         color: '#F2F2F2',
-        padding: '120px 40px',
+        padding: '140px 40px',
         fontFamily: "'IBM Plex Mono', monospace",
         borderTop: '1px solid #000',
         overflow: 'hidden',
@@ -118,18 +135,32 @@ export default function Principles() {
               lineHeight: 1.1,
               letterSpacing: '-0.015em',
               textTransform: 'uppercase',
-              margin: '0 0 80px 0',
+              margin: '0 0 24px 0',
             }}
           >
             {heading}
           </h2>
         </Reveal>
 
+        <motion.div
+          initial={{ scaleX: 0 }}
+          whileInView={{ scaleX: 1 }}
+          viewport={{ once: true, margin: '-100px' }}
+          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+          style={{
+            height: '1px',
+            background: 'rgba(255,65,147,0.5)',
+            transformOrigin: 'left center',
+            margin: '0 0 80px 0',
+            maxWidth: '480px',
+          }}
+        />
+
         <ol
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-            gap: '40px',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '64px 56px',
             listStyle: 'none',
             padding: 0,
             margin: 0,
