@@ -36,7 +36,16 @@ function VentureColumn({ card, isLast }: { card: ProofVentureCard; isLast: boole
           color: '#F2F2F2',
         }}
       >
-        {card.name}
+        {card.name === 'AUTOLOOM' ? (
+          <>
+            <span>AUTO</span>
+            <span style={{ color: '#5BC9B8' }}>LOOM</span>
+          </>
+        ) : card.name === 'PRYZM' ? (
+          <span style={{ color: '#D2FF3B' }}>{card.name}</span>
+        ) : (
+          card.name
+        )}
       </h3>
 
       <p
