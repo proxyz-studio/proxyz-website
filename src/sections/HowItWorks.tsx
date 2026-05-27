@@ -49,7 +49,7 @@ function StepColumn({
           gap: '0',
         }}
       >
-        <PictoIcon name={iconName} size={36} stroke="#0A0A0A" style={{ marginBottom: '24px' }} />
+        <PictoIcon name={iconName} size={40} stroke="var(--accent-pink)" strokeWidth={2.5} style={{ marginBottom: '24px' }} />
 
         {/* Always reserve the badge slot so eyebrow/title across all 3 step
             cards align horizontally. Cards without a badge get an invisible
