@@ -1,3 +1,5 @@
+import Cal, { getCalApi } from '@calcom/embed-react';
+import { useEffect } from 'react';
 import Reveal from '../components/Reveal';
 import { Marginalia } from '../components/Editorial';
 import { HeadlineHalo } from '../components/Glow';
@@ -20,6 +22,28 @@ export default function Booking() {
     bookingConfig.heading,
     bookingConfig.body,
   );
+
+  // Initialize Cal.com embed with editorial-dark theme matching the site.
+  // This runs once per mount, idempotent.
+  useEffect(() => {
+    (async () => {
+      const cal = await getCalApi({ namespace: 'walkthrough' });
+      cal('ui', {
+        theme: 'dark',
+        cssVarsPerTheme: {
+          light: {
+            'cal-brand': '#FF4193',
+          },
+          dark: {
+            'cal-brand': '#FF4193',
+            'cal-bg': '#0A0A0A',
+          },
+        },
+        hideEventTypeDetails: false,
+        layout: 'month_view',
+      });
+    })();
+  }, []);
 
   return (
     <section
@@ -100,21 +124,19 @@ export default function Booking() {
         </Reveal>
 
         {/*
-          Cal.com embed forced to dark theme via ?theme=dark URL param so it
-          always matches the site, ignoring the visitor's OS-level preference.
+          Cal.com inline embed via @calcom/embed-react. The bare iframe
+          approach (Cal.com page in a plain <iframe>) renders blank because
+          Cal.com requires their embed protocol (postMessage handshake +
+          init script) to bootstrap the booking widget. The official
+          embed-react component handles all that and auto-sizes the embed
+          to fit the calendar without manual height tuning.
         */}
-        <div style={{ background: 'transparent' }}>
-          <iframe
-            src={`https://cal.com/${bookingConfig.calLink}?theme=dark`}
-            width="100%"
-            height={1200}
-            frameBorder={0}
-            title="Book the Walkthrough"
-            style={{
-              display: 'block',
-              border: '1px solid rgba(255,255,255,0.10)',
-              colorScheme: 'dark',
-            }}
+        <div style={{ background: 'transparent', minHeight: '720px' }}>
+          <Cal
+            namespace="walkthrough"
+            calLink={bookingConfig.calLink}
+            style={{ width: '100%', height: '100%', minHeight: '720px' }}
+            config={{ layout: 'month_view', theme: 'dark' }}
           />
         </div>
       </div>
