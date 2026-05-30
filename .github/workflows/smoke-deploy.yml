@@ -59,13 +59,13 @@ jobs:
           fi
           echo "OK: $URL is up"
 
-      - name: Probe portal sign-in
+      - name: Probe Studio OS page
         run: |
           set -euo pipefail
-          URL="https://proxyz.studio/portal"
+          URL="https://proxyz.studio/studio-os"
           HTTP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$URL")
           if [ "$HTTP" != "200" ]; then
-            echo "::error::Portal page returned HTTP $HTTP"
+            echo "::error::Studio OS page returned HTTP $HTTP"
             exit 1
           fi
           echo "OK: $URL is up"
