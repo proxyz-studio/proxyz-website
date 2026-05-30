@@ -1,7 +1,8 @@
 {
   "redirects": [
     { "source": "/partners", "destination": "/pipeline", "permanent": true },
-    { "source": "/partners/:slug", "destination": "/pipeline/:slug", "permanent": true }
+    { "source": "/partners/:slug", "destination": "/pipeline/:slug", "permanent": true },
+    { "source": "/portal", "destination": "/studio-os", "permanent": true }
   ],
   "rewrites": [
     { "source": "/brief/ananda", "destination": "/brief/ananda.html" },

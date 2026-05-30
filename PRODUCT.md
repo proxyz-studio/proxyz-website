@@ -70,7 +70,7 @@ Success: a partner-founder or exec sponsor lands on the homepage, reads to the A
 
 4. **One designed object, not eight pages.** The site reads as a coherent editorial document with surfaces, not as a collection of independent pages. Section eyebrows, issue numbers, the PROXYZ wordmark, IBM Plex Mono everywhere, and the same motion token system unify every route.
 
-5. **Audit is the front door, every path leads back.** Wherever the reader is on the site, the free Audit is reachable in one click. Other CTAs (book a partner gate, read a venture detail, login to Portal) are subordinate.
+5. **Audit is the front door, every path leads back.** Wherever the reader is on the site, the free Audit is reachable in one click. Other CTAs (book a partner gate, read a venture detail, login to Studio OS) are subordinate.
 
 ## Accessibility & Inclusion
 

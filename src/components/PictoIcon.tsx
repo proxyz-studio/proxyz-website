@@ -4,7 +4,7 @@ type IconName =
   | 'install'
   | 'partnership'
   | 'studioOs'
-  | 'portal'
+  | 'studioos'
   | 'meetings'
   | 'todos'
   | 'rocks'
@@ -99,7 +99,7 @@ export default function PictoIcon({
           <line x1="38" y1="24" x2="44" y2="24" />
         </svg>
       );
-    case 'portal':
+    case 'studioos':
       return (
         <svg {...common}>
           <polyline points="6,6 6,42 42,42" />

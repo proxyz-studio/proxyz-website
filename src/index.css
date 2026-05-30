@@ -145,7 +145,7 @@ body.lt-mode-tiger {
 
 /* ─── SVG drawn connections ────────────────────────────────────
    Apply the `svg-draw-lines` class to any <g> that wraps a set of
-   short <line> connector spokes (FastFix PortalHub, LazyTiger
+   short <line> connector spokes (FastFix StudioOSHub, LazyTiger
    SensorNetworkDiagram, etc). Each line draws itself in from the
    center with stagger. stroke-dasharray 600 covers all spoke
    lengths used in the site's diagrams; bump if you ship a larger
@@ -666,21 +666,21 @@ body.has-custom-cursor * {
   }
 }
 
-/* Portal page grids */
+/* Studio OS page grids */
 @media (max-width: 900px) {
-  .portal-pillars,
-  .portal-modules {
+  .studioos-pillars,
+  .studioos-modules {
     grid-template-columns: 1fr !important;
   }
-  .portal-pillars > div,
-  .portal-modules > div {
+  .studioos-pillars > div,
+  .studioos-modules > div {
     border-right: none !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.18);
     padding-left: 0 !important;
     padding-right: 0 !important;
   }
-  .portal-pillars > div:last-child,
-  .portal-modules > div:last-child {
+  .studioos-pillars > div:last-child,
+  .studioos-modules > div:last-child {
     border-bottom: none;
   }
 }
@@ -844,7 +844,7 @@ body.has-custom-cursor * {
 
 /* ─── Scanline heading ─────────────────────────────────────────
    Editorial "horizontal scanlines through text" effect, used on
-   the studio's top-level h1s (Hero, Pipeline, Portal). Replaces
+   the studio's top-level h1s (Hero, Pipeline, Studio OS). Replaces
    the inline `background-clip: text` + `repeating-linear-gradient`
    that violated impeccable's gradient-text absolute ban.
 

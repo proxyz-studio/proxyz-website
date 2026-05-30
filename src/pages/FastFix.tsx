@@ -10,7 +10,7 @@ import { fastFixPageConfig } from '../config';
 
 const FONT_MONO = "'IBM Plex Mono', monospace";
 
-function PortalHub({ labels, coreLabel }: { labels: string[]; coreLabel: string }) {
+function StudioOSHub({ labels, coreLabel }: { labels: string[]; coreLabel: string }) {
   return (
     <svg
       viewBox="0 0 560 560"
@@ -351,10 +351,10 @@ export default function FastFix() {
           style={{ padding: '96px 40px', borderBottom: '1px solid rgba(255,255,255,0.30)' }}
         >
           <div style={{ maxWidth: '1240px', margin: '0 auto' }}>
-            <SectionLabel>{c.portalLabel}</SectionLabel>
+            <SectionLabel>{c.studioOSLabel}</SectionLabel>
             <div className="ff-two-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: '80px', alignItems: 'start' }}>
               <div>
-                <Heading lines={c.portalHeadingLines} />
+                <Heading lines={c.studioOSHeadingLines} />
                 <p
                   style={{
                     fontFamily: FONT_MONO,
@@ -364,7 +364,7 @@ export default function FastFix() {
                     margin: '24px 0 0 0',
                   }}
                 >
-                  {c.portalParagraphs[0]}
+                  {c.studioOSParagraphs[0]}
                 </p>
                 <p
                   style={{
@@ -375,7 +375,7 @@ export default function FastFix() {
                     margin: '16px 0 0 0',
                   }}
                 >
-                  {c.portalParagraphs[1]}
+                  {c.studioOSParagraphs[1]}
                 </p>
               </div>
 
@@ -389,7 +389,7 @@ export default function FastFix() {
                 }}
               >
                 <div>
-                  <PortalHub labels={c.portalHubLabels} coreLabel={c.portalHubLabel} />
+                  <StudioOSHub labels={c.studioOSHubLabels} coreLabel={c.studioOSHubLabel} />
                 </div>
                 <ul
                   style={{
@@ -401,7 +401,7 @@ export default function FastFix() {
                     gap: '0',
                   }}
                 >
-                  {c.portalBullets.map((bullet, i) => {
+                  {c.studioOSBullets.map((bullet, i) => {
                     const [bold, rest] = bullet.split('.');
                     return (
                       <li

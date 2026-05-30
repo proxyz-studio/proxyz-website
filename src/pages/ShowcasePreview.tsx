@@ -260,7 +260,7 @@ function Marquee() {
             'PHUKET',
             'BUILD FOR',
             'BUILD WITH',
-            'THE PORTAL',
+            'STUDIO OS',
             'PADEL Z',
             'FAST-FIX',
             'OPERATOR STUDIO',
@@ -453,7 +453,7 @@ function TiltCard({
   num: string;
   title: string;
   body: string;
-  icon: 'audit' | 'blueprint' | 'install' | 'partnership' | 'studioOs' | 'portal';
+  icon: 'audit' | 'blueprint' | 'install' | 'partnership' | 'studioOs' | 'studioos';
   color: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -783,7 +783,7 @@ function StaggerIcons() {
             textWrap: 'balance',
           }}
         >
-          The Portal modules.
+          Studio OS modules.
         </motion.h2>
 
         <motion.div
