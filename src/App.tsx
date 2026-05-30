@@ -11,7 +11,7 @@ import Team from './sections/Team';
 import Booking from './sections/Booking';
 import Footer from './sections/Footer';
 import Marquee from './components/Marquee';
-import Portal from './pages/Portal';
+import StudioOS from './pages/StudioOS';
 import Media from './pages/Media';
 import PadelZ from './pages/PadelZ';
 import Pipeline from './pages/Pipeline';
@@ -115,7 +115,7 @@ function App() {
       <ScrollManager />
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/portal" element={<Portal />} />
+        <Route path="/studio-os" element={<StudioOS />} />
         <Route path="/media" element={<Media />} />
         <Route path="/media/padel-z" element={<PadelZ />} />
         <Route path="/pipeline" element={<Pipeline />} />

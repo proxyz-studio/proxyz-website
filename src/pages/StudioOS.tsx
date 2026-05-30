@@ -6,16 +6,16 @@ import { TiltCard, MagneticAnchor } from '../components/Spatial';
 import { HeroMesh, EdgeRule } from '../components/Glow';
 import Footer from '../sections/Footer';
 import { useHeroParallax } from '../lib/scrollChoreography';
-import { portalPageConfig } from '../config';
+import { studioOSPageConfig } from '../config';
 
 const moduleIcons = ['meetings', 'todos', 'rocks', 'issues', 'scorecard', 'vto'] as const;
 const pillarIcons = ['time', 'install', 'spark'] as const;
 
-export default function Portal() {
-  const c = portalPageConfig;
+export default function StudioOS() {
+  const c = studioOSPageConfig;
   // P5: scroll-driven hero parallax — content drifts up + fades on scroll.
   const heroRef = useRef<HTMLElement>(null);
-  useHeroParallax(heroRef, { drift: 120, fadeTo: 0.2, inner: '.portal-hero-inner' });
+  useHeroParallax(heroRef, { drift: 120, fadeTo: 0.2, inner: '.studioos-hero-inner' });
 
   return (
     <>
@@ -33,7 +33,7 @@ export default function Portal() {
           }}
         >
           <HeroMesh />
-          <div className="portal-hero-inner" style={{ position: 'relative', zIndex: 1, maxWidth: '1360px', margin: '0 auto' }}>
+          <div className="studioos-hero-inner" style={{ position: 'relative', zIndex: 1, maxWidth: '1360px', margin: '0 auto' }}>
             <p
               style={{
                 fontFamily: "'IBM Plex Mono', monospace",
@@ -136,8 +136,8 @@ export default function Portal() {
         </section>
 
         {/* WHO RUNS ON IT — promoted from position 4 to position 2 per
-            audit (_output/2026-05-23-impeccable-portal-media-v1.md #4):
-            framing the Portal as "what we install at clients" has to
+            audit (_output/2026-05-23-impeccable-studioos-media-v1.md #4):
+            framing Studio OS as "what we install at clients" has to
             precede the module tour, or a cold reader parses MODULES as
             a SaaS feature grid. */}
         <section
@@ -219,7 +219,7 @@ export default function Portal() {
             </p>
 
             <div
-              className="portal-pillars"
+              className="studioos-pillars"
               style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(3, 1fr)',
@@ -284,7 +284,7 @@ export default function Portal() {
         </section>
 
         {/* MODULES — dark register matches the rest of the page (audit #3
-            in 2026-05-23-impeccable-portal-media-v1.md). The earlier white
+            in 2026-05-23-impeccable-studioos-media-v1.md). The earlier white
             inversion read as a SaaS feature grid stitched onto an editorial
             page; on dark with shared dividers it inherits the Pillars grid
             pattern, so MODULES extends the rhythm instead of breaking it. */}
@@ -324,7 +324,7 @@ export default function Portal() {
             </p>
 
             <div
-              className="portal-modules"
+              className="studioos-modules"
               style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(3, 1fr)',

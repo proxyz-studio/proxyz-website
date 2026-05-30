@@ -355,7 +355,7 @@ function PictogramDemo() {
       ),
     },
     {
-      label: 'The Portal',
+      label: 'Studio OS',
       sub: 'workspace',
       svg: (
         <>
@@ -993,7 +993,7 @@ export default function VisualPreview() {
           >
             Scroll. Each direction is a working sketch you can interact
             with, not a screenshot. Pick one as the lead direction and
-            we'll bake it across the homepage, /portal, /partners, and
+            we'll bake it across the homepage, /studio-os, /partners, and
             /media. They're not mutually exclusive — most strong sites
             blend two — but committing to a lead direction first keeps
             the visual story coherent.
