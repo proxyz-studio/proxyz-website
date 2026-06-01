@@ -1,10 +1,31 @@
-import type { Chapter, Lang } from '../types';
+import type { Chapter, Lang, CollabAuthor, CollabNote } from '../types';
 import { NAVY, INK, GOLD, RULE, FONT_WORD, FONT_HEAD, FONT_HEAD_TH, FONT_BODY, FONT_LABEL } from '../theme';
 import { ComplianceCalendar } from './insets/ComplianceCalendar';
 import { NumberChecklist } from './insets/NumberChecklist';
 import { BrandIdentity } from './insets/BrandIdentity';
+import { NoteThread } from './NoteThread';
 
-export function ChapterSection({ chapter, lang, index }: { chapter: Chapter; lang: Lang; index: number }) {
+type ChapterCollabProps = {
+  available: boolean;
+  notesFor: (target: string) => CollabNote[];
+  addNote: (target: string, author: CollabAuthor, body: string) => Promise<void>;
+};
+
+type Props = {
+  chapter: Chapter;
+  lang: Lang;
+  index: number;
+  identity?: CollabAuthor | null;
+  collab?: ChapterCollabProps;
+};
+
+export function ChapterSection({
+  chapter,
+  lang,
+  index,
+  identity = null,
+  collab = { available: false, notesFor: () => [], addNote: async () => {} },
+}: Props) {
   const headFont = lang === 'th' ? FONT_HEAD_TH : FONT_HEAD;
   return (
     <article
@@ -139,6 +160,20 @@ export function ChapterSection({ chapter, lang, index }: { chapter: Chapter; lan
       {chapter.inset === 'compliance-calendar' && <ComplianceCalendar lang={lang} />}
       {chapter.inset === 'number-checklist' && <NumberChecklist lang={lang} />}
       {chapter.inset === 'brand-identity' && <BrandIdentity lang={lang} />}
+
+      {/* Chapter-level note thread — only when capture is available */}
+      {collab.available && (
+        <div style={{ maxWidth: '680px', marginTop: '0' }}>
+          <NoteThread
+            target={`chapter:${chapter.id}`}
+            notes={collab.notesFor(`chapter:${chapter.id}`)}
+            author={identity}
+            available={collab.available}
+            onPost={(t, body) => collab.addNote(t, identity!, body)}
+            lang={lang}
+          />
+        </div>
+      )}
     </article>
   );
 }

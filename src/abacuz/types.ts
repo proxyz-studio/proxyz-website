@@ -26,3 +26,21 @@ export type Chapter = {
 };
 
 export type PaletteRow = { role: Bilingual; name: string; hex: string; use: Bilingual };
+
+/* ─── Collaboration capture wire types ────────────────────────────── */
+
+export type CollabAuthor = 'tew' | 'joy';
+
+export type CollabNote = {
+  id: string;
+  target: string; // "chapter:<id>" | "decision:<id>"
+  author: CollabAuthor;
+  body: string; // plain text — rendered via React, never via innerHTML
+  ts: string;   // ISO timestamp
+};
+
+export type DecisionOverlay = {
+  answered: boolean;
+  by: CollabAuthor;
+  at: string; // ISO timestamp
+};

@@ -11,7 +11,10 @@ import {
 } from './theme';
 import { useAbacuzFonts } from './useAbacuzFonts';
 import { useZone, type Zone } from './useZone';
+import { useIdentity } from './useIdentity';
+import { useCollab } from './useCollab';
 import { LangToggle } from './components/LangToggle';
+import { IdentityChip } from './components/IdentityChip';
 import { CollaborateZone } from './zones/CollaborateZone';
 import { DeckZone } from './zones/DeckZone';
 import { PreviewZone } from './zones/PreviewZone';
@@ -28,6 +31,8 @@ export function AbacuzShell() {
   useAbacuzFonts();
   const [lang, setLang] = useState<Lang>('th');
   const { zone, setZone } = useZone();
+  const { identity, setIdentity } = useIdentity();
+  const collab = useCollab('abacuz');
 
   // Set document.title for the page session
   useEffect(() => {
@@ -113,15 +118,27 @@ export function AbacuzShell() {
           })}
         </div>
 
+        {/* Identity chip — only when capture is available */}
+        {collab.available && (
+          <div style={{ flexShrink: 0, marginLeft: '16px' }}>
+            <IdentityChip lang={lang} identity={identity} setIdentity={setIdentity} />
+          </div>
+        )}
+
         {/* Language toggle — right side */}
-        <div style={{ flexShrink: 0, marginLeft: '16px' }}>
+        <div style={{ flexShrink: 0, marginLeft: '12px' }}>
           <LangToggle lang={lang} setLang={setLang} />
         </div>
       </div>
 
       {/* Active zone */}
       {zone === 'collaborate' && (
-        <CollaborateZone lang={lang} setLang={setLang} />
+        <CollaborateZone
+          lang={lang}
+          setLang={setLang}
+          identity={identity}
+          collab={collab}
+        />
       )}
       {zone === 'deck' && <DeckZone lang={lang} />}
       {zone === 'preview' && <PreviewZone lang={lang} />}

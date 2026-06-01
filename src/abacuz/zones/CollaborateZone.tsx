@@ -6,7 +6,7 @@
  */
 
 import { Link } from 'react-router-dom';
-import type { Lang } from '../types';
+import type { Lang, CollabAuthor, CollabNote, DecisionOverlay } from '../types';
 import {
   NAVY, IVORY, STONE, INK, GOLD, RULE,
   FONT_WORD, FONT_HEAD, FONT_HEAD_TH, FONT_BODY, FONT_LABEL,
@@ -18,7 +18,23 @@ import { ChapterSection } from '../components/ChapterSection';
 import { ChapterNav } from '../components/ChapterNav';
 import { DecisionTracker } from '../components/DecisionTracker';
 
-export function CollaborateZone({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void }) {
+export type CollabBundle = {
+  available: boolean;
+  notes: CollabNote[];
+  decisions: Record<string, DecisionOverlay>;
+  notesFor: (target: string) => CollabNote[];
+  addNote: (target: string, author: CollabAuthor, body: string) => Promise<void>;
+  setAnswered: (decisionId: string, author: CollabAuthor, answered: boolean) => Promise<void>;
+};
+
+type Props = {
+  lang: Lang;
+  setLang: (l: Lang) => void;
+  identity: CollabAuthor | null;
+  collab: CollabBundle;
+};
+
+export function CollaborateZone({ lang, setLang, identity, collab }: Props) {
   return (
     <main
       className="abacuz-page"
@@ -268,7 +284,14 @@ export function CollaborateZone({ lang, setLang }: { lang: Lang; setLang: (l: La
         >
           <div>
             {CHAPTERS.map((c, i) => (
-              <ChapterSection key={c.id} chapter={c} lang={lang} index={i} />
+              <ChapterSection
+                key={c.id}
+                chapter={c}
+                lang={lang}
+                index={i}
+                identity={identity}
+                collab={collab}
+              />
             ))}
           </div>
 
@@ -285,7 +308,7 @@ export function CollaborateZone({ lang, setLang }: { lang: Lang; setLang: (l: La
             className="abacuz-side-rail"
           >
             <ChapterNav lang={lang} />
-            <DecisionTracker lang={lang} />
+            <DecisionTracker lang={lang} identity={identity} collab={collab} />
           </div>
         </div>
       </section>
