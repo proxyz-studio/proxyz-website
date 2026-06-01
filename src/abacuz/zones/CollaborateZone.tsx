@@ -183,7 +183,7 @@ export function CollaborateZone({ lang, setLang }: { lang: Lang; setLang: (l: La
                 textTransform: 'uppercase',
               }}
             >
-              {META.descriptor} · {META.domain}
+              {META.descriptor[lang]} · {META.domain}
             </div>
           </div>
         </div>

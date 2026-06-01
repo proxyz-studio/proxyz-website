@@ -244,7 +244,7 @@ export function BrandIdentity({ lang }: { lang: Lang }) {
                 margin: 0,
               }}
             >
-              ACCOUNTING · LEGAL · BUSINESS CONSULTING — {lang === 'th' ? 'ทั้งภาษาอังกฤษและภาษาไทย' : 'in English and Thai'}
+              {lang === 'th' ? 'บัญชี · บริการนิติบุคคล' : 'ACCOUNTING · CORPORATE SERVICES'} — {lang === 'th' ? 'ทั้งภาษาอังกฤษและภาษาไทย' : 'in English and Thai'}
             </p>
           </div>
         </div>
@@ -624,8 +624,8 @@ export function BrandIdentity({ lang }: { lang: Lang }) {
           }}
         >
           {lang === 'th'
-            ? 'ข้อควรระวัง · ถ้อยคำ "LEGAL" ต้องยืนยันกับฝ่ายตรวจสอบกฎหมายก่อนพิมพ์เผยแพร่ ABACUZ คือบริษัทบัญชีและงานนิติบุคคล ไม่ใช่สำนักงานกฎหมาย'
-            : 'Flag · the descriptor "LEGAL" must be confirmed with the legal review before anything is printed. ABACUZ is a transparent accounting and corporate-services firm, NOT a law firm.'}
+            ? 'ล็อกแล้ว 1 มิ.ย. 2026 · คำบรรยายบริการคือ "บัญชี · บริการนิติบุคคล" ตัด "LEGAL" ออก เพราะคุณจอยเป็นผู้สอบบัญชี ไม่ใช่ทนายความ และเวิร์ดมาร์กที่นำด้วย "LEGAL" จะดึงการตรวจสอบจากหน่วยงานกำกับ (DNFBP) โดยไม่จำเป็น งานด้านนิติบุคคลอยู่ในเสาบริการนิติบุคคลโดยมี CPA รับรอง คดีความส่งต่อทนายที่มีใบอนุญาตเสมอ'
+            : 'Settled 1 Jun 2026 · the descriptor is "Accounting · Corporate Services." "LEGAL" was dropped — Khun Joy is a CPA, not a bar-licensed lawyer, and a DNFBP wordmark that leads with "LEGAL" invites needless regulator scrutiny. Legal-adjacent work sits inside Corporate Services with CPA sign-off; litigation is always referred to a licensed lawyer.'}
         </p>
       </BrandSubSection>
 

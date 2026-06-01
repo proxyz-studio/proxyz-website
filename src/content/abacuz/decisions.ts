@@ -87,11 +87,11 @@ export const DECISIONS: Decision[] = [
   {
     id: 'legal-wording',
     label: {
-      th: 'ถ้อยคำ "LEGAL" — สำนักงานบัญชี ไม่ใช่สำนักงานกฎหมาย',
-      en: 'Descriptor wording — "LEGAL" vs not a law firm',
+      th: 'คำบรรยายบริการ — ล็อก: บัญชี · บริการนิติบุคคล',
+      en: 'Descriptor — settled: Accounting · Corporate Services',
     },
-    status: 'joy',
-    chapter: 7,
+    status: 'locked',
+    chapter: 1,
   },
   {
     id: 'pdpa-amlo',

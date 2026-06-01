@@ -3,7 +3,7 @@ import type { Bilingual } from '../../abacuz/types';
 export const META = {
   domain: 'abacuz.co',
   tagline: { th: 'บัญชีสะอาด ไม่มีเซอร์ไพรส์', en: 'Clean books. No surprises.' } as Bilingual,
-  descriptor: 'ACCOUNTING · LEGAL · BUSINESS CONSULTING',
+  descriptor: { th: 'บัญชี · บริการนิติบุคคล', en: 'ACCOUNTING · CORPORATE SERVICES' } as Bilingual,
 };
 
 export const HERO: { greeting: Bilingual; lede: Bilingual; brief: Bilingual } = {

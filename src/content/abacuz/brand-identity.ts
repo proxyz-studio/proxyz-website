@@ -81,17 +81,17 @@ export const PILLARS: { name: Bilingual; tagline: Bilingual; body: Bilingual }[]
   {
     name: { th: 'บัญชี · Accounting', en: 'Accounting' },
     tagline: { th: 'แม่นยำ · ชัดเจน · มั่นใจได้', en: 'Accuracy. Clarity. Confidence.' },
-    body: { th: 'ฐานที่มีใบอนุญาต: ทำบัญชี ภาษี เซ็นรับรองงบ Fractional CFO', en: 'The licensed base: bookkeeping, tax, audit sign-off, fractional CFO.' },
+    body: { th: 'ฐานที่มีใบอนุญาต: ทำบัญชี ภาษี เซ็นรับรองงบ', en: 'The licensed base: bookkeeping, tax, audit sign-off.' },
   },
   {
-    name: { th: 'กฎหมาย · Legal', en: 'Legal / Corporate Services' },
+    name: { th: 'บริการนิติบุคคล · Corporate Services', en: 'Corporate Services' },
     tagline: { th: 'ให้คำแนะนำ · ปกป้อง · แก้ปัญหา', en: 'Guidance. Protection. Resolution.' },
     body: { th: 'จดทะเบียนบริษัท สัญญา ใบอนุญาตทำงาน วีซ่า BOI เครื่องหมายการค้า คดีความส่งต่อทนายที่มีใบอนุญาต', en: 'Company formation, contracts, work permits, visas, BOI, trademarks. Court cases referred to a licensed lawyer.' },
   },
   {
-    name: { th: 'ที่ปรึกษาธุรกิจ', en: 'Business Consulting' },
+    name: { th: 'ที่ปรึกษา · Advisory', en: 'Advisory' },
     tagline: { th: 'กลยุทธ์ · เติบโต · สำเร็จ', en: 'Strategy. Growth. Success.' },
-    body: { th: 'ที่ปรึกษา วางกลยุทธ์การเงิน', en: 'Advisory, financial strategy.' },
+    body: { th: 'Fractional CFO ที่ปรึกษา วางกลยุทธ์การเงิน', en: 'Fractional CFO, advisory, financial strategy.' },
   },
 ];
 
@@ -110,13 +110,13 @@ export const LOCKED_ITEMS: Bilingual[] = [
   { th: 'แก่นความคิด · ลูกคิดที่โปร่งใส', en: 'The transparent-abacus brand idea' },
   { th: 'พาเลตต์ · กรมท่า / ทอง / งาช้าง', en: 'Navy / gold / ivory palette' },
   { th: 'ทิศทางโลโก้ · ลูกคิดทอง + serif คลาสสิก', en: 'Logo direction · gold abacus + classical serif' },
+  { th: 'คำบรรยายบริการ · บัญชี · บริการนิติบุคคล', en: 'Descriptor · Accounting · Corporate Services' },
 ];
 
 export const OPEN_ITEMS: Bilingual[] = [
   { th: 'อาร์ตเวิร์กโลโก้ฉบับสมบูรณ์ (เวกเตอร์จากคอนเซ็ปต์)', en: 'Final logo artwork — vectorised from the concept' },
   { th: 'การปรับ hex และโทนทองบนจอและงานพิมพ์', en: 'Exact hex + gold tone on screen and in print' },
   { th: 'ทดสอบจับคู่ฟอนต์ไทยบนหน้าจอจริง', en: 'Thai type-pairing test on real screens' },
-  { th: 'ถ้อยคำคำบรรยายบริการ · ยืนยันกับฝ่ายตรวจสอบกฎหมาย', en: 'Descriptor wording · confirm with the legal review' },
   { th: 'ภาพผู้ก่อตั้งที่ยืนยันแล้ว (คุณจอย)', en: 'Confirmed authentic founder photo (Khun Joy)' },
   { th: 'ตรวจเครื่องหมายการค้าก่อนงานพิมพ์ใด ๆ', en: 'Trademark sanity check before any print' },
 ];
