@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100" role="img" aria-label="ABACUZ abacus mark (monochrome — inherits currentColor)" fill="currentColor" stroke="currentColor">
+  <!-- Single-color variant. Inherits the parent's currentColor for both stroke and fill.
+       For dark backgrounds: set color="#F6F1E7" or color="#fff" on the parent.
+       For light backgrounds: set color="#14253B" or color="#000" on the parent.
+       For embroidery / single-tone print: use any solid color via currentColor. -->
+  <rect x="12" y="12" width="76" height="76" rx="5" fill="none" stroke-width="2.2"/>
+  <line x1="12" y1="40" x2="88" y2="40" stroke-width="1.8"/>
+  <g stroke-width="1.1">
+    <line x1="26" y1="12" x2="26" y2="88"/>
+    <line x1="38" y1="12" x2="38" y2="88"/>
+    <line x1="50" y1="12" x2="50" y2="88"/>
+    <line x1="62" y1="12" x2="62" y2="88"/>
+    <line x1="74" y1="12" x2="74" y2="88"/>
+  </g>
+  <g stroke="none">
+    <circle cx="26" cy="22" r="3.5"/><circle cx="38" cy="33" r="3.5"/><circle cx="50" cy="22" r="3.5"/><circle cx="62" cy="30" r="3.5"/><circle cx="74" cy="22" r="3.5"/>
+    <circle cx="26" cy="50" r="3.5"/><circle cx="26" cy="60" r="3.5"/><circle cx="38" cy="78" r="3.5"/><circle cx="38" cy="68" r="3.5"/>
+    <circle cx="50" cy="50" r="3.5"/><circle cx="50" cy="60" r="3.5"/><circle cx="62" cy="78" r="3.5"/><circle cx="62" cy="68" r="3.5"/>
+    <circle cx="74" cy="50" r="3.5"/><circle cx="74" cy="60" r="3.5"/>
+  </g>
+</svg>
