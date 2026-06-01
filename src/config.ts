@@ -676,6 +676,30 @@ export const pipelinePageConfig: PipelinePageConfig = {
       cta: { label: "View full pitch →", href: "/pipeline/lazy-tiger" },
       detailHref: "/pipeline/lazy-tiger",
     },
+    {
+      name: "ABACUZ",
+      sector: "Accounting & corporate services",
+      location: "Thailand · remote-first",
+      stage: "R&D · partner review",
+      partnerLabel: "Co-founder · CPA",
+      partner: "Mayura 'Joy' Chimdee",
+      proxyzRole:
+        "Studio OS, automation, brand, GTM, deal architecture. The platform a transparent, AI-engine accounting firm runs on.",
+      partnerBrings:
+        "Thai CPA license (ผู้สอบบัญชีรับอนุญาต), CFO-level expertise, an existing SMB accounting side-book, and the local network.",
+      whyItMatters:
+        "Thai accounting and corporate-services is opaque, slow, and fragmented. No firm combines AI-first efficiency, transparent published pricing, accounting plus legal under one roof, and bilingual English-and-Thai service. ABACUZ is the first one designed that way, with a licensed CPA behind every number.",
+      milestones: [
+        { label: "Partnership frame · drafted", status: 'done' },
+        { label: "R&D round 1 · 6 deliverables shipped", status: 'done' },
+        { label: "Partner walkthrough · Khun Joy review", status: 'active' },
+        { label: "TFAC + legal confirms → incorporate", status: 'next' },
+      ],
+      lastUpdate:
+        "All six R&D deliverables shipped 2026-05-31 in one session: brand identity, offers + pricing, operations model, tech stack, legal framework, finance model. Walkthrough at /pipeline/abacuz.",
+      cta: { label: "Open the walkthrough →", href: "/pipeline/abacuz" },
+      detailHref: "/pipeline/abacuz",
+    },
   ],
   closingLabel: "BUILD WITH PROXYZ",
   closingHeading: "Two to three slots per year.",

@@ -29,6 +29,11 @@ import ScrollProgress from './components/ScrollProgress';
 const LazyTiger = lazy(() => import('./pages/LazyTiger'));
 const LazyTigerStyles = lazy(() => import('./pages/LazyTigerStyles'));
 
+// ABACUZ partner walkthrough — page-scoped brand surface (navy/gold/ivory),
+// bilingual TH/EN, sticky decision tracker. Lazy-loaded so the marketing site
+// doesn't pay the font + content cost on the home page.
+const Abacuz = lazy(() => import('./pages/Abacuz'));
+
 // Legal pages — lazy because rarely visited but needed for LINE OA + Thai PDPA.
 const Privacy = lazy(() => import('./pages/Privacy'));
 const Terms = lazy(() => import('./pages/Terms'));
@@ -128,6 +133,10 @@ function App() {
         <Route
           path="/pipeline/lazy-tiger"
           element={<Suspense fallback={null}><LazyTiger /></Suspense>}
+        />
+        <Route
+          path="/pipeline/abacuz"
+          element={<Suspense fallback={null}><Abacuz /></Suspense>}
         />
         <Route path="/privacy" element={<Suspense fallback={null}><Privacy /></Suspense>} />
         <Route path="/terms" element={<Suspense fallback={null}><Terms /></Suspense>} />
