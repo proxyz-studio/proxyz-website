@@ -33,6 +33,11 @@ const LazyTigerStyles = lazy(() => import('./pages/LazyTigerStyles'));
 // bilingual TH/EN, sticky decision tracker. Lazy-loaded so the marketing site
 // doesn't pay the font + content cost on the home page.
 const Abacuz = lazy(() => import('./pages/Abacuz'));
+// MIRA Valley × PROXYZ — month-1 proposal as an immersive, passcode-gated page.
+// Lazy-loaded so the marketing home doesn't pay the Cormorant + Thai fonts and
+// content cost. Confidential: mounted at /pipeline/mira but NOT listed on the
+// public /pipeline index — reachable only via the direct link + 4-digit code.
+const Mira = lazy(() => import('./pages/Mira'));
 
 // Legal pages — lazy because rarely visited but needed for LINE OA + Thai PDPA.
 const Privacy = lazy(() => import('./pages/Privacy'));
@@ -137,6 +142,10 @@ function App() {
         <Route
           path="/pipeline/abacuz"
           element={<Suspense fallback={null}><Abacuz /></Suspense>}
+        />
+        <Route
+          path="/pipeline/mira"
+          element={<Suspense fallback={null}><Mira /></Suspense>}
         />
         <Route path="/privacy" element={<Suspense fallback={null}><Privacy /></Suspense>} />
         <Route path="/terms" element={<Suspense fallback={null}><Terms /></Suspense>} />
