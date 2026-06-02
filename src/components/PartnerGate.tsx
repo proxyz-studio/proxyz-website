@@ -11,7 +11,7 @@ export default function PartnerGate({
 }: {
   children: ReactNode;
   /** Partner slug — drives per-partner code lookup + cookie scoping. */
-  partner?: 'fast-fix' | 'lazy-tiger' | 'mira';
+  partner?: 'fast-fix' | 'lazy-tiger' | 'abacuz' | 'mira';
 }) {
   const [status, setStatus] = useState<Status>('checking');
   const [code, setCode] = useState('');

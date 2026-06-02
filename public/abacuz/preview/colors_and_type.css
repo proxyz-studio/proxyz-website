@@ -1,0 +1,178 @@
+/* ============================================================
+   ABACUZ — Colours & Type foundations
+   "The firm where you can see every number."
+   ------------------------------------------------------------
+   Warm trust-premium: navy anchor, gold accent, ivory ground.
+   Bilingual EN / TH from one source.
+   Fonts are all on Google Fonts — load this in <head>:
+
+   <link rel="preconnect" href="https://fonts.googleapis.com">
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Hanken+Grotesk:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+   NEVER load IBM Plex Mono — that is PROXYZ Studio's face, not ABACUZ.
+   ============================================================ */
+
+:root {
+  /* ---- Brand palette (raw) ---- */
+  --navy:  #14253B;   /* Ledger Navy  — anchor: dark surfaces, headers, wordmark-on-light */
+  --gold:  #C9A24B;   /* Abacus Gold  — accent ONLY: the mark, fine rules, the sign-off tick */
+  --ivory: #F6F1E7;   /* Ivory        — dominant warm page ground (~60-70%) */
+  --stone: #E7DECB;   /* Warm Stone   — section blocks, warmth to balance the navy */
+  --ink:   #1C2433;   /* Ink          — body text, a navy-black */
+
+  /* ---- Tints & shades (derived, harmonious) ---- */
+  --navy-700: #1B3050;   /* hover/raised navy */
+  --navy-900: #0E1A2B;   /* deepest navy, footers */
+  --gold-600: #B58E38;   /* gold pressed / on-ivory rules where a touch more depth helps */
+  --gold-200: #E7D6A8;   /* faint gold wash, hairlines on navy */
+  --ivory-hi: #FBF8F1;   /* lifted ivory — cards on ivory ground */
+  --stone-600:#CDBF9F;   /* stone border / divider on ivory */
+  --ink-60:   #5B6473;   /* muted ink — labels, secondary copy (passes on ivory) */
+  --ink-40:   #8A8170;   /* faint ink/stone-grey — captions, eyebrow on light */
+
+  /* ---- Semantic surface roles ---- */
+  --bg:            var(--ivory);     /* page ground */
+  --bg-block:      var(--stone);     /* warm section block */
+  --bg-card:       var(--ivory-hi);  /* card on ivory */
+  --bg-inverse:    var(--navy);      /* dark surface */
+  --surface-paper: #FFFFFF;          /* statements / invoices / price list paper */
+
+  /* ---- Semantic text roles ---- */
+  --fg:            var(--ink);       /* primary body */
+  --fg-muted:      var(--ink-60);    /* secondary / labels */
+  --fg-faint:      var(--ink-40);    /* captions / eyebrows */
+  --fg-on-navy:    var(--ivory);     /* text on navy */
+  --fg-on-navy-mut:rgba(246,241,231,.72);
+  --fg-accent:     var(--gold);      /* accent text — headlines/marks ONLY, never body */
+  --fg-on-gold:    var(--navy);      /* text sitting on a gold fill */
+
+  /* ---- Lines & borders ---- */
+  --line:          var(--stone-600);     /* divider on ivory */
+  --line-soft:     rgba(28,36,51,.10);   /* hairline on light */
+  --line-on-navy:  rgba(201,162,75,.34); /* faint gold hairline on navy */
+  --rule-gold:     var(--gold);          /* the signature 2px gold rule */
+
+  /* ---- Status (kept warm + restrained; for portal/statement UI) ---- */
+  --ok:    #2E7D5B;   /* paid / clean / reconciled */
+  --warn:  #B58E38;   /* due soon (reads as gold-amber, on-brand) */
+  --alert: #A23A2E;   /* overdue / action needed (warm brick, not cold red) */
+
+  /* ============ TYPE FAMILIES ============ */
+  --font-display: "Cinzel", "Times New Roman", serif;                    /* wordmark / display caps */
+  --font-head:    "Cormorant Garamond", Georgia, serif;                  /* headlines, pull-quotes (italic) */
+  --font-body:    "Hanken Grotesk", system-ui, -apple-system, sans-serif;/* body + UI */
+  --font-th-head: "Noto Serif Thai", serif;                              /* Thai headlines */
+  --font-th-body: "IBM Plex Sans Thai", system-ui, sans-serif;           /* Thai body + UI */
+  --font-num:     "Hanken Grotesk", system-ui, sans-serif;               /* tabular numbers (use font-variant-numeric: tabular-nums) */
+
+  /* ============ TYPE SCALE (desktop) ============ */
+  --t-display:  clamp(2.6rem, 5vw, 4.2rem);  /* Cinzel hero wordmark / display */
+  --t-h1:       clamp(2.2rem, 4vw, 3.4rem);  /* Cormorant headline */
+  --t-h2:       clamp(1.7rem, 2.6vw, 2.3rem);
+  --t-h3:       1.45rem;
+  --t-lead:     1.2rem;     /* intro / lead paragraph */
+  --t-body:     1.0625rem;  /* 17px base body */
+  --t-small:    0.9375rem;  /* 15px */
+  --t-caption:  0.8125rem;  /* 13px */
+  --t-eyebrow:  0.72rem;    /* spaced caps label */
+
+  /* ---- Tracking ---- */
+  --track-wordmark: 0.34em;  /* ABACUZ display */
+  --track-eyebrow:  0.26em;  /* spaced caps eyebrow / descriptor */
+  --track-caps:     0.10em;
+  --track-tight:    -0.01em; /* large serif headlines */
+
+  /* ---- Line heights ---- */
+  --lh-tight: 1.12;
+  --lh-head:  1.18;
+  --lh-body:  1.65;
+
+  /* ============ SPACING (8pt-ish, warm & airy) ============ */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 24px; --sp-6: 32px; --sp-7: 48px; --sp-8: 64px;
+  --sp-9: 96px; --sp-10: 128px;
+
+  /* ============ RADII (soft, document-like — not pill-y) ============ */
+  --r-xs: 4px;   --r-sm: 6px;   --r-md: 10px;  --r-lg: 14px;  --r-xl: 20px;
+  --r-seal: 999px;
+
+  /* ============ SHADOWS (low, warm, never neon) ============ */
+  --sh-1: 0 1px 2px rgba(20,37,59,.06);
+  --sh-2: 0 6px 18px -10px rgba(20,37,59,.22);
+  --sh-3: 0 24px 60px -34px rgba(14,26,43,.55);
+  --sh-paper: 0 0 0 1px rgba(20,37,59,.08), 0 18px 48px -30px rgba(14,26,43,.45);
+  --ring-gold: 0 0 0 1px var(--gold);
+}
+
+/* ============================================================
+   SEMANTIC ELEMENT DEFAULTS
+   Apply by adding the matching class, or copy into your reset.
+   ============================================================ */
+
+.abz-body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--t-body);
+  line-height: var(--lh-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Display wordmark — Cinzel caps, wide tracking */
+.abz-wordmark {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: var(--track-wordmark);
+  text-transform: uppercase;
+  color: var(--navy);
+  line-height: 1;
+  /* optical: tracking pushes the word right; nudge back */
+  padding-left: var(--track-wordmark);
+}
+
+/* Eyebrow / descriptor — spaced Hanken caps */
+.abz-eyebrow {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: var(--t-eyebrow);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+
+/* Headlines — Cormorant Garamond */
+.abz-h1 { font-family: var(--font-head); font-weight: 600; font-size: var(--t-h1); line-height: var(--lh-head); letter-spacing: var(--track-tight); color: var(--navy); margin: 0; }
+.abz-h2 { font-family: var(--font-head); font-weight: 600; font-size: var(--t-h2); line-height: var(--lh-head); letter-spacing: var(--track-tight); color: var(--navy); margin: 0; }
+.abz-h3 { font-family: var(--font-head); font-weight: 600; font-size: var(--t-h3); line-height: var(--lh-head); color: var(--navy); margin: 0; }
+
+/* Pull-quote — Cormorant italic */
+.abz-quote {
+  font-family: var(--font-head);
+  font-style: italic;
+  font-weight: 500;
+  font-size: var(--t-h2);
+  line-height: 1.3;
+  color: var(--navy);
+}
+
+/* Lead paragraph */
+.abz-lead { font-size: var(--t-lead); line-height: 1.55; color: var(--fg); }
+
+/* Body */
+.abz-p { font-size: var(--t-body); line-height: var(--lh-body); color: var(--fg); margin: 0 0 1em; text-wrap: pretty; }
+
+/* Caption / fine print */
+.abz-caption { font-size: var(--t-caption); color: var(--fg-faint); }
+
+/* Tabular numbers — for money, statements, the price list */
+.abz-num { font-variant-numeric: tabular-nums; letter-spacing: 0; }
+
+/* The signature gold rule */
+.abz-rule-gold { height: 2px; width: 54px; background: var(--rule-gold); border: 0; }
+
+/* Thai variants — swap families, keep roles */
+.th .abz-h1, .th .abz-h2, .th .abz-h3, .th-head { font-family: var(--font-th-head); letter-spacing: 0; }
+.th .abz-p, .th .abz-body, .th-body { font-family: var(--font-th-body); }

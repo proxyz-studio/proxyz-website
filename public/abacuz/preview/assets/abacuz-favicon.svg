@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="ABACUZ favicon">
+  <!-- Rounded navy ground -->
+  <rect x="0" y="0" width="64" height="64" rx="10" fill="#14253B"/>
+  <!-- Simplified abacus mark: frame + bar + 4 vertical posts + single row of 5 beads on the bar (zeroed state, ready) -->
+  <rect x="14" y="14" width="36" height="36" rx="3" fill="none" stroke="#C9A24B" stroke-width="2"/>
+  <!-- Move to right -->
+  <g transform="translate(7,0)">
+    <line x1="7" y1="32" x2="43" y2="32" stroke="#C9A24B" stroke-width="1.6"/>
+    <g stroke="#C9A24B" stroke-width="0.9">
+      <line x1="13" y1="14" x2="13" y2="50"/>
+      <line x1="22" y1="14" x2="22" y2="50"/>
+      <line x1="31" y1="14" x2="31" y2="50"/>
+      <line x1="40" y1="14" x2="40" y2="50"/>
+    </g>
+    <g fill="#C9A24B">
+      <circle cx="13" cy="22" r="2.4"/>
+      <circle cx="22" cy="22" r="2.4"/>
+      <circle cx="31" cy="22" r="2.4"/>
+      <circle cx="40" cy="22" r="2.4"/>
+      <circle cx="13" cy="44" r="2.4"/>
+      <circle cx="22" cy="44" r="2.4"/>
+      <circle cx="31" cy="44" r="2.4"/>
+      <circle cx="40" cy="44" r="2.4"/>
+    </g>
+  </g>
+</svg>

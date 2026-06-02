@@ -9,7 +9,7 @@ const COOKIE_PAYLOAD = 'v1';
 /** Slugs we'll accept as a `partner` value. Mirrors the routes mounted under
  *  /partners/<slug>. New partners need to be added here AND to the env var
  *  list (PARTNERS_AUTH_CODE_<UPPER_SNAKE_CASE_SLUG>). */
-const ALLOWED_SLUGS = new Set(['fast-fix', 'lazy-tiger', 'mira']);
+const ALLOWED_SLUGS = new Set(['fast-fix', 'lazy-tiger', 'abacuz', 'mira']);
 
 function slugToEnvKey(slug: string) {
   return `PARTNERS_AUTH_CODE_${slug.toUpperCase().replace(/-/g, '_')}`;

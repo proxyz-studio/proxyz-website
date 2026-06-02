@@ -29,6 +29,10 @@ import ScrollProgress from './components/ScrollProgress';
 const LazyTiger = lazy(() => import('./pages/LazyTiger'));
 const LazyTigerStyles = lazy(() => import('./pages/LazyTigerStyles'));
 
+// ABACUZ partner walkthrough — page-scoped brand surface (navy/gold/ivory),
+// bilingual TH/EN, sticky decision tracker. Lazy-loaded so the marketing site
+// doesn't pay the font + content cost on the home page.
+const Abacuz = lazy(() => import('./pages/Abacuz'));
 // MIRA Valley × PROXYZ — month-1 proposal as an immersive, passcode-gated page.
 // Lazy-loaded so the marketing home doesn't pay the Cormorant + Thai fonts and
 // content cost. Confidential: mounted at /pipeline/mira but NOT listed on the
@@ -134,6 +138,10 @@ function App() {
         <Route
           path="/pipeline/lazy-tiger"
           element={<Suspense fallback={null}><LazyTiger /></Suspense>}
+        />
+        <Route
+          path="/pipeline/abacuz"
+          element={<Suspense fallback={null}><Abacuz /></Suspense>}
         />
         <Route
           path="/pipeline/mira"
