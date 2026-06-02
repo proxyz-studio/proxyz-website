@@ -6,7 +6,7 @@ export const config = { runtime: 'nodejs' };
 const COOKIE_PREFIX = 'partners_unlocked';
 const COOKIE_PAYLOAD = 'v1';
 
-const ALLOWED_SLUGS = new Set(['fast-fix', 'lazy-tiger']);
+const ALLOWED_SLUGS = new Set(['fast-fix', 'lazy-tiger', 'mira']);
 
 function safeSlug(input: unknown): string | null {
   if (typeof input !== 'string') return null;

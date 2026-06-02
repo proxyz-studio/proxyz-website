@@ -29,6 +29,12 @@ import ScrollProgress from './components/ScrollProgress';
 const LazyTiger = lazy(() => import('./pages/LazyTiger'));
 const LazyTigerStyles = lazy(() => import('./pages/LazyTigerStyles'));
 
+// MIRA Valley × PROXYZ — month-1 proposal as an immersive, passcode-gated page.
+// Lazy-loaded so the marketing home doesn't pay the Cormorant + Thai fonts and
+// content cost. Confidential: mounted at /pipeline/mira but NOT listed on the
+// public /pipeline index — reachable only via the direct link + 4-digit code.
+const Mira = lazy(() => import('./pages/Mira'));
+
 // Legal pages — lazy because rarely visited but needed for LINE OA + Thai PDPA.
 const Privacy = lazy(() => import('./pages/Privacy'));
 const Terms = lazy(() => import('./pages/Terms'));
@@ -128,6 +134,10 @@ function App() {
         <Route
           path="/pipeline/lazy-tiger"
           element={<Suspense fallback={null}><LazyTiger /></Suspense>}
+        />
+        <Route
+          path="/pipeline/mira"
+          element={<Suspense fallback={null}><Mira /></Suspense>}
         />
         <Route path="/privacy" element={<Suspense fallback={null}><Privacy /></Suspense>} />
         <Route path="/terms" element={<Suspense fallback={null}><Terms /></Suspense>} />
