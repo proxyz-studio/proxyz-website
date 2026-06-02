@@ -609,6 +609,7 @@ export interface PartnerCard {
   lastUpdate: string
   cta: NavigationLink
   detailHref?: string
+  hidden?: boolean
 }
 
 export interface PipelinePageConfig {
@@ -699,6 +700,30 @@ export const pipelinePageConfig: PipelinePageConfig = {
         "All six R&D deliverables shipped 2026-05-31 in one session: brand identity, offers + pricing, operations model, tech stack, legal framework, finance model. Walkthrough at /pipeline/abacuz.",
       cta: { label: "Open the walkthrough →", href: "/pipeline/abacuz" },
       detailHref: "/pipeline/abacuz",
+    },
+    {
+      name: "MONSOON",
+      sector: "Premium villa & home cleaning",
+      location: "Phuket, Thailand",
+      stage: "In build",
+      partnerLabel: "Operating partner",
+      partner: "Phuket operating partner",
+      proxyzRole:
+        "The operating system: Studio OS, the brand, the recurring-plan engine, and a photo-proof Clean Report on every visit — the playbook to own a zone.",
+      partnerBrings:
+        "On-the-ground Phuket operations, trained crews, and villa-owner + property-manager relationships.",
+      whyItMatters:
+        "Phuket's villa-rental market runs on turnover cleaning with no premium, brand-led operator. Monsoon becomes the brand owners trust and managers standardize on — recurring plans plus a photo-proof report on every clean.",
+      milestones: [
+        { label: "Brand + moat positioning · locked", status: "done" },
+        { label: "Brand v2 + design system · done", status: "done" },
+        { label: "Marketing site · building", status: "active" },
+        { label: "First zone · launch", status: "next" },
+      ],
+      lastUpdate:
+        "Two-front-door moat (owners + managers) locked; brand v2 (dark / brass / cream) + design system complete; marketing site in build.",
+      cta: { label: "In build", href: "/pipeline" },
+      hidden: true,
     },
   ],
   closingLabel: "BUILD WITH PROXYZ",

@@ -330,6 +330,27 @@ body.has-custom-cursor * {
   }
 }
 
+@keyframes partnerBodyIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes partnerBodyIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  .partner-chevron {
+    transition: none !important;
+  }
+}
+
 /* ---------- HERO WORD EFFECTS (PROXY) ---------- */
 
 /* Variant 1: signal-loss flicker — VHS/CRT tracking interference */
