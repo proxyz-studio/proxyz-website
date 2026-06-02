@@ -32,7 +32,7 @@ export type DeckPoint = { label: Bilingual; detail: Bilingual };
 export type DeckStat = { value: string; caption: Bilingual };
 
 /** A roadmap phase. */
-export type DeckPhase = { phase: Bilingual; when: Bilingual; body: Bilingual };
+export type DeckPhase = { phase: Bilingual; body: Bilingual };
 
 export type DeckSection = {
   id: string;
@@ -49,6 +49,8 @@ export type DeckSection = {
   phases?: DeckPhase[];
   /** Optional emphasised line, set apart. */
   pull?: Bilingual;
+  /** Optional portrait (e.g. a founder photo on the partnership panel). */
+  image?: { src: string; alt: Bilingual; caption?: Bilingual };
 };
 
 export const DECK: DeckSection[] = [
@@ -261,11 +263,11 @@ export const DECK: DeckSection[] = [
       en: 'Five phases, gated on review capacity — not cash.',
     },
     phases: [
-      { phase: { th: 'เฟส 0 · สร้าง', en: 'Phase 0 · Build' }, when: { th: 'เดือน 1–3', en: 'Months 1–3' }, body: { th: 'จดทะเบียน ตั้ง Studio OS เปิดบริการตรวจสุขภาพบริษัทฟรี', en: 'Incorporate, stand up Studio OS, open the free Company Health Check.' } },
-      { phase: { th: 'เฟส 1 · ลูกค้ารายแรก', en: 'Phase 1 · First clients' }, when: { th: 'เดือน 4–9', en: 'Months 4–9' }, body: { th: 'ลูกค้าต่างชาติกลุ่มแรก + ฐาน SMB ไทยบน LINE', en: 'First foreign-owned clients + the Thai SMB base on LINE.' } },
-      { phase: { th: 'เฟส 2 · สถานะปกติ', en: 'Phase 2 · Steady state' }, when: { th: 'เดือน 10–18', en: 'Months 10–18' }, body: { th: 'รายได้เกิดซ้ำมั่นคง มาร์จิ้นต่อแพ็กเกจชัด', en: 'Stable recurring revenue, clear margin per tier.' } },
-      { phase: { th: 'เฟส 3 · จ้างผู้ตรวจคนที่สอง', en: 'Phase 3 · Reviewer hire' }, when: { th: 'เมื่อถึงทริกเกอร์', en: 'On the trigger' }, body: { th: 'ยกเพดานการตรวจเมื่ออัตราการใช้ถึงเกณฑ์', en: 'Lift the review ceiling when utilisation hits the threshold.' } },
-      { phase: { th: 'เฟส 4 · ขยาย', en: 'Phase 4 · Scale' }, when: { th: 'หลังเฟส 3', en: 'After Phase 3' }, body: { th: 'เพิ่มทีม คงวินัยคุณภาพและการรับรอง', en: 'Add team, keep the quality-and-sign-off discipline.' } },
+      { phase: { th: 'เฟส 0 · สร้าง', en: 'Phase 0 · Build' }, body: { th: 'จดทะเบียน ตั้ง Studio OS เปิดบริการตรวจสุขภาพบริษัทฟรี', en: 'Incorporate, stand up Studio OS, open the free Company Health Check.' } },
+      { phase: { th: 'เฟส 1 · ลูกค้ารายแรก', en: 'Phase 1 · First clients' }, body: { th: 'ลูกค้าต่างชาติกลุ่มแรก + ฐาน SMB ไทยบน LINE', en: 'First foreign-owned clients + the Thai SMB base on LINE.' } },
+      { phase: { th: 'เฟส 2 · สถานะปกติ', en: 'Phase 2 · Steady state' }, body: { th: 'รายได้เกิดซ้ำมั่นคง มาร์จิ้นต่อแพ็กเกจชัด', en: 'Stable recurring revenue, clear margin per tier.' } },
+      { phase: { th: 'เฟส 3 · จ้างผู้ตรวจคนที่สอง', en: 'Phase 3 · Reviewer hire' }, body: { th: 'ยกเพดานการตรวจเมื่ออัตราการใช้ถึงเกณฑ์', en: 'Lift the review ceiling when utilisation hits the threshold.' } },
+      { phase: { th: 'เฟส 4 · ขยาย', en: 'Phase 4 · Scale' }, body: { th: 'เพิ่มทีม คงวินัยคุณภาพและการรับรอง', en: 'Add team, keep the quality-and-sign-off discipline.' } },
     ],
   },
 
@@ -278,6 +280,17 @@ export const DECK: DeckSection[] = [
     headline: {
       th: 'สองผู้ก่อตั้ง ใบอนุญาตหนึ่ง เครื่องยนต์หนึ่ง',
       en: 'Two founders. One license. One engine.',
+    },
+    image: {
+      src: '/abacuz/joy-chimdee.jpg',
+      alt: {
+        th: 'คุณจอย — มยุรา ฉิมดี ผู้สอบบัญชีรับอนุญาต',
+        en: 'Khun Joy — Mayura Chimdee, Licensed CPA',
+      },
+      caption: {
+        th: 'มยุรา “จอย” ฉิมดี · ผู้สอบบัญชีรับอนุญาต (CPA)',
+        en: 'Mayura “Joy” Chimdee · Licensed CPA',
+      },
     },
     points: [
       {

@@ -60,22 +60,10 @@ export function DeckTimeline({
               fontSize: '16px',
               lineHeight: 1.25,
               color: palette.headline,
-              margin: '0 0 6px 0',
-            }}
-          >
-            {ph.phase[lang]}
-          </p>
-          <p
-            style={{
-              fontFamily: 'var(--deck-font-label, "Hanken Grotesk", sans-serif)',
-              fontSize: '11px',
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              color: GOLD,
               margin: '0 0 10px 0',
             }}
           >
-            {ph.when[lang]}
+            {ph.phase[lang]}
           </p>
           <p
             style={{

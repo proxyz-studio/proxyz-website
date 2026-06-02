@@ -34,6 +34,7 @@ import {
 import { DeckPoints } from '../components/deck/DeckPoints';
 import { DeckStats } from '../components/deck/DeckStats';
 import { DeckTimeline } from '../components/deck/DeckTimeline';
+import { DeckPortrait } from '../components/deck/DeckPortrait';
 
 export function DeckZone({ lang }: { lang: Lang }) {
   const headFont = lang === 'th' ? FONT_HEAD_TH : FONT_HEAD;
@@ -87,6 +88,16 @@ export function DeckZone({ lang }: { lang: Lang }) {
                   text={section.lede[lang]}
                   color={palette.ledeColor}
                   headFont={headFont}
+                />
+              )}
+
+              {/* Portrait — e.g. the founder photo on the partnership panel */}
+              {section.image && (
+                <DeckPortrait
+                  src={section.image.src}
+                  alt={section.image.alt[lang]}
+                  caption={section.image.caption?.[lang]}
+                  captionColor={palette.bodyColor}
                 />
               )}
 
