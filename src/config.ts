@@ -702,6 +702,30 @@ export const pipelinePageConfig: PipelinePageConfig = {
       detailHref: "/pipeline/abacuz",
     },
     {
+      name: "MIRA VALLEY",
+      sector: "Property development",
+      location: "Phuket, Thailand",
+      stage: "Proposal · partner review",
+      partnerLabel: "CEO",
+      partner: "Khun Gib",
+      proxyzRole:
+        "AI adoption, workflow automation, and a hands-on weekly AI class series — the Studio OS playbook brought into a property-development team.",
+      partnerBrings:
+        "A Phuket property-development operation and the team ready to put new AI workflows to work.",
+      whyItMatters:
+        "Property developers run on documents, approvals, and coordination — exactly where AI workflows plus a trained team compound. Month one proves it with quick wins and weekly classes, not slideware.",
+      milestones: [
+        { label: "Month-1 proposal · live", status: 'done' },
+        { label: "Partner review", status: 'active' },
+        { label: "Workflow session + quick wins", status: 'next' },
+        { label: "Weekly AI classes", status: 'next' },
+      ],
+      lastUpdate:
+        "Month-1 proposal shipped as a live, bilingual page for review — a workflow session, quick wins, and a weekly AI class series scoped for the team.",
+      cta: { label: "Open the proposal →", href: "/pipeline/mira" },
+      detailHref: "/pipeline/mira",
+    },
+    {
       name: "MONSOON",
       sector: "Premium villa & home cleaning",
       location: "Phuket, Thailand",
@@ -723,7 +747,6 @@ export const pipelinePageConfig: PipelinePageConfig = {
       lastUpdate:
         "Two-front-door moat (owners + managers) locked; brand v2 (dark / brass / cream) + design system complete; marketing site in build.",
       cta: { label: "In build", href: "/pipeline" },
-      hidden: true,
     },
   ],
   closingLabel: "BUILD WITH PROXYZ",
