@@ -145,7 +145,7 @@ body.lt-mode-tiger {
 
 /* ─── SVG drawn connections ────────────────────────────────────
    Apply the `svg-draw-lines` class to any <g> that wraps a set of
-   short <line> connector spokes (FastFix StudioOSHub, LazyTiger
+   short <line> connector spokes (FastFix studioOSHub, LazyTiger
    SensorNetworkDiagram, etc). Each line draws itself in from the
    center with stagger. stroke-dasharray 600 covers all spoke
    lengths used in the site's diagrams; bump if you ship a larger
@@ -687,7 +687,7 @@ body.has-custom-cursor * {
   }
 }
 
-/* Studio OS page grids */
+/* studioOS page grids */
 @media (max-width: 900px) {
   .studioos-pillars,
   .studioos-modules {
@@ -865,7 +865,7 @@ body.has-custom-cursor * {
 
 /* ─── Scanline heading ─────────────────────────────────────────
    Editorial "horizontal scanlines through text" effect, used on
-   the studio's top-level h1s (Hero, Pipeline, Studio OS). Replaces
+   the studio's top-level h1s (Hero, Pipeline, studioOS). Replaces
    the inline `background-clip: text` + `repeating-linear-gradient`
    that violated impeccable's gradient-text absolute ban.
 
@@ -874,6 +874,175 @@ body.has-custom-cursor * {
    matching the page background. The text remains a real DOM node:
    selectable, copy-pasteable, screen-reader friendly, visible in
    high-contrast mode. Decorative scanlines come from the overlay. */
+/* studioOS page — tighten the wide monospace word gaps on all titles (~33%). */
+.sos-page h1,
+.sos-page h2 {
+  word-spacing: -0.2em;
+}
+
+/* studioOS — System Map (the "what it is" constellation) */
+.sos-map {
+  --lime: #d2ff3b;
+  --line: rgba(255, 255, 255, 0.14);
+  --white: #f2f2f2;
+  --pink: #ff4193;
+  --faint: rgba(255, 255, 255, 0.42);
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.sos-map .os-twinkle { animation: sosTwinkle 3s ease-in-out infinite; }
+.sos-map .os-ping { transform-box: fill-box; transform-origin: center; animation: sosPing 3.4s ease-out infinite; }
+.sos-map .os-wordmark { font-family: 'IBM Plex Mono', monospace; font-weight: 600; letter-spacing: 0.04em; color: var(--white); }
+.sos-map .os-wordmark .os { color: var(--lime); }
+.sos-map .os-eyebrow { font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.18em; text-transform: uppercase; color: var(--pink); margin: 0; }
+.sos-map .os-live { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); display: inline-flex; align-items: center; gap: 8px; }
+.sos-map .os-live .dot { width: 7px; height: 7px; border-radius: 7px; background: var(--lime); box-shadow: 0 0 8px var(--lime); animation: sosTwinkle 2s ease-in-out infinite; }
+.sos-map .os-tick { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); }
+@keyframes sosTwinkle { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
+@keyframes sosPing { 0% { transform: scale(0.55); opacity: 0.7; } 70% { opacity: 0; } 100% { transform: scale(1.9); opacity: 0; } }
+
+/* studioOS — Hero background constellation ("the operating brain") */
+.sos-brain {
+  --lime: #d2ff3b;
+  --pink: #ff4193;
+  --white: #f2f2f2;
+}
+.sos-brain .os-twinkle { animation: sosTwinkle 3s ease-in-out infinite; }
+.sos-brain .os-drift { transform-box: view-box; transform-origin: center; animation: sosDrift 22s ease-in-out infinite; }
+@keyframes sosDrift { 0%, 100% { transform: translate(0px, 0px); } 50% { transform: translate(10px, -12px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .sos-map .os-twinkle, .sos-map .os-ping, .sos-map .os-live .dot,
+  .sos-brain .os-twinkle, .sos-brain .os-drift { animation: none; }
+}
+
+/* studioOS — "Inside" product showcase (Cinema / Deck / Grid variants).
+   Border lives on the inline card surface, so focus/hover edges are drawn with
+   an inset box-shadow ring (inline border would win over a stylesheet rule). */
+.sos-inside .sosi-play { animation: sosiBreathe 2.8s ease-in-out infinite; transition: box-shadow 0.4s; }
+@keyframes sosiBreathe {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 65, 147, 0); transform: scale(1); }
+  50% { box-shadow: 0 0 26px 1px rgba(255, 65, 147, 0.32); transform: scale(1.05); }
+}
+
+/* Cinema — focus-reactive card chrome (driven by the --focus custom prop). */
+.sos-inside .cin-card {
+  box-shadow:
+    0 28px 70px -44px rgba(255, 65, 147, calc(var(--focus, 0) * 0.6)),
+    inset 0 0 0 1px rgba(255, 255, 255, calc(var(--focus, 0) * 0.16));
+}
+.sos-inside .cin-num { opacity: calc(0.5 + var(--focus, 0) * 0.5); }
+.sos-inside .cin-rule {
+  display: block;
+  height: 2px;
+  width: 46px;
+  margin: 16px 0 22px;
+  background: #ff4193;
+  transform-origin: left;
+  transform: scaleX(calc(0.25 + var(--focus, 0) * 0.75));
+  opacity: calc(0.35 + var(--focus, 0) * 0.65);
+}
+
+/* Deck — ghost index numeral + active rail item. */
+.sos-inside .deck-ghost {
+  position: absolute;
+  top: 50%;
+  left: -1%;
+  transform: translateY(-50%);
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 700;
+  font-size: clamp(150px, 28vw, 360px);
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.045);
+  z-index: 0;
+  pointer-events: none;
+  user-select: none;
+}
+.sos-inside .deck-rail-item { transition: color 0.3s; }
+.sos-inside .deck-rail-item.on { color: #f2f2f2; }
+.sos-inside .deck-rail-item.on .deck-rail-label { color: #ff4193; }
+
+/* Grid — hover glow ring, accent line, drifting circuit backdrop. */
+.sos-inside .grid-tile { transition: box-shadow 0.35s; }
+.sos-inside .grid-tile.hot {
+  box-shadow:
+    0 26px 70px -40px rgba(255, 65, 147, 0.5),
+    inset 0 0 0 1px rgba(255, 65, 147, 0.45);
+}
+.sos-inside .grid-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2px;
+  width: 46px;
+  background: #ff4193;
+  transform-origin: left;
+  transform: scaleX(0.4);
+  opacity: 0.5;
+  transition: transform 0.4s, opacity 0.4s;
+}
+.sos-inside .grid-tile.hot .grid-line { transform: scaleX(1); opacity: 1; }
+.sos-inside .grid-ambient {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.55;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 26px 26px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 42%, #000 28%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 42%, #000 28%, transparent 80%);
+  animation: sosiGridDrift 30s linear infinite;
+}
+.sos-inside .grid-ambient::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 65, 147, 0.06), transparent);
+  transform: translateX(-100%);
+  animation: sosiGridScan 9s ease-in-out infinite;
+}
+@keyframes sosiGridDrift { from { background-position: 0 0; } to { background-position: 26px 26px; } }
+@keyframes sosiGridScan {
+  0% { transform: translateX(-100%); }
+  55%, 100% { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sos-inside .sosi-play,
+  .sos-inside .grid-ambient,
+  .sos-inside .grid-ambient::after { animation: none; }
+}
+
+/* studioOS — hero text treatments + ambience */
+.sos-hero-glow {
+  position: fixed;
+  width: 520px;
+  height: 520px;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(255, 65, 147, 0.12), rgba(210, 255, 59, 0.05) 42%, transparent 72%);
+  filter: blur(44px);
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+  will-change: left, top;
+}
+.hw-word { display: inline-block; will-change: transform, opacity, filter; transition: text-shadow 0.3s ease, color 0.3s ease; }
+.hw-word:hover { text-shadow: 0 0 22px rgba(255, 65, 147, 0.45); }
+.hd-char { display: inline-block; }
+.hero-float { position: absolute; border-radius: 50%; pointer-events: none; will-change: transform, opacity; animation: heroFloat 7s ease-in-out infinite; }
+@keyframes heroFloat {
+  0%, 100% { transform: translate(0, 0); opacity: 0.2; }
+  50% { transform: translate(7px, -16px); opacity: 0.65; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-float { animation: none; }
+  .sos-hero-glow { display: none; }
+}
+
 .scanline-heading {
   position: relative;
   color: var(--fg);

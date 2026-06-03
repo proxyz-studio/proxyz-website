@@ -11,7 +11,7 @@ const DEFAULT_WORDS = [
   'PHUKET',
   'AUTOLOOM',
   'PRYZM',
-  'STUDIO OS',
+  'STUDIOOS',
   'PADEL Z',
   'AI INSIDE',
 ];

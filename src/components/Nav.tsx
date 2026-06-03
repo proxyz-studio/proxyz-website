@@ -3,6 +3,18 @@ import { Link, useLocation } from 'react-router-dom';
 import { navigationConfig } from '../config';
 import LanguageToggle from './LanguageToggle';
 
+/** Render a nav label, setting the studioOS wordmark (no space, lime "OS"). */
+function navLabel(label: string) {
+  if (label.replace(/\s/g, '').toLowerCase() === 'studioos') {
+    return (
+      <span style={{ textTransform: 'none' }}>
+        studio<span style={{ color: '#d2ff3b' }}>OS</span>
+      </span>
+    );
+  }
+  return label;
+}
+
 function isExternal(href: string) {
   return /^https?:\/\//i.test(href);
 }
@@ -55,20 +67,20 @@ function MobileNavLink({
   if (isExternal(href)) {
     return (
       <a href={href} target="_blank" rel="noopener noreferrer" onClick={onNavigate} style={style}>
-        {label}
+        {navLabel(label)}
       </a>
     );
   }
   if (isRoute(href)) {
     return (
       <Link to={href} onClick={onNavigate} style={style}>
-        {label}
+        {navLabel(label)}
       </Link>
     );
   }
   return (
     <a href={href} onClick={onNavigate} style={style}>
-      {label}
+      {navLabel(label)}
     </a>
   );
 }
@@ -137,7 +149,7 @@ function NavLink({
         onMouseEnter={hoverIn}
         onMouseLeave={hoverOut}
       >
-        {label}
+        {navLabel(label)}
       </a>
     );
   }
@@ -151,7 +163,7 @@ function NavLink({
         onMouseEnter={hoverIn}
         onMouseLeave={hoverOut}
       >
-        {label}
+        {navLabel(label)}
       </Link>
     );
   }
@@ -164,7 +176,7 @@ function NavLink({
       onMouseEnter={hoverIn}
       onMouseLeave={hoverOut}
     >
-      {label}
+      {navLabel(label)}
     </a>
   );
 }
@@ -225,9 +237,9 @@ export default function Nav() {
             style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}
           >
             <img
-              src="/proxyz-tricolor.svg"
+              src="/proxyz-lockup-e-horizontal.png"
               alt={navigationConfig.brandName}
-              style={{ height: '42px', width: 'auto', display: 'block' }}
+              style={{ height: '40px', width: 'auto', display: 'block' }}
             />
           </Link>
         ) : (
@@ -238,9 +250,9 @@ export default function Nav() {
             style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}
           >
             <img
-              src="/proxyz-tricolor.svg"
+              src="/proxyz-lockup-e-horizontal.png"
               alt={navigationConfig.brandName}
-              style={{ height: '42px', width: 'auto', display: 'block' }}
+              style={{ height: '40px', width: 'auto', display: 'block' }}
             />
           </a>
         )}

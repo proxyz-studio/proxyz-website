@@ -139,7 +139,7 @@ export const navigationConfig: NavigationConfig = {
   brandName: "PROXYZ",
   links: [
     { label: "What we do", href: "/#how-it-works" },
-    { label: "Studio OS", href: "/studio-os" },
+    { label: "studioOS", href: "/studio-os" },
     { label: "Media", href: "/media" },
     { label: "Pipeline", href: "/pipeline" },
     { label: "Ventures", href: "/ventures" },
@@ -207,7 +207,7 @@ export const howItWorksConfig: HowItWorksConfig = {
 export const whatWeInstallConfig: WhatWeInstallConfig = {
   sectionLabel: { en: "04 / WHAT WE INSTALL" },
   heading: { en: "What the system actually is." },
-  lead: { en: "Studio OS is the software we install. The system around it is what makes it run. A few moving parts, working together." },
+  lead: { en: "studioOS is the software we install. The system around it is what makes it run. A few moving parts, working together." },
   list: { en: [
     "A meeting rhythm that turns conversations into decisions in writing",
     "Clear ownership so the founder is not the bottleneck on every call",
@@ -270,7 +270,7 @@ export const faqConfig: FaqConfig = {
     {
       question: { en: "What is PROXYZ?" },
       answer: { en: [
-        "PROXYZ is a venture studio. We partner with, invest in, and operate businesses alongside their founders. We bring an operating layer called Studio OS, plus four service capabilities: AI adoption, automation, EOS based management, and growth consulting. We take equity. We do not charge monthly fees or meter usage.",
+        "PROXYZ is a venture studio. We partner with, invest in, and operate businesses alongside their founders. We bring an operating layer called studioOS, plus four service capabilities: AI adoption, automation, EOS based management, and growth consulting. We take equity. We do not charge monthly fees or meter usage.",
       ] },
     },
     {
@@ -287,14 +287,14 @@ export const faqConfig: FaqConfig = {
         "Every engagement starts with the Walkthrough. No commercial path is named before it. Once we understand what you need, we work through one of four modes:",
         "- Acquire. Full buyout. PROXYZ takes the company over and operates it.",
         "- Partner. Joint operation with equity stake. We co run alongside the founder.",
-        "- Build with. Install for equity. We deploy Studio OS and our capabilities in exchange for equity. No day to day operating role.",
+        "- Build with. Install for equity. We deploy studioOS and our capabilities in exchange for equity. No day to day operating role.",
         "- Build for. Service only. Fixed scope, cash invoice. No equity. We do the work, deliver, and leave.",
       ] },
     },
     {
-      question: { en: "What is Studio OS?" },
+      question: { en: "What is studioOS?" },
       answer: { en: [
-        "Studio OS is our internal operating layer. It runs on Next.js, deployed on Vercel, built natively around EOS (the Entrepreneurial Operating System). It gives your team a single place for meetings, scorecards, rocks, issues, and AI assisted execution. It is the same system we use internally at PROXYZ. When we install it into a company, you get the product and the team who built it.",
+        "studioOS is our internal operating layer. It runs on Next.js, deployed on Vercel, built natively around EOS (the Entrepreneurial Operating System). It gives your team a single place for meetings, scorecards, rocks, issues, and AI assisted execution. It is the same system we use internally at PROXYZ. When we install it into a company, you get the product and the team who built it.",
       ] },
     },
     {
@@ -321,7 +321,7 @@ export const faqConfig: FaqConfig = {
     {
       question: { en: "Who owns the IP?" },
       answer: { en: [
-        "You do. Your existing IP, customer data, and trade secrets do not transfer to PROXYZ. Studio OS is our IP. We license it into your business as part of the engagement. If you ever want to continue using it without PROXYZ, everything is documented so you could.",
+        "You do. Your existing IP, customer data, and trade secrets do not transfer to PROXYZ. studioOS is our IP. We license it into your business as part of the engagement. If you ever want to continue using it without PROXYZ, everything is documented so you could.",
       ] },
     },
     {
@@ -339,7 +339,7 @@ export const faqConfig: FaqConfig = {
         "- Automation. n8n integrations, system connections, eliminating manual steps across your tools.",
         "- EOS / Traction. Vision/Traction Organizer, Rocks, Scorecard, the L10 meeting structure, accountability rhythm layered with PROXYZ specific modules.",
         "- Growth consulting. Positioning, go to market, founder led sales playbooks, channel strategy.",
-        "Plus Studio OS, which ties all of it together and gives your team a single operating environment.",
+        "Plus studioOS, which ties all of it together and gives your team a single operating environment.",
       ] },
     },
     {
@@ -360,7 +360,7 @@ export const faqConfig: FaqConfig = {
       question: { en: "What if I want out?" },
       answer: { en: [
         "We build an exit process into every Partner and Build with agreement. It is not designed to trap you.",
-        "The systems we install are documented. Nothing is a black box. If you want to continue running Studio OS without PROXYZ, we walk you through what would need to change. We would rather have that conversation upfront than have it be a surprise later.",
+        "The systems we install are documented. Nothing is a black box. If you want to continue running studioOS without PROXYZ, we walk you through what would need to change. We would rather have that conversation upfront than have it be a surprise later.",
       ] },
     },
     {
@@ -407,11 +407,11 @@ export interface StudioOSPageConfig {
 }
 
 export const studioOSPageConfig: StudioOSPageConfig = {
-  eyebrow: "ISSUE 02 / STUDIO OS",
-  titleLines: ["The Studio OS,", "operating live."],
+  eyebrow: "ISSUE 02 / STUDIOOS",
+  titleLines: ["The studioOS,", "operating live."],
   lead:
-    "Studio OS is the working surface every PROXYZ engagement runs on. Meeting cadence, decisions, automations, AI agents, scorecards, all in one workspace. Built by operators for operators.",
-  primaryCta: { label: "Open Studio OS →", href: "https://studioos.proxyz.studio/sign-in" },
+    "studioOS is the working surface every PROXYZ engagement runs on. Meeting cadence, decisions, automations, AI agents, scorecards, all in one workspace. Built by operators for operators.",
+  primaryCta: { label: "Open studioOS →", href: "https://studioos.proxyz.studio/sign-in" },
   secondaryLink: { label: "Book the Audit", href: "/#booking" },
   pillarsLabel: "02 / WHAT IT DOES",
   pillars: [
@@ -431,7 +431,7 @@ export const studioOSPageConfig: StudioOSPageConfig = {
         "Meeting agent, drafting agent, research agent. Each tuned to the company. Each with a workspace memory and an audit trail.",
     },
   ],
-  modulesLabel: "03 / INSIDE STUDIO OS",
+  modulesLabel: "03 / INSIDE STUDIOOS",
   modulesIntro:
     "Every module is built around the same idea: the system runs the company, not the founder.",
   modules: [
@@ -469,7 +469,7 @@ export const studioOSPageConfig: StudioOSPageConfig = {
   whoLabel: "01 / WHO RUNS ON IT",
   whoHeading: "Every PROXYZ engagement. Every partner company.",
   whoBody:
-    "Studio OS is what we install during The Install and The Blueprint. It's the operating surface for every Build-with venture. New workspace per company. Owner controls. Multi-org rollup for the studio team.",
+    "studioOS is what we install during The Install and The Blueprint. It's the operating surface for every Build-with venture. New workspace per company. Owner controls. Multi-org rollup for the studio team.",
   closingHeading: "Want a tour?",
   closingBody:
     "Audit clients get a working demo inside the first 60 minutes. Active engagements get a live workspace with their data inside week one.",
@@ -661,7 +661,7 @@ export const pipelinePageConfig: PipelinePageConfig = {
       partnerLabel: "Founder",
       partner: "Cathal Kiely",
       proxyzRole:
-        "The operating system that scales the brand across Asia. Studio OS install, AI Coach, Tiger Score, loyalty layer, the programming pipeline that codifies the IP.",
+        "The operating system that scales the brand across Asia. studioOS install, AI Coach, Tiger Score, loyalty layer, the programming pipeline that codifies the IP.",
       partnerBrings:
         "The brand, the format, the InterContinental Bangkok flagship, the capital for studio buildouts, the instructor and class IP, the Thai studio network.",
       whyItMatters:
@@ -685,7 +685,7 @@ export const pipelinePageConfig: PipelinePageConfig = {
       partnerLabel: "Co-founder · CPA",
       partner: "Mayura 'Joy' Chimdee",
       proxyzRole:
-        "Studio OS, automation, brand, GTM, deal architecture. The platform a transparent, AI-engine accounting firm runs on.",
+        "studioOS, automation, brand, GTM, deal architecture. The platform a transparent, AI-engine accounting firm runs on.",
       partnerBrings:
         "Thai CPA license (ผู้สอบบัญชีรับอนุญาต), CFO-level expertise, an existing SMB accounting side-book, and the local network.",
       whyItMatters:
@@ -709,7 +709,7 @@ export const pipelinePageConfig: PipelinePageConfig = {
       partnerLabel: "CEO",
       partner: "Khun Gib",
       proxyzRole:
-        "AI adoption, workflow automation, and a hands-on weekly AI class series — the Studio OS playbook brought into a property-development team.",
+        "AI adoption, workflow automation, and a hands-on weekly AI class series — the studioOS playbook brought into a property-development team.",
       partnerBrings:
         "A Phuket property-development operation and the team ready to put new AI workflows to work.",
       whyItMatters:
@@ -733,7 +733,7 @@ export const pipelinePageConfig: PipelinePageConfig = {
       partnerLabel: "Operating partner",
       partner: "Phuket operating partner",
       proxyzRole:
-        "The operating system: Studio OS, the brand, the recurring-plan engine, and a photo-proof Clean Report on every visit — the playbook to own a zone.",
+        "The operating system: studioOS, the brand, the recurring-plan engine, and a photo-proof Clean Report on every visit — the playbook to own a zone.",
       partnerBrings:
         "On-the-ground Phuket operations, trained crews, and villa-owner + property-manager relationships.",
       whyItMatters:
@@ -1164,16 +1164,16 @@ export const fastFixPageConfig: FastFixPageConfig = {
   studioOSLabel: "02 · THE OPERATING SYSTEM",
   studioOSHeadingLines: ["One brain.", "Every partner", "company."],
   studioOSParagraphs: [
-    "We call it Studio OS. Think of it as the central nervous system that every PROXYZ company runs on — the place where your bookings, your team, your customers, your invoices, your AI, and your reports all live together.",
+    "We call it studioOS. Think of it as the central nervous system that every PROXYZ company runs on — the place where your bookings, your team, your customers, your invoices, your AI, and your reports all live together.",
     "When you join the studio, you don't build any of this from scratch. You plug in.",
   ],
   studioOSBullets: [
     "One login, every tool. Your team uses one platform — not eight different apps stitched with email.",
     "Data lives in one place. Customers, jobs, photos, invoices, owner reports — all connected.",
     "AI works behind the scenes. Translation, dispatch, reporting — it runs without you thinking about it.",
-    "Built once, polished by all partners. Every new PROXYZ company makes Studio OS better.",
+    "Built once, polished by all partners. Every new PROXYZ company makes studioOS better.",
   ],
-  studioOSHubLabel: "STUDIO OS",
+  studioOSHubLabel: "STUDIOOS",
   studioOSHubLabels: [
     "SOFTWARE",
     "AUTOMATION",
@@ -1269,7 +1269,7 @@ export const fastFixPageConfig: FastFixPageConfig = {
   ],
   proxyzBringsLabel: "PROXYZ BRINGS",
   proxyzBrings: [
-    "Studio OS — software for every part of the business",
+    "studioOS — software for every part of the business",
     "AI and automation that does real work",
     "Brand, identity, and content production",
     "Accounting, legal, HR infrastructure",
@@ -1738,7 +1738,7 @@ export const lazyTigerPageConfig: LazyTigerPageConfig = {
     proxyzLabel: 'PROXYZ',
     proxyzBullets: [
       'The operating system that scales it.',
-      'The Studio OS install, the AI Coach, the data layer.',
+      'The studioOS install, the AI Coach, the data layer.',
       'The strategic + technical post-launch operator.',
       'The programming pipeline that codifies the IP.',
       'The Thai network on the operator side, plus EOS / Traction methodology.',

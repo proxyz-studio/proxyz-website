@@ -43,8 +43,8 @@ export function ComplianceCalendar({ lang }: { lang: Lang }) {
         }}
       >
         {lang === 'th'
-          ? 'ทุกขั้นเป็นงานเกิดซ้ำใน Studio OS มีเจ้าของและตัวบล็อกชัดเจน'
-          : 'Every step is a recurring task in Studio OS with an owner and a blocker.'}
+          ? 'ทุกขั้นเป็นงานเกิดซ้ำใน studioOS มีเจ้าของและตัวบล็อกชัดเจน'
+          : 'Every step is a recurring task in studioOS with an owner and a blocker.'}
       </p>
       <table
         style={{

@@ -137,7 +137,7 @@ export default function StudioOS() {
 
         {/* WHO RUNS ON IT — promoted from position 4 to position 2 per
             audit (_output/2026-05-23-impeccable-studioos-media-v1.md #4):
-            framing Studio OS as "what we install at clients" has to
+            framing StudioOS as "what we install at clients" has to
             precede the module tour, or a cold reader parses MODULES as
             a SaaS feature grid. */}
         <section

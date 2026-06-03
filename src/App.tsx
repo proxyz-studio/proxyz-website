@@ -11,7 +11,6 @@ import Team from './sections/Team';
 import Booking from './sections/Booking';
 import Footer from './sections/Footer';
 import Marquee from './components/Marquee';
-import StudioOS from './pages/StudioOS';
 import Media from './pages/Media';
 import PadelZ from './pages/PadelZ';
 import Pipeline from './pages/Pipeline';
@@ -50,6 +49,13 @@ const Faq = lazy(() => import('./pages/Faq'));
 const VentureDetail = lazy(() => import('./pages/VentureDetail'));
 
 // Preview routes are dev-only — code-split so production users don't pay for motion lib etc.
+// studioOS cinematic redesign prototype — ports to /studio-os once approved.
+const StudioOsExperience = lazy(() => import('./pages/studio-os'));
+// Immersive direction samples — Tew picks one, then it builds out.
+const StudioOsCinematic = lazy(() => import('./pages/studio-os-samples/Cinematic'));
+const StudioOsProduct = lazy(() => import('./pages/studio-os-samples/ProductUI'));
+const StudioOs3D = lazy(() => import('./pages/studio-os-samples/ThreeDee'));
+const StudioOsKinetic = lazy(() => import('./pages/studio-os-samples/Kinetic'));
 const HeroPreview = lazy(() => import('./pages/HeroPreview'));
 const VisualPreview = lazy(() => import('./pages/VisualPreview'));
 const GlowPreview = lazy(() => import('./pages/GlowPreview'));
@@ -125,7 +131,7 @@ function App() {
       <ScrollManager />
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/studio-os" element={<StudioOS />} />
+        <Route path="/studio-os" element={<Suspense fallback={null}><StudioOsExperience /></Suspense>} />
         <Route path="/media" element={<Media />} />
         <Route path="/media/padel-z" element={<PadelZ />} />
         <Route path="/pipeline" element={<Pipeline />} />
@@ -154,6 +160,11 @@ function App() {
           path="/preview/lazy-tiger-styles"
           element={<Suspense fallback={null}><LazyTigerStyles /></Suspense>}
         />
+        <Route path="/preview/studio-os" element={<Suspense fallback={null}><StudioOsExperience /></Suspense>} />
+        <Route path="/preview/studio-os-cinematic" element={<Suspense fallback={null}><StudioOsCinematic /></Suspense>} />
+        <Route path="/preview/studio-os-product" element={<Suspense fallback={null}><StudioOsProduct /></Suspense>} />
+        <Route path="/preview/studio-os-3d" element={<Suspense fallback={null}><StudioOs3D /></Suspense>} />
+        <Route path="/preview/studio-os-kinetic" element={<Suspense fallback={null}><StudioOsKinetic /></Suspense>} />
         <Route path="/preview/hero" element={<Suspense fallback={null}><HeroPreview /></Suspense>} />
         <Route path="/preview/visual" element={<Suspense fallback={null}><VisualPreview /></Suspense>} />
         <Route path="/preview/glow" element={<Suspense fallback={null}><GlowPreview /></Suspense>} />

@@ -341,7 +341,7 @@ function PictogramDemo() {
       ),
     },
     {
-      label: 'Studio OS',
+      label: 'studioOS',
       sub: 'the engine',
       svg: (
         <>
@@ -355,7 +355,7 @@ function PictogramDemo() {
       ),
     },
     {
-      label: 'Studio OS',
+      label: 'studioOS',
       sub: 'workspace',
       svg: (
         <>
