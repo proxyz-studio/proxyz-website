@@ -378,7 +378,7 @@ export const footerConfig: FooterConfig = {
     label: "hello@proxyz.studio",
     href: "mailto:hello@proxyz.studio",
   },
-  linkedin: { label: "LinkedIn", href: "#" },
+  linkedin: { label: "LinkedIn", href: "https://www.linkedin.com/in/arnonsaksri/" },
   right: { en: "© 2026. All rights reserved." },
 }
 
