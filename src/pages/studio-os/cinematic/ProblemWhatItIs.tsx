@@ -3,7 +3,9 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { studioOsContent } from '../content';
 import { DISPLAY, FG, MAXW, MONO, MUTED, labelStyle } from '../theme';
+import { useIsMobile } from '../useIsMobile';
 import SystemMap from './SystemMap';
+import SystemMapMobile from './SystemMapMobile';
 
 const { problem } = studioOsContent;
 
@@ -14,8 +16,10 @@ const { problem } = studioOsContent;
  */
 export default function ProblemWhatItIs() {
   const ref = useRef<HTMLElement>(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
+    if (isMobile) return; // phones: no pin — Problem and the brain stack as normal sections
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     gsap.registerPlugin(ScrollTrigger);
     const ctx = gsap.context(() => {
@@ -32,7 +36,31 @@ export default function ProblemWhatItIs() {
         .fromTo('.pw-what', { autoAlpha: 0, scale: 0.94 }, { autoAlpha: 1, scale: 1, ease: 'expo.out', duration: 1.3 }, '<0.2');
     }, ref);
     return () => ctx.revert();
-  }, []);
+  }, [isMobile]);
+
+  // Phones: the constellation can't fit a narrow column and a long pinned scrub
+  // feels stuck on touch — render the Problem beat and the brain as two normal
+  // stacked sections.
+  if (isMobile) {
+    return (
+      <>
+        <section style={{ padding: '92px 24px 56px' }}>
+          <div style={{ maxWidth: MAXW, margin: '0 auto' }}>
+            <p style={{ ...labelStyle, marginBottom: 22 }}>{problem.label}</p>
+            <h2 style={{ fontFamily: DISPLAY, fontSize: 'clamp(30px,8vw,48px)', fontWeight: 600, lineHeight: 1.12, letterSpacing: '-0.01em', textTransform: 'uppercase', margin: '0 0 22px', color: FG }}>
+              {problem.heading}
+            </h2>
+            <p style={{ fontFamily: MONO, fontSize: '15px', lineHeight: 1.65, color: MUTED, margin: 0 }}>
+              {problem.bodyLines[problem.bodyLines.length - 1]}
+            </p>
+          </div>
+        </section>
+        <section style={{ padding: '28px 20px 96px' }}>
+          <SystemMapMobile />
+        </section>
+      </>
+    );
+  }
 
   return (
     <section ref={ref} style={{ position: 'relative', height: '100vh', overflow: 'hidden' }}>

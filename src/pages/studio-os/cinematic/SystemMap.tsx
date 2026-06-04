@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { MODULES } from './system-map-data';
 
 /**
  * Direction C — The System Map ("the whole company, in one place").
@@ -6,18 +7,6 @@ import { useMemo } from 'react';
  * with data pulses flowing inward. This is the visual answer to "what StudioOS
  * is" — the operating brain. (Tew's design; adapted to the app's stack/theme.)
  */
-const MODULES: [string, string][] = [
-  ['Bearing', 'direction'],
-  ['Anchors', 'priorities'],
-  ['Vitals', 'numbers'],
-  ['Cadence', 'rhythm'],
-  ['Friction', 'problems'],
-  ['Debrief', 'meetings'],
-  ['To-dos', 'work'],
-  ['Accountability', 'people'],
-  ['Ask AI', 'intelligence'],
-];
-
 export default function SystemMap() {
   const reduced =
     typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
