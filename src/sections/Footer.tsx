@@ -68,6 +68,8 @@ export default function Footer() {
           </a>
           <a
             href={footerConfig.linkedin.href}
+            target="_blank"
+            rel="noopener noreferrer"
             style={{
               color: '#0A0A0A',
               textDecoration: 'none',
