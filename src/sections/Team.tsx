@@ -84,6 +84,10 @@ function MemberCard({ member, isLast, index }: { member: StudioTeamMember; isLas
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       style={{
         position: 'relative',
+        // Fill the grid row so every card is the same height as the tallest.
+        // Without this, a shorter bio leaves the hover glow + tilt host short
+        // of the cell's bottom border, drawing a faint seam ("box") on hover.
+        height: '100%',
         borderRight: isLast ? 'none' : '1px solid rgba(255,255,255,0.12)',
       }}
     >
