@@ -12,6 +12,7 @@ import HowYouGetIt from './cinematic/HowYouGetIt';
 import BookACall from './cinematic/BookACall';
 import { BG, FG } from './theme';
 import { ProgressiveBlur } from './ProgressiveBlur';
+import { ScrollCue } from './ScrollCue';
 
 /**
  * StudioOS — the cinematic page (the chosen direction). Eight v4 sections plus
@@ -51,6 +52,8 @@ export default function StudioOsPage() {
           and at the bottom edge. Top offset clears the fixed nav height. */}
       <ProgressiveBlur position="top" offset="82px" height="78px" />
       <ProgressiveBlur position="bottom" />
+      {/* Persistent scroll cue: fixed bottom-centre, more opaque as you scroll. */}
+      <ScrollCue />
       <Footer />
     </>
   );
