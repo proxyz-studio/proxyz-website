@@ -14,7 +14,7 @@ import { BG, FG } from './theme';
 import { ProgressiveBlur } from './ProgressiveBlur';
 
 /**
- * studioOS — the cinematic page (the chosen direction). Eight v4 sections plus
+ * StudioOS — the cinematic page (the chosen direction). Eight v4 sections plus
  * the "what's inside" product showcase, on Lenis smooth scroll with pinned
  * scroll scenes and choreographed reveals. Copy is v4 verbatim, IBM Plex Mono
  * throughout. Mounted at /studio-os.
@@ -24,7 +24,7 @@ export default function StudioOsPage() {
 
   useEffect(() => {
     const prevTitle = document.title;
-    document.title = 'studioOS — The operating brain for your company | PROXYZ';
+    document.title = 'StudioOS — The operating brain for your company | PROXYZ';
     const vanta = document.querySelector<HTMLElement>('.vanta-bg');
     const prevVanta = vanta?.style.display ?? '';
     if (vanta) vanta.style.display = 'none';

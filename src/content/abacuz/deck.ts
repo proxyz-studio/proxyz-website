@@ -1,7 +1,7 @@
 /* ABACUZ — Product Deck content.
  *
  * The capital-raise-style pitch for the Product Deck zone (?zone=deck).
- * Subject: ABACUZ the venture AND studioOS as the engine that runs it.
+ * Subject: ABACUZ the venture AND StudioOS as the engine that runs it.
  * Spine: cover → problem → solution → market → engine → moat → model →
  * roadmap → the ask. Distilled from the 2026-05-31 R&D corpus (research,
  * strategy, offers, operations, tech, finance) reframed as a pitch.
@@ -62,8 +62,8 @@ export const DECK: DeckSection[] = [
     eyebrow: { th: 'สไลด์นำเสนอผลิตภัณฑ์', en: 'Product deck' },
     headline: { th: 'บัญชีสะอาด ไม่มีเซอร์ไพรส์', en: 'Clean books. No surprises.' },
     lede: {
-      th: 'บริษัทบัญชีและงานนิติบุคคลที่โปร่งใสสำหรับเมืองไทย ขับเคลื่อนด้วย studioOS',
-      en: 'A transparent accounting and corporate-services firm for Thailand, run on studioOS.',
+      th: 'บริษัทบัญชีและงานนิติบุคคลที่โปร่งใสสำหรับเมืองไทย ขับเคลื่อนด้วย StudioOS',
+      en: 'A transparent accounting and corporate-services firm for Thailand, run on StudioOS.',
     },
     pull: {
       th: 'ABACUZ คือบริษัทที่คุณเห็นทุกตัวเลขได้',
@@ -154,15 +154,15 @@ export const DECK: DeckSection[] = [
     },
   },
 
-  /* ── ENGINE (studioOS) ────────────────────────────────────────── */
+  /* ── ENGINE (StudioOS) ────────────────────────────────────────── */
   {
     id: 'engine',
     kind: 'engine',
     surface: 'navy',
     eyebrow: { th: '04 · เครื่องยนต์', en: '04 · The engine' },
     headline: {
-      th: 'studioOS รันบริษัท ไม่ใช่แค่ซอฟต์แวร์บัญชี',
-      en: 'studioOS runs the firm. This is not bookkeeping software.',
+      th: 'StudioOS รันบริษัท ไม่ใช่แค่ซอฟต์แวร์บัญชี',
+      en: 'StudioOS runs the firm. This is not bookkeeping software.',
     },
     lede: {
       th: 'นี่คือสิ่งที่ทำให้ ABACUZ มากกว่าสำนักงานบัญชี ระบบทำงานปริมาณมากให้ มาร์จิ้นจึงไม่ได้มาจากการกดเงินเดือน',
@@ -213,7 +213,7 @@ export const DECK: DeckSection[] = [
       },
       {
         label: { th: 'ประสิทธิภาพ AI', en: 'AI efficiency' },
-        detail: { th: 'studioOS ทำให้ต้นทุนส่วนเพิ่มต่อลูกค้าต่ำ — Big Four แข่งราคานี้ไม่ได้', en: 'studioOS keeps marginal cost per client low — a price the Big Four cannot match.' },
+        detail: { th: 'StudioOS ทำให้ต้นทุนส่วนเพิ่มต่อลูกค้าต่ำ — Big Four แข่งราคานี้ไม่ได้', en: 'StudioOS keeps marginal cost per client low — a price the Big Four cannot match.' },
       },
       {
         label: { th: 'วินัยเพดานการตรวจ', en: 'Review-capacity discipline' },
@@ -263,7 +263,7 @@ export const DECK: DeckSection[] = [
       en: 'Five phases, gated on review capacity — not cash.',
     },
     phases: [
-      { phase: { th: 'เฟส 0 · สร้าง', en: 'Phase 0 · Build' }, body: { th: 'จดทะเบียน ตั้ง studioOS เปิดบริการตรวจสุขภาพบริษัทฟรี', en: 'Incorporate, stand up studioOS, open the free Company Health Check.' } },
+      { phase: { th: 'เฟส 0 · สร้าง', en: 'Phase 0 · Build' }, body: { th: 'จดทะเบียน ตั้ง StudioOS เปิดบริการตรวจสุขภาพบริษัทฟรี', en: 'Incorporate, stand up StudioOS, open the free Company Health Check.' } },
       { phase: { th: 'เฟส 1 · ลูกค้ารายแรก', en: 'Phase 1 · First clients' }, body: { th: 'ลูกค้าต่างชาติกลุ่มแรก + ฐาน SMB ไทยบน LINE', en: 'First foreign-owned clients + the Thai SMB base on LINE.' } },
       { phase: { th: 'เฟส 2 · สถานะปกติ', en: 'Phase 2 · Steady state' }, body: { th: 'รายได้เกิดซ้ำมั่นคง มาร์จิ้นต่อแพ็กเกจชัด', en: 'Stable recurring revenue, clear margin per tier.' } },
       { phase: { th: 'เฟส 3 · จ้างผู้ตรวจคนที่สอง', en: 'Phase 3 · Reviewer hire' }, body: { th: 'ยกเพดานการตรวจเมื่ออัตราการใช้ถึงเกณฑ์', en: 'Lift the review ceiling when utilisation hits the threshold.' } },
@@ -299,7 +299,7 @@ export const DECK: DeckSection[] = [
       },
       {
         label: { th: 'PROXYZ (Tew) นำมา', en: 'PROXYZ (Tew) brings' },
-        detail: { th: 'แพลตฟอร์ม studioOS ระบบอัตโนมัติและ AI แบรนด์ การออกแบบดีล และทุนสร้าง', en: 'The studioOS platform, automation and AI, brand, deal architecture, and build investment.' },
+        detail: { th: 'แพลตฟอร์ม StudioOS ระบบอัตโนมัติและ AI แบรนด์ การออกแบบดีล และทุนสร้าง', en: 'The StudioOS platform, automation and AI, brand, deal architecture, and build investment.' },
       },
       {
         label: { th: 'ยังเปิดให้ตัดสินร่วมกัน', en: 'Still ours to settle together' },

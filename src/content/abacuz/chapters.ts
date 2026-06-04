@@ -74,13 +74,13 @@ export const CHAPTERS: Chapter[] = [
     body: {
       th: [
         'งานวิจัยตอบสองห่วงใหญ่ที่สุดของเราแล้ว (ใบอนุญาตและกฎการถือครองของต่างชาติ) เปิดทางให้เรานำด้วยลูกค้าต่างชาติ-Phuket เป็นฐาน (อัตรากำไรสูงกว่า, ช่องว่างความเชื่อใจคม, ช่องทางออนไลน์เข้าถึงได้ทั่วโลก) ในขณะที่ฐานลูกค้า SMB ไทยของคุณจอยเป็นฐานอุ่นบน LINE ตั้งแต่วันแรก ด้วยคำมั่น "บัญชีสะอาด ไม่มีเซอร์ไพรส์"',
-        'การให้บริการเป็น remote ทั่วประเทศ บริษัทดำเนินการบน studioOS + ระบบอัตโนมัติ + ทีมงานบาง ๆ โดยที่คุณจอยอยู่ในคิวตรวจและเซ็นรับรอง — ไม่ใช่ในการทำบัญชีรายวัน',
+        'การให้บริการเป็น remote ทั่วประเทศ บริษัทดำเนินการบน StudioOS + ระบบอัตโนมัติ + ทีมงานบาง ๆ โดยที่คุณจอยอยู่ในคิวตรวจและเซ็นรับรอง — ไม่ใช่ในการทำบัญชีรายวัน',
         'จุดขายคือความเชื่อใจและความโปร่งใส ไม่ใช่ "AI" ขอบเขตของเราคือ "บริษัทบัญชีและงานนิติบุคคลที่โปร่งใส ไม่ใช่สำนักงานกฎหมาย" — งานบริการนิติบุคคลทั้งหมดเราทำเอง คดีความส่งต่อทนายที่มีใบอนุญาต ฝ่ายตรวจสอบกฎหมายจะยืนยันถ้อยคำที่แน่นอนก่อนเผยแพร่',
         'ความเสี่ยงที่ซื่อสัตย์: เพดานรายได้ของแต่ละเฟสคือชั่วโมงตรวจของคุณจอย ตราบใดที่ทำพาร์ทไทม์ เราเติบโตได้แค่เท่าที่ตรวจอย่างถูกต้อง และวางแผนจ้างผู้ตรวจสอบคนที่สองเมื่อขยาย ข้อมูลส่วนตัว (PDPA) จัดการอย่างละเอียด และเราจะยืนยันรายละเอียดใบอนุญาตทุกข้อกับผู้เชี่ยวชาญไทยก่อนดำเนินการ',
       ],
       en: [
         "The research closed our two biggest worries (the licensing question and the foreign-ownership question) and opens the lane: lead with foreign-owned, Phuket-anchored (higher margin, sharp trust gap, globally-reachable channels), with Khun Joy's Thai-SMB clients as a warm base on LINE from day one, under a \"clean books, no surprises\" promise.",
-        "Delivery is remote and nationwide. The firm runs on studioOS, automation, and a thin staff layer, with Khun Joy on review and sign-off — not on the day-to-day bookkeeping.",
+        "Delivery is remote and nationwide. The firm runs on StudioOS, automation, and a thin staff layer, with Khun Joy on review and sign-off — not on the day-to-day bookkeeping.",
         'The edge is trust and transparency, not "AI." Our scope is a transparent accounting and corporate-services firm, not a law firm — we do all the corporate-services work ourselves, court cases are referred to a licensed lawyer, and the legal review will confirm the exact wording before we publish.',
         "Honest risk: the firm's capacity is capped by Khun Joy's review hours while she is part-time, so we grow only as fast as we can review work properly, and we plan for the second senior reviewer as we scale. Client data privacy (PDPA) is handled carefully, and we confirm every Thai licensing detail with a professional before acting.",
       ],
@@ -127,16 +127,16 @@ export const CHAPTERS: Chapter[] = [
     },
     body: {
       th: [
-        'กฎข้อเดียว: บริษัทไม่พึ่งชั่วโมงทำงานของผู้ก่อตั้งคนใดคนหนึ่ง ทั้งคู่พาร์ทไทม์โดยพื้นฐาน คำตอบทั่วไปคือเลือกระหว่างทำเต็มเวลาหรือยอมรับเพดานเล็ก เราตอบไม่เหมือนกัน — ระบบอัตโนมัติ + studioOS + ทีมงานบางรับภาระงาน ส่วนเวลาของคุณจอยถูกเก็บไว้สำหรับสิ่งที่มีเพียงคุณจอยทำได้ คือการตรวจสอบและเซ็นรับรอง',
+        'กฎข้อเดียว: บริษัทไม่พึ่งชั่วโมงทำงานของผู้ก่อตั้งคนใดคนหนึ่ง ทั้งคู่พาร์ทไทม์โดยพื้นฐาน คำตอบทั่วไปคือเลือกระหว่างทำเต็มเวลาหรือยอมรับเพดานเล็ก เราตอบไม่เหมือนกัน — ระบบอัตโนมัติ + StudioOS + ทีมงานบางรับภาระงาน ส่วนเวลาของคุณจอยถูกเก็บไว้สำหรับสิ่งที่มีเพียงคุณจอยทำได้ คือการตรวจสอบและเซ็นรับรอง',
         'สามชั้น — ชั้น 1 ระบบอัตโนมัติ: รับเอกสาร จำแนกประเภท ติดตามกำหนดเวลา ร่าง สื่อสารสถานะ ร่าง Clear Statement ฉบับแรก; ชั้น 2 พนักงาน (พนักงานบัญชี + ผู้ประสานงาน): ตรวจผลของระบบ ตัดสินใจกรณีกำกวม ร่างการยื่น จัดแฟ้มให้พร้อมตรวจ; ชั้น 3 คุณจอย (CPA): เซ็นรับรอง สอบบัญชี ที่ปรึกษา/CFO ทุกอย่างที่ใช้ชื่อใบอนุญาต ไม่มีสิ่งใดที่คุณจอยเซ็นออกจากบริษัทโดยไม่ผ่านการตรวจของคุณจอย',
-        'รอบรายเดือนขับเคลื่อนด้วยปฏิทินการปฏิบัติตามกฎของไทย studioOS เก็บปฏิทินกลาง งานยิงอัตโนมัติต่อลูกค้า (ดูข้างล่าง) Clear Statement ถูกส่งภายในวันที่ 20 ของทุกเดือน — นี่ไม่ใช่บริการเสริม แต่เป็นพิธีกรรมความไว้วางใจ',
+        'รอบรายเดือนขับเคลื่อนด้วยปฏิทินการปฏิบัติตามกฎของไทย StudioOS เก็บปฏิทินกลาง งานยิงอัตโนมัติต่อลูกค้า (ดูข้างล่าง) Clear Statement ถูกส่งภายในวันที่ 20 ของทุกเดือน — นี่ไม่ใช่บริการเสริม แต่เป็นพิธีกรรมความไว้วางใจ',
         'ตัวเลขสำคัญที่สุดเชิงปฏิบัติคือเพดานความสามารถในการตรวจสอบของคุณจอย — กี่รายต่อสัปดาห์ที่คุณจอยเซ็นรับรองได้อย่างถูกต้องในขณะพาร์ทไทม์ เมื่อกำหนดเพดานแล้ว เราติดตามการใช้งานรายสัปดาห์ การขายชะลอเมื่อใกล้เพดาน และเปิดรับสมัครผู้ตรวจสอบคนที่สองเมื่อใกล้ถึง',
       ],
       en: [
-        "One rule: the firm does not depend on either founder's hours. Both founders are part-time by default. The conventional answer is to either go full-time or accept a small ceiling. We answer differently — automation plus studioOS plus a thin staff layer carries the volume, and Khun Joy's time is preserved for the one thing only she can do: review and CPA sign-off.",
+        "One rule: the firm does not depend on either founder's hours. Both founders are part-time by default. The conventional answer is to either go full-time or accept a small ceiling. We answer differently — automation plus StudioOS plus a thin staff layer carries the volume, and Khun Joy's time is preserved for the one thing only she can do: review and CPA sign-off.",
         "Three layers — Layer 1 Automation: intake, classification, deadline tracking, draft generation, status communication, the Clear Statement first draft. Layer 2 Staff (bookkeepers + coordinator): verifying automation's output, judgment calls on ambiguous transactions, draft filings, preparing the file for review. Layer 3 Khun Joy (CPA): sign-off, audit, advisory/CFO, anything that bears her licensed name. Nothing she signs leaves the firm without her review.",
-        'The monthly cycle is calendar-driven by Thai compliance. studioOS holds the master calendar; tasks fire automatically per client (see calendar below). The Clear Statement is delivered by day 20 of every month — not a courtesy, but the trust ritual.',
-        "The single most important operational number is Khun Joy's review-capacity cap — how many clients you can review properly per week while part-time. Once set in writing, studioOS tracks utilisation weekly; sales pacing slows as we near it; we open the second reviewer search before quality slips.",
+        'The monthly cycle is calendar-driven by Thai compliance. StudioOS holds the master calendar; tasks fire automatically per client (see calendar below). The Clear Statement is delivered by day 20 of every month — not a courtesy, but the trust ritual.',
+        "The single most important operational number is Khun Joy's review-capacity cap — how many clients you can review properly per week while part-time. Once set in writing, StudioOS tracks utilisation weekly; sales pacing slows as we near it; we open the second reviewer search before quality slips.",
       ],
     },
     inset: 'compliance-calendar',
@@ -147,7 +147,7 @@ export const CHAPTERS: Chapter[] = [
     num: '06',
     id: 'tech',
     eyebrow: { th: 'บทที่ 6 · เทคโนโลยี', en: 'Chapter 6 · The Tech' },
-    title: { th: 'studioOS ประสาน ไม่แทนที่', en: 'studioOS orchestrates, never replaces' },
+    title: { th: 'StudioOS ประสาน ไม่แทนที่', en: 'StudioOS orchestrates, never replaces' },
     source: { th: 'จาก 07-tech-stack · สแต็กเทคโนโลยี v1', en: 'From 07-tech-stack · tech stack v1' },
     pull: {
       th: 'ไม่สร้างสิ่งที่ใช้งานได้แล้ว ทุกอย่างมีฉบับภาษาไทย',
@@ -155,16 +155,16 @@ export const CHAPTERS: Chapter[] = [
     },
     body: {
       th: [
-        'ABACUZ ทำงานบนสี่ชั้น: studioOS (ประสาน workspace ต่อลูกค้า ปฏิทินการปฏิบัติตามกฎ คิวตรวจ แม่แบบสองภาษา) + ระบบบัญชี (FlowAccount เป็นมาตรฐาน SMB ไทย, Xero เสนอให้ลูกค้าต่างชาติ — คุณจอยยืนยัน) + พอร์ทัลของรัฐ (RD e-Filing, e-Withholding Tax, สปส., DBD, BOI) + ช่องทาง (LINE OA @abacuz, อีเมล Google Workspace, พอร์ทัลลูกค้า studioOS)',
+        'ABACUZ ทำงานบนสี่ชั้น: StudioOS (ประสาน workspace ต่อลูกค้า ปฏิทินการปฏิบัติตามกฎ คิวตรวจ แม่แบบสองภาษา) + ระบบบัญชี (FlowAccount เป็นมาตรฐาน SMB ไทย, Xero เสนอให้ลูกค้าต่างชาติ — คุณจอยยืนยัน) + พอร์ทัลของรัฐ (RD e-Filing, e-Withholding Tax, สปส., DBD, BOI) + ช่องทาง (LINE OA @abacuz, อีเมล Google Workspace, พอร์ทัลลูกค้า StudioOS)',
         'AI ทำงานจริงในหกจุด: จำแนกรายการ bank-feed/statement, จำแนกเอกสารขาเข้า, ระบบแปลสองภาษา (ตัดด้วย glossary คำศัพท์ภาษี), ร่าง Clear Statement, ข้อความสถานะรายเดือนบน LINE/อีเมล, และ Ask AI ภายในสำหรับสอบถามคู่มือบริษัท ไม่มีสิ่งที่ AI สร้างออกจากบริษัทโดยไม่ผ่านมนุษย์ — ชื่อ CPA ที่มีใบอนุญาตคือทรัพย์สิน',
         'ช่องว่างที่ซื่อสัตย์: bank feeds ในไทย KBank มี API ที่ใช้ได้ ที่เหลือส่วนใหญ่เป็น CSV/PDF เราใช้การนำเข้า statement ด้วย AI ช่วย (Claude อ่าน statement จำแนกบรรทัด พนักงานยืนยัน) เร็วกว่ามือทั้งหมด ซื่อสัตย์ว่าไม่ใช่เวทมนตร์',
         'ความปลอดภัย: SSO ผ่าน Google Workspace 2FA บังคับ ทุกที่ การเข้าถึงตามความจำเป็น เข้ารหัสในการส่งและจัดเก็บ 1Password สำหรับ credentials ที่ใช้ร่วมกัน สำรอง workspace รายวัน เอกสารสำเนาที่ Google Drive วินัย PDPA ตรวจสอบได้ที่นี่',
       ],
       en: [
-        "ABACUZ runs on four layers: studioOS (orchestration — one workspace per client, the compliance calendar, the review queue, bilingual templating) plus the books layer (FlowAccount as the Thai-SMB standard, Xero offered for foreign-owned clients — Khun Joy confirms) plus government portals (RD e-Filing, e-Withholding Tax, SSO, DBD, BOI) plus channels (LINE OA @abacuz, Google Workspace email, the studioOS client portal).",
+        "ABACUZ runs on four layers: StudioOS (orchestration — one workspace per client, the compliance calendar, the review queue, bilingual templating) plus the books layer (FlowAccount as the Thai-SMB standard, Xero offered for foreign-owned clients — Khun Joy confirms) plus government portals (RD e-Filing, e-Withholding Tax, SSO, DBD, BOI) plus channels (LINE OA @abacuz, Google Workspace email, the StudioOS client portal).",
         "AI does real work in six specific places: bank-feed and statement categorisation, document intake classification, the bilingual translation pipeline (glossary-locked on tax terms), the Clear Statement draft, monthly LINE and email status messages, and an internal Ask AI for company-playbook queries. Nothing AI-generated leaves the firm without human review — the CPA's licensed name is the asset.",
         'The honest gap: bank feeds in Thailand. KBank has a usable API, most others are CSV/PDF. We use AI-assisted statement import (Claude reads the statement, categorises lines, staff verifies). Faster than full manual; honest about not being magic.',
-        'Security: Google Workspace SSO, 2FA required everywhere, need-to-know access, encryption in transit and at rest, 1Password for shared credentials, daily studioOS workspace backups, documents mirrored to Google Drive. PDPA discipline is auditable here.',
+        'Security: Google Workspace SSO, 2FA required everywhere, need-to-know access, encryption in transit and at rest, 1Password for shared credentials, daily StudioOS workspace backups, documents mirrored to Google Drive. PDPA discipline is auditable here.',
       ],
     },
   },
@@ -237,13 +237,13 @@ export const CHAPTERS: Chapter[] = [
     },
     body: {
       th: [
-        'สองผู้ก่อตั้ง คุณจอยนำใบอนุญาต CPA ของไทย ความเชี่ยวชาญระดับ CFO ฐานลูกค้า SMB ที่มีอยู่ และเครือข่ายในประเทศ Tew นำทุนสร้างจาก PROXYZ แพลตฟอร์ม studioOS การสร้างระบบอัตโนมัติและ AI แบรนด์ การออกแบบดีล และโครงสร้าง EOS/การดำเนินงาน ทั้งคู่เป็นคนไทย ทั้งคู่พาร์ทไทม์โดยพื้นฐาน',
+        'สองผู้ก่อตั้ง คุณจอยนำใบอนุญาต CPA ของไทย ความเชี่ยวชาญระดับ CFO ฐานลูกค้า SMB ที่มีอยู่ และเครือข่ายในประเทศ Tew นำทุนสร้างจาก PROXYZ แพลตฟอร์ม StudioOS การสร้างระบบอัตโนมัติและ AI แบรนด์ การออกแบบดีล และโครงสร้าง EOS/การดำเนินงาน ทั้งคู่เป็นคนไทย ทั้งคู่พาร์ทไทม์โดยพื้นฐาน',
         'รูปทรงการทำงาน: งานที่ได้รับใบอนุญาต คุณภาพ การปฏิบัติตามกฎ และการเซ็นรับรอง คือของคุณจอย; การสร้าง ระบบอัตโนมัติ แบรนด์ GTM และฝ่ายปฏิบัติการ คือของ Tew; กลยุทธ์ การตั้งราคา และการจ้างพนักงานที่มีใบอนุญาตเป็นเรื่องที่ทั้งคู่ตกลงร่วม รายการ "สงวน" (ต้องการทั้งสองคน) ครอบคลุมการเปลี่ยนแปลงหุ้น หนี้ การตัดสินใจเรื่องนิติบุคคล โมเดลราคา ข้อผูกพันใหญ่กับลูกค้า และกลไกฝ่ายกฎหมาย',
         'รายการที่ต้องคุยกันจริง (Tew + คุณจอย): สัดส่วนหุ้น + cap table; จำนวนทุนที่ PROXYZ ใส่และโครงสร้าง (เงินกู้ contribution หรือ convertible) + vesting; ทริกเกอร์เต็มเวลาของคุณจอย (รายได้รายเดือนหรือ milestone ที่ทำให้สมเหตุสมผลในการออกจาก CFO); ความขัดแย้ง/ไม่แข่งขันกับนายจ้าง CFO ปัจจุบัน (ต้องตรวจก่อนรับลูกค้ารายแรก); และกลไกฝ่ายกฎหมาย (ทนายในบริษัทเทียบกับพันธมิตรส่งต่อ — ผ่อนคลายไปยังเฟสกลยุทธ์)',
         'นี่คือพื้นฐานที่ทุกอย่างวางอยู่บน เนื้อหากลยุทธ์ทั้งหมดในเก้าบทนี้สมเหตุสมผลก็ต่อเมื่อกรอบนี้สมบูรณ์ ขั้นถัดไป — เรานั่งคุยกันและเติมข้อ 2 (รายละเอียดทุน) ข้อ 4 (สิทธิ์ตัดสินใจ) และข้อ 5 (รายการเปิด)',
       ],
       en: [
-        "Two founders. Khun Joy brings the Thai CPA license, CFO-level expertise, an existing SMB accounting side-book, and the local network. Tew brings the PROXYZ build investment, the studioOS platform, automation and AI build, brand, deal architecture, and EOS / operations. Both are Thai. Both are part-time by default.",
+        "Two founders. Khun Joy brings the Thai CPA license, CFO-level expertise, an existing SMB accounting side-book, and the local network. Tew brings the PROXYZ build investment, the StudioOS platform, automation and AI build, brand, deal architecture, and EOS / operations. Both are Thai. Both are part-time by default.",
         "Working shape: licensed work, quality, compliance, and sign-off is Khun Joy's; build, automation, brand, GTM, and ops is Tew's; strategy, pricing, and hiring licensed staff are shared. Reserved matters (need both) cover equity changes, debt, entity decisions, the pricing model, major client commitments, and the legal-arm mechanism.",
         "Open items that need a real conversation between us: equity split + cap table; the capital amount PROXYZ contributes and the structure (loan, contribution, or convertible) plus any vesting; Khun Joy's full-time trigger (the monthly revenue or client milestone that makes it economic to leave her CFO role); the conflict / non-compete check with her current employer (must clear before the first client); and the legal-arm mechanism (lawyer in firm vs referral partner — deferred to the strategy phase).",
         "This is the foundation everything else rests on. All the strategic work in the prior eight chapters only makes sense on top of a complete frame. The next step — we sit together and fill section 2 (contribution detail), section 4 (decision rights), and section 5 (open items).",

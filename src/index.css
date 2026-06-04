@@ -687,7 +687,7 @@ body.has-custom-cursor * {
   }
 }
 
-/* studioOS page grids */
+/* StudioOS page grids */
 @media (max-width: 900px) {
   .studioos-pillars,
   .studioos-modules {
@@ -865,7 +865,7 @@ body.has-custom-cursor * {
 
 /* ─── Scanline heading ─────────────────────────────────────────
    Editorial "horizontal scanlines through text" effect, used on
-   the studio's top-level h1s (Hero, Pipeline, studioOS). Replaces
+   the studio's top-level h1s (Hero, Pipeline, StudioOS). Replaces
    the inline `background-clip: text` + `repeating-linear-gradient`
    that violated impeccable's gradient-text absolute ban.
 
@@ -874,13 +874,13 @@ body.has-custom-cursor * {
    matching the page background. The text remains a real DOM node:
    selectable, copy-pasteable, screen-reader friendly, visible in
    high-contrast mode. Decorative scanlines come from the overlay. */
-/* studioOS page — tighten the wide monospace word gaps on all titles (~33%). */
+/* StudioOS page — tighten the wide monospace word gaps on all titles (~33%). */
 .sos-page h1,
 .sos-page h2 {
   word-spacing: -0.2em;
 }
 
-/* studioOS — System Map (the "what it is" constellation) */
+/* StudioOS — System Map (the "what it is" constellation) */
 .sos-map {
   --lime: #d2ff3b;
   --line: rgba(255, 255, 255, 0.14);
@@ -902,7 +902,7 @@ body.has-custom-cursor * {
 @keyframes sosTwinkle { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
 @keyframes sosPing { 0% { transform: scale(0.55); opacity: 0.7; } 70% { opacity: 0; } 100% { transform: scale(1.9); opacity: 0; } }
 
-/* studioOS — Hero background constellation ("the operating brain") */
+/* StudioOS — Hero background constellation ("the operating brain") */
 .sos-brain {
   --lime: #d2ff3b;
   --pink: #ff4193;
@@ -917,7 +917,7 @@ body.has-custom-cursor * {
   .sos-brain .os-twinkle, .sos-brain .os-drift { animation: none; }
 }
 
-/* studioOS — "Inside" product showcase (Cinema / Deck / Grid variants).
+/* StudioOS — "Inside" product showcase (Cinema / Deck / Grid variants).
    Border lives on the inline card surface, so focus/hover edges are drawn with
    an inset box-shadow ring (inline border would win over a stylesheet rule). */
 .sos-inside .sosi-play { animation: sosiBreathe 2.8s ease-in-out infinite; transition: box-shadow 0.4s; }
@@ -1015,7 +1015,7 @@ body.has-custom-cursor * {
   .sos-inside .grid-ambient::after { animation: none; }
 }
 
-/* studioOS — hero text treatments + ambience */
+/* StudioOS — hero text treatments + ambience */
 .sos-hero-glow {
   position: fixed;
   width: 520px;

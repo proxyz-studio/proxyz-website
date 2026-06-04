@@ -49,7 +49,7 @@ const Faq = lazy(() => import('./pages/Faq'));
 const VentureDetail = lazy(() => import('./pages/VentureDetail'));
 
 // Preview routes are dev-only — code-split so production users don't pay for motion lib etc.
-// studioOS cinematic redesign prototype — ports to /studio-os once approved.
+// StudioOS cinematic redesign prototype — ports to /studio-os once approved.
 const StudioOsExperience = lazy(() => import('./pages/studio-os'));
 // Immersive direction samples — Tew picks one, then it builds out.
 const StudioOsCinematic = lazy(() => import('./pages/studio-os-samples/Cinematic'));

@@ -3,12 +3,12 @@ import { Link, useLocation } from 'react-router-dom';
 import { navigationConfig } from '../config';
 import LanguageToggle from './LanguageToggle';
 
-/** Render a nav label, setting the studioOS wordmark (no space, lime "OS"). */
+/** Render a nav label, setting the StudioOS wordmark (no space, lime "OS"). */
 function navLabel(label: string) {
   if (label.replace(/\s/g, '').toLowerCase() === 'studioos') {
     return (
       <span style={{ textTransform: 'none' }}>
-        studio<span style={{ color: '#d2ff3b' }}>OS</span>
+        Studio<span style={{ color: '#d2ff3b' }}>OS</span>
       </span>
     );
   }

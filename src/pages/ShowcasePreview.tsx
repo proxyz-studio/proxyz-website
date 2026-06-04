@@ -604,7 +604,7 @@ function TiltGrid() {
           <TiltCard
             num="03"
             title="The Install"
-            body="90–120 days. We install the studioOS, automate the work, layer in AI, train your team."
+            body="90–120 days. We install the StudioOS, automate the work, layer in AI, train your team."
             icon="install"
             color={BUTTER}
           />
@@ -783,7 +783,7 @@ function StaggerIcons() {
             textWrap: 'balance',
           }}
         >
-          studioOS modules.
+          StudioOS modules.
         </motion.h2>
 
         <motion.div

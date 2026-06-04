@@ -1,5 +1,5 @@
 /**
- * studioOS page copy — v4, verbatim.
+ * StudioOS page copy — v4, verbatim.
  *
  * Source: PROXYZ Studio Drive, New-Copy/S-OS/2026-06-02-studioos-page-copy-prospect-v4.md
  * Tew's explicit decision (2026-06-03): ship v4 word-for-word. The honesty
@@ -27,7 +27,7 @@ export interface ModuleItem {
 export const studioOsContent = {
   hero: {
     eyebrow: 'STUDIOOS',
-    h1Lines: ['studioOS.', 'The operating brain', 'for your company.'],
+    h1Lines: ['StudioOS.', 'The operating brain', 'for your company.'],
     h2: 'One place to run your whole company. It keeps the plan, runs the routine, and puts your data to work.',
     primaryCta: { label: 'Book a call', href: '/#booking' },
   },
@@ -45,9 +45,9 @@ export const studioOsContent = {
 
   whatItIs: {
     label: '02 / WHAT IT IS',
-    heading: 'What studioOS is.',
+    heading: 'What StudioOS is.',
     paragraphs: [
-      'studioOS is the operating system for your company. Your plan, numbers, tasks, and meetings in one place that stays current on its own.',
+      'StudioOS is the operating system for your company. Your plan, numbers, tasks, and meetings in one place that stays current on its own.',
       'Think of it as the brain of the business. It remembers everything, keeps everyone pointed the same way, and shows you exactly how the company is doing at any moment.',
       'If you can use a phone, you can run your company on it.',
     ],
@@ -83,7 +83,7 @@ export const studioOsContent = {
   howAiHelps: {
     label: '04 / HOW THE AI HELPS',
     heading: 'The AI works for you, in plain English.',
-    lead: 'studioOS has AI built in. Nothing to set up, nothing technical to learn. It works in the background like an operator who already knows your business.',
+    lead: 'StudioOS has AI built in. Nothing to set up, nothing technical to learn. It works in the background like an operator who already knows your business.',
     bullets: [
       { lead: 'It surfaces what matters without being asked.', rest: 'How sales are tracking, what’s overdue, what needs you today.' },
       { lead: 'It writes up your meetings,', rest: 'notes the decisions, and creates the tasks. You just approve.' },
@@ -97,7 +97,7 @@ export const studioOsContent = {
     label: '05 / BUILT FOR YOU',
     heading: 'Built around how you work.',
     paragraphs: [
-      'studioOS is not a one-size template. We shape it to your business, whether you run on staff, stock, clients, or jobs.',
+      'StudioOS is not a one-size template. We shape it to your business, whether you run on staff, stock, clients, or jobs.',
       'You get a system that matches how you already work, only smoother.',
     ],
   },
@@ -107,7 +107,7 @@ export const studioOsContent = {
     heading: 'We install it for you.',
     steps: [
       { lead: 'Book a call.', rest: 'We learn how you run today.' },
-      { lead: 'We build and install studioOS around it,', rest: 'and train your team.' },
+      { lead: 'We build and install StudioOS around it,', rest: 'and train your team.' },
       { lead: 'You run on it,', rest: 'with us alongside as long as you want.' },
     ] as BulletItem[],
   },
@@ -115,7 +115,7 @@ export const studioOsContent = {
   bookACall: {
     label: '07 / LET’S TALK',
     heading: 'See what it would do for your company.',
-    body: 'Book a call. We’ll show you studioOS and where it would save you the most time. No tech talk.',
+    body: 'Book a call. We’ll show you StudioOS and where it would save you the most time. No tech talk.',
     closing: 'A company that runs on a system, not on you.',
     primaryCta: { label: 'Book a call', href: '/#booking' },
   },

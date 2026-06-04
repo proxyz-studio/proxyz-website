@@ -1,4 +1,4 @@
-/** Shared style tokens for the studioOS experience page. */
+/** Shared style tokens for the StudioOS experience page. */
 export const PINK = '#ff4193';
 export const LIME = '#d2ff3b';
 export const FG = '#f2f2f2';
