@@ -98,6 +98,8 @@ export interface StudioTeamMember {
    *  If missing or fails to load, the section falls back to an
    *  initials circle automatically. */
   photo?: string
+  /** Optional LinkedIn profile URL. Renders a LinkedIn icon link when set. */
+  linkedin?: string
 }
 
 export interface StudioTeamConfig {
@@ -245,12 +247,14 @@ export const teamConfig: StudioTeamConfig = {
       role: "Founder",
       bio: { en: "Architect of the system and the deals around it. Built PROXYZ from inside our own companies before installing it for anyone else. Based in Bangkok, working across Thailand." },
       photo: "/team/tew.jpg",
+      linkedin: "https://www.linkedin.com/in/arnonsaksri/",
     },
     {
       name: "i'Ling Sorum",
       role: "Head of Sales and Media",
       bio: { en: "The person you'll meet on the Walkthrough. Runs sales, the media arm, and the day-to-day of the studio." },
       photo: "/team/iling.jpg",
+      linkedin: "https://www.linkedin.com/in/i-ling-sorum-9524724/",
     },
   ],
 }

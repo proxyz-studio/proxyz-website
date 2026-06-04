@@ -1296,3 +1296,14 @@ body.has-custom-cursor * {
     border-bottom: none;
   }
 }
+
+/* Team member LinkedIn icon link — muted by default, brand pink on hover. */
+.team-linkedin {
+  color: rgba(255, 255, 255, 0.55);
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+.team-linkedin:hover,
+.team-linkedin:focus-visible {
+  color: var(--accent-pink);
+  transform: translateY(-1px);
+}
