@@ -30,7 +30,7 @@ export default function SampleFrame({
 
   useEffect(() => {
     const prev = document.title;
-    document.title = `studioOS — ${title} | PROXYZ`;
+    document.title = `StudioOS — ${title} | PROXYZ`;
     const vanta = document.querySelector<HTMLElement>('.vanta-bg');
     const prevDisplay = vanta?.style.display ?? '';
     if (vanta) vanta.style.display = 'none';

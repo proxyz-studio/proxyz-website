@@ -58,7 +58,7 @@ export function Wordmark({ style, className }: { style?: CSSProperties; classNam
         ...style,
       }}
     >
-      studio<span style={{ color: LIME }}>OS</span>
+      Studio<span style={{ color: LIME }}>OS</span>
     </p>
   );
 }
@@ -80,7 +80,7 @@ export function wordmark(text: string): ReactNode {
       {seg}
       {i < segments.length - 1 && (
         <span style={{ textTransform: 'none' }}>
-          studio
+          Studio
           <span style={{ color: LIME }}>OS</span>
         </span>
       )}

@@ -55,7 +55,7 @@ function DashboardScene() {
             It does the legwork.<br />You make the calls.
           </h2>
           <p style={{ fontFamily: MONO, fontSize: '16px', lineHeight: 1.7, color: MUTED, margin: 0, maxWidth: '46ch' }}>
-            After a meeting, studioOS drafts the decisions and the to-dos. Your numbers, in one view. You approve with a click.
+            After a meeting, StudioOS drafts the decisions and the to-dos. Your numbers, in one view. You approve with a click.
           </p>
         </div>
 
@@ -91,7 +91,7 @@ function DashboardScene() {
           {/* AI draft card */}
           <div className="pu-ai" style={{ margin: '1px', padding: '16px 18px', background: 'rgba(255,65,147,0.07)', borderTop: `1px solid ${HAIRLINE}`, display: 'flex', alignItems: 'center', gap: 14 }}>
             <span style={{ fontFamily: MONO, fontSize: 16, color: PINK }}>✦</span>
-            <span style={{ fontFamily: MONO, fontSize: 13, color: FG, flex: 1 }}>studioOS drafted 3 follow-ups from your meeting.</span>
+            <span style={{ fontFamily: MONO, fontSize: 13, color: FG, flex: 1 }}>StudioOS drafted 3 follow-ups from your meeting.</span>
             <span style={{ position: 'relative', display: 'inline-block' }}>
               <span className="pu-approve" style={{ fontFamily: MONO, fontSize: 12, fontWeight: 500, color: '#0a0a0a', background: PINK, padding: '8px 16px', borderRadius: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Approve</span>
               <span className="pu-approved" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: MONO, fontSize: 12, color: LIME, whiteSpace: 'nowrap' }}>Approved ✓</span>

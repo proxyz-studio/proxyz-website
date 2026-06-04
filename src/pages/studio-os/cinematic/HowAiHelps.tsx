@@ -39,7 +39,7 @@ export default function HowAiHelps() {
         <div data-reveal style={{ border: `1px solid ${HAIRLINE}`, borderRadius: '12px', background: 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))', padding: '24px', boxShadow: '0 30px 80px rgba(0,0,0,0.5)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
             <span style={{ color: PINK, fontSize: '16px' }}>&#10022;</span>
-            <span style={{ fontFamily: MONO, fontSize: '13px', color: FG }}>{wordmark('studioOS drafted 3 follow-ups')}</span>
+            <span style={{ fontFamily: MONO, fontSize: '13px', color: FG }}>{wordmark('StudioOS drafted 3 follow-ups')}</span>
           </div>
           {DRAFTS.map((d, i) => (
             <div key={d} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '12px 0', borderTop: i === 0 ? 'none' : `1px solid ${HAIRLINE}` }}>
