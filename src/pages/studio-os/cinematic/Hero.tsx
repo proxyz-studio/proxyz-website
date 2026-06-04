@@ -228,12 +228,8 @@ export default function Hero() {
           {hero.h2}
         </p>
       </div>
-
-      <div className="h-fade" aria-hidden style={{ position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', fontFamily: MONO, fontSize: '10px', letterSpacing: '0.3em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)' }}>
-        Scroll
-        <span style={{ width: '1px', height: '44px', background: 'linear-gradient(180deg, rgba(255,255,255,0.5), transparent)' }} />
-      </div>
-
+      {/* The scroll cue now lives in the page shell (ScrollCue) so it stays
+          fixed and visible on every section, not just the hero. */}
     </section>
   );
 }
