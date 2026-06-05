@@ -886,6 +886,7 @@ body.has-custom-cursor * {
   --line: rgba(255, 255, 255, 0.14);
   --white: #f2f2f2;
   --pink: #ff4193;
+  --teal: #3bffd2;
   --faint: rgba(255, 255, 255, 0.42);
   position: relative;
   width: 100%;

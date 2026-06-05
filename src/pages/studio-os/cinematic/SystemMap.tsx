@@ -103,7 +103,8 @@ export default function SystemMap() {
       {/* core wordmark */}
       <div style={{ position: 'absolute', left: pct(CX, 1600), top: pct(CY + 64, 900), transform: 'translate(-50%,0)', textAlign: 'center', zIndex: 10, pointerEvents: 'none' }}>
         <div className="os-wordmark" style={{ fontSize: 22 }}>Studio<span className="os">OS</span></div>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10.5, letterSpacing: '0.26em', textTransform: 'uppercase', color: 'var(--faint)', marginTop: 6 }}>the operating brain</div>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10.5, letterSpacing: '0.26em', textTransform: 'uppercase', color: 'var(--teal)', marginTop: 10 }}>The operating brain that executes</div>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, letterSpacing: '0.08em', fontStyle: 'italic', color: 'var(--pink)', marginTop: 4 }}>So you don't have to</div>
       </div>
 
       {/* frame chrome */}

@@ -1,6 +1,7 @@
 /** Shared style tokens for the StudioOS experience page. */
 export const PINK = '#ff4193';
 export const LIME = '#d2ff3b';
+export const TEAL = '#3bffd2';
 export const FG = '#f2f2f2';
 export const BG = '#0a0a0a';
 export const MUTED = 'rgba(255,255,255,0.64)';

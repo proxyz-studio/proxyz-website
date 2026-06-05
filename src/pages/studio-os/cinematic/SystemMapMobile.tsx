@@ -1,4 +1,4 @@
-import { FAINT, FG, HAIRLINE, LIME, MONO, MUTED, PINK } from '../theme';
+import { FAINT, FG, HAIRLINE, LIME, MONO, MUTED, PINK, TEAL } from '../theme';
 import { MODULES } from './system-map-data';
 
 /**
@@ -52,8 +52,11 @@ export default function SystemMapMobile() {
         <div style={{ fontFamily: MONO, fontWeight: 600, fontSize: 27, letterSpacing: '0.01em', color: FG }}>
           Studio<span style={{ color: LIME }}>OS</span>
         </div>
-        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.26em', textTransform: 'uppercase', color: MUTED, marginTop: 8 }}>
-          the operating brain
+        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.26em', textTransform: 'uppercase', color: TEAL, marginTop: 12 }}>
+          The operating brain that executes
+        </div>
+        <div style={{ fontFamily: MONO, fontSize: 11.5, letterSpacing: '0.08em', fontStyle: 'italic', color: PINK, marginTop: 4 }}>
+          So you don't have to
         </div>
       </div>
 
