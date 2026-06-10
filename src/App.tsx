@@ -42,6 +42,11 @@ const Abacuz = lazy(() => import('./pages/Abacuz'));
 // public /pipeline index — reachable only via the direct link + 4-digit code.
 const Mira = lazy(() => import('./pages/Mira'));
 
+// Instant proposal links — /p/<slug>, code-gated, content served from Redis
+// via /api/proposal-get so new proposals publish with zero rebuilds. Lazy:
+// only prospects with a direct link ever load it.
+const Proposal = lazy(() => import('./pages/Proposal'));
+
 // Legal pages — lazy because rarely visited but needed for LINE OA + Thai PDPA.
 const Privacy = lazy(() => import('./pages/Privacy'));
 const Terms = lazy(() => import('./pages/Terms'));
@@ -159,6 +164,10 @@ function App() {
         <Route
           path="/pipeline/mira"
           element={<Suspense fallback={null}><Mira /></Suspense>}
+        />
+        <Route
+          path="/p/:slug"
+          element={<Suspense fallback={null}><Proposal /></Suspense>}
         />
         <Route path="/privacy" element={<Suspense fallback={null}><Privacy /></Suspense>} />
         <Route path="/terms" element={<Suspense fallback={null}><Terms /></Suspense>} />
