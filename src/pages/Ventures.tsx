@@ -108,13 +108,16 @@ function VentureEntry({ venture, index }: { venture: VentureCard; index: number 
         >
           {String(index + 1).padStart(2, '0')}
         </span>
+        {/* Heading register matches the main page + /studio-os sections:
+            IBM Plex Mono 700, tight tracking. Fragment Mono stays reserved
+            for page-level h1s. */}
         <h2
           style={{
-            fontFamily: FONT_DISPLAY,
-            fontSize: 'clamp(40px, 5.4vw, 80px)',
-            fontWeight: 400,
-            lineHeight: 0.96,
-            letterSpacing: '0.015em',
+            fontFamily: FONT_MONO,
+            fontSize: 'clamp(36px, 4.6vw, 64px)',
+            fontWeight: 700,
+            lineHeight: 1.1,
+            letterSpacing: '-0.01em',
             textTransform: 'uppercase',
             margin: 0,
             color: '#F2F2F2',
@@ -345,29 +348,20 @@ export default function Ventures() {
               </div>
             </Reveal>
             <Reveal delay={80}>
+              {/* scanline-heading: same treatment as the / hero, /studio-os,
+                  and /pipeline h1s — replaces the old inline gradient-text. */}
               <h1
+                className="scanline-heading"
                 style={{
                   fontFamily: FONT_DISPLAY,
                   fontSize: 'clamp(44px, 6.4vw, 96px)',
                   fontWeight: 400,
                   lineHeight: 0.96,
-                  color: 'transparent',
                   textTransform: 'uppercase',
                   margin: 0,
                   letterSpacing: '0.015em',
                   wordSpacing: '-0.45em',
                   textWrap: 'balance',
-                  background:
-                    'repeating-linear-gradient(' +
-                    'to bottom, ' +
-                    '#fff 0px, ' +
-                    '#fff 2px, ' +
-                    'transparent 2px, ' +
-                    'transparent 5px' +
-                    ')',
-                  WebkitBackgroundClip: 'text',
-                  backgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
                 }}
               >
                 {c.titleLines.map((line, i) => (
@@ -406,14 +400,13 @@ export default function Ventures() {
           </div>
         </section>
 
-        {/* CLOSING */}
+        {/* CLOSING — dark register, same as the / and /studio-os closings.
+            (Was an inverted white panel; nothing else on the site inverts.) */}
         <section
           className="section-mobile"
           style={{
             padding: '120px 40px',
             borderTop: '1px solid rgba(255,255,255,0.08)',
-            background: '#F2F2F2',
-            color: '#0A0A0A',
           }}
         >
           <div style={{ maxWidth: '1360px', margin: '0 auto' }}>
@@ -437,6 +430,7 @@ export default function Ventures() {
                 lineHeight: 1.1,
                 letterSpacing: '-0.01em',
                 textTransform: 'uppercase',
+                color: '#F2F2F2',
                 margin: '0 0 28px 0',
               }}
             >
@@ -447,7 +441,7 @@ export default function Ventures() {
                 fontFamily: FONT_MONO,
                 fontSize: '16px',
                 lineHeight: 1.7,
-                color: 'rgba(0,0,0,0.75)',
+                color: 'rgba(255,255,255,0.7)',
                 margin: '0 0 40px 0',
                 maxWidth: '60ch',
               }}
@@ -460,8 +454,8 @@ export default function Ventures() {
                 fontFamily: FONT_MONO,
                 fontSize: '13px',
                 fontWeight: 400,
-                color: '#F2F2F2',
-                background: '#0A0A0A',
+                color: '#0A0A0A',
+                background: 'var(--accent-pink)',
                 textTransform: 'uppercase',
                 textDecoration: 'none',
                 letterSpacing: '0.08em',

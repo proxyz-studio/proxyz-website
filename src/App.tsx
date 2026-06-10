@@ -1,5 +1,5 @@
 import { useEffect, lazy, Suspense } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { siteConfig } from './config';
 import Hero from './sections/Hero';
 import Diagnosis from './sections/Diagnosis';
@@ -11,8 +11,11 @@ import Team from './sections/Team';
 import Booking from './sections/Booking';
 import Footer from './sections/Footer';
 import Marquee from './components/Marquee';
-import Media from './pages/Media';
-import PadelZ from './pages/PadelZ';
+// Media arm hidden from the site for now (2026-06-11, Tew). The pages are
+// kept intact — to bring media back, restore these imports, the two /media
+// routes below, and the "Media" link in navigationConfig (config.ts).
+// import Media from './pages/Media';
+// import PadelZ from './pages/PadelZ';
 import Pipeline from './pages/Pipeline';
 import Ventures from './pages/Ventures';
 import FastFix from './pages/FastFix';
@@ -132,8 +135,11 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/studio-os" element={<Suspense fallback={null}><StudioOsExperience /></Suspense>} />
-        <Route path="/media" element={<Media />} />
-        <Route path="/media/padel-z" element={<PadelZ />} />
+        {/* /media is offline for now — old links land on the homepage.
+            Restore: <Route path="/media" element={<Media />} />
+                     <Route path="/media/padel-z" element={<PadelZ />} /> */}
+        <Route path="/media" element={<Navigate to="/" replace />} />
+        <Route path="/media/*" element={<Navigate to="/" replace />} />
         <Route path="/pipeline" element={<Pipeline />} />
         <Route path="/ventures" element={<Ventures />} />
         <Route

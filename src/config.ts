@@ -142,7 +142,8 @@ export const navigationConfig: NavigationConfig = {
   links: [
     { label: "What we do", href: "/#how-it-works" },
     { label: "StudioOS", href: "/studio-os" },
-    { label: "Media", href: "/media" },
+    // Media hidden for now (2026-06-11) — restore alongside the /media routes in App.tsx.
+    // { label: "Media", href: "/media" },
     { label: "Pipeline", href: "/pipeline" },
     { label: "Ventures", href: "/ventures" },
   ],
@@ -851,19 +852,19 @@ export const venturesPageConfig: VenturesPageConfig = {
   eyebrow: "ISSUE 04 / THE VENTURES",
   titleLines: ["What we", "build."],
   lead:
-    "PROXYZ runs an operator studio and a venture studio in parallel. The studio installs the operating system into companies we acquire, partner with, or take equity in. The venture arm builds and runs our own brands. Each one lives at its own domain. This is what's in motion.",
+    "The venture arm of the studio. These are our own brands, built and run on the same system we install for clients. Each one is a real business and a proving ground. This is what's in motion.",
   ventures: [
     {
       name: "AUTOLOOM",
-      tagline: "Thai SMB agent bundles. Service-for-cash, no SaaS tier.",
+      tagline: "AI agents for Thai SMBs. Installed in a week, run as a service.",
       status: "building",
       statusLabel: "BUILDING · LAUNCHING SOON",
       domain: "autoloom.tech",
       href: null,
       internalHref: "/ventures/autoloom",
       pitch:
-        "Agent-as-a-Service bundles installed into Thai SMBs by industry. Marketing agencies, law, insurance, manufacturing, wholesalers, real estate. Each install ships in a week. LINE-native by default.",
-      modules: ["Agent runtime", "LINE OA bridge", "Industry playbooks", "Install pipeline"],
+        "Bundles of AI agents for Thai small and mid-sized businesses, packaged by industry: marketing agencies, law firms, insurance, manufacturing, wholesale, real estate. Each bundle takes over one expensive recurring workflow, works on LINE from day one, and ships in about a week. We run the agents as a flat monthly service. The customer never touches a server.",
+      modules: ["Agent runtime", "LINE integration", "Industry playbooks", "One-week install"],
       brand: {
         // The "Y" letter on the PROXYZ tricolor wordmark — teal/mint #5BC9B8.
         accent: "#5BC9B8",
@@ -873,79 +874,73 @@ export const venturesPageConfig: VenturesPageConfig = {
       detail: {
         slug: "autoloom",
         overview: [
-          "AUTOLOOM is PROXYZ's venture arm for installing agent bundles into Thai small and mid-sized businesses by industry. Each bundle is a tested set of agents, configured for a specific vertical, that ships in under a week and operates the customer's most expensive recurring workflow.",
-          "The pricing model is service-for-cash. No SaaS tier, no per-seat pricing, no metered AI. The customer pays once to install and a flat monthly fee to operate. The agents run on infrastructure PROXYZ owns; the customer never sees a cloud bill.",
-          "LINE OA is the default customer-facing channel. The bundle for any Thai vertical assumes the buyer's customer base is on LINE, and the install ships with a Composio HTTP and LINE Messaging API bridge as the first integration.",
+          "AUTOLOOM installs bundles of AI agents into Thai small and mid-sized businesses, one industry at a time. Each bundle is a tested set of agents that PROXYZ configures for one vertical, ships in under a week, and runs the customer's most expensive recurring workflow.",
+          "Pricing is simple: one fee to install, a flat monthly fee to operate. There is no per-seat pricing and no metered AI. The agents run on infrastructure PROXYZ owns and operates, so the customer never sees a cloud bill.",
+          "LINE is the default channel. Thai customers live on LINE, so every bundle ships ready to answer there from day one, with email alongside.",
         ],
         howItWorks: [
           {
             num: "01",
             title: "Pick a bundle",
-            body: "Six industry bundles ship at launch: marketing agencies, law, insurance, manufacturing, wholesalers, real estate. Each one is built around the highest-value agent for that vertical, surrounded by supporting agents the install needs to land.",
+            body: "Six industry bundles at launch: marketing agencies, law, insurance, manufacturing, wholesale, real estate. Each targets the highest-value workflow for that vertical and includes the supporting agents the install needs to land.",
           },
           {
             num: "02",
             title: "Install in under a week",
-            body: "The install team configures the agents for the customer's specific stack, wires LINE OA and email channels, runs the cohort tests, and hands off the operating runbook. No long discovery cycle, no committee, no SaaS contract.",
+            body: "We configure the agents for your stack, wire up LINE and email, run live tests with your team, and hand over the operating runbook. No long discovery cycle. No committee.",
           },
           {
             num: "03",
-            title: "Operate as service",
-            body: "PROXYZ runs the agents from PROXYZ infrastructure. The customer reports issues, requests new behaviors, reads the monthly outcome report. Updates ship through the same channel an employee would use.",
+            title: "Operate as a service",
+            body: "PROXYZ runs the agents from our own infrastructure. You report issues, request new behaviors, and read the monthly outcome report. Updates ship through the same channel an employee would use.",
           },
           {
             num: "04",
             title: "Expand by vertical",
-            body: "Once a bundle is paying, the next one for the same vertical (next-tier agent, adjacent workflow) is one Audit away. Repeated installs into the same industry compound into a moat.",
+            body: "Once the first bundle is paying for itself, we scope the next workflow in a single session. Every repeat install in an industry makes the next one faster.",
           },
         ],
         modulesDetail: [
           {
             name: "Agent runtime",
-            body: "The execution layer that runs each customer's agents. Sits behind a Composio MCP bridge so agents can call email, calendar, CRM, and LINE OA tools through a unified interface.",
+            body: "The execution layer that runs each customer's agents, with controlled access to email, calendar, CRM, and LINE through a single interface.",
           },
           {
-            name: "LINE OA bridge",
-            body: "Composio does not natively support the LINE Messaging API. AUTOLOOM ships with a 1 to 2 day reusable bridge built once, deployed per install. Blocking dependency for every Thai vertical.",
+            name: "LINE integration",
+            body: "A purpose-built bridge to LINE Official Accounts, deployed with every install. A Thai SMB's customers are already on LINE, so the agents meet them there.",
           },
           {
             name: "Industry playbooks",
-            body: "Each bundle ships with a playbook for the vertical: the buyer profile, the pain it solves, the test cohort, the rollout sequence. Codified from six parallel research agents in May 2026.",
+            body: "Each bundle ships with a playbook for its vertical: the buyer, the pain it solves, the test plan, the rollout sequence. PROXYZ researches and codifies each playbook before the first install.",
           },
           {
             name: "Install pipeline",
-            body: "The studio side: discovery script, install checklist, handoff document, monthly outcome report template. Same shape across all six verticals so the install team scales.",
+            body: "Discovery script, install checklist, handoff document, monthly outcome report. The same shape across every vertical, so quality holds as installs multiply.",
           },
         ],
         roadmap: [
-          { label: "Phase 0 · Six-industry research synthesis", status: "done" },
-          { label: "Phase 1 · Magnus install (reference VM)", status: "active" },
+          { label: "Phase 0 · Industry research complete", status: "done" },
+          { label: "Phase 1 · Reference install", status: "active" },
           { label: "Phase 2 · First five paid installs", status: "next" },
-          { label: "Phase 3 · Industry-specific scale", status: "next" },
+          { label: "Phase 3 · Scale by industry", status: "next" },
         ],
         team: [
           { name: "Tew", role: "Founder, architect, install lead" },
-          { name: "iLing", role: "Head of sales and discovery, T002 owner" },
-        ],
-        references: [
-          {
-            label: "Six-industry research rollup",
-            href: "https://obsidian.md (internal)",
-          },
+          { name: "iLing", role: "Head of sales and discovery" },
         ],
       },
     },
     {
       name: "MAGNIZ",
-      tagline: "Hosted agents per customer. One agent, one inbox, one operator.",
+      tagline: "A dedicated AI agent, hosted for you. One agent, one inbox, one operator.",
       status: "building",
       statusLabel: "BUILDING · LAUNCHING SOON",
       domain: "magniz.io",
       href: null,
       internalHref: "/ventures/magniz",
       pitch:
-        "Individual hosted agents for operators who need their own. Each customer gets a dedicated Orgo VM running the Hermes runtime with full Agent Mail and LINE OA integration. End-state proof passed on 23 May 2026.",
-      modules: ["Hermes runtime", "Agent Mail", "LINE OA", "Orgo isolation"],
+        "Hosted agents for operators who want their own. Each customer gets a dedicated agent with its own inbox, its own memory, and its own playbook. It answers on LINE and email in your voice. The longer it runs, the more it learns how you work. Your agent lives on its own infrastructure, so your data stays yours.",
+      modules: ["Dedicated agent", "Own inbox", "LINE + email", "Isolated infrastructure"],
       brand: {
         accent: "#D2FF3B",
         accentSoft: "rgba(210,255,59,0.04)",
@@ -954,71 +949,71 @@ export const venturesPageConfig: VenturesPageConfig = {
       detail: {
         slug: "magniz",
         overview: [
-          "MAGNIZ is PROXYZ's venture arm for hosting individual agents per customer. One agent, one inbox, one operator. Each customer owns the agent's identity, the agent's behavior, and the agent's outputs.",
-          "The hosting model is per-customer Orgo VMs running the Hermes runtime. Customer A cannot read Customer B's data because they live on different infrastructure. Agent Mail provides the inbox; LINE OA provides the customer-facing channel.",
-          "End-state proof passed on 23 May 2026: a real LINE inbound message produced both a Spanish-language reply (Liz) and an English-language reply (Tew) through the same agent. The runtime is production-ready.",
+          "MAGNIZ hosts one dedicated AI agent per customer. One agent, one inbox, one operator. The customer owns the agent's identity, its behavior, and everything it produces.",
+          "Every customer runs on separate infrastructure. Your agent cannot read another customer's data because the two never share a machine. The inbox lives under your own domain, and LINE is the customer-facing channel.",
+          "The runtime is proven on live traffic. Before the first paid install, one agent answered real LINE messages for two different operators in two languages, end to end.",
         ],
         howItWorks: [
           {
             num: "01",
             title: "Discovery",
-            body: "Audit-style conversation to scope the agent's identity, role, and the systems it needs to touch. Outputs the install runbook.",
+            body: "A working session to scope the agent's identity, its role, and the systems it needs to touch. The output is the install runbook.",
           },
           {
             num: "02",
             title: "Install",
-            body: "Spin up the customer's Orgo VM, deploy the Hermes runtime, provision the Agent Mail inbox under the customer's domain, wire the LINE OA channel. Hardening passes run automatically.",
+            body: "We provision your dedicated environment, set up the agent's inbox under your domain, and wire the LINE channel. We run hardening checks before handover.",
           },
           {
             num: "03",
             title: "Train and operate",
-            body: "The agent's playbook is loaded into its Obsidian vault. The customer interacts with the agent through LINE or email; updates to the playbook flow back through the same channel.",
+            body: "The agent's playbook captures how you work. You talk to it on LINE or email, and updates to its behavior flow back through the same channel.",
           },
           {
             num: "04",
             title: "Iterate",
-            body: "New behaviors, new tools, new escalation paths land as commits to the customer's vault. The same install pattern survives the agent's growth.",
+            body: "New behaviors, new tools, and new escalation paths land as updates to the playbook. The same install pattern survives the agent's growth.",
           },
         ],
         modulesDetail: [
           {
-            name: "Hermes runtime",
-            body: "The execution layer that gives each agent its identity, memory, and tool access. One Hermes process per customer. Verified end-to-end on real LINE traffic.",
+            name: "Agent runtime",
+            body: "The execution layer that gives each agent its identity, memory, and tool access. One dedicated process per customer, verified end to end on real LINE traffic.",
             details: [
               {
                 label: "Multi-model routing",
-                body: "The runtime picks the cheapest capable model for each task and escalates only when a task warrants it. Token cost is a margin lever we own, not a customer surprise.",
+                body: "The runtime picks the cheapest capable model for each task and escalates only when the task warrants it. Your monthly fee stays flat either way.",
               },
               {
                 label: "Skill loop",
-                body: "New skills get written from successful execution traces and persist. The agent's capability surface compounds with use.",
+                body: "Every time the agent solves a new kind of task, it keeps the skill. The next run starts further ahead.",
               },
               {
                 label: "Memory",
-                body: "Every prior session is searchable. The agent never starts cold and never re-learns what you already taught it.",
+                body: "Every prior session is searchable. The agent never starts cold and never relearns what you already taught it.",
               },
               {
                 label: "Code-once pattern",
-                body: "Recurring tasks become deterministic code on the first run, then execute forever with no model spend.",
+                body: "Recurring tasks become deterministic code on the first successful run, then execute without model spend from then on.",
               },
             ],
           },
           {
-            name: "Agent Mail",
-            body: "Inbox infrastructure. Each customer gets their own inbox under agents.magniz.io with SPF, DKIM, and DMARC configured. Native MCP server, no Composio bridge needed.",
+            name: "Your own inbox",
+            body: "Each agent gets a real inbox under the customer's domain, with sender authentication configured from day one so replies land in inboxes rather than spam folders.",
           },
           {
-            name: "LINE OA",
-            body: "Customer-facing channel for Thai operators. Composio HTTP plus LINE Messaging API bridge that ships with the install. Same bridge AUTOLOOM uses.",
+            name: "LINE channel",
+            body: "The customer-facing channel for Thai operators, wired into the agent at install. The same integration AUTOLOOM ships with.",
           },
           {
-            name: "Orgo isolation",
-            body: "Each customer runs on a separate Orgo VM. Isolation is by infrastructure, not by application logic. Cross-customer data exposure is impossible by construction.",
+            name: "Isolated by design",
+            body: "Each customer runs on a separate machine. Isolation comes from the infrastructure itself rather than application logic, so cross-customer data exposure is impossible by construction.",
           },
         ],
         roadmap: [
-          { label: "Phase 0 · Hermes-LINE end-state proof", status: "done" },
-          { label: "Phase 1 · Magnus reference install", status: "active" },
+          { label: "Phase 0 · Live proof on real LINE traffic", status: "done" },
+          { label: "Phase 1 · Reference install", status: "active" },
           { label: "Phase 2 · First paid installs", status: "next" },
           { label: "Phase 3 · Install kit hardening", status: "next" },
         ],
@@ -1030,23 +1025,23 @@ export const venturesPageConfig: VenturesPageConfig = {
     },
     {
       name: "PRYZM",
-      tagline: "Synthesis intelligence. Research to decision in one motion.",
+      tagline: "Research to decision in one motion.",
       status: "planning",
       statusLabel: "PLANNING · INTERNAL TOOL TODAY",
       domain: "pryzm.io",
       href: null,
       internalHref: null,
       pitch:
-        "Started as PROXYZ's internal market-synthesis tool. Generates deep cohort comparisons, industry deployment plans, decision briefs from raw research. Targeted for externalization as a standalone venture.",
-      modules: ["Cohort comparison", "Deployment plans", "Decision briefs", "Source aggregation"],
+        "The studio's research division. PRYZM turns raw research into market studies, cohort comparisons, and decision briefs, and it already runs the research behind every PROXYZ engagement and every venture on this page. The next step is a standalone product.",
+      modules: ["Market studies", "Cohort comparison", "Decision briefs", "Source aggregation"],
     },
   ],
   closingLabel: "BUILD WITH PROXYZ",
   closingHeading: "We build our own. Then we install it.",
   closingBody:
-    "Every venture on this page is also a proving ground. The patterns that survive end up inside the operating system we install into the companies we take equity in. If you want the same treatment for your business, the door is the Audit.",
+    "The patterns that survive inside our own companies end up in the system we install for clients. If you want the same treatment for your business, it starts with 60 minutes.",
   closingCta: {
-    label: "Book the Audit →",
+    label: "Book the Walkthrough →",
     href: "/#booking",
   },
 }

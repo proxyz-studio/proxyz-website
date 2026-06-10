@@ -265,14 +265,16 @@ function SectionHeading({ id, label, number }: { id: string; label: string; numb
       >
         {number}
       </span>
+      {/* Section heading register matches the main page + /studio-os:
+          IBM Plex Mono 700. Fragment Mono stays reserved for the page h1. */}
       <h2
         id={id}
         style={{
-          fontFamily: FONT_DISPLAY,
+          fontFamily: FONT_MONO,
           fontSize: 'clamp(32px, 4vw, 56px)',
-          fontWeight: 400,
-          lineHeight: 1.05,
-          letterSpacing: '0.015em',
+          fontWeight: 700,
+          lineHeight: 1.12,
+          letterSpacing: '-0.01em',
           textTransform: 'uppercase',
           margin: 0,
           color: '#F2F2F2',
@@ -401,12 +403,12 @@ export default function VentureDetail() {
                     </p>
                     <h3
                       style={{
-                        fontFamily: FONT_DISPLAY,
-                        fontSize: '24px',
-                        fontWeight: 400,
+                        fontFamily: FONT_MONO,
+                        fontSize: '20px',
+                        fontWeight: 700,
                         margin: '0 0 14px 0',
                         textTransform: 'uppercase',
-                        letterSpacing: '0.015em',
+                        letterSpacing: '-0.01em',
                       }}
                     >
                       {step.title}
@@ -653,11 +655,11 @@ export default function VentureDetail() {
                   >
                     <h3
                       style={{
-                        fontFamily: FONT_DISPLAY,
-                        fontSize: '22px',
-                        fontWeight: 400,
+                        fontFamily: FONT_MONO,
+                        fontSize: '20px',
+                        fontWeight: 700,
                         textTransform: 'uppercase',
-                        letterSpacing: '0.015em',
+                        letterSpacing: '-0.01em',
                         margin: '0 0 6px 0',
                       }}
                     >
