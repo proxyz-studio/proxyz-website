@@ -1,13 +1,16 @@
 /* Shared store + validation for instant proposal links.
  *
- * api/_lib/ → not routed. Imported by proposal-{auth,check,get,put}.ts.
+ * api/_lib/ → not routed. Imported by
+ * proposal-{auth,check,get,put,respond,responses}.ts.
  *
  * Persistence: Upstash Redis (REST), same client + env vars as
  * collab-store.ts. Keyed by proposal slug so publishing a new proposal is
  * a pure data write — no code change, no env var, no redeploy:
- *   proposal:<slug>:html   self-contained HTML document (string)
- *   proposal:<slug>:code   access code (string, digits)
- *   proposal:<slug>:meta   JSON { title, publishedAt, updatedAt }
+ *   proposal:<slug>:html        self-contained HTML document (string)
+ *   proposal:<slug>:code        access code (string, digits)
+ *   proposal:<slug>:meta        JSON { title, publishedAt, updatedAt }
+ *   proposal:<slug>:responses   LIST of ProposalResponse, newest first
+ *   proposal:<slug>:rl:<ip>     fixed-window response rate-limit counter
  *
  * Unlike the partner gate (env-var codes + hardcoded slug allowlist), the
  * proposal gate reads its codes from Redis at request time. Slugs are
@@ -105,6 +108,102 @@ export function safeCompare(submitted: string, expected: string): boolean {
   const a = Buffer.from(submitted.padEnd(expected.length, '\0'));
   const b = Buffer.from(expected);
   return a.length === b.length && timingSafeEqual(a, b);
+}
+
+/* ── responses (interactive proposals) ─────────────────────────── */
+
+/** Newest 200 responses are kept per proposal (LPUSH + LTRIM). */
+export const RESPONSES_MAX = 200;
+export const RESPOND_RATE_MAX = 10; // writes per window per slug+ip
+export const RESPOND_RATE_WINDOW_SECONDS = 60;
+
+export const MAX_OPTION = 40;
+export const MAX_NAME = 200;
+export const MAX_ROLE = 200;
+export const MAX_EMAIL = 200;
+export const MAX_MESSAGE = 4000;
+
+export const responsesKey = (slug: string) => `proposal:${slug}:responses`;
+export const respondRateKey = (slug: string, ip: string) =>
+  `proposal:${slug}:rl:${ip}`;
+
+export type ProposalResponse = {
+  ts: string; // ISO timestamp
+  option: string;
+  name: string;
+  role: string;
+  email: string;
+  message: string;
+  ip: string;
+};
+
+/* Strip C0 + DEL control chars. cleanLine drops them all (single-line
+ * fields); cleanMultiline keeps \t (09) and \n (0A) for the message body.
+ * Hex-escaped so the source carries no literal control bytes — same
+ * approach as collab-store.ts. */
+// eslint-disable-next-line no-control-regex -- deliberately strips C0/DEL control chars from user input
+const CONTROL_ALL = new RegExp('[\\x00-\\x1F\\x7F]', 'g');
+// eslint-disable-next-line no-control-regex -- deliberately strips C0/DEL control chars from user input
+const CONTROL_KEEP_WHITESPACE = new RegExp('[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F]', 'g');
+
+function cleanLine(raw: unknown, max: number): string | null {
+  if (raw === undefined || raw === null) return '';
+  if (typeof raw !== 'string') return null;
+  const cleaned = raw.replace(CONTROL_ALL, '').trim();
+  return cleaned.length > max ? null : cleaned;
+}
+
+function cleanMultiline(raw: unknown, max: number): string | null {
+  if (raw === undefined || raw === null) return '';
+  if (typeof raw !== 'string') return null;
+  const cleaned = raw.replace(CONTROL_KEEP_WHITESPACE, '').trim();
+  return cleaned.length > max ? null : cleaned;
+}
+
+/**
+ * Validate + sanitize a respond payload. `option` and `name` must be
+ * non-empty; role/email/message are optional. Every field is length-capped
+ * and control-char-stripped. Returns the clean response (sans ts/ip, which
+ * the handler stamps) or an error naming ONLY the offending field — never
+ * its value.
+ */
+export function parseResponse(
+  body: Record<string, unknown>,
+):
+  | { ok: true; response: Omit<ProposalResponse, 'ts' | 'ip'> }
+  | { ok: false; field: string } {
+  const option = cleanLine(body.option, MAX_OPTION);
+  if (option === null || option === '') return { ok: false, field: 'option' };
+
+  const name = cleanLine(body.name, MAX_NAME);
+  if (name === null || name === '') return { ok: false, field: 'name' };
+
+  const role = cleanLine(body.role, MAX_ROLE);
+  if (role === null) return { ok: false, field: 'role' };
+
+  const email = cleanLine(body.email, MAX_EMAIL);
+  if (email === null) return { ok: false, field: 'email' };
+
+  const message = cleanMultiline(body.message, MAX_MESSAGE);
+  if (message === null) return { ok: false, field: 'message' };
+
+  return { ok: true, response: { option, name, role, email, message } };
+}
+
+/** Coerce a stored list item (object or JSON string) into ProposalResponse. */
+export function coerceResponse(item: unknown): ProposalResponse | null {
+  let obj: unknown = item;
+  if (typeof item === 'string') {
+    try {
+      obj = JSON.parse(item);
+    } catch {
+      return null;
+    }
+  }
+  if (obj && typeof obj === 'object' && 'ts' in obj && 'option' in obj) {
+    return obj as ProposalResponse;
+  }
+  return null;
 }
 
 /** Coerce a stored meta value (object or JSON string) into ProposalMeta. */
