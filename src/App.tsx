@@ -25,6 +25,7 @@ import VantaBackground from './components/VantaBackground';
 // kept at ./components/CursorOverlay.tsx.
 // import CursorOverlay from './components/CursorOverlay';
 import ScrollProgress from './components/ScrollProgress';
+import FloatingContactRail from './components/FloatingContactRail';
 
 // Code-split the Lazy Tiger page — heavy on bespoke components (helmet, leaderboard,
 // merch grid, GSAP Asia map). Only loaded when a visitor lands on /partners/lazy-tiger.
@@ -177,6 +178,7 @@ function App() {
         <Route path="/preview/motion" element={<Suspense fallback={null}><MotionPreview /></Suspense>} />
         <Route path="/preview/showcase" element={<Suspense fallback={null}><ShowcasePreview /></Suspense>} />
       </Routes>
+      <FloatingContactRail />
     </>
   );
 }
