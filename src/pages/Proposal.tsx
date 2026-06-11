@@ -8,10 +8,12 @@
  * Flow: checking (cookie probe) → locked (code input) → loading (fetch
  * html) → unlocked (sandboxed full-viewport iframe) | not-found | error.
  *
- * The HTML renders inside <iframe srcdoc sandbox="allow-scripts
- * allow-popups"> — deliberately WITHOUT allow-same-origin, so proposal
- * scripts run in an opaque origin with no access to proxyz.studio cookies,
- * storage, or the parent DOM.
+ * The HTML renders inside a full-viewport <iframe srcdoc> sandboxed with
+ * allow-scripts allow-same-origin allow-forms allow-popups — see the
+ * justification on the iframe itself. Short version: the content is
+ * studio-authored (only the admin-secret publish endpoint can store it)
+ * and same-origin is what lets an interactive proposal call the respond
+ * API with the recipient's gate cookie.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -167,9 +169,17 @@ export default function Proposal() {
     return (
       <iframe
         srcDoc={html}
-        // No allow-same-origin: scripts run in an opaque origin, isolated
-        // from proxyz.studio cookies/storage and the parent page.
-        sandbox="allow-scripts allow-popups"
+        // allow-same-origin is deliberate, and safe here for two reasons:
+        // (1) trusted authorship — proposal HTML is studio-authored and can
+        //     only enter the store through /api/proposal-put, which requires
+        //     the PROPOSAL_ADMIN_SECRET header; no third party can publish.
+        // (2) interactivity needs it — with allow-same-origin, srcdoc
+        //     inherits the parent's origin and base URL, so the proposal's
+        //     own scripts/forms can fetch("/api/proposal-respond") and the
+        //     request hits proxyz.studio WITH the HttpOnly gate cookie.
+        //     Without it the iframe is an opaque origin and can't respond.
+        // allow-forms lets the proposal use native <form> submission too.
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
         title={meta?.title ?? 'Proposal'}
         style={{
           position: 'fixed',
