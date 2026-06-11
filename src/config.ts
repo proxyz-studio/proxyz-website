@@ -245,7 +245,7 @@ export const teamConfig: StudioTeamConfig = {
   members: [
     {
       name: "Arnon Saksri (Tew)",
-      role: "Founder",
+      role: "Managing Director",
       bio: { en: "Architect of the system and the deals around it. Built PROXYZ from inside our own companies before installing it for anyone else. Based in Bangkok, working across Thailand." },
       photo: "/team/tew.jpg",
       linkedin: "https://www.linkedin.com/in/arnonsaksri/",
@@ -925,7 +925,7 @@ export const venturesPageConfig: VenturesPageConfig = {
           { label: "Phase 3 · Scale by industry", status: "next" },
         ],
         team: [
-          { name: "Tew", role: "Founder, architect, install lead" },
+          { name: "Tew", role: "Managing Director, architect, install lead" },
           { name: "iLing", role: "Head of sales and discovery" },
         ],
       },
@@ -1018,7 +1018,7 @@ export const venturesPageConfig: VenturesPageConfig = {
           { label: "Phase 3 · Install kit hardening", status: "next" },
         ],
         team: [
-          { name: "Tew", role: "Founder, runtime architect" },
+          { name: "Tew", role: "Managing Director, runtime architect" },
           { name: "iLing", role: "Sales and operator onboarding" },
         ],
       },
@@ -1832,7 +1832,7 @@ export const lazyTigerPageConfig: LazyTigerPageConfig = {
     members: [
       {
         name: 'Arnon (Tew) Saksri',
-        role: 'Founder, PROXYZ Studio',
+        role: 'Managing Director, PROXYZ Studio',
         bio: 'Architect of the Lazy Tiger engagement. Bridges design and AI automation across PROXYZ’s portfolio. Based in Bangkok.',
         initials: 'AT',
         photo: '/lazy-tiger/team/tew.jpg',
