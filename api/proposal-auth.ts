@@ -18,7 +18,7 @@ import {
   unlockToken,
   safeSlug,
   safeCompare,
-} from './_lib/proposal-store';
+} from './_lib/proposal-store.js';
 
 export const config = { runtime: 'nodejs' };
 

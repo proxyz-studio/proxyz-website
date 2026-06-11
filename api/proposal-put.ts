@@ -28,7 +28,7 @@ import {
   HTML_WARN_BYTES,
   HTML_MAX_BYTES,
   type ProposalMeta,
-} from './_lib/proposal-store';
+} from './_lib/proposal-store.js';
 
 export const config = { runtime: 'nodejs' };
 

@@ -16,7 +16,7 @@ import {
   safeCompare,
   coerceResponse,
   type ProposalResponse,
-} from './_lib/proposal-store';
+} from './_lib/proposal-store.js';
 
 export const config = { runtime: 'nodejs' };
 

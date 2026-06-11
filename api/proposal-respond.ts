@@ -28,7 +28,7 @@ import {
   RESPOND_RATE_MAX,
   RESPOND_RATE_WINDOW_SECONDS,
   type ProposalResponse,
-} from './_lib/proposal-store';
+} from './_lib/proposal-store.js';
 
 export const config = { runtime: 'nodejs' };
 
