@@ -7,14 +7,14 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { isUnlocked, safeSlug } from './_lib/partner-gate';
+import { isUnlocked, safeSlug } from './_lib/partner-gate.js';
 import {
   getRedis,
   notesKey,
   decisionsKey,
   coerceNote,
   type CollabNote,
-} from './_lib/collab-store';
+} from './_lib/collab-store.js';
 
 export const config = { runtime: 'nodejs' };
 
