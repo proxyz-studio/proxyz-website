@@ -1,5 +1,5 @@
 import { useEffect, lazy, Suspense } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, useMatch } from 'react-router-dom';
 import { siteConfig } from './config';
 import Hero from './sections/Hero';
 import Diagnosis from './sections/Diagnosis';
@@ -41,6 +41,11 @@ const Abacuz = lazy(() => import('./pages/Abacuz'));
 // content cost. Confidential: mounted at /pipeline/mira but NOT listed on the
 // public /pipeline index — reachable only via the direct link + 4-digit code.
 const Mira = lazy(() => import('./pages/Mira'));
+
+// MIRA Valley × PROXYZ — team-facing AI workshop page (Khun Gib forwards the
+// link to her staff). Route: /learn/mira. Ungated, noindex, isolated from the
+// confidential /pipeline/mira proposal.
+const MiraClass = lazy(() => import('./pages/MiraClass'));
 
 // Instant proposal links — /p/<slug>, code-gated, content served from Redis
 // via /api/proposal-get so new proposals publish with zero rebuilds. Lazy:
@@ -111,6 +116,10 @@ function Home() {
 }
 
 function App() {
+  // /learn/mira renders fully isolated from the global site chrome (no Vanta
+  // background, no scroll-progress bar, no floating contact rail).
+  const isMiraClass = !!useMatch('/learn/mira');
+
   useEffect(() => {
     document.title = siteConfig.siteTitle || 'PROXYZ';
     document.documentElement.lang = siteConfig.language || '';
@@ -128,15 +137,15 @@ function App() {
     <>
       {/* Animated pink network background — fixed layer behind all
           routes, lazy-loaded, desktop + motion-on only. See
-          components/VantaBackground.tsx. */}
-      <VantaBackground />
+          components/VantaBackground.tsx. Excluded on /learn/mira (isolated). */}
+      {!isMiraClass && <VantaBackground />}
       {/* Custom cursor disabled — was a 16px pink crosshair with mix-blend
           difference, too subtle to see against most backgrounds. Native
           OS cursor restored. Re-enable by uncommenting <CursorOverlay />. */}
       {/* <CursorOverlay /> */}
       {/* Scroll progress bar — fixed pink 2px line across the top of the
-          viewport, fills as the visitor scrolls. Always on. */}
-      <ScrollProgress />
+          viewport, fills as the visitor scrolls. Excluded on /learn/mira. */}
+      {!isMiraClass && <ScrollProgress />}
       <ScrollManager />
       <Routes>
         <Route path="/" element={<Home />} />
@@ -166,6 +175,10 @@ function App() {
           element={<Suspense fallback={null}><Mira /></Suspense>}
         />
         <Route
+          path="/learn/mira"
+          element={<Suspense fallback={null}><MiraClass /></Suspense>}
+        />
+        <Route
           path="/p/:slug"
           element={<Suspense fallback={null}><Proposal /></Suspense>}
         />
@@ -187,7 +200,7 @@ function App() {
         <Route path="/preview/motion" element={<Suspense fallback={null}><MotionPreview /></Suspense>} />
         <Route path="/preview/showcase" element={<Suspense fallback={null}><ShowcasePreview /></Suspense>} />
       </Routes>
-      <FloatingContactRail />
+      {!isMiraClass && <FloatingContactRail />}
     </>
   );
 }
