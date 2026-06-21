@@ -6,6 +6,7 @@
   ],
   "rewrites": [
     { "source": "/brief/ananda", "destination": "/brief/ananda.html" },
+    { "source": "/learn/mira", "destination": "/learn/mira.html" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

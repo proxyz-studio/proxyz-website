@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MIRA Valley and PROXYZ: A hands-on AI course for your team</title>
+<meta name="description" content="A two-session, hands-on AI course built around MIRA Valley's real work. No tech background needed. Your team leaves using AI the same afternoon." />
+<meta property="og:title" content="MIRA Valley &times; PROXYZ: A hands-on AI course for your team" />
+<meta property="og:description" content="Two sessions, two hours each. Everyone on their own laptop, learning by doing. Your team leaves using AI on real MIRA work the same afternoon." />
+<meta property="og:type" content="website" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    /* ---- navy depth scale ---- */
+    --bg:hsl(218 38% 6%);
+    --bg-card:hsl(218 39% 10%);
+    --bg-surface2:hsl(217 37% 12%);
+    --bg-elev:hsl(214 33% 14%);
+
+    --fg:hsl(214 40% 97%);
+    --fg-soft:hsl(216 33% 86%);
+    --fg-muted:hsl(216 18% 62%);
+
+    /* ---- pink: the single strong emphasis ---- */
+    --primary:#FF4193;
+    --primary-dim:rgba(255,65,147,0.15);
+    --primary-ring:rgba(255,65,147,0.35);
+
+    --radius:0.75rem;
+    --radius-sm:0.5rem;
+    --radius-lg:1.1rem;
+    --shadow-card:0 1px 3px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.25);
+    --shadow-lift:0 1px 3px rgba(0,0,0,0.4), 0 20px 48px rgba(0,0,0,0.38);
+
+    /* ---- subtle tinted note surfaces (gentle, never loud) ---- */
+    --note-rose:hsl(354 32% 12%);
+    --note-sky:hsl(210 36% 10%);
+    --note-green:hsl(162 30% 9%);
+    --note-amber:hsl(38 32% 9%);
+
+    /* ---- per-session guide accents (soft, sit beside the single pink) ---- */
+    --accent-sky:hsl(205 75% 62%);
+    --accent-rose:hsl(354 70% 64%);
+    --accent-green:hsl(162 55% 54%);
+
+    --hair:rgba(255,255,255,0.06);
+    --hair-soft:rgba(255,255,255,0.04);
+    --hair-strong:rgba(255,255,255,0.08);
+
+    --mono:'Geist Mono',ui-monospace,'SF Mono',Menlo,monospace;
+    --sans:'Quicksand',ui-sans-serif,system-ui,sans-serif;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);
+    color:var(--fg);
+    font-family:var(--sans);
+    font-weight:400;
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+    overflow-x:hidden;
+    position:relative;
+  }
+
+  /* give anchored sections a little breathing room under the jump */
+  [id]{scroll-margin-top:24px;}
+
+  /* ===================== AMBIENT DEPTH ===================== */
+  .ambient{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+  .ambient .glow{position:absolute;border-radius:50%;filter:blur(110px);will-change:transform;}
+  .glow-pink{width:46vw;height:46vw;top:-14%;left:-10%;
+    background:radial-gradient(circle at 40% 40%,rgba(255,65,147,0.10),transparent 66%);
+    animation:drift 38s ease-in-out infinite;}
+  .glow-navy{width:52vw;height:52vw;bottom:-22%;right:-16%;
+    background:radial-gradient(circle at 50% 50%,hsl(214 33% 18% / 0.55),transparent 68%);
+    animation:drift2 44s ease-in-out infinite;}
+  @keyframes drift{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(4vw,3vh) scale(1.07);}}
+  @keyframes drift2{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(-3vw,-2vh) scale(1.06);}}
+
+  .wrap{position:relative;z-index:2;max-width:920px;margin:0 auto;padding:0 24px;}
+
+  /* ===================== SHARED RHYTHM ===================== */
+  .eyebrow{
+    font-family:var(--mono);font-size:11.5px;letter-spacing:0.16em;text-transform:uppercase;
+    font-weight:500;color:var(--primary);display:inline-flex;align-items:center;gap:9px;
+    margin-bottom:16px;
+  }
+  .eyebrow::before{content:"";width:18px;height:1px;background:var(--primary);opacity:0.7;display:inline-block;}
+  .eyebrow.muted{color:var(--fg-muted);}
+  .eyebrow.muted::before{background:var(--fg-muted);}
+
+  h2{
+    font-family:var(--sans);font-size:clamp(26px,4.6vw,44px);font-weight:700;
+    letter-spacing:-0.018em;line-height:1.1;margin-bottom:16px;color:var(--fg);
+  }
+  h2 .accent{color:var(--primary);}
+  .lead{
+    font-size:clamp(15px,1.9vw,17.5px);color:var(--fg-soft);max-width:640px;
+    font-weight:400;line-height:1.6;
+  }
+  .lead .hl{color:var(--primary);font-weight:600;}
+
+  section{padding:clamp(46px,7vw,70px) 0;}
+
+  /* ----- numbered "session" header block (used ONLY by the two sessions) ----- */
+  .session-head{margin-bottom:22px;}
+  .divider{display:flex;align-items:center;gap:20px;padding:0 0 14px;}
+  .divider .label{
+    font-family:var(--mono);font-size:11.5px;letter-spacing:0.16em;text-transform:uppercase;
+    color:var(--fg-muted);white-space:nowrap;font-weight:500;
+  }
+  .divider .rule{flex:1;height:1px;background:linear-gradient(90deg,var(--hair-strong),transparent);}
+
+  .session-num{
+    font-family:var(--sans);font-weight:700;line-height:1;letter-spacing:-0.04em;
+    font-size:clamp(58px,11vw,116px);
+    -webkit-text-stroke:1.5px var(--primary-ring);color:transparent;
+    display:block;margin-bottom:-4px;
+  }
+  .session-num .solid{color:var(--primary);-webkit-text-stroke:0;}
+  /* per-session recolor: outline + solid digit follow the section accent */
+  .sec-sky .session-num{-webkit-text-stroke:1.5px hsl(205 75% 62% / 0.45);}
+  .sec-sky .session-num .solid{color:var(--accent-sky);}
+  .sec-rose .session-num{-webkit-text-stroke:1.5px hsl(354 70% 64% / 0.45);}
+  .sec-rose .session-num .solid{color:var(--accent-rose);}
+
+  /* ----- section header for the NON-session sections (no big numeral) ----- */
+  .plain-head{margin-bottom:22px;}
+  .plain-head .divider .label{letter-spacing:0.16em;}
+
+  /* ===================== HERO ===================== */
+  header{
+    min-height:88vh;display:flex;flex-direction:column;justify-content:center;
+    padding:88px 0 56px;position:relative;
+  }
+  .cobrand{
+    display:inline-flex;align-items:center;gap:13px;font-family:var(--mono);
+    font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-muted);
+    font-weight:500;margin-bottom:38px;padding:10px 16px;border-radius:999px;
+    border:1px solid var(--hair-strong);background:var(--bg-card);
+    box-shadow:var(--shadow-card);align-self:flex-start;
+  }
+  .cobrand b{color:var(--fg);font-weight:600;}
+  .cobrand .x{color:var(--primary);font-size:14px;font-weight:500;}
+  .cobrand .dot{flex:0 0 auto;width:7px;height:7px;border-radius:50%;background:var(--primary);
+    box-shadow:0 0 0 0 var(--primary-ring);animation:pulse 3.4s ease-out infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 var(--primary-ring);}70%{box-shadow:0 0 0 11px rgba(255,65,147,0);}100%{box-shadow:0 0 0 0 rgba(255,65,147,0);}}
+
+  h1{
+    font-family:var(--sans);font-size:clamp(36px,7vw,76px);line-height:1.04;
+    font-weight:700;letter-spacing:-0.025em;margin-bottom:26px;color:var(--fg);
+    max-width:15ch;
+  }
+  h1 .accent{color:var(--primary);}
+
+  .promise{
+    font-size:clamp(16px,2.3vw,20px);color:var(--fg-soft);max-width:600px;
+    margin-bottom:46px;font-weight:400;line-height:1.55;
+  }
+  .promise .hl{color:var(--primary);font-weight:600;}
+
+  /* hero stat tiles */
+  .hero-stats{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:48px;}
+  .stat{
+    flex:1 1 130px;min-width:130px;background:var(--bg-card);border:1px solid var(--hair);
+    border-radius:var(--radius);padding:18px;box-shadow:var(--shadow-card);
+    transition:transform .4s cubic-bezier(.2,.7,.2,1),border-color .4s;
+  }
+  .stat:hover{transform:translateY(-4px);border-color:var(--primary-ring);}
+  .stat .num{font-family:var(--sans);font-size:27px;font-weight:700;color:var(--fg);line-height:1;letter-spacing:-0.02em;}
+  .stat .num.pink{color:var(--primary);}
+  .stat .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:0.1em;text-transform:uppercase;
+    color:var(--fg-muted);margin-top:9px;line-height:1.3;}
+
+  .scrollcue{
+    font-family:var(--mono);font-size:11px;color:var(--fg-muted);letter-spacing:0.14em;
+    text-transform:uppercase;display:inline-flex;align-items:center;gap:11px;
+  }
+  .scrollcue .ln{width:34px;height:1px;background:linear-gradient(90deg,var(--fg-muted),transparent);}
+  .scrollcue .arrow{display:inline-block;animation:nudge 2.2s ease-in-out infinite;}
+  @keyframes nudge{0%,100%{transform:translateY(0);}50%{transform:translateY(4px);}}
+
+  /* ===================== INDEX / TABLE OF CONTENTS ===================== */
+  .toc{
+    border:1px solid var(--hair);border-radius:var(--radius-lg);background:var(--bg-card);
+    box-shadow:var(--shadow-card);padding:24px 26px 22px;position:relative;overflow:hidden;
+  }
+  .toc::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+    background:linear-gradient(180deg,var(--primary),rgba(255,65,147,0.12));}
+  .toc-h{
+    font-family:var(--mono);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;
+    color:var(--primary);font-weight:500;margin-bottom:18px;display:flex;align-items:center;gap:9px;
+  }
+  .toc-h::before{content:"";width:16px;height:1px;background:var(--primary);}
+  .toc-list{list-style:none;display:grid;gap:10px;}
+  .toc-link{
+    display:flex;align-items:center;gap:14px;text-decoration:none;color:var(--fg-soft);
+    border:1px solid var(--hair-soft);border-radius:var(--radius);background:var(--bg-surface2);
+    padding:13px 16px;transition:transform .35s cubic-bezier(.2,.7,.2,1),border-color .35s,background .35s;
+  }
+  .toc-link:hover,.toc-link:focus-visible{
+    transform:translateX(4px);border-color:var(--primary-ring);background:var(--bg-elev);outline:none;
+  }
+  .toc-link:focus-visible{box-shadow:0 0 0 2px var(--primary-ring);}
+  .toc-link .mk{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;
+    color:var(--primary);font-weight:500;flex:0 0 auto;min-width:78px;
+  }
+  .toc-link .mk.soft{color:var(--fg-muted);}
+  .toc-link .tt{font-family:var(--sans);font-size:15.5px;font-weight:500;color:var(--fg);line-height:1.3;}
+  .toc-link .go{margin-left:auto;color:var(--primary);font-weight:600;flex:0 0 auto;opacity:0.65;
+    transition:transform .35s,opacity .35s;}
+  .toc-link:hover .go,.toc-link:focus-visible .go{transform:translateX(3px);opacity:1;}
+
+  /* ===================== SESSION CARDS ===================== */
+  .session{
+    position:relative;border:1px solid var(--hair);border-radius:var(--radius-lg);
+    background:var(--bg-card);padding:0;overflow:hidden;box-shadow:var(--shadow-card);
+    transition:transform .5s cubic-bezier(.2,.7,.2,1),border-color .5s,box-shadow .5s;
+  }
+  .session:hover{transform:translateY(-5px);border-color:var(--primary-ring);box-shadow:var(--shadow-lift);}
+
+  /* tinted top band per session, with a soft accent rail */
+  .s-band{padding:26px 30px 22px;border-bottom:1px solid var(--hair-soft);position:relative;}
+  .s-band::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;}
+  .s-band.sky{background:linear-gradient(180deg,var(--note-sky),transparent);}
+  .s-band.sky::before{background:linear-gradient(180deg,var(--accent-sky),transparent);}
+  .s-band.rose{background:linear-gradient(180deg,var(--note-rose),transparent);}
+  .s-band.rose::before{background:linear-gradient(180deg,var(--accent-rose),transparent);}
+  .s-meta{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
+  .s-pill{
+    font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:0.1em;
+    text-transform:uppercase;color:var(--primary);background:var(--primary-dim);
+    border:1px solid var(--primary-ring);border-radius:999px;padding:5px 12px;
+  }
+  .s-tag{font-family:var(--mono);font-size:10.5px;color:var(--fg-muted);letter-spacing:0.1em;text-transform:uppercase;}
+  .s-title{font-family:var(--sans);font-size:clamp(20px,3.1vw,28px);font-weight:700;
+    letter-spacing:-0.015em;line-height:1.18;color:var(--fg);}
+
+  .s-body{padding:24px 30px 28px;}
+  .s-sub{font-family:var(--mono);font-size:10.5px;letter-spacing:0.12em;text-transform:uppercase;
+    color:var(--primary);margin-bottom:16px;display:flex;align-items:center;gap:8px;font-weight:500;}
+  .s-sub::before{content:"";width:14px;height:1px;background:var(--primary);}
+  .s-covers{list-style:none;margin:0;display:grid;gap:13px;}
+  .s-covers li{position:relative;padding-left:30px;font-size:15px;color:var(--fg-soft);
+    font-weight:400;line-height:1.5;}
+  .s-covers li::before{
+    content:"";position:absolute;left:0;top:3px;width:18px;height:18px;border-radius:6px;
+    background:var(--primary-dim);border:1px solid var(--primary-ring);
+  }
+  .s-covers li::after{
+    content:"";position:absolute;left:6px;top:8px;width:6px;height:6px;border-radius:2px;
+    background:var(--primary);transform:rotate(45deg);
+  }
+  .s-covers li b{color:var(--fg);font-weight:600;}
+  /* plain-meaning bracket for an unavoidable term */
+  .plain{color:var(--fg-muted);font-style:normal;}
+
+  /* highlighted "foundation" note inside a covers list item */
+  .foundation{
+    margin-top:6px;border:1px solid var(--hair-soft);border-radius:var(--radius-sm);
+    background:var(--bg-surface2);padding:12px 14px;
+  }
+  .foundation .fhead{
+    font-family:var(--mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;
+    color:var(--accent-rose);font-weight:500;margin-bottom:6px;
+  }
+  .foundation .ftext{font-size:14px;color:var(--fg-soft);line-height:1.55;}
+  .foundation .ftext b{color:var(--fg);font-weight:600;}
+  .foundation .ftext code{
+    font-family:var(--mono);font-size:12.5px;color:var(--primary);background:var(--primary-dim);
+    border:1px solid var(--primary-ring);border-radius:5px;padding:1px 6px;
+  }
+
+  /* inset outcomes sub-panel */
+  .outcomes{margin:24px 30px 28px;border:1px solid var(--hair-soft);border-radius:var(--radius);
+    background:var(--bg-surface2);padding:22px 22px 18px;}
+  .outcomes-h{font-family:var(--mono);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;
+    color:var(--primary);font-weight:500;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+  .outcomes-h::before{content:"";width:14px;height:1px;background:var(--primary);}
+  .outcomes-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+  .outcome{
+    display:flex;gap:11px;font-size:14px;color:var(--fg-soft);font-weight:400;line-height:1.45;
+    background:var(--bg-elev);border:1px solid var(--hair-soft);border-radius:var(--radius-sm);
+    padding:13px 14px;transition:background .35s,transform .35s,border-color .35s;
+  }
+  .outcome:hover{background:var(--bg-card);transform:translateY(-2px);border-color:var(--primary-ring);}
+  .outcome .arr{color:var(--primary);flex:0 0 auto;font-weight:600;}
+
+  /* ===================== TAKEAWAYS (transparent/navy band, NOT green) ===================== */
+  .takeaways-band{
+    position:relative;background:transparent;
+    border-top:1px solid var(--hair-strong);border-bottom:1px solid var(--hair-strong);
+  }
+  .wins{display:grid;grid-template-columns:repeat(auto-fit,minmax(238px,1fr));gap:16px;margin-top:32px;}
+  .win{
+    position:relative;border:1px solid var(--hair);border-radius:var(--radius-lg);
+    padding:26px 24px 24px;overflow:hidden;box-shadow:var(--shadow-card);
+    transition:transform .45s cubic-bezier(.2,.7,.2,1),border-color .45s,box-shadow .45s;
+  }
+  .win.t-rose{background:linear-gradient(165deg,var(--note-rose),var(--bg-card) 55%);}
+  .win.t-sky{background:linear-gradient(165deg,var(--note-sky),var(--bg-card) 55%);}
+  .win.t-green{background:linear-gradient(165deg,var(--note-green),var(--bg-card) 55%);}
+  .win.t-amber{background:linear-gradient(165deg,var(--note-amber),var(--bg-card) 55%);}
+  .win.t-card{background:var(--bg-card);}
+  .win:hover{transform:translateY(-5px);border-color:var(--primary-ring);box-shadow:var(--shadow-lift);}
+  /* subtle elevated icon tile (NOT a loud pink block) */
+  .win .ico{
+    width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;
+    margin-bottom:18px;font-size:21px;background:var(--bg-elev);border:1px solid var(--hair-strong);
+  }
+  .win h3{font-family:var(--sans);font-size:16.5px;font-weight:700;letter-spacing:-0.01em;
+    margin-bottom:9px;line-height:1.28;color:var(--fg);}
+  .win p{font-size:14px;color:var(--fg-soft);font-weight:400;line-height:1.55;}
+  .win .key{
+    display:block;margin-top:14px;font-family:var(--mono);font-size:10.5px;letter-spacing:0.08em;
+    text-transform:uppercase;color:var(--primary);font-weight:500;
+  }
+  .win .bar{position:absolute;left:0;bottom:0;height:2px;width:0;background:var(--primary);
+    transition:width .6s cubic-bezier(.2,.7,.2,1);}
+  .win:hover .bar{width:100%;}
+
+  /* ===================== PATH FORWARD ===================== */
+  .path{
+    position:relative;border:1px solid var(--hair);border-radius:var(--radius-lg);
+    padding:36px 32px;background:linear-gradient(150deg,var(--note-sky),var(--bg-card) 75%);
+    overflow:hidden;box-shadow:var(--shadow-card);
+  }
+  /* pink accent rail */
+  .path::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+    background:linear-gradient(180deg,var(--primary),rgba(255,65,147,0.12));}
+  .path .door{font-family:var(--sans);font-size:clamp(18px,2.6vw,24px);font-weight:700;
+    color:var(--fg);margin-bottom:14px;letter-spacing:-0.01em;}
+  .path p{font-size:16px;color:var(--fg-soft);font-weight:400;line-height:1.65;max-width:640px;}
+  .path .soft{color:var(--fg-muted);}
+
+  /* ===================== PRE-COURSE CHECK-IN ===================== */
+  .checkin-card{
+    position:relative;border:1px solid var(--hair);border-radius:var(--radius-lg);
+    background:var(--bg-card);padding:36px 32px 32px;overflow:hidden;box-shadow:var(--shadow-card);
+  }
+  /* amber accent rail to visually distinguish from the sky-tinted path card */
+  .checkin-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+    background:linear-gradient(180deg,hsl(38 80% 60%),rgba(255,65,147,0.12));}
+  .checkin-steps{display:grid;gap:14px;margin-top:26px;}
+  .checkin-step{
+    display:flex;gap:16px;align-items:flex-start;background:var(--bg-surface2);
+    border:1px solid var(--hair-soft);border-radius:var(--radius);padding:16px 18px;
+    transition:background .35s,border-color .35s,transform .35s;
+  }
+  .checkin-step:hover{background:var(--bg-elev);border-color:var(--primary-ring);transform:translateX(3px);}
+  .checkin-step .step-num{
+    font-family:var(--mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;
+    color:var(--primary);font-weight:500;flex:0 0 auto;padding-top:2px;min-width:52px;
+  }
+  .checkin-step .step-text{font-size:15px;color:var(--fg-soft);font-weight:400;line-height:1.55;}
+  .checkin-step .step-text b{color:var(--fg);font-weight:600;}
+  .checkin-link{
+    display:inline-flex;align-items:center;gap:9px;margin-top:22px;
+    font-family:var(--mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;
+    color:var(--fg-muted);background:var(--bg-surface2);border:1px solid var(--hair-strong);
+    border-radius:var(--radius-sm);padding:10px 14px;font-weight:500;
+    cursor:default;user-select:all;
+  }
+  .checkin-link .lk-label{color:var(--fg-muted);}
+  .checkin-link .lk-val{color:var(--fg-soft);}
+  .checkin-link .lk-note{
+    font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;
+    color:var(--primary);background:var(--primary-dim);border:1px solid var(--primary-ring);
+    border-radius:4px;padding:2px 7px;white-space:nowrap;
+  }
+
+  /* ===================== CLOSE ===================== */
+  .close{text-align:center;padding:clamp(56px,9vw,84px) 0 36px;}
+  .close .big{font-family:var(--sans);font-size:clamp(24px,4.2vw,40px);font-weight:700;
+    letter-spacing:-0.02em;line-height:1.18;margin-bottom:26px;color:var(--fg);}
+  .close .big .accent{color:var(--primary);}
+  .logistics{
+    display:inline-flex;align-items:center;gap:12px;font-size:14px;color:var(--fg-soft);
+    border:1px solid var(--hair-strong);border-radius:999px;padding:14px 24px;
+    background:var(--bg-card);font-weight:500;box-shadow:var(--shadow-card);
+  }
+  .logistics b{color:var(--primary);font-weight:600;}
+  .logistics .dot{width:7px;height:7px;border-radius:50%;background:var(--primary);flex:0 0 auto;}
+
+  footer{border-top:1px solid var(--hair-soft);padding:30px 0 56px;text-align:center;margin-top:24px;}
+  footer p{font-family:var(--mono);font-size:11px;color:var(--fg-muted);letter-spacing:0.12em;text-transform:uppercase;}
+  footer .pk{color:var(--primary);}
+
+  /* ===================== REVEAL ===================== */
+  .reveal{opacity:0;transform:translateY(26px);
+    transition:opacity .85s cubic-bezier(.2,.7,.2,1),transform .85s cubic-bezier(.2,.7,.2,1);}
+  .reveal.in{opacity:1;transform:none;}
+  .d1{transition-delay:.07s;} .d2{transition-delay:.14s;} .d3{transition-delay:.21s;} .d4{transition-delay:.28s;} .d5{transition-delay:.35s;}
+
+  /* ===================== RESPONSIVE ===================== */
+  @media (max-width:680px){
+    .wrap{padding:0 16px;}
+    header{min-height:auto;padding:60px 0 40px;}
+    .outcomes-grid{grid-template-columns:1fr;}
+    .s-band,.s-body{padding-left:20px;padding-right:20px;}
+    .outcomes{margin-left:20px;margin-right:20px;padding:18px 16px 14px;}
+    .path{padding:28px 22px;}
+    .checkin-card{padding:28px 20px 24px;}
+    .checkin-step{gap:12px;padding:14px 14px;}
+    .toc{padding:20px 18px 18px;}
+    .toc-link{padding:12px 14px;gap:11px;flex-wrap:wrap;}
+    .toc-link .mk{min-width:0;}
+    .toc-link .tt{flex:1 1 100%;}
+    .toc-link .go{margin-left:0;}
+    .cobrand{font-size:11px;letter-spacing:0.1em;gap:10px;}
+    .hero-stats{gap:10px;}
+    .stat{flex:1 1 calc(50% - 5px);min-width:0;padding:15px;}
+    h1{max-width:100%;}
+    .session-num{font-size:clamp(54px,18vw,92px);}
+    .divider .label{font-size:10.5px;letter-spacing:0.12em;}
+  }
+  @media (max-width:380px){
+    .stat{flex:1 1 100%;}
+    .session-num{font-size:clamp(48px,16vw,72px);}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto;}
+    .ambient .glow,.cobrand .dot,.scrollcue .arrow{animation:none !important;}
+    .reveal{opacity:1 !important;transform:none !important;transition:none !important;}
+    .session,.win,.stat,.outcome,.toc-link,.checkin-step{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="ambient" aria-hidden="true">
+  <span class="glow glow-pink"></span>
+  <span class="glow glow-navy"></span>
+</div>
+
+<div class="wrap">
+
+  <!-- ===================== HERO ===================== -->
+  <header>
+    <div class="cobrand reveal in">
+      <span class="dot"></span>
+      <span><b>MIRA VALLEY</b></span>
+      <span class="x">&times;</span>
+      <span><b>PROXYZ</b></span>
+    </div>
+
+    <h1 class="reveal in d1">A hands-on AI course,<br/>built around your <span class="accent">real work.</span></h1>
+
+    <p class="promise reveal in d2">
+      Two sessions for your team. Everyone on their own laptop, learning by doing, with
+      <span class="hl">no tech background needed.</span>
+      They leave using AI on real MIRA work, the same afternoon.
+    </p>
+
+    <div class="hero-stats reveal in d3">
+      <div class="stat"><div class="num pink">2</div><div class="lbl">Sessions</div></div>
+      <div class="stat"><div class="num">2h</div><div class="lbl">Each</div></div>
+      <div class="stat"><div class="num">1</div><div class="lbl">Laptop per person</div></div>
+      <div class="stat"><div class="num pink">0</div><div class="lbl">Tech background needed</div></div>
+    </div>
+
+    <div class="scrollcue reveal in d4"><span class="ln"></span><span class="arrow">&darr;</span> Scroll, or jump straight in below</div>
+  </header>
+
+  <!-- ===================== INDEX / TABLE OF CONTENTS ===================== -->
+  <section style="padding-top:8px;">
+    <nav class="toc reveal" aria-label="What's on this page">
+      <p class="toc-h">What's on this page</p>
+      <ul class="toc-list">
+        <li>
+          <a class="toc-link" href="#session-1">
+            <span class="mk">Session 01</span>
+            <span class="tt">What AI actually is</span>
+            <span class="go" aria-hidden="true">&rarr;</span>
+          </a>
+        </li>
+        <li>
+          <a class="toc-link" href="#session-2">
+            <span class="mk">Session 02</span>
+            <span class="tt">Putting AI to work</span>
+            <span class="go" aria-hidden="true">&rarr;</span>
+          </a>
+        </li>
+        <li>
+          <a class="toc-link" href="#takeaways">
+            <span class="mk soft">Outcomes</span>
+            <span class="tt">What your team walks away with</span>
+            <span class="go" aria-hidden="true">&rarr;</span>
+          </a>
+        </li>
+        <li>
+          <a class="toc-link" href="#path-forward">
+            <span class="mk soft">After</span>
+            <span class="tt">Where this can go</span>
+            <span class="go" aria-hidden="true">&rarr;</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </section>
+
+  <!-- ===================== SESSION 1 ===================== -->
+  <section id="session-1" class="sec-sky">
+    <div class="session-head">
+      <div class="divider reveal">
+        <span class="label">The two sessions</span>
+        <span class="rule"></span>
+      </div>
+      <span class="session-num reveal d1" aria-hidden="true">0<span class="solid">1</span></span>
+      <p class="eyebrow reveal d1">Session 01</p>
+      <h2 class="reveal d1">What AI <span class="accent">actually</span> is</h2>
+      <p class="lead reveal d2">
+        The first session clears the fog. Your team learns what AI really is, why it can sound sure
+        and still be wrong, and a simple way to ask it that gets good answers. Then everyone does one
+        real piece of MIRA work with it before they leave.
+      </p>
+    </div>
+
+    <div class="session reveal d2">
+      <div class="s-band sky">
+        <div class="s-meta">
+          <span class="s-pill">Session 01</span>
+          <span class="s-tag">Felt on your own screen</span>
+        </div>
+        <p class="s-title">From "what even is this" to "I just used it."</p>
+      </div>
+
+      <div class="s-body">
+        <p class="s-sub">What this session covers</p>
+        <ul class="s-covers">
+          <li>See what AI really is: it builds answers by <b>guessing the next word</b>, so it can sound completely sure and still be wrong. The team watches that happen live.</li>
+          <li>A simple recipe for asking that gets good results: <b>who it should be, the task, the background, what to avoid, and the shape of the answer.</b></li>
+          <li>Treat AI as a <b>thinking partner, not a vending machine</b> ("what am I missing here?").</li>
+          <li>Do <b>one real piece of MIRA work</b> with it, hands on, before the session ends.</li>
+        </ul>
+      </div>
+
+      <div class="outcomes">
+        <p class="outcomes-h">Your team walks away able to</p>
+        <div class="outcomes-grid">
+          <div class="outcome"><span class="arr">&rarr;</span><span>Tell when to trust AI and when to check it themselves</span></div>
+          <div class="outcome"><span class="arr">&rarr;</span><span>Ask it the right way and get a usable answer first time</span></div>
+          <div class="outcome"><span class="arr">&rarr;</span><span>Use AI as a partner that pushes their thinking, not just a tool</span></div>
+          <div class="outcome"><span class="arr">&rarr;</span><span>Use it on a real task from their own desk, that day</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== SESSION 2 ===================== -->
+  <section id="session-2" class="sec-rose">
+    <div class="session-head">
+      <div class="divider reveal">
+        <span class="label">The two sessions</span>
+        <span class="rule"></span>
+      </div>
+      <span class="session-num reveal d1" aria-hidden="true">0<span class="solid">2</span></span>
+      <p class="eyebrow reveal d1">Session 02</p>
+      <h2 class="reveal d1">Putting AI <span class="accent">to work</span></h2>
+      <p class="lead reveal d2">
+        The second session turns the basics into a daily habit. Your team learns to find answers they
+        can trust, write in MIRA's own voice, set AI up so it remembers them, and build a shared prompt
+        cookbook the whole team keeps using.
+      </p>
+    </div>
+
+    <div class="session reveal d2">
+      <div class="s-band rose">
+        <div class="s-meta">
+          <span class="s-pill">Session 02</span>
+          <span class="s-tag">Real jobs, done well</span>
+        </div>
+        <p class="s-title">From "I can use it" to "it works the way we work."</p>
+      </div>
+
+      <div class="s-body">
+        <p class="s-sub">What this session covers</p>
+        <ul class="s-covers">
+          <li>Find answers they can <b>trust</b>, and check the source behind them, instead of taking a confident guess at face value.</li>
+          <li>Write and polish in <b>MIRA's own voice</b> (AI drafts, you edit), so the words sound like MIRA and not like everyone else.</li>
+          <li>
+            Set AI up to <b>remember them and their work</b>, two ways. The easy way is a saved note inside Claude <span class="plain">(no setup)</span>. The fuller way is the <b>folder foundation</b>:
+            <div class="foundation">
+              <p class="fhead">The "folder" foundation</p>
+              <p class="ftext">
+                A small folder of short brief files on the computer: a file called <code>CLAUDE.md</code>
+                <span class="plain">(a plain text file)</span> that tells the AI who you are and what you're
+                working on, plus a couple of background files. The AI <b>reads them each time</b>, so it
+                already knows the context. Same payoff as the saved note, just a fuller level of effort.
+              </p>
+            </div>
+          </li>
+          <li>Build a <b>shared team cookbook of instructions that worked</b>, so nobody starts from a blank page again.</li>
+        </ul>
+      </div>
+
+      <div class="outcomes">
+        <p class="outcomes-h">Your team walks away able to</p>
+        <div class="outcomes-grid">
+          <div class="outcome"><span class="arr">&rarr;</span><span>Research a question and see the source behind the answer</span></div>
+          <div class="outcome"><span class="arr">&rarr;</span><span>Write content that genuinely sounds like MIRA</span></div>
+          <div class="outcome"><span class="arr">&rarr;</span><span>Set AI up once, by note or by folder, so it remembers their work</span></div>
+          <div class="outcome"><span class="arr">&rarr;</span><span>Add their best instructions to a prompt cookbook the team shares</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAKEAWAYS (transparent/navy band, NOT green; NOT a session) ===================== -->
+  <section id="takeaways" class="takeaways-band">
+    <div class="plain-head">
+      <div class="divider reveal">
+        <span class="label">After both sessions</span>
+        <span class="rule"></span>
+      </div>
+      <p class="eyebrow reveal d1">The lasting result</p>
+      <h2 class="reveal d1">What your team <span class="accent">walks away with</span></h2>
+      <p class="lead reveal d2">Real, lasting wins your team keeps using long after the course ends.</p>
+    </div>
+
+    <div class="wins">
+      <div class="win t-rose reveal d1">
+        <div class="ico">&#9889;</div>
+        <h3>Faster, warmer buyer replies</h3>
+        <p>First drafts to buyers in seconds, then a quick human touch so every message still feels personal.</p>
+        <span class="key">Speed with a human touch</span>
+        <span class="bar"></span>
+      </div>
+      <div class="win t-sky reveal d2">
+        <div class="ico">&#10003;</div>
+        <h3>Research they can trust</h3>
+        <p>Answers they can check, with the source right there, so nobody acts on a confident guess.</p>
+        <span class="key">Always check the source</span>
+        <span class="bar"></span>
+      </div>
+      <div class="win t-green reveal d3">
+        <div class="ico">&#9998;</div>
+        <h3>Content that sounds like MIRA</h3>
+        <p>Listings, captions and notes in MIRA's own voice, not the same generic words as everyone else.</p>
+        <span class="key">MIRA's voice, every time</span>
+        <span class="bar"></span>
+      </div>
+      <div class="win t-amber reveal d4">
+        <div class="ico">&#8635;</div>
+        <h3>AI that remembers their work</h3>
+        <p>Set up once to know each person's role and MIRA's tone, so they stop re-explaining every time.</p>
+        <span class="key">Set up once, use daily</span>
+        <span class="bar"></span>
+      </div>
+      <div class="win t-card reveal d5">
+        <div class="ico">&#9776;</div>
+        <h3>A shared prompt cookbook</h3>
+        <p>The instructions that worked, saved in one place the whole team keeps and keeps improving.</p>
+        <span class="key">One place the team shares</span>
+        <span class="bar"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== PRE-COURSE CHECK-IN (before we start) ===================== -->
+  <section id="head-start">
+    <div class="plain-head">
+      <div class="divider reveal">
+        <span class="label">Before the first class</span>
+        <span class="rule"></span>
+      </div>
+      <p class="eyebrow reveal d1">A friendly head start</p>
+      <h2 class="reveal d1">Two minutes, <span class="accent">before we meet.</span></h2>
+      <p class="lead reveal d2">
+        A short conversation on your phone, a few days before class. It means the first session is built
+        around your team's real starting point, not a generic slide deck.
+      </p>
+    </div>
+
+    <div class="checkin-card reveal d2">
+      <p style="font-size:16px;color:var(--fg-soft);line-height:1.65;max-width:640px;">
+        A few days before the first session, each person on the team gets their own private link.
+        They open it on their phone and have a short, friendly two-minute chat with a helpful AI guide.
+        It asks a few easy questions: their role, how they feel about AI right now, and what would make their
+        workday a little easier. <b style="color:var(--fg);">There are no right or wrong answers</b> and
+        nothing to prepare. It feels like a conversation, not a form.
+      </p>
+
+      <div class="checkin-steps">
+        <div class="checkin-step">
+          <span class="step-num">Step 01</span>
+          <span class="step-text">Each person receives <b>their own private link</b> a few days before class, sent directly to them.</span>
+        </div>
+        <div class="checkin-step">
+          <span class="step-num">Step 02</span>
+          <span class="step-text">They open it on their phone and <b>chat with a friendly AI guide for about two minutes</b>. Role, feelings about AI, what slows them down. That's it.</span>
+        </div>
+        <div class="checkin-step">
+          <span class="step-num">Step 03</span>
+          <span class="step-text">The instructor reads the responses before walking in. <b>The very first class is then shaped around the actual team</b> rather than a generic script.</span>
+        </div>
+      </div>
+
+      <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--hair-soft);">
+        <p style="font-size:13.5px;color:var(--fg-muted);line-height:1.6;max-width:560px;">
+          Responses are private and go only to the instructor. The link itself is personalised per team member
+          and looks something like this:
+        </p>
+        <div class="checkin-link" style="margin-top:12px;" aria-label="Example private check-in link placeholder">
+          <span class="lk-label">Link &rarr;</span>
+          <span class="lk-val">[each person's private link goes here]</span>
+          <span class="lk-note">Added before sending</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== PATH FORWARD (NOT a session) ===================== -->
+  <section id="path-forward">
+    <div class="plain-head">
+      <div class="divider reveal">
+        <span class="label">Looking ahead</span>
+        <span class="rule"></span>
+      </div>
+      <p class="eyebrow muted reveal d1">Where this can go</p>
+      <h2 class="reveal d1">A door, not a finish line</h2>
+    </div>
+    <div class="path reveal d2">
+      <p class="door">These two sessions stand on their own.</p>
+      <p>
+        Your team will be using AI well by the end of them. And for anyone who wants to go further,
+        there is a clear path beyond the course, at a pace that suits MIRA.
+        <span class="soft">No pressure, and nothing to decide today.</span>
+        Just good to know the road keeps going.
+      </p>
+    </div>
+  </section>
+
+  <!-- ===================== CLOSE ===================== -->
+  <div class="close reveal">
+    <p class="big">Two calm afternoons.<br/><span class="accent">A team that feels ready.</span></p>
+    <div class="logistics reveal d1">
+      <span class="dot"></span>
+      <span>Two sessions, 2 hours each. <b>Dates to be set with you.</b></span>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <div class="wrap">
+    <p>Prepared by <span class="pk">PROXYZ Studio</span> for MIRA Valley</p>
+  </div>
+</footer>
+
+<script>
+  (function(){
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var items = document.querySelectorAll('.reveal');
+    if(reduce || !('IntersectionObserver' in window)){
+      items.forEach(function(el){ el.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          e.target.classList.add('in');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold:0.12, rootMargin:'0px 0px -8% 0px' });
+    items.forEach(function(el){
+      if(!el.classList.contains('in')) io.observe(el);
+    });
+  })();
+</script>
+
+</body>
+</html>
