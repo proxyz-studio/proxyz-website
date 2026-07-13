@@ -1,5 +1,5 @@
 import { useEffect, lazy, Suspense } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, useMatch } from 'react-router-dom';
 import { siteConfig } from './config';
 import Hero from './sections/Hero';
 import Diagnosis from './sections/Diagnosis';
@@ -25,6 +25,7 @@ import VantaBackground from './components/VantaBackground';
 // kept at ./components/CursorOverlay.tsx.
 // import CursorOverlay from './components/CursorOverlay';
 import ScrollProgress from './components/ScrollProgress';
+import FloatingContactRail from './components/FloatingContactRail';
 
 // Code-split the Lazy Tiger page — heavy on bespoke components (helmet, leaderboard,
 // merch grid, GSAP Asia map). Only loaded when a visitor lands on /partners/lazy-tiger.
@@ -40,6 +41,10 @@ const Abacuz = lazy(() => import('./pages/Abacuz'));
 // content cost. Confidential: mounted at /pipeline/mira but NOT listed on the
 // public /pipeline index — reachable only via the direct link + 4-digit code.
 const Mira = lazy(() => import('./pages/Mira'));
+// MIRA Valley × PROXYZ — team-facing AI workshop page (Khun Gib forwards to her
+// staff). Route: /learn/mira. No gate, noindex, NOT listed on any index, and
+// completely isolated from the confidential /pipeline/mira proposal.
+const MiraClass = lazy(() => import('./pages/MiraClass'));
 
 // Legal pages — lazy because rarely visited but needed for LINE OA + Thai PDPA.
 const Privacy = lazy(() => import('./pages/Privacy'));
@@ -105,6 +110,11 @@ function Home() {
 }
 
 function App() {
+  // Routes that must be fully isolated from the global site chrome
+  // (no Vanta background, no scroll-progress bar, no contact rail).
+  // useMatch runs inside the Router context, so it's valid here.
+  const isMiraClass = !!useMatch('/learn/mira');
+
   useEffect(() => {
     document.title = siteConfig.siteTitle || 'PROXYZ';
     document.documentElement.lang = siteConfig.language || '';
@@ -122,15 +132,15 @@ function App() {
     <>
       {/* Animated pink network background — fixed layer behind all
           routes, lazy-loaded, desktop + motion-on only. See
-          components/VantaBackground.tsx. */}
-      <VantaBackground />
+          components/VantaBackground.tsx. Excluded on /learn/mira (isolated). */}
+      {!isMiraClass && <VantaBackground />}
       {/* Custom cursor disabled — was a 16px pink crosshair with mix-blend
           difference, too subtle to see against most backgrounds. Native
           OS cursor restored. Re-enable by uncommenting <CursorOverlay />. */}
       {/* <CursorOverlay /> */}
       {/* Scroll progress bar — fixed pink 2px line across the top of the
-          viewport, fills as the visitor scrolls. Always on. */}
-      <ScrollProgress />
+          viewport, fills as the visitor scrolls. Excluded on /learn/mira. */}
+      {!isMiraClass && <ScrollProgress />}
       <ScrollManager />
       <Routes>
         <Route path="/" element={<Home />} />
@@ -159,6 +169,10 @@ function App() {
           path="/pipeline/mira"
           element={<Suspense fallback={null}><Mira /></Suspense>}
         />
+        <Route
+          path="/learn/mira"
+          element={<Suspense fallback={null}><MiraClass /></Suspense>}
+        />
         <Route path="/privacy" element={<Suspense fallback={null}><Privacy /></Suspense>} />
         <Route path="/terms" element={<Suspense fallback={null}><Terms /></Suspense>} />
         <Route path="/faq" element={<Suspense fallback={null}><Faq /></Suspense>} />
@@ -177,6 +191,10 @@ function App() {
         <Route path="/preview/motion" element={<Suspense fallback={null}><MotionPreview /></Suspense>} />
         <Route path="/preview/showcase" element={<Suspense fallback={null}><ShowcasePreview /></Suspense>} />
       </Routes>
+      {/* Floating PROXYZ LINE contact button. Excluded on /learn/mira
+          (isolated: no off-page commercial links on the client-facing
+          team page, per brief). */}
+      {!isMiraClass && <FloatingContactRail />}
     </>
   );
 }

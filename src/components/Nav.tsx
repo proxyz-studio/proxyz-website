@@ -99,9 +99,9 @@ function NavLink({
       ? {
           fontSize: '13px',
           fontWeight: 500 as const,
-          color: '#F2D78C',
+          color: '#F2F2F2',
           background: 'transparent',
-          border: '1px solid #F2D78C',
+          border: '1px solid #3A3A3A',
           textTransform: 'uppercase' as const,
           textDecoration: 'none',
           letterSpacing: '0.12em',
@@ -123,7 +123,7 @@ function NavLink({
 
   const hoverIn = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (variant === 'cta') {
-      (e.currentTarget as HTMLElement).style.background = '#F2D78C';
+      (e.currentTarget as HTMLElement).style.background = '#F2F2F2';
       (e.currentTarget as HTMLElement).style.color = '#0A0A0A';
     } else {
       (e.target as HTMLElement).style.borderBottomColor = '#F2F2F2';
@@ -132,7 +132,7 @@ function NavLink({
   const hoverOut = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (variant === 'cta') {
       (e.currentTarget as HTMLElement).style.background = 'transparent';
-      (e.currentTarget as HTMLElement).style.color = '#F2D78C';
+      (e.currentTarget as HTMLElement).style.color = '#F2F2F2';
     } else {
       (e.target as HTMLElement).style.borderBottomColor = 'transparent';
     }

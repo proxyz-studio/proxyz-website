@@ -143,6 +143,92 @@ body.lt-mode-tiger {
   --lt-accent: var(--lt-lime);
 }
 
+#root > .floating-contact-rail {
+  position: fixed;
+  right: max(20px, env(safe-area-inset-right));
+  bottom: max(22px, env(safe-area-inset-bottom));
+  z-index: 120;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.floating-contact-button {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  color: var(--accent-pink);
+  text-decoration: none;
+  pointer-events: auto;
+  border: 1px solid rgba(255, 65, 147, 0.66);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 35% 25%, rgba(255, 65, 147, 0.22), transparent 34px),
+    rgba(10, 10, 10, 0.78);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+    0 0 22px rgba(255, 65, 147, 0.20),
+    0 18px 46px rgba(0, 0, 0, 0.54);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition:
+    transform var(--dur-quick) var(--ease-out-expo),
+    color var(--dur-quick) var(--ease-out-quart),
+    border-color var(--dur-quick) var(--ease-out-quart),
+    box-shadow var(--dur-quick) var(--ease-out-quart),
+    background var(--dur-quick) var(--ease-out-quart);
+}
+
+.floating-contact-button svg {
+  width: 31px;
+  height: 31px;
+  display: block;
+}
+
+.floating-contact-button:hover {
+  color: #fff;
+  transform: translateY(-3px) scale(1.03);
+  border-color: rgba(255, 65, 147, 0.98);
+  background:
+    radial-gradient(circle at 35% 25%, rgba(255, 65, 147, 0.36), transparent 36px),
+    rgba(15, 15, 15, 0.92);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.09) inset,
+    0 0 30px rgba(255, 65, 147, 0.36),
+    0 20px 54px rgba(0, 0, 0, 0.62);
+}
+
+.floating-contact-button:focus-visible {
+  outline: 2px solid var(--accent-pink);
+  outline-offset: 5px;
+}
+
+@media (max-width: 640px) {
+  .floating-contact-rail {
+    right: max(14px, env(safe-area-inset-right));
+    bottom: max(16px, env(safe-area-inset-bottom));
+    gap: 10px;
+  }
+
+  .floating-contact-button {
+    width: 52px;
+    height: 52px;
+  }
+
+  .floating-contact-button svg {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+@media print {
+  .floating-contact-rail {
+    display: none;
+  }
+}
+
 /* ─── SVG drawn connections ────────────────────────────────────
    Apply the `svg-draw-lines` class to any <g> that wraps a set of
    short <line> connector spokes (FastFix studioOSHub, LazyTiger
@@ -597,6 +683,8 @@ body.has-custom-cursor * {
     width: 100% !important;
     min-width: 0 !important;
     min-height: 100vh;
+    min-height: 100svh;
+    padding: 96px 24px 48px !important;
   }
   .hero-right {
     display: none !important;
@@ -608,13 +696,8 @@ body.has-custom-cursor * {
   .hero-nav-links {
     gap: 12px !important;
   }
-  .hero-content {
-    left: 24px !important;
-    right: 24px !important;
-    top: 18vh !important;
-  }
-  .hero-content h1 {
-    font-size: clamp(38px, 11vw, 64px) !important;
+  .hero-left h1 {
+    font-size: clamp(34px, 8.4vw, 56px) !important;
   }
   .hero-ctas {
     flex-wrap: wrap;
@@ -658,8 +741,8 @@ body.has-custom-cursor * {
 }
 
 @media (max-width: 480px) {
-  .hero-content h1 {
-    font-size: clamp(34px, 13vw, 56px) !important;
+  .hero-left h1 {
+    font-size: clamp(28px, 8.4vw, 44px) !important;
   }
   .hero-nav-brand img {
     height: 32px !important;
@@ -1042,6 +1125,38 @@ body.has-custom-cursor * {
 @media (prefers-reduced-motion: reduce) {
   .hero-float { animation: none; }
   .sos-hero-glow { display: none; }
+}
+
+/* HERO — ISSUE 01 cover (2026-06-10 redesign).
+   Per-line clip-mask reveal for the headline, the pink-on-hover primary
+   CTA, and the svh fold fix. The hero no longer consumes .scanline-heading
+   or .proxy-glitch (kept below for StudioOS / Pipeline / previews). */
+.hero-section {
+  min-height: 100svh;
+}
+.hero-line-mask {
+  display: block;
+  overflow: hidden;
+}
+.hero-line {
+  display: block;
+  will-change: transform;
+}
+.hero-cta-primary {
+  transition: background-color 0.12s ease-out, color 0.12s ease-out;
+}
+.hero-cta-primary:hover {
+  background: var(--accent-pink) !important;
+  color: #0a0a0a !important;
+}
+.hero-cta-primary:focus-visible {
+  outline: 2px solid var(--accent-pink);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-line {
+    transform: none !important;
+  }
 }
 
 .scanline-heading {
