@@ -290,7 +290,9 @@ export default function Team() {
           className="team-grid"
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
+            // One card per person; never leave an empty cell when the team is one person.
+            gridTemplateColumns: `repeat(${Math.min(teamConfig.members.length, 2)}, 1fr)`,
+            maxWidth: teamConfig.members.length === 1 ? '720px' : undefined,
             border: '1px solid rgba(255,255,255,0.12)',
           }}
         >

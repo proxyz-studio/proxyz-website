@@ -31,6 +31,7 @@ const PROXYZ_PINK = '#FF4193';
 function getStatusPillStyle(status: string, brandAccent: string): React.CSSProperties {
   if (status === 'live') return { color: '#0A0A0A', background: '#D2FF3B' };
   if (status === 'building') return { color: '#0A0A0A', background: brandAccent };
+  if (status === 'parked') return { color: 'rgba(255,255,255,0.72)', background: 'rgba(255,255,255,0.12)' };
   return {
     color: 'rgba(255,255,255,0.78)',
     background: 'transparent',
@@ -255,7 +256,7 @@ function VentureEntry({ venture, index }: { venture: VentureCard; index: number 
                   color: 'rgba(255,255,255,0.45)',
                 }}
               >
-                {venture.status === 'building' ? '· launching soon' : '· domain pending'}
+                {venture.status === 'building' ? '· launching soon' : venture.status === 'parked' ? '· parked' : '· domain pending'}
               </span>
             )}
           </p>

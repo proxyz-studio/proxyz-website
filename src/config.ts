@@ -134,7 +134,7 @@ export const siteConfig: SiteConfig = {
   language: "en",
   siteTitle: "PROXYZ",
   siteDescription:
-    "We're a venture studio. We've built an AI system that runs the boring half of a business. Our own companies run on it. We install it for others.",
+    "We're a venture studio. We've built an AI system that runs the boring half of a business. Our own studio runs on it. We install it for others.",
 }
 
 export const navigationConfig: NavigationConfig = {
@@ -153,7 +153,7 @@ export const navigationConfig: NavigationConfig = {
 export const heroConfig: HeroConfig = {
   eyebrow: { en: "ISSUE 01 / VENTURE STUDIO" },
   titleLines: { en: ["The system", "runs the company.", "Not the founder."] },
-  lead: { en: "We're a venture studio. We've built an AI system that runs the boring half of a business. Routing work. Remembering decisions. Writing reports. Answering inbound. Our own companies run on it. We install it for others." },
+  lead: { en: "We're a venture studio. We've built an AI system that runs the boring half of a business. Routing work. Remembering decisions. Writing reports. Answering inbound. Our own studio runs on it. We install it for others." },
   primaryCta: { label: { en: "Book the Walkthrough" }, href: "#booking" },
   secondaryLink: { label: { en: "How it works →" }, href: "#how-it-works" },
 }
@@ -223,16 +223,16 @@ export const whatWeInstallConfig: WhatWeInstallConfig = {
 
 export const proofConfig: ProofConfig = {
   sectionLabel: { en: "05 / WHY WE GET TO SAY THIS" },
-  heading: { en: "We've run this on our own companies first." },
-  lead: { en: "Before we installed it for anyone else, we built it for ourselves. Our own companies run on the system today." },
+  heading: { en: "We run on it ourselves first." },
+  lead: { en: "Before we installed it for anyone else, we built it for the studio. PROXYZ runs on the system today: the meeting rhythm, the dashboards, the agents, the research pipeline." },
   cards: [
     {
-      name: "AUTOLOOM",
-      body: { en: "Thai SMB packages. Web, AI agents, LINE automation, after-hours support." },
+      name: "PROXYZ",
+      body: { en: "The studio itself. Decisions in writing, dashboards on the few numbers that matter, agents doing the routine work." },
     },
     {
       name: "PRYZM",
-      body: { en: "Research as a service, run by AI agents." },
+      body: { en: "Research as a service, run by AI agents. Behind every engagement and every page on this site." },
     },
   ],
   tailLink: { label: { en: "See all our ventures" }, href: "/ventures" },
@@ -240,22 +240,15 @@ export const proofConfig: ProofConfig = {
 
 export const teamConfig: StudioTeamConfig = {
   sectionLabel: { en: "06 / THE TEAM" },
-  heading: { en: "Two of us. Two roles." },
-  intro: { en: "Senior people only. No junior layer between you and the system." },
+  heading: { en: "One person. No layers." },
+  intro: { en: "You work with the person who built the system. No junior layer, no handoff." },
   members: [
     {
       name: "Arnon Saksri (Tew)",
       role: "Managing Director",
-      bio: { en: "Architect of the system and the deals around it. Built PROXYZ from inside our own companies before installing it for anyone else. Based in Bangkok, working across Thailand." },
+      bio: { en: "Architect of the system and the deals around it. Built PROXYZ from inside our own companies before installing it for anyone else. The person you meet on the Walkthrough. Based in Phuket, working across Thailand." },
       photo: "/team/tew.jpg",
       linkedin: "https://www.linkedin.com/in/arnonsaksri/",
-    },
-    {
-      name: "i'Ling Sorum",
-      role: "Head of Sales and Media",
-      bio: { en: "The person you'll meet on the Walkthrough. Runs sales, the media arm, and the day-to-day of the studio." },
-      photo: "/team/iling.jpg",
-      linkedin: "https://www.linkedin.com/in/i-ling-sorum-9524724/",
     },
   ],
 }
@@ -764,7 +757,7 @@ export const pipelinePageConfig: PipelinePageConfig = {
   },
 }
 
-export type VentureStatus = 'live' | 'building' | 'planning';
+export type VentureStatus = 'live' | 'building' | 'planning' | 'parked';
 
 /** Per-venture brand colors. When set, override the PROXYZ hot-pink default
  * across the venture's card on /ventures and its full detail page at
@@ -852,13 +845,13 @@ export const venturesPageConfig: VenturesPageConfig = {
   eyebrow: "ISSUE 04 / THE VENTURES",
   titleLines: ["What we", "build."],
   lead:
-    "The venture arm of the studio. These are our own brands, built and run on the same system we install for clients. Each one is a real business and a proving ground. This is what's in motion.",
+    "The venture arm of the studio. These are our own brands, built and run on the same system we install for clients. Each one is a real business and a proving ground. Some are in motion. Some are parked, and we say which.",
   ventures: [
     {
       name: "AUTOLOOM",
       tagline: "AI agents for Thai SMBs. Installed in a week, run as a service.",
-      status: "building",
-      statusLabel: "BUILDING · LAUNCHING SOON",
+      status: "parked",
+      statusLabel: "PARKED · OFF THE ROADMAP",
       domain: "autoloom.tech",
       href: null,
       internalHref: "/ventures/autoloom",
@@ -920,21 +913,20 @@ export const venturesPageConfig: VenturesPageConfig = {
         ],
         roadmap: [
           { label: "Phase 0 · Industry research complete", status: "done" },
-          { label: "Phase 1 · Reference install", status: "active" },
+          { label: "Phase 1 · Reference install", status: "next" },
           { label: "Phase 2 · First five paid installs", status: "next" },
           { label: "Phase 3 · Scale by industry", status: "next" },
         ],
         team: [
           { name: "Tew", role: "Managing Director, architect, install lead" },
-          { name: "iLing", role: "Head of sales and discovery" },
         ],
       },
     },
     {
       name: "MAGNIZ",
       tagline: "A dedicated AI agent, hosted for you. One agent, one inbox, one operator.",
-      status: "building",
-      statusLabel: "BUILDING · LAUNCHING SOON",
+      status: "parked",
+      statusLabel: "PARKED · DORMANT",
       domain: "magniz.io",
       href: null,
       internalHref: "/ventures/magniz",
@@ -1013,13 +1005,12 @@ export const venturesPageConfig: VenturesPageConfig = {
         ],
         roadmap: [
           { label: "Phase 0 · Live proof on real LINE traffic", status: "done" },
-          { label: "Phase 1 · Reference install", status: "active" },
+          { label: "Phase 1 · Reference install", status: "next" },
           { label: "Phase 2 · First paid installs", status: "next" },
           { label: "Phase 3 · Install kit hardening", status: "next" },
         ],
         team: [
           { name: "Tew", role: "Managing Director, runtime architect" },
-          { name: "iLing", role: "Sales and operator onboarding" },
         ],
       },
     },
@@ -1039,7 +1030,7 @@ export const venturesPageConfig: VenturesPageConfig = {
   closingLabel: "BUILD WITH PROXYZ",
   closingHeading: "We build our own. Then we install it.",
   closingBody:
-    "The patterns that survive inside our own companies end up in the system we install for clients. If you want the same treatment for your business, it starts with 60 minutes.",
+    "The patterns that survive inside our own studio end up in the system we install for clients. If you want the same treatment for your business, it starts with 60 minutes.",
   closingCta: {
     label: "Book the Walkthrough →",
     href: "/#booking",
@@ -1836,13 +1827,6 @@ export const lazyTigerPageConfig: LazyTigerPageConfig = {
         bio: 'Architect of the Lazy Tiger engagement. Bridges design and AI automation across PROXYZ’s portfolio. Based in Bangkok.',
         initials: 'AT',
         photo: '/lazy-tiger/team/tew.jpg',
-      },
-      {
-        name: 'iLing Sorum',
-        role: 'Head of Sales + Media',
-        bio: 'Onboarding as PROXYZ’s Integrator across cities. Owns the relationship surface area for partners through the engagement lifecycle.',
-        initials: 'iL',
-        photo: '/lazy-tiger/team/iling.jpg',
       },
     ],
   },

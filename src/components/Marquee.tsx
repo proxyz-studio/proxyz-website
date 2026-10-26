@@ -9,7 +9,6 @@ const DEFAULT_WORDS = [
   'VENTURE STUDIO',
   'BANGKOK',
   'PHUKET',
-  'AUTOLOOM',
   'PRYZM',
   'STUDIOOS',
   'PADEL Z',
