@@ -464,25 +464,39 @@ async function main() {
     if (soft.length) warn(9, 'Reload in Firefox (this test tool keeps no history entry over a reload)', soft.join('; '));
   }
 
-  /* 7. the film script blocked or failed to load: the page still shows every picture */
+  /* 7. the film script blocked, late or failed: the later pictures wait for it, and without it they all show */
   {
-    // WebKit uncovers the stage but does not then load the waiting pictures; reported, not failed
-    const bad = [], soft = [];
+    const bad = [];
+    const sceneOf = (u) => (/\/pictures\/s(\d)/.exec(u) || [])[1];
     for (const engine of ['chromium', 'webkit', 'firefox']) {
-      const c = await ctx(engine, { viewport: { width: 393, height: 852 } });
-      await c.route(/\/assets\/main-[^/]*\.js$/, (r) => r.abort());
-      const p = await c.newPage();   // no error listener: the blocked script is the point of this test
-      await p.goto(BASE + '/', { waitUntil: 'load' });
-      await p.waitForTimeout(4500);
-      const total = await p.evaluate(() => document.documentElement.scrollHeight);
-      for (let y = 0; y < total; y += 400) { await p.evaluate((y) => scrollTo(0, y), y); await p.waitForTimeout(60); }
-      await p.waitForFunction(() => [...document.querySelectorAll('#film img')].every((i) => i.complete), null, { timeout: 15000 }).catch(() => {});
-      const r = await p.evaluate(() => ({ film: document.documentElement.classList.contains('film'), pics: [...document.querySelectorAll('#film section img')].filter((i) => i.complete && i.naturalWidth > 0 && getComputedStyle(i).display !== 'none').length }));
-      if (r.film || r.pics !== content.scenes.length) (engine === 'webkit' ? soft : bad).push(`${engine}: film ${r.film}, ${r.pics} pictures shown`);
-      await c.close();
+      // late by 3 s: nothing of scenes 2 to 7 is asked for before the film runs (the styles hold them back)
+      {
+        const c = await ctx(engine, { viewport: { width: 393, height: 852 } });
+        await c.route(/\/assets\/main-[^/]*\.js$/, async (r) => { await new Promise((s) => setTimeout(s, 3000)); r.continue(); });
+        const asked = new Set();
+        c.on('request', (r) => { const n = sceneOf(r.url()); if (n) asked.add(n); });
+        const p = await open(c, '/', `script late ${engine}`);
+        await p.waitForTimeout(3500);
+        const early = [...asked].filter((n) => n !== '1');
+        if (early.length) bad.push(`${engine}: with the script late, pictures of scenes ${early.sort().join(', ')} loaded before the film ran`);
+        await c.close();
+      }
+      // blocked: after about 4 s the plain page, and every picture loads as the visitor scrolls
+      {
+        const c = await ctx(engine, { viewport: { width: 393, height: 852 } });
+        await c.route(/\/assets\/main-[^/]*\.js$/, (r) => r.abort());
+        const p = await c.newPage();   // no error listener: the blocked script is the point of this test
+        await p.goto(BASE + '/', { waitUntil: 'load' });
+        await p.waitForTimeout(4500);
+        const total = await p.evaluate(() => document.documentElement.scrollHeight);
+        for (let y = 0; y < total; y += 400) { await p.evaluate((y) => scrollTo(0, y), y); await p.waitForTimeout(60); }
+        await p.waitForFunction(() => [...document.querySelectorAll('#film img')].every((i) => i.complete), null, { timeout: 15000 }).catch(() => {});
+        const r = await p.evaluate(() => ({ film: document.documentElement.classList.contains('film'), pics: [...document.querySelectorAll('#film section img')].filter((i) => i.complete && i.naturalWidth > 0 && i.getBoundingClientRect().height > 0 && getComputedStyle(i).display !== 'none').length }));
+        if (r.film || r.pics !== content.scenes.length) bad.push(`${engine} blocked: film ${r.film}, ${r.pics} pictures shown`);
+        await c.close();
+      }
     }
-    ok(!bad.length, 7, 'Film script blocked: after a few seconds the plain page shows all seven pictures (Chromium, Firefox)', 'seven pictures', bad.join('; '));
-    if (soft.length) warn(7, 'Film script blocked, Safari engine: only the first picture shows (words and links are all there)', soft.join('; '));
+    ok(!bad.length, 7, 'Film script late: no picture of scenes 2 to 7 loads before the film runs; film script blocked: after about 4 s the plain page shows all seven pictures (Chromium, WebKit, Firefox)', 'held back, then seven pictures', bad.join('; '));
   }
 
   /* 10. old addresses and unknown addresses (as far as a local server can tell) */

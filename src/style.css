@@ -51,11 +51,10 @@ a:focus-visible { outline: 1px solid var(--ink); outline-offset: 2px; }
 /* with scripts on, the later resting pictures wait for the film, which takes them out and loads each one as the
    visitor nears it. If the film script never arrives (blocked, failed), they show again after a few seconds. */
 @media (scripting: enabled) {
-  html:not(.film) #film .scene:not(#s1) .passes { content-visibility: hidden; animation: still-back 0s 4s forwards; }
+  html:not(.film):not(.nofilm) #film .scene:not(#s1) .passes { transform: translateY(-1000vh); animation: still-back 0s 4s forwards; }
 }
-@keyframes still-back { to { content-visibility: visible; } }
+@keyframes still-back { to { transform: none; } }
 .nofilm #film .scene .still { display: block !important; }
-.nofilm #film .scene .passes { content-visibility: visible; }
 .layer { position: absolute; top: 0; left: 0; right: 0; height: var(--H); overflow: hidden; }
 .passes { position: absolute; inset: 0; }
 .pass { position: absolute; display: block; max-width: none; user-select: none; -webkit-user-drag: none; }
