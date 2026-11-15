@@ -1,12 +1,5 @@
 {
-  "redirects": [
-    { "source": "/partners", "destination": "/pipeline", "permanent": true },
-    { "source": "/partners/:slug", "destination": "/pipeline/:slug", "permanent": true },
-    { "source": "/portal", "destination": "/studio-os", "permanent": true }
-  ],
   "rewrites": [
-    { "source": "/brief/ananda", "destination": "/brief/ananda.html" },
-    { "source": "/learn/mira", "destination": "/learn/mira.html" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

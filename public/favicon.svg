@@ -1,4 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="PROXYZ P mark">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="PROXYZ favicon XYZ trichrome">
   <rect width="64" height="64" fill="#000000"/>
-  <text x="32" y="32" font-family="'IBM Plex Mono', ui-monospace, monospace" font-weight="700" font-size="44" text-anchor="middle" dominant-baseline="central" fill="#ff4193">P</text>
+  <path d="M395 359 578 698H421L361 587L309 475H301L250 587L193 698H22L205 361L9 0H166L240 139L290 249H299L348 139L420 0H591Z" transform="translate(12.2000 39.6780) scale(0.022000 -0.022000)" fill="#F2D78C"/>
+  <path d="M375 0V247L596 698H435L361 536L307 399H299L245 536L171 698H4L225 247V0Z" transform="translate(25.4000 39.6780) scale(0.022000 -0.022000)" fill="#5BC9B8"/>
+  <path d="M551 123H216L541 567V698H58V575H373L48 131V0H551Z" transform="translate(38.6000 39.6780) scale(0.022000 -0.022000)" fill="#ff4193"/>
 </svg>
