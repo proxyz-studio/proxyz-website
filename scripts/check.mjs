@@ -174,6 +174,57 @@ async function main() {
     await settle(p);
   }
 
+  /* reading screenshots: a blank page in a hidden browser decodes them (it holds no site and no policy) */
+  const labPage = await (await browsers.chromium.newContext()).newPage();
+  const decode = `async (b64) => { const i = new Image(); i.src = 'data:image/png;base64,' + b64; await i.decode();
+    const c = document.createElement('canvas'); c.width = i.naturalWidth; c.height = i.naturalHeight;
+    const g = c.getContext('2d'); g.drawImage(i, 0, 0); return g.getImageData(0, 0, c.width, c.height); }`;
+  /** For each box (css px; k = real pixels per css px of the screenshot): mean grey and the 95th percentile of
+   *  luminance (the bright end of what lies behind text). */
+  async function lab(png, boxes, k = 1) {
+    return labPage.evaluate(async ([b64, boxes, decode, k]) => {
+      const d = await (0, eval)(decode)(b64);
+      const lin = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+      return boxes.map(([x, y, w, h]) => {
+        const ys = [], x0 = Math.max(0, Math.round(x * k)), y0 = Math.max(0, Math.round(y * k));
+        const x1 = Math.min(d.width, Math.round((x + w) * k)), y1 = Math.min(d.height, Math.round((y + h) * k));
+        let sum = 0;
+        for (let yy = y0; yy < y1; yy++) for (let xx = x0; xx < x1; xx++) {
+          const i = (yy * d.width + xx) * 4, r = d.data[i], g = d.data[i + 1], b = d.data[i + 2];
+          ys.push(0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)); sum += 0.299 * r + 0.587 * g + 0.114 * b;
+        }
+        ys.sort((a, b) => a - b);
+        return { mean: ys.length ? sum / ys.length : 0, p95: ys.length ? ys[Math.floor(ys.length * 0.95)] : 0 };
+      });
+    }, [png.toString('base64'), boxes, decode, k]);
+  }
+  /** Contrast of the words (text 242 grey; the small line at 52% and the height line at 78% over what is behind)
+   *  against a background of luminance Y. */
+  function contrast(Y, kind) {
+    const lin = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+    let g = 0; while (g < 255 && lin(g) < Y) g++;
+    const a = kind === 'tool' ? 0.52 : kind === 'line' ? 0.78 : 1;
+    return (lin(a * 242 + (1 - a) * g) + 0.05) / (Y + 0.05);
+  }
+  /** The pool of light in each frame, as a percent of the end frame: measured where the two ends agree (the floor,
+   *  not the three things) and the floor is lit, between the border and the words. pct.start: the first end. */
+  async function pool(start, end, frames) {
+    const out = await labPage.evaluate(async ([b64s, decode]) => {
+      const dec = (0, eval)(decode);
+      const [a, b, ...fs] = await Promise.all(b64s.map(dec));
+      const grey = (d, i) => 0.299 * d.data[i] + 0.587 * d.data[i + 1] + 0.114 * d.data[i + 2];
+      const idx = [];
+      for (let y = Math.floor(b.height * 0.14); y < b.height * 0.78; y++) for (let x = 0; x < b.width; x++) {
+        const i = (y * b.width + x) * 4, gb = grey(b, i);
+        if (gb >= 18 && Math.abs(grey(a, i) - gb) < 4) idx.push(i);
+      }
+      const mean = (d) => idx.reduce((s, i) => s + grey(d, i), 0) / Math.max(1, idx.length);
+      const ref = mean(b);
+      return { start: (100 * mean(a)) / ref, frames: fs.map((d) => (100 * mean(d)) / ref), n: idx.length };
+    }, [[start, end, ...frames].map((x) => x.toString('base64')), decode]);
+    const pct = out.frames; pct.start = out.start; return pct;
+  }
+
   /* 1. words */
   {
     const c = await ctx('chromium', { javaScriptEnabled: false });
@@ -503,6 +554,143 @@ async function main() {
       }
     }
     ok(!bad.length, 7, 'Film script late: no picture of scenes 2 to 7 loads before the film runs; film script blocked: after about 4 s the plain page shows all seven pictures (Chromium, WebKit, Firefox)', 'held back, then seven pictures', bad.join('; '));
+  }
+
+  /* 12. phones, with the browser's bar showing and with it slid away */
+  {
+    // Contexts that take screenshots skip the security policy: the Safari engine's test tool adds a style of its own
+    // for each screenshot, which the policy refuses (a tool quirk, not the site).
+    // A hidden browser has no sliding bar, so each state is copied with test styles (allowed past the security
+    // policy in the test only). His phone: large viewport 873 px, small 739 px; the visible height is 739 with the bar
+    // showing and 873 with it away. Away: a 430 x 873 window whose small viewport is held at 739. Showing: a 430 x 739
+    // window whose large viewport (and everything sized from it) is held at 873, so the lower 134 px of the stage lie
+    // below the window.
+    const L = 873, Sm = 739;
+    const STATES = {
+      away: { w: 430, h: L, css: `:root{--S:${Sm}px !important}` },
+      showing: { w: 430, h: Sm, css: `:root{--H:${L}px !important}.probe{height:${L}px !important}.film #film .scene{height:${2.4 * L}px !important}${Object.entries(film.tall).map(([n, k]) => `.film #film #s${n}{height:${k * L}px !important}`).join('')}` },
+    };
+    const inject = (css) => {
+      const s = document.createElement('style'); s.textContent = css;
+      const put = () => { const r = document.head || document.documentElement; if (r) r.appendChild(s); return !!r; };
+      if (!put() || !document.head) new MutationObserver((_, o) => { if (document.head) { put(); o.disconnect(); } }).observe(document, { childList: true, subtree: true });
+    };
+    async function stateCtx(engine, state, css = '', o = {}) {
+      const st = STATES[state];
+      const c = await ctx(engine, { viewport: { width: st.w, height: st.h }, bypassCSP: true, ...o });
+      await c.addInitScript(inject, st.css + css);
+      return c;
+    }
+    const HIDE = '.words .cap,.words .tool{color:transparent !important}.words .hl{visibility:hidden !important}';
+    const NOBACK = '.film .scene .words::before{display:none !important}';
+    const where = (n) => {
+      const s = document.getElementById('s' + n), w = s.querySelector('.words').getBoundingClientRect();
+      const r = (e) => { const b = e.getBoundingClientRect(); return [b.left, b.top, b.width, b.height]; };
+      return {
+        gap: innerHeight - w.bottom,
+        pics: [...s.querySelectorAll('.passes img')].map((i) => r(i).map((v) => Math.round(v * 10) / 10)),
+        text: [...[...s.querySelectorAll('.cap span')].map((e) => ({ box: r(e), kind: 'cap' })),
+          ...[...s.querySelectorAll('.tool')].map((e) => ({ box: r(e), kind: 'tool' })),
+          ...[...s.querySelectorAll('.hl')].map((e) => ({ box: r(e), kind: 'line' }))],
+        above: [0, document.querySelector('#top').getBoundingClientRect().bottom + 30, innerWidth, w.top - document.querySelector('#top').getBoundingClientRect().bottom - 30],
+      };
+    };
+    const place = [], read = [], back = [], s4 = [];
+    const boxes = {};
+    for (const engine of ['chromium', 'webkit']) {
+      for (const state of ['away', 'showing']) {
+        const c = await stateCtx(engine, state, HIDE);
+        const p = await open(c, '/', `bar ${state} ${engine}`);
+        boxes[engine + state] = [];
+        for (let n = 1; n <= content.scenes.length; n++) {
+          await toScene(p, n, 1);
+          await settle(p, 700);   // the scene before has faded out
+          const g = await p.evaluate(where, n);
+          boxes[engine + state].push(g.pics);
+          if (Math.abs(g.gap - 60) > 1) place.push(`${engine} bar ${state} scene ${n}: words ${g.gap.toFixed(1)} px above the visible bottom`);
+          const shot = await p.screenshot();
+          const m = await lab(shot, g.text.map((t) => t.box));
+          g.text.forEach((t, i) => {
+            const need = t.kind === 'line' ? 3 : 4.5;
+            const ratio = contrast(m[i].p95, t.kind);
+            if (ratio < need) read.push(`${engine} bar ${state} scene ${n} ${t.kind}: ${ratio.toFixed(2)} to 1`);
+          });
+          // with the bar away the backings of scenes 3 and 4 leave the picture above the words as it is
+          if (state === 'away' && (n === 3 || n === 4)) {
+            const without = await stateCtx(engine, state, HIDE + NOBACK);
+            const q = await open(without, '/', `bar away no backing ${engine}`);
+            await toScene(q, n, 1);
+            await settle(q, 700);
+            const a = (await lab(shot, [g.above]))[0].mean, b = (await lab(await q.screenshot(), [g.above]))[0].mean;
+            if (Math.abs(a - b) > 0.02 * Math.max(b, 1)) back.push(`${engine} scene ${n}: above the words ${a.toFixed(2)} with the backing, ${b.toFixed(2)} without`);
+            await without.close();
+            // scene 4 against its own drawing (no shade, no backing): only the soft shade at the foot of every scene
+            // may dim it, which keeps at least 88% of the drawing's light above the words (the old tall band kept 74%)
+            if (n === 4) {
+              const bare = await stateCtx(engine, state, HIDE + NOBACK + '.film .scene .shade,.film .scene .dim{display:none !important}');
+              const r = await open(bare, '/', `bar away drawing only ${engine}`);
+              await toScene(r, n, 1); await settle(r, 700);
+              const d = (await lab(await r.screenshot(), [g.above]))[0].mean;
+              s4.push(`${engine} ${(100 * a / d).toFixed(0)}%`);
+              if (a < 0.88 * d) back.push(`${engine} scene 4: above the words ${a.toFixed(2)}, the drawing alone ${d.toFixed(2)}`);
+              await bare.close();
+            }
+          }
+        }
+        await c.close();
+      }
+      // every picture box is the same in both states (each film built fresh in its own state)
+      const a = boxes[engine + 'away'], b = boxes[engine + 'showing'];
+      a.forEach((pics, n) => pics.forEach((box, i) => { if (!b[n][i] || box.some((v, j) => Math.abs(v - b[n][i][j]) > 1)) place.push(`${engine} scene ${n + 1} picture ${i + 1}: ${box} with the bar away, ${b[n][i]} with it showing`); }));
+    }
+    ok(!place.length, 12, 'Phone, bar showing and bar away: the words sit 60 px above the visible bottom in each; every picture box is the same in both states, whichever state the film was built in (Chromium, WebKit)', 'words on the edge, pictures still', place.slice(0, 6).join('; '));
+    ok(!read.length, 12, 'Phone, both states: capitals and the small grey line at least 4.5 to 1 against what lies behind them, the height line at least 3 to 1, all seven scenes (Chromium, WebKit)', 'all readable', read.slice(0, 6).join('; '));
+    ok(!back.length, 12, 'Phone, bar away: the backings of scenes 3 and 4 leave the picture above the words as it is (within 2%); scene 4 keeps at least 88% of its drawing\'s light there', `no dimming; scene 4 keeps ${s4.join(', ')}`, back.join('; '));
+
+    /* the last scene: the twin fades in over a steady pool of light */
+    if (content.scenes[content.scenes.length - 1].picture === 'twin') {
+      const bad = [], seen = [];
+      for (const engine of ['chromium', 'webkit']) {
+        for (const [form, mk] of [['phone', () => stateCtx(engine, 'away')], ['laptop', () => ctx(engine, { viewport: { width: 1512, height: 860 }, bypassCSP: true })]]) {
+          const c = await mk();
+          const p = await open(c, '/', `twin ${engine} ${form}`);
+          const last = content.scenes.length;
+          await toScene(p, last, 0); await toScene(p, last - 1, 1); await settle(p, 900);
+          const cut = await p.evaluate((n) => { const s = document.getElementById('s' + n); return Math.round(s.offsetTop - (document.querySelector('.probe').offsetHeight || innerHeight) / 2); }, last);
+          await p.evaluate((y) => scrollTo(0, y - 6), cut); await settle(p, 900);
+          const before = await p.screenshot();
+          // the change itself, its transitions paused and stepped every 50 ms
+          await p.evaluate(async (y) => { scrollTo(0, y + 6); await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); window.__an = document.getAnimations(); window.__an.forEach((a) => a.pause()); }, cut);
+          const frames = [];
+          for (let t = 0; t <= 500; t += 50) { await p.evaluate((t) => window.__an.forEach((a) => { a.currentTime = t; }), t); await settle(p, 60); frames.push(await p.screenshot()); }
+          await p.evaluate(() => window.__an.forEach((a) => a.finish())); await settle(p, 500);
+          const after = await p.screenshot();
+          const pct = await pool(before, after, frames);
+          seen.push(`${engine} ${form} ${Math.min(...pct).toFixed(1)} to ${Math.max(...pct).toFixed(1)}%`);
+          if (Math.min(...pct) < 96 || Math.max(...pct) > Math.max(pct.start, 100) + 1) bad.push(`${engine} ${form}: ${pct.map((v) => v.toFixed(1)).join(' ')}`);
+          await c.close();
+        }
+      }
+      ok(!bad.length, 12, 'Last scene is the twin: through the change from scene 6 the pool of light stays between 96% and the brightness of its two ends (phone and laptop, Chromium, WebKit)', seen.join(', '), bad.join('; '));
+    }
+  }
+
+  /* 6. LEGAL: the email address is a mail link, in the text's grey, underlined, at least 44 px tall to tap */
+  {
+    const bad = [];
+    for (const [engine, w, h] of [['chromium', 430, 739], ['chromium', 320, 568], ['chromium', 1512, 860], ['webkit', 430, 739], ['firefox', 430, 739]]) {
+      const c = await ctx(engine, { viewport: { width: w, height: h } });
+      const p = await open(c, '/legal/', `mail links ${engine} ${w}x${h}`);
+      const links = await p.evaluate(() => [...document.querySelectorAll('#legal a[href^="mailto:"]')].map((a) => {
+        const b = a.getBoundingClientRect(), cs = getComputedStyle(a), line = parseFloat(getComputedStyle(a.parentElement).lineHeight);
+        return { href: a.getAttribute('href'), text: a.textContent, w: b.width, h: b.height, color: cs.color === getComputedStyle(a.parentElement).color, under: cs.textDecorationLine.includes('underline'), line, lines: Math.round(a.parentElement.getBoundingClientRect().height / line) };
+      }));
+      const want = content.legal.sections.flatMap((s) => [...s.lead, ...s.parts.flatMap((pt) => [...pt.text, ...(pt.list ?? []), ...(pt.after ?? [])])]).join(' ').match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g) ?? [];
+      if (links.length !== want.length) bad.push(`${engine} ${w}x${h}: ${links.length} mail links for ${want.length} addresses`);
+      for (const l of links) if (l.href !== 'mailto:' + l.text || l.h < 44 || l.w < 44 || !l.color || !l.under) bad.push(`${engine} ${w}x${h}: ${JSON.stringify(l)}`);
+      await c.close();
+    }
+    ok(!bad.length, 6, 'LEGAL: every email address is a mail link in the text\'s own grey, underlined, with a tap area at least 44 x 44 px', 'all', bad.slice(0, 4).join('; '));
   }
 
   /* 10. old addresses and unknown addresses (as far as a local server can tell) */
