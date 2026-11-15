@@ -499,6 +499,45 @@ async function main() {
     ok(!bad.length, 9, 'Turning the screen back and forth and resizing a window (near square too): every picture is the right one and sits where a fresh load puts it, within 2 px (Chromium, WebKit, Firefox)', 'same as a fresh load every time', bad.slice(0, 6).join('; '));
   }
 
+  /* 9. fast turning in the Safari engine: twelve size changes in a row, three runs for each scene whose picture is
+     sized to leave room for its words (3, 6 and the last). The engine used to leave such a picture the wrong size now
+     and then, and nothing placed it again. A fresh load at each size is the answer to compare with. */
+  {
+    const bad = [];
+    const SEQ = [[430, 739], [739, 430], [430, 739], [1512, 860], [393, 852], [852, 393], [320, 568], [1512, 860], [430, 739], [600, 600], [1000, 1001], [430, 739]];
+    const snap = (p, n) => p.evaluate((n) => [...document.querySelectorAll(`#s${n} .passes img`)].map((i) => { const r = i.getBoundingClientRect(); return [r.left, r.top, r.width, r.height].map(Math.round); }), n);
+    const fresh = {};
+    const RUNS = 3, SCENES = [3, 6, content.scenes.length];
+    let steps = 0;
+    for (const n of SCENES) {
+      for (let run = 0; run < RUNS; run++) {
+        const c = await ctx('webkit', { viewport: { width: 430, height: 739 } });
+        const p = await open(c, '/', `fast turning webkit scene ${n}`);
+        await settle(p, 500);
+        for (const [w, h] of SEQ) {
+          await p.setViewportSize({ width: w, height: h });
+          await settle(p, 250);
+          await toScene(p, n, 0.6);
+          const got = await snap(p, n);
+          const key = `${w}x${h}|${n}`;
+          if (!fresh[key]) {
+            const c2 = await ctx('webkit', { viewport: { width: w, height: h } });
+            const q = await open(c2, '/', `fresh webkit ${w}x${h}`);
+            await settle(q, 400);
+            await toScene(q, n, 0.6);
+            fresh[key] = await snap(q, n);
+            await c2.close();
+          }
+          const want = fresh[key];
+          steps++;
+          if (got.length !== want.length || got.some((b, i) => b.some((v, j) => Math.abs(v - want[i][j]) > 2))) bad.push(`scene ${n} run ${run + 1} at ${w}x${h}: ${JSON.stringify(got)}, fresh load ${JSON.stringify(want)}`);
+        }
+        await c.close();
+      }
+    }
+    ok(!bad.length, 9, `Fast turning, Safari engine: ${SEQ.length} size changes in a row, ${RUNS} runs each for scenes ${SCENES.join(', ')}: every picture where a fresh load puts it, within 2 px`, `${steps} of ${steps} steps`, bad.slice(0, 4).join('; '));
+  }
+
   /* 9. a reload in the middle of the film comes back to the same scene */
   {
     // Firefox under this test tool starts a reload with an empty history entry (history.state is null afterwards),
@@ -673,6 +712,76 @@ async function main() {
       }
       ok(!bad.length, 12, 'Last scene is the twin: through the change from scene 6 the pool of light stays between 96% and the brightness of its two ends (phone and laptop, Chromium, WebKit)', seen.join(', '), bad.join('; '));
     }
+
+    /* the bottom safe area changes as the bar slides (older iPhones: 0 with it showing, 34 px with it away). Forced in
+       the test with a style: a scene placed at 0 is placed again once when it grows to 34 and then equals a fresh load
+       at 34; going back to 0 changes nothing. On the laptop the inset never moves a picture. */
+    {
+      const bad = [], seen = [];
+      const boxesOf = (p, n) => p.evaluate((n) => [...document.querySelectorAll(`#s${n} .passes img`)].map((i) => { const r = i.getBoundingClientRect(); return [r.left, r.top, r.width, r.height].map((v) => Math.round(v * 10) / 10); }), n);
+      const setInset = (p, px) => p.evaluate((px) => { let s = document.getElementById('test-inset'); if (!s) { s = document.createElement('style'); s.id = 'test-inset'; document.head.append(s); } s.textContent = `:root{--safe-b:${px}px !important}`; }, px);
+      const same = (a, b) => a.length === b.length && a.every((x, i) => x.every((v, j) => Math.abs(v - b[i][j]) <= 0.5));
+      const last = content.scenes.length;
+      for (const engine of ['chromium', 'webkit']) {
+        for (const [w, h] of [[430, 873], [1512, 860]]) {
+          const phone = w < 600;
+          for (const n of [6, last]) {
+            const c = await ctx(engine, { viewport: { width: w, height: h }, bypassCSP: true });
+            const p = await open(c, '/', `inset ${engine} ${w}x${h} scene ${n}`);
+            await toScene(p, n, 0.7);
+            const at0 = await boxesOf(p, n);
+            // counts each new place written for the pictures (light changes alone are not counted)
+            await p.evaluate((n) => {
+              const imgs = [...document.querySelectorAll(`#s${n} .passes img`)];
+              const key = () => imgs.map((i) => [i.style.left, i.style.top, i.style.width].join()).join('|');
+              let was = key(); window.__places = 0;
+              const mo = new MutationObserver(() => { const now = key(); if (now !== was) { window.__places++; was = now; } });
+              imgs.forEach((i) => mo.observe(i, { attributes: true, attributeFilter: ['style'] }));
+            }, n);
+            await setInset(p, 34); await settle(p, 500);
+            await p.evaluate(() => scrollBy(0, 2)); await settle(p, 300);
+            const at34 = await boxesOf(p, n), places34 = await p.evaluate(() => window.__places);
+            await setInset(p, 0); await settle(p, 500);
+            await p.evaluate(() => scrollBy(0, -2)); await settle(p, 300);
+            const back = await boxesOf(p, n), placesAll = await p.evaluate(() => window.__places);
+            await c.close();
+            const c2 = await ctx(engine, { viewport: { width: w, height: h }, bypassCSP: true });
+            await c2.addInitScript((css) => { const s = document.createElement('style'); s.textContent = css; const put = () => { if (document.head) { document.head.append(s); return true; } return false; }; if (!put()) new MutationObserver((_, o) => { if (put()) o.disconnect(); }).observe(document, { childList: true, subtree: true }); }, ':root{--safe-b:34px !important}');
+            const q = await open(c2, '/', `inset fresh ${engine} ${w}x${h}`);
+            await toScene(q, n, 0.7);
+            const fresh34 = await boxesOf(q, n);
+            await c2.close();
+            const label = `${engine} ${phone ? 'phone' : 'laptop'} scene ${n}`;
+            if (phone) {
+              if (places34 !== 1 || !same(at34, fresh34) || same(at34, at0)) bad.push(`${label}: at 34 px placed ${places34} times, ${JSON.stringify(at34[0])}, fresh load ${JSON.stringify(fresh34[0])}, at 0 ${JSON.stringify(at0[0])}`);
+              if (placesAll !== 1 || !same(back, at34)) bad.push(`${label}: back at 0 px ${JSON.stringify(back[0])}, placed ${placesAll} times in all`);
+              seen.push(`${label} ${at0[0][2]} to ${at34[0][2]} px wide, placed once`);
+            } else if (placesAll !== 0 || !same(at34, at0) || !same(back, at0) || !same(fresh34, at0)) bad.push(`${label}: the inset moved a picture (${JSON.stringify(at0[0])}, ${JSON.stringify(at34[0])}, fresh ${JSON.stringify(fresh34[0])})`);
+          }
+        }
+      }
+      ok(!bad.length, 12, 'Phone: when the bottom safe area grows (0 to 34 px, forced in the test) scenes 6 and 7 are placed again once, as a fresh load at 34 px places them; back to 0 changes nothing; on the laptop no picture moves (Chromium, WebKit)', seen.join(', '), bad.join('; '));
+    }
+  }
+
+  /* 13. the page colour: the film page is in the film's black from the first paint (Safari paints the strip under its
+     bar with the page's own colour), the text pages keep their own; checked with scripts off, so it is in the HTML */
+  {
+    const bad = [];
+    const WANT = { '/': ['rgb(1, 1, 1)', '#010101'], '/machines/': ['rgb(10, 10, 10)', '#0a0a0a'], '/legal/': ['rgb(10, 10, 10)', '#0a0a0a'], '/nope-nope/': ['rgb(10, 10, 10)', '#0a0a0a'] };
+    for (const engine of ['chromium', 'webkit', 'firefox']) {
+      for (const js of [false, true]) {
+        const c = await ctx(engine, { viewport: { width: 430, height: 739 }, javaScriptEnabled: js });
+        for (const [path, [bg, theme]] of Object.entries(WANT)) {
+          const p = await open(c, path, `colour ${engine} ${path}`);
+          const got = await p.evaluate(() => [getComputedStyle(document.documentElement).backgroundColor, getComputedStyle(document.body).backgroundColor, document.querySelector('meta[name=theme-color]')?.content]);
+          if (got[0] !== bg || got[1] !== bg || got[2] !== theme) bad.push(`${engine} ${js ? 'scripts on' : 'scripts off'} ${path}: ${got.join(', ')}`);
+          await p.close();
+        }
+        await c.close();
+      }
+    }
+    ok(!bad.length, 13, 'Page colour: the film page root, body and theme colour are the film\'s black #010101; MACHINES, LEGAL and the not found page keep #0a0a0a; same with scripts off (Chromium, WebKit, Firefox)', 'as built', bad.join('; '));
   }
 
   /* 6. LEGAL: the email address is a mail link, in the text's grey, underlined, at least 44 px tall to tap */
@@ -753,6 +862,43 @@ async function main() {
     ok(css < BUDGET.style, 11, 'Styles under 10 KB compressed', kb(css), kb(css));
     ok(cls < 0.001, 11, 'No layout shift on first load', `shift ${cls.toFixed(4)}`, `shift ${cls.toFixed(4)}`);
     await c.close();
+  }
+
+  /* 11. each engine asks for one file per picture: where it takes AVIF it never also fetches the WebP (the Safari
+     engine used to, for every picture the film script makes); and the phone's first load stays in budget everywhere */
+  {
+    const bad = [], seen = [];
+    for (const engine of ['chromium', 'webkit', 'firefox']) {
+      for (const [w, h, dpr] of [[430, 739, 3], [1512, 860, 2]]) {
+        const c = await ctx(engine, { viewport: { width: w, height: h }, deviceScaleFactor: dpr });
+        const p = await c.newPage();
+        p.on('pageerror', (e) => errors.push(`one file ${engine}: ${String(e).slice(0, 200)}`));
+        const got = [];
+        let phase = 'first';
+        p.on('requestfinished', async (r) => { const name = r.url().split('/').pop(); try { const s = await r.sizes(); got.push({ phase, name, bytes: s.responseBodySize + s.responseHeadersSize }); } catch { got.push({ phase, name, bytes: 0 }); } });
+        await p.goto(BASE + '/', { waitUntil: 'load' });
+        await settle(p, 2500);
+        const first = got.reduce((a, r) => a + r.bytes, 0);
+        phase = 'scroll';
+        const shown = [];
+        for (let n = 1; n <= content.scenes.length; n++) {
+          await p.evaluate(async (n) => {
+            const s = document.getElementById('s' + n), vh = document.querySelector('.probe').offsetHeight;
+            for (let y = s.offsetTop; y <= s.offsetTop + s.offsetHeight - vh; y += 240) { scrollTo(0, y); await new Promise((r) => setTimeout(r, 30)); }
+          }, n);
+          await toScene(p, n, 1);
+          shown.push(await p.evaluate((n) => { const im = [...document.querySelectorAll(`#s${n} .passes img`)]; return im.length > 0 && im.every((i) => i.complete && i.naturalWidth > 0); }, n));
+        }
+        const pics = got.filter((r) => /\.(avif|webp)$/.test(r.name));
+        const webp = pics.filter((r) => r.name.endsWith('.webp')), avif = pics.length - webp.length;
+        if (avif && webp.length) bad.push(`${engine} ${w}x${h}: ${webp.length} WebP besides ${avif} AVIF (${webp.slice(0, 3).map((r) => r.name).join(', ')})`);
+        if (shown.some((s) => !s)) bad.push(`${engine} ${w}x${h}: scenes without their pictures: ${shown.map((s, i) => (s ? '' : i + 1)).filter(Boolean).join(', ')}`);
+        if (w < 600 && first >= BUDGET.firstLoad) bad.push(`${engine} phone first load ${(first / 1024).toFixed(1)} KB`);
+        if (w < 600) seen.push(`${engine} ${(first / 1024).toFixed(1)} KB (pixel ratio ${await p.evaluate(() => devicePixelRatio)})`);
+        await c.close();
+      }
+    }
+    ok(!bad.length, 11, 'One file per picture: over a full scroll of the film no WebP is fetched where AVIF is taken, every scene shows its pictures; phone (430x739, 3 real pixels per point) first load under 250 KB (Chromium, WebKit, Firefox; also 1512x860 at 2)', `phone first load ${seen.join(', ')}`, bad.join('; '));
   }
 
   /* 5. the email pictures */
