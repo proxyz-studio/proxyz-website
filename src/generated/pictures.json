@@ -1,0 +1,404 @@
+{
+ "s1-desk-p1": {
+  "size": [
+   1440,
+   900
+  ],
+  "files": [
+   {
+    "w": 1440,
+    "webp": "/pictures/s1-desk-p1-1440.defd5daf23.webp",
+    "webpBytes": 102194
+   }
+  ]
+ },
+ "s1-desk-p2": {
+  "size": [
+   1440,
+   900
+  ],
+  "files": [
+   {
+    "w": 1440,
+    "webp": "/pictures/s1-desk-p2-1440.b9ef4c0825.webp",
+    "webpBytes": 37998
+   }
+  ]
+ },
+ "s1-phone-p1": {
+  "size": [
+   786,
+   1704
+  ],
+  "files": [
+   {
+    "w": 786,
+    "avif": "/pictures/s1-phone-p1-786.945e1e9c01.avif",
+    "avifBytes": 64907,
+    "webp": "/pictures/s1-phone-p1-786.ada50e5349.webp",
+    "webpBytes": 74548
+   }
+  ]
+ },
+ "s1-phone-p2": {
+  "size": [
+   786,
+   1704
+  ],
+  "files": [
+   {
+    "w": 786,
+    "avif": "/pictures/s1-phone-p2-786.9a32d18498.avif",
+    "avifBytes": 24828,
+    "webp": "/pictures/s1-phone-p2-786.79efcae526.webp",
+    "webpBytes": 26754
+   }
+  ]
+ },
+ "s2-desk-p1": {
+  "size": [
+   1440,
+   900
+  ],
+  "files": [
+   {
+    "w": 1440,
+    "webp": "/pictures/s2-desk-p1-1440.2f830ece68.webp",
+    "webpBytes": 21168
+   }
+  ]
+ },
+ "s2-phone-p1": {
+  "size": [
+   786,
+   1704
+  ],
+  "files": [
+   {
+    "w": 786,
+    "webp": "/pictures/s2-phone-p1-786.f9accc4bed.webp",
+    "webpBytes": 28784
+   }
+  ]
+ },
+ "s3-desk-p1": {
+  "size": [
+   1440,
+   900
+  ],
+  "files": [
+   {
+    "w": 1440,
+    "webp": "/pictures/s3-desk-p1-1440.4ad895d473.webp",
+    "webpBytes": 68136
+   }
+  ]
+ },
+ "s3-desk-p2": {
+  "size": [
+   1440,
+   900
+  ],
+  "files": [
+   {
+    "w": 1440,
+    "webp": "/pictures/s3-desk-p2-1440.8a21ab2bcf.webp",
+    "webpBytes": 77422
+   }
+  ]
+ },
+ "s3-desk-p3": {
+  "size": [
+   1440,
+   900
+  ],
+  "files": [
+   {
+    "w": 1440,
+    "webp": "/pictures/s3-desk-p3-1440.06f79b5b5f.webp",
+    "webpBytes": 79236
+   }
+  ]
+ },
+ "s3-phone-p1": {
+  "size": [
+   786,
+   1704
+  ],
+  "files": [
+   {
+    "w": 786,
+    "webp": "/pictures/s3-phone-p1-786.33fc2eb2d0.webp",
+    "webpBytes": 74682
+   }
+  ]
+ },
+ "s3-phone-p2": {
+  "size": [
+   786,
+   1704
+  ],
+  "files": [
+   {
+    "w": 786,
+    "webp": "/pictures/s3-phone-p2-786.cfc012d0d0.webp",
+    "webpBytes": 82922
+   }
+  ]
+ },
+ "s3-phone-p3": {
+  "size": [
+   786,
+   1704
+  ],
+  "files": [
+   {
+    "w": 786,
+    "webp": "/pictures/s3-phone-p3-786.35bee33d82.webp",
+    "webpBytes": 83654
+   }
+  ]
+ },
+ "s4-desk-p1": {
+  "size": [
+   1440,
+   900
+  ],
+  "files": [
+   {
+    "w": 1440,
+    "webp": "/pictures/s4-desk-p1-1440.529f034032.webp",
+    "webpBytes": 40410
+   }
+  ]
+ },
+ "s4-desk-p2": {
+  "size": [
+   1440,
+   900
+  ],
+  "files": [
+   {
+    "w": 1440,
+    "webp": "/pictures/s4-desk-p2-1440.08761274c6.webp",
+    "webpBytes": 56536
+   }
+  ]
+ },
+ "s4-phone-p1": {
+  "size": [
+   786,
+   1704
+  ],
+  "files": [
+   {
+    "w": 786,
+    "webp": "/pictures/s4-phone-p1-786.5fb9da804c.webp",
+    "webpBytes": 38588
+   }
+  ]
+ },
+ "s4-phone-p2": {
+  "size": [
+   786,
+   1704
+  ],
+  "files": [
+   {
+    "w": 786,
+    "webp": "/pictures/s4-phone-p2-786.ad89d30d5c.webp",
+    "webpBytes": 54562
+   }
+  ]
+ },
+ "s5-desk-p1": {
+  "size": [
+   1440,
+   900
+  ],
+  "files": [
+   {
+    "w": 1440,
+    "webp": "/pictures/s5-desk-p1-1440.74f92e8368.webp",
+    "webpBytes": 19128
+   }
+  ]
+ },
+ "s5-desk-p2": {
+  "size": [
+   1440,
+   900
+  ],
+  "files": [
+   {
+    "w": 1440,
+    "webp": "/pictures/s5-desk-p2-1440.0247c8a4f3.webp",
+    "webpBytes": 18876
+   }
+  ]
+ },
+ "s5-desk-p3": {
+  "size": [
+   1440,
+   900
+  ],
+  "files": [
+   {
+    "w": 1440,
+    "webp": "/pictures/s5-desk-p3-1440.f7c1b39f27.webp",
+    "webpBytes": 14522
+   }
+  ]
+ },
+ "s5-phone-p1": {
+  "size": [
+   786,
+   1704
+  ],
+  "files": [
+   {
+    "w": 786,
+    "webp": "/pictures/s5-phone-p1-786.53df3a7615.webp",
+    "webpBytes": 27424
+   }
+  ]
+ },
+ "s5-phone-p2": {
+  "size": [
+   786,
+   1704
+  ],
+  "files": [
+   {
+    "w": 786,
+    "webp": "/pictures/s5-phone-p2-786.1fa9043d8d.webp",
+    "webpBytes": 29716
+   }
+  ]
+ },
+ "s5-phone-p3": {
+  "size": [
+   786,
+   1704
+  ],
+  "files": [
+   {
+    "w": 786,
+    "webp": "/pictures/s5-phone-p3-786.7b2e43b942.webp",
+    "webpBytes": 22254
+   }
+  ]
+ },
+ "s6-desk-p1": {
+  "size": [
+   1440,
+   900
+  ],
+  "files": [
+   {
+    "w": 1440,
+    "avif": "/pictures/s6-desk-p1-1440.afb679e776.avif",
+    "avifBytes": 6298,
+    "webp": "/pictures/s6-desk-p1-1440.82a863f7f7.webp",
+    "webpBytes": 7136
+   }
+  ]
+ },
+ "s6-desk-p2": {
+  "size": [
+   1440,
+   900
+  ],
+  "files": [
+   {
+    "w": 1440,
+    "webp": "/pictures/s6-desk-p2-1440.07c8104aa7.webp",
+    "webpBytes": 15896
+   }
+  ]
+ },
+ "s6-desk-p3": {
+  "size": [
+   1440,
+   900
+  ],
+  "files": [
+   {
+    "w": 1440,
+    "webp": "/pictures/s6-desk-p3-1440.dd6994b32d.webp",
+    "webpBytes": 19578
+   }
+  ]
+ },
+ "s6-phone-p1": {
+  "size": [
+   786,
+   1704
+  ],
+  "files": [
+   {
+    "w": 786,
+    "avif": "/pictures/s6-phone-p1-786.c61c2972ab.avif",
+    "avifBytes": 7272,
+    "webp": "/pictures/s6-phone-p1-786.7bcb9380d2.webp",
+    "webpBytes": 8562
+   }
+  ]
+ },
+ "s6-phone-p2": {
+  "size": [
+   786,
+   1704
+  ],
+  "files": [
+   {
+    "w": 786,
+    "webp": "/pictures/s6-phone-p2-786.4911e86a18.webp",
+    "webpBytes": 21452
+   }
+  ]
+ },
+ "s6-phone-p3": {
+  "size": [
+   786,
+   1704
+  ],
+  "files": [
+   {
+    "w": 786,
+    "webp": "/pictures/s6-phone-p3-786.1bf8fd24db.webp",
+    "webpBytes": 24374
+   }
+  ]
+ },
+ "s7-desk-p1": {
+  "size": [
+   1440,
+   900
+  ],
+  "files": [
+   {
+    "w": 1440,
+    "avif": "/pictures/s7-desk-p1-1440.24cea84dcc.avif",
+    "avifBytes": 1319,
+    "webp": "/pictures/s7-desk-p1-1440.bf4bfd0846.webp",
+    "webpBytes": 3712
+   }
+  ]
+ },
+ "s7-phone-p1": {
+  "size": [
+   786,
+   1704
+  ],
+  "files": [
+   {
+    "w": 786,
+    "avif": "/pictures/s7-phone-p1-786.b280ecfce8.avif",
+    "avifBytes": 1356,
+    "webp": "/pictures/s7-phone-p1-786.d0bab5507e.webp",
+    "webpBytes": 4134
+   }
+  ]
+ }
+}
