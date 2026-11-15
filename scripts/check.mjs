@@ -114,7 +114,9 @@ const FAULTS = () => {
     if (r.height < 44 || r.width < 44) tiny.push(`${el.textContent.trim() || el.getAttribute('aria-label') || el.tagName} ${Math.round(r.width)}x${Math.round(r.height)}`);
   }
   const de = document.documentElement;
-  return { sideways: de.scrollWidth > de.clientWidth + 1 ? de.scrollWidth - de.clientWidth : 0, small, tiny };
+  // exactly one PEOPLE / MACHINES switch is shown at a time (the border keeps copies for each screen shape)
+  const switches = [...document.querySelectorAll('nav.sw')].filter(vis).length;
+  return { sideways: de.scrollWidth > de.clientWidth + 1 ? de.scrollWidth - de.clientWidth : 0, small, tiny, switches };
 };
 
 async function main() {
@@ -266,6 +268,7 @@ async function main() {
           if (f.sideways) bad.push(`${w}x${h} scene ${n}: sideways ${f.sideways}px`);
           for (const s of f.small) bad.push(`${w}x${h} scene ${n}: small text ${s}`);
           for (const s of f.tiny) bad.push(`${w}x${h} scene ${n}: touch area ${s}`);
+          if (f.switches !== 1) bad.push(`${w}x${h} scene ${n}: ${f.switches} switches shown`);
         }
       }
       await p.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
@@ -276,6 +279,7 @@ async function main() {
         const q = await open(c, path, `${path} ${w}x${h}`);
         const g = await q.evaluate(FAULTS);
         if (g.sideways) bad.push(`${w}x${h} ${path}: sideways ${g.sideways}px`);
+        if (g.switches !== (path === '/nope-nope/' ? 0 : 1)) bad.push(`${w}x${h} ${path}: ${g.switches} switches shown`);
         for (const s of [...g.small, ...g.tiny]) bad.push(`${w}x${h} ${path}: ${s}`);
         await q.close();
       }
@@ -296,7 +300,7 @@ async function main() {
         await c.close();
       }
     }
-    ok(!bad.length, 6, `No sideways scroll, no text under 12 px, no touch area under 44 px at ${VIEWPORTS.map((v) => v.join('x')).join(', ')} (Chromium) and 430x739, 1512x860 (WebKit, Firefox)`, 'none', [...new Set(bad)].slice(0, 20).join('; '));
+    ok(!bad.length, 6, `No sideways scroll, no text under 12 px, no touch area under 44 px, one switch shown, at ${VIEWPORTS.map((v) => v.join('x')).join(', ')} (Chromium) and 430x739, 1512x860 (WebKit, Firefox)`, 'none', [...new Set(bad)].slice(0, 20).join('; '));
   }
 
   /* 7. scripts off */

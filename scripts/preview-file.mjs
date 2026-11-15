@@ -31,7 +31,7 @@ const legal = pageMain('legal/index.html', 'legal');
 // styles, with the fonts inside
 const cssHref = home.match(/<link rel="stylesheet"[^>]*href="([^"]+)"/)[1];
 let css = read(cssHref).toString().replace(/url\((\/assets\/[^)]+\.woff2)\)/g, (_, u) => `url(${dataUri(u)})`);
-css += '\n.pv-text #film,.pv-text .marks,.pv-text .bottom-sw,html.pv-text body::before{display:none!important}';
+css += '\n.pv-text #film,.pv-text .bottom-sw,html.pv-text body::before{display:none!important}.pv-text .marks{visibility:hidden}.pv-text .row2,.pv-text .top-sw{display:flex!important}';
 
 // script: the shared clock chunk and the film, joined into one module without imports
 const mainSrc = home.match(/<script type="module"[^>]*src="([^"]+)"/)[1];

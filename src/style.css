@@ -66,7 +66,7 @@ a:focus-visible { outline: 1px solid var(--ink); outline-offset: 2px; }
 .addr { position: absolute; left: var(--side); top: calc(var(--strip) + var(--safe-t) + 14px); font-size: 12px; letter-spacing: .04em; color: var(--dim); line-height: 20px; }
 .foot { position: absolute; z-index: 3; left: 0; right: 0; bottom: calc(4px + var(--safe-b)); display: flex; justify-content: center; }
 .foot > a, .foot-sw a { display: flex; align-items: center; height: 44px; padding: 0 14px; font-size: 12px; line-height: 20px; letter-spacing: .08em; color: var(--dim); }
-.foot-sw { display: none; }
+.foot .foot-sw { display: none; }
 
 /* ---------- the film (only once the script runs) ---------- */
 .probe { position: fixed; top: 0; left: 0; width: 0; height: 100vh; height: 100lvh; visibility: hidden; pointer-events: none; }
@@ -145,7 +145,7 @@ a.nm { min-width: 44px; }
   .home .row2 { display: none !important; }
   .words { bottom: calc(var(--H) - var(--S) + 20px + var(--safe-b)); }
   .cap, .cap.w14 { font-size: min(30px, calc((100vw - 32px) / 7.9)); }
-  .foot-sw { display: flex; margin-left: 8px; }
+  .foot .foot-sw { display: flex; margin-left: 8px; }
 }
 
 /* ---------- the plain pages: machines, legal, not found ---------- */
