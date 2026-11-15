@@ -20,7 +20,7 @@ npm run check      # builds, serves dist/ locally and proves the rules (see belo
 
 | Path | What it is |
 |---|---|
-| `content/site.json` | Every word on the site. The pages, `llms.txt`, the meta tags and the structured data are all made from it at build time. Edit words here, nowhere else. |
+| `content/site.json` | Every word on the site. The pages, `llms.txt` (with its closing list of page links), the meta tags and the structured data are all made from it at build time. Edit words here, nowhere else. |
 | `src/film/scenes.json` | How the film moves: the light passes of each scene, where each picture sits (`frame`), how far the light travels (`rest`, `hold`, `still`), scene 6's growing light (`opens`), the height line. |
 | `src/main.ts` | The film: scroll position to light, scene changes, the five marks. |
 | `src/film/math.ts` | The light and mask arithmetic, shared by the film and the build. |
@@ -76,8 +76,9 @@ Change the word, build, check.
    1572 x 3408 for upright screens. Save them as PNG; name the big one `<name>@2x.png` in the `--prefer` folder.
 2. In `pictures/sources.json`, point the picture's key (for example `s1-desk-p1`) at the new file.
 3. Run `npm run pictures -- <folder> --prefer <big folder> --only s1-desk-p1,s1-phone-p1`.
-4. In `content/site.json`, change that scene's `alt`: a photo's description does not start with "Drawing of". If no
-   drawing is left on the site, change the line about drawings in `machines.pictures` and in the legal credits too.
+4. In `content/site.json`, change that scene's `alt`: a photo's description does not start with "Drawing of". The
+   line about the pictures (in `machines.pictures` and the first line of the legal credits) says every picture is a
+   drawing and none is a photograph: as soon as one photo is on the site, change it in both places.
 5. If the photo frames the thing differently, adjust the scene's `frame` in `src/film/scenes.json`.
 6. Run `npm run check`, and look at the scene at phone and desktop size.
 
@@ -104,5 +105,5 @@ cache for files with a hash in their name (`/assets/`, `/pictures/`).
 
 Needs hidden browsers (Chromium, WebKit, Firefox) through `playwright-core`, which is not a dependency of the site:
 set `PLAYWRIGHT_CORE` to a copy whose browsers are already installed. It never downloads anything. Set
-`HIDDEN_NAMES_FILE` to a file with one name per line that must appear nowhere in the repository or the build; without
-it that test is skipped with a warning.
+`BLOCKED_WORDS_FILE` to an optional local file, one word or phrase per line, that must never ship: the check fails if
+any of them appears in a tracked file, a file name or the build. Without it that test is skipped with a warning.

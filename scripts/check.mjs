@@ -5,7 +5,8 @@
 // Needs hidden (headless) browsers: playwright-core with Chromium, WebKit and Firefox already on this machine.
 // It is not a dependency of the site. Set PLAYWRIGHT_CORE to its folder, or the check looks in the usual places
 // under your home folder. It never downloads anything.
-// HIDDEN_NAMES_FILE: a file with one name per line that must not appear anywhere (test 2 is skipped without it).
+// BLOCKED_WORDS_FILE: an optional local file, one word or phrase per line, that must never ship (test 2 is skipped
+// without it).
 // CHECK_PORT: the local port (default 4302).
 import { createRequire } from 'node:module';
 import { execFileSync } from 'node:child_process';
@@ -100,7 +101,8 @@ const TEXT_NODES = () => {
   for (let n = w.nextNode(); n; n = w.nextNode()) {
     const p = n.parentElement;
     if (!p || p.closest('script,style,noscript') || p.classList.contains('time')) continue;
-    const whole = p.closest('.cap,.addr');
+    // a line in capitals, the letterhead and a LEGAL paragraph (it may hold a mail link) count as one text each
+    const whole = p.closest('.cap,.addr,#legal p,#legal li');
     if (whole) { if (!seen.has(whole)) { seen.add(whole); out.push(norm(whole.textContent)); } continue; }
     const t = norm(n.nodeValue);
     if (t) out.push(t);
@@ -208,7 +210,11 @@ async function main() {
       await p.close();
     }
     const llms = readFileSync(join(DIST, 'llms.txt'), 'utf8').split('\n').map((l) => l.replace(/^# |^> /, '')).filter(Boolean);
-    const wantLlms = [content.machines.title, ...machineLines];
+    const M = content.machines, P = content.pages, U = content.site.url;
+    const wantLlms = [M.title, ...machineLines, `## ${M.pagesHeading}`,
+      `- [${B.people}](${U}${P.home.path}): ${M.pageNotes.home}`,
+      `- [${B.machines}](${U}${P.machines.path}): ${M.pageNotes.machines}`,
+      `- [${B.legal}](${U}${P.legal.path}): ${M.pageNotes.legal}`];
     if (JSON.stringify(llms) !== JSON.stringify(wantLlms)) bad.push('llms.txt differs from the machine face');
     ok(!bad.length, 1, 'Words on /, /machines/, /llms.txt, /legal/ and the not found page equal content/site.json, in order; one h1 on the film', 'all equal', bad.join('; '));
   }
@@ -223,7 +229,7 @@ async function main() {
     await c.close();
   }
 
-  /* 2. hidden names (and no local paths, no other email addresses) */
+  /* 2. blocked words (and no local paths, no other email addresses) */
   {
     const tracked = execFileSync('git', ['ls-files', '-co', '--exclude-standard'], { cwd: ROOT, encoding: 'utf8' }).split('\n').filter(Boolean).map((f) => join(ROOT, f));
     const walk = (d) => readdirSync(d).flatMap((f) => { const p = join(d, f); return statSync(p).isDirectory() ? walk(p) : [p]; });
@@ -237,17 +243,17 @@ async function main() {
       // long random strings (lock file checksums, hashed names) are not words; leave them out
       texts.push([relative(ROOT, f), buf.toString('utf8').replace(/[A-Za-z0-9+/=_-]{40,}/g, ' ')]);
     }
-    const file = process.env.HIDDEN_NAMES_FILE;
-    if (!file) warn(2, 'HIDDEN NAMES NOT CHECKED', 'set HIDDEN_NAMES_FILE to the file with one name per line');
+    const file = process.env.BLOCKED_WORDS_FILE;
+    if (!file) warn(2, 'BLOCKED WORDS NOT CHECKED', 'set BLOCKED_WORDS_FILE to a local file with one word or phrase per line');
     else {
-      const names = readFileSync(file, 'utf8').split('\n').map((s) => s.trim()).filter(Boolean);
+      const words = readFileSync(file, 'utf8').split('\n').map((s) => s.trim()).filter(Boolean);
       const hits = [];
-      names.forEach((name, i) => {
-        const re = new RegExp(`(?<![A-Za-z0-9])${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![A-Za-z0-9])`, 'i');
-        for (const [f, t] of texts) if (re.test(t)) hits.push(`name ${i + 1} in ${f}`);
-        for (const f of files) if (re.test(relative(ROOT, f))) hits.push(`name ${i + 1} in the file name ${relative(ROOT, f)}`);
+      words.forEach((word, i) => {
+        const re = new RegExp(`(?<![A-Za-z0-9])${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![A-Za-z0-9])`, 'i');
+        for (const [f, t] of texts) if (re.test(t)) hits.push(`entry ${i + 1} in ${f}`);
+        for (const f of files) if (re.test(relative(ROOT, f))) hits.push(`entry ${i + 1} in the file name ${relative(ROOT, f)}`);
       });
-      ok(!hits.length && names.length > 0, 2, `None of the ${names.length} hidden names in ${texts.length} tracked and built text files or any file name`, 'none found', hits.join('; ') || 'the names file is empty');
+      ok(!hits.length && words.length > 0, 2, `None of the ${words.length} blocked words in ${texts.length} tracked and built text files or any file name`, 'none found', hits.join('; ') || 'the blocked words file is empty');
     }
     const home = '/' + 'Users' + '/';
     const leaks = [];

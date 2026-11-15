@@ -25,7 +25,7 @@
     { "id": "stand", "line": "A small 3D printed stand for a shop counter. Each tile opens any link when a phone taps it." },
     { "id": "race", "line": "A race, printed: the ground and the route, made from a GPS file." },
     { "id": "coach", "line": "An AI coach that plans your training, your food and your week. Nothing from it is shown here." },
-    { "id": "system", "name": "StudioOS", "line": "One brain for the studio and every venture in it." },
+    { "id": "system", "name": "StudioOS", "line": "One brain, built for the studio and every venture in it." },
     { "id": "next", "hollow": true, "line": "The next one." }
   ],
   "scenes": [
@@ -41,9 +41,11 @@
     "title": "PROXYZ",
     "summary": "Venture studio. Phuket, Thailand. Run with AI.",
     "intro": "This is the same site as plain text.",
-    "toolIntro": "A line the trophy tool wrote about its own work:",
-    "pictures": "The pictures on the other side are drawn from the studio's own 3D files until film replaces them.",
-    "company": "PROXYZ STUDIO CO., LTD. Phuket, Thailand."
+    "toolIntro": "A line from the tool that builds the model, about its own work:",
+    "pictures": "The pictures on this site are drawings, made from the studio's own 3D files. They are not photographs.",
+    "company": "PROXYZ STUDIO CO., LTD. Phuket, Thailand.",
+    "pagesHeading": "Pages",
+    "pageNotes": { "home": "the film", "machines": "the same site as plain text", "legal": "privacy, terms and credits" }
   },
   "legal": {
     "title": "LEGAL",
@@ -56,7 +58,7 @@
         "parts": [
           { "heading": "Who we are", "text": ["PROXYZ is a venture studio based in Phuket, Thailand. It is run by PROXYZ STUDIO CO., LTD. You can reach us at hello@proxyz.studio."] },
           { "heading": "What we collect", "text": [
-            "This site has no forms, sets no cookies and runs no tracking. We do not use analytics that profiles individual visitors. We do not place advertising pixels. We do not sell or share your data with third parties for marketing.",
+            "This site has no forms, sets no cookies and runs no tracking. We do not use analytics that profile individual visitors. We do not place advertising pixels. We do not sell or share your data with third parties for marketing.",
             "If you write to us, we get your name, your email address and the contents of your message.",
             "Like any website, the company that hosts ours (Vercel) handles technical data, such as your internet address, when your browser asks for a page. We do not use it to identify you."
           ] },
@@ -92,7 +94,7 @@
         "id": "credits",
         "heading": "CREDITS",
         "lead": [
-          "The pictures on this site are drawn from the studio's own 3D files until film replaces them.",
+          "The pictures on this site are drawings, made from the studio's own 3D files. They are not photographs.",
           "Map data. Produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved. The organisations in charge of the Copernicus programme by law or by delegation do not incur any liability for any use of the Copernicus WorldDEM-30.",
           "Type. IBM Plex Mono, © IBM Corp., used under the SIL Open Font License 1.1.",
           "Questions? Write to hello@proxyz.studio."

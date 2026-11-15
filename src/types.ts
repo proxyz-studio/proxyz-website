@@ -43,7 +43,11 @@ export interface Content {
   border: { wordmark: string; place: string; people: string; machines: string; legal: string };
   ventures: Venture[];
   scenes: SceneWords[];
-  machines: { title: string; summary: string; intro: string; toolIntro: string; pictures: string; company: string };
+  machines: {
+    title: string; summary: string; intro: string; toolIntro: string; pictures: string; company: string;
+    /** the link section at the end of llms.txt: its heading, and a short note after each page's link */
+    pagesHeading: string; pageNotes: { home: string; machines: string; legal: string };
+  };
   legal: { title: string; revised: string; sections: { id: string; heading: string; lead: string[]; parts: LegalPart[] }[] };
 }
 

@@ -215,6 +215,9 @@ a.nm { min-width: 44px; }
 #legal h3 + p { margin-top: 4px; }
 #legal ul { padding-left: 2ch; }
 #legal li { margin-top: 4px; }
+/* the email address: a mail link in the text's own grey, a thin underline, a 44 px tall tap area that leaves the
+   line spacing as it is (the padding is taken back by an equal negative margin) */
+#legal a.mail { display: inline-block; padding: 11px 0; margin: -11px 0; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 #nf { position: relative; z-index: 3; min-height: var(--H); }
 #nf .cap { position: absolute; left: var(--side); right: var(--side); bottom: calc(var(--H) - var(--S) + 60px + var(--safe-b)); }
 @media (max-width: 899px) {

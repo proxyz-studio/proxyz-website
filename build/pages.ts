@@ -15,6 +15,8 @@ export const load = () => ({
 });
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+/** Escaped text in which an email address becomes a mail link (same words, only tappable). */
+const escMail = (s: string) => esc(s).replace(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g, (m) => `<a class="mail" href="mailto:${m}">${m}</a>`);
 const PORTRAIT = '(max-aspect-ratio: 1/1)';
 const LANDSCAPE = '(min-aspect-ratio: 1001/1000)';
 
@@ -52,9 +54,20 @@ export function machineLines(c: Content): string[] {
   ];
 }
 
+/** The link section at the end of llms.txt: one line per page, "- [PEOPLE](https://.../): the film". */
+export function llmsLinks(c: Content): string[] {
+  const n = c.machines.pageNotes;
+  return [
+    `## ${c.machines.pagesHeading}`, '',
+    `- [${c.border.people}](${c.site.url}${c.pages.home.path}): ${n.home}`,
+    `- [${c.border.machines}](${c.site.url}${c.pages.machines.path}): ${n.machines}`,
+    `- [${c.border.legal}](${c.site.url}${c.pages.legal.path}): ${n.legal}`,
+  ];
+}
+
 export function llmsTxt(c: Content): string {
   const [summary, ...rest] = machineLines(c);
-  return `# ${c.machines.title}\n\n> ${summary}\n${rest.join('\n')}\n`;
+  return `# ${c.machines.title}\n\n> ${summary}\n${rest.join('\n')}\n\n${llmsLinks(c).join('\n')}\n`;
 }
 
 export function robotsTxt(c: Content): string {
@@ -268,8 +281,8 @@ export function legalPage(): string {
   const { content: c } = load();
   const L = c.legal;
   const sections = L.sections.map((s) => {
-    const parts = s.parts.map((pt) => `<h3>${esc(pt.heading)}</h3>${pt.text.map((t) => `<p>${esc(t)}</p>`).join('')}${pt.list ? `<ul>${pt.list.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}${(pt.after ?? []).map((t) => `<p>${esc(t)}</p>`).join('')}`).join('');
-    return `<section id="${s.id}"><h2>${esc(s.heading)}</h2>${s.lead.map((t) => `<p>${esc(t)}</p>`).join('')}${parts}</section>`;
+    const parts = s.parts.map((pt) => `<h3>${esc(pt.heading)}</h3>${pt.text.map((t) => `<p>${escMail(t)}</p>`).join('')}${pt.list ? `<ul>${pt.list.map((t) => `<li>${escMail(t)}</li>`).join('')}</ul>` : ''}${(pt.after ?? []).map((t) => `<p>${escMail(t)}</p>`).join('')}`).join('');
+    return `<section id="${s.id}"><h2>${esc(s.heading)}</h2>${s.lead.map((t) => `<p>${escMail(t)}</p>`).join('')}${parts}</section>`;
   }).join('\n');
   return `${head(c, 'legal', '/src/page.ts')}
 <body class="text legal">
