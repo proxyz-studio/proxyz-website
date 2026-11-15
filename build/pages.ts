@@ -208,14 +208,16 @@ function head(c: Content, kind: Kind, entry: string, extra = ''): string {
 <meta name="twitter:description" content="${esc(desc)}">
 <meta name="twitter:image" content="${c.site.url}${c.site.image}">
 <link rel="alternate" type="text/plain" href="/llms.txt">` : '<meta name="robots" content="noindex">';
+  // the film page is in the film's black from the first paint (its root, its body and the browser's own colour)
+  const filmPage = kind === 'home';
   return `<!doctype html>
-<html lang="en">
+<html lang="en"${filmPage ? ' class="film-page"' : ''}>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${esc(title)}</title>
 ${social}
-<meta name="theme-color" content="#0a0a0a">
+<meta name="theme-color" content="${filmPage ? '#010101' : '#0a0a0a'}">
 <meta name="color-scheme" content="dark">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">

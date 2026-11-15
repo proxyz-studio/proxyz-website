@@ -22,6 +22,8 @@
   --W: 100vw; --H: 100vh; --S: 100vh;
   /* the height of a phone browser's bar while it shows (0 when it is away, and on every other screen) */
   --bar: 0px;
+  /* how far the film's words stand above the bottom of the screen (plus the safe area on phones); the script reads it */
+  --words-base: 60px;
   color-scheme: dark;
 }
 @supports (height: 100lvh) { :root { --H: 100lvh; --S: 100svh; } }
@@ -29,6 +31,8 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { background: var(--bg); overflow-x: hidden; overflow-x: clip; -webkit-text-size-adjust: 100%; scrollbar-width: thin; scrollbar-color: rgba(242, 242, 242, .28) var(--film); }
+/* the film page: the page itself in the film's black (Safari paints the strip under its bar with it) */
+html.film-page, html.film-page body { background: var(--film); }
 ::selection { background: var(--pink); color: var(--bg); }
 body {
   background: var(--bg); color: var(--ink); overflow-x: hidden; overflow-x: clip;
@@ -66,7 +70,7 @@ a:focus-visible { outline: 1px solid var(--ink); outline-offset: 2px; }
 /* words: kept above a phone browser's bottom bar (the gap between the large and small viewport) */
 .words {
   position: absolute; left: var(--side); right: var(--side);
-  bottom: calc(var(--H) - var(--S) + 60px + var(--safe-b));
+  bottom: calc(var(--H) - var(--S) + var(--words-base) + var(--safe-b));
   display: flex; flex-direction: column; align-items: flex-start; gap: 18px;
 }
 .cap { font-weight: 600; font-size: min(38px, calc((100vw - 32px) / 7.9)); line-height: 1; letter-spacing: -.01em; text-transform: uppercase; }
@@ -87,6 +91,8 @@ a:focus-visible { outline: 1px solid var(--ink); outline-offset: 2px; }
 
 /* ---------- the film (only once the script runs) ---------- */
 .probe { position: fixed; top: 0; left: 0; width: 0; height: 100vh; height: 100lvh; visibility: hidden; pointer-events: none; }
+/* the bottom safe area, measured by the script (it places the pictures for the largest it has seen) */
+.probe-b { position: fixed; top: 0; left: 0; width: 0; height: var(--safe-b); visibility: hidden; pointer-events: none; }
 html.film body::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: var(--H); background: var(--film); }
 .film #film .scene { height: 240vh; height: 240lvh; overflow: visible; background: none; }
 .film .layer { position: fixed; z-index: 1; opacity: 0; transition: opacity .4s ease; pointer-events: none; }
@@ -94,6 +100,8 @@ html.film body::before { content: ""; position: fixed; top: 0; left: 0; right: 0
 /* the last scene as the twin of scene 6: scene 6 stays at full strength under it while the twin fades in, so the
    pool of light holds steady and only the three things leave it (where :has() is missing, the two simply blend) */
 .film #s6:has(+ #s7[data-view="twin"].on) .layer { opacity: 1; }
+/* the twin's own stage is dark, so scene 6 never shows through at its soft side edges (short phones) */
+.film #s7[data-view="twin"] .layer { background: var(--film); }
 .film .passes { opacity: 0; transition: opacity .3s ease; }
 .film .passes.ready { opacity: 1; }
 .film .scene .words, .film .scene .addr { opacity: 0; transition: opacity .15s ease; }
@@ -141,7 +149,7 @@ a.nm { min-width: 44px; }
 
 /* ---------- desktop ---------- */
 @media (min-width: 900px) and (min-height: 501px) {
-  :root { --side: 48px; }
+  :root { --side: 48px; --words-base: 96px; }
   #top { background: none; padding: 0; pointer-events: none; }
   #top a { pointer-events: auto; }
   #top .row1 { position: absolute; left: 40px; right: 40px; top: 28px; height: 28px; }
@@ -157,7 +165,7 @@ a.nm { min-width: 44px; }
   #frame, .nf #frame { inset: 16px; }
   #frame i { width: 12px; height: 12px; border-color: rgba(242, 242, 242, .75); }
   #frame .hair { display: block; position: absolute; inset: 0; border: 1px solid rgba(242, 242, 242, .13); }
-  .words { left: var(--side); right: auto; max-width: 62vw; bottom: calc(var(--H) - var(--S) + 96px); gap: 24px; }
+  .words { left: var(--side); right: auto; max-width: 62vw; bottom: calc(var(--H) - var(--S) + var(--words-base)); gap: 24px; }
   .cap, .cap.w14, .cap.w15 { font-size: min(80px, 7.2vh, 6.8vw); }
   .tool { font-size: 13px; line-height: 20px; }
   .hl { width: min(560px, 42vw); height: 72px; }
@@ -170,9 +178,10 @@ a.nm { min-width: 44px; }
 }
 /* a phone held sideways: one row of border; PEOPLE and MACHINES move to the foot of the last scene */
 @media (max-height: 500px) and (orientation: landscape) {
+  :root { --words-base: 20px; }
   .home { --strip: 48px; }
   .home .row2 { display: none !important; }
-  .words { bottom: calc(var(--H) - var(--S) + 20px + var(--safe-b)); }
+  .words { bottom: calc(var(--H) - var(--S) + var(--words-base) + var(--safe-b)); }
   .cap, .cap.w14, .cap.w15 { font-size: min(30px, calc((100vw - 32px) / 7.9)); }
   .foot .foot-sw { display: flex; margin-left: 8px; }
 }
@@ -180,22 +189,26 @@ a.nm { min-width: 44px; }
 /* ---------- the film on phones: the words ride the bottom edge of what the visitor sees ---------- */
 /* They follow a phone browser's sliding bar. The pictures never move: they are placed for the words' low place. */
 @media (max-width: 899px), (max-height: 500px) and (orientation: landscape) {
-  .film .words { position: fixed; bottom: calc(60px + var(--safe-b)); }
-  /* scenes 3 and 4: a dark backing that travels with the words. --bar is the height of the browser's bar (0 when it is
-     away): the backing grows only while the bar shows and the words ride high over the bright part of the picture.
-     With the bar away it has no height at all. The other scenes stay readable without one (npm run check measures it). */
+  .film .words { position: fixed; bottom: calc(var(--words-base) + var(--safe-b)); }
+  /* a late change of the bottom safe area (an iPhone's home bar inset as the bar slides) is a short glide, not a jump.
+     The ride with the browser's bar is the screen itself moving, not this value, so it is not slowed. */
+  .film .scene .words { transition: opacity .15s ease, bottom .2s ease; }
+  .film .scene.on .words { transition: opacity .25s ease .2s, bottom .2s ease; }
+  /* scenes 3 and 4: a dark backing that travels with the words, always there (it does not wait for the bar's height).
+     It fades in over the 24 px just above the words and leaves the picture above them as it is. */
   .film #s3 .words::before, .film #s4 .words::before {
     content: ""; position: absolute; z-index: -1; pointer-events: none;
-    left: calc(-1 * var(--side)); right: calc(-1 * var(--side)); bottom: calc(-1 * var(--bar));
-    height: min(calc(var(--bar) * 6), calc(100% + var(--bar) + 24px));
+    left: calc(-1 * var(--side)); right: calc(-1 * var(--side)); top: -24px; bottom: -260px;
     background: linear-gradient(to bottom, rgba(1, 1, 1, 0) 0, rgba(1, 1, 1, .86) 24px, rgba(1, 1, 1, .92) 100%);
   }
-  /* scene 4 on short screens: the small grey line lies on the bright disc even with no bar, so this backing is always
-     there; it fades in over the 24 px just above the words and leaves the picture above them as it is */
-  .film #s4 .words::before { height: calc(100% + var(--bar) + 24px); }
-}
-@media (max-height: 500px) and (orientation: landscape) {
-  .film .words { bottom: calc(20px + var(--safe-b)); }
+  /* scene 6: a soft dark backing behind the words only while the browser's bar shows (--bar is its height, 0 when it
+     is away), so the words never lie on the phone. With the bar away it has no height at all. */
+  .film #s6 .words::before {
+    content: ""; position: absolute; z-index: -1; pointer-events: none;
+    left: calc(-1 * var(--side)); right: calc(-1 * var(--side)); bottom: calc(-1 * var(--bar));
+    height: min(calc(var(--bar) * 6), calc(100% + var(--bar) + 96px));
+    background: linear-gradient(to bottom, rgba(1, 1, 1, 0) 0, rgba(1, 1, 1, .5) 56px, rgba(1, 1, 1, .86) 96px, rgba(1, 1, 1, .92) 100%);
+  }
 }
 
 /* ---------- the plain pages: machines, legal, not found ---------- */
@@ -215,11 +228,15 @@ a.nm { min-width: 44px; }
 #legal h3 + p { margin-top: 4px; }
 #legal ul { padding-left: 2ch; }
 #legal li { margin-top: 4px; }
-/* the email address: a mail link in the text's own grey, a thin underline, a 44 px tall tap area that leaves the
-   line spacing as it is (the padding is taken back by an equal negative margin) */
-#legal a.mail { display: inline-block; padding: 11px 0; margin: -11px 0; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+/* the email address: a mail link in the text's own grey, a thin underline; plain inline text (so a full stop after it
+   stays on its line), with a 44 px tall tap area from its padding, which does not change the line spacing */
+#legal a.mail { padding: 14px 0; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 #nf { position: relative; z-index: 3; min-height: var(--H); }
 #nf .cap { position: absolute; left: var(--side); right: var(--side); bottom: calc(var(--H) - var(--S) + 60px + var(--safe-b)); }
+/* on phones the line rides the bottom edge of what the visitor sees, 60 px above it, like the film's words */
+@media (max-width: 899px), (max-height: 500px) and (orientation: landscape) {
+  #nf .cap { position: fixed; bottom: calc(60px + var(--safe-b)); }
+}
 @media (max-width: 899px) {
   .plain { padding-left: calc(var(--side) + 8px); padding-right: calc(var(--side) + 8px); }
 }

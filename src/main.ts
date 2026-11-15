@@ -73,6 +73,14 @@ const probe = document.createElement('div');
 probe.className = 'probe';
 probe.setAttribute('aria-hidden', 'true');
 document.body.append(probe);
+// the bottom safe area (an iPhone's home bar). Older iPhones report 0 with the browser's bar showing and 34 px with it
+// away, so the pictures are placed for the largest inset seen so far: a scene placed while the bar shows is placed
+// again once, the first time the bar slides away, and never changes after that.
+const probeB = document.createElement('div');
+probeB.className = 'probe-b';
+probeB.setAttribute('aria-hidden', 'true');
+document.body.append(probeB);
+let insetMax = probeB.offsetHeight;
 let VW = innerWidth, VH = probe.offsetHeight || innerHeight, form: Form = formNow();
 
 startClock();
@@ -99,10 +107,12 @@ function makePicture(file: PictureFile): { node: HTMLElement; img: HTMLImageElem
     s.srcset = file.avif;
     node.append(s);
   }
+  // the address is set only once the img sits inside its picture, after its source: an img that gets its address
+  // first starts the fallback file at once (the Safari engine then fetches the WebP as well as the AVIF)
   const img = new Image();
   img.decoding = 'async';
-  img.src = file.webp;
   node.append(img);
+  img.src = file.webp;
   return { node, img };
 }
 
@@ -115,6 +125,19 @@ async function whenReady(img: HTMLImageElement): Promise<void> {
 
 /* ---------- placing one picture from its frame (logical size from the manifest, never the file's own) ---------- */
 interface Box { left: number; top: number; w: number; h: number }
+// the screens on which the words stand without the safe area (as in style.css)
+const deskMQ = matchMedia('(min-width: 900px) and (min-height: 501px)');
+/** How far the words' low place stands above the bottom: the base from style.css (--words-base: 60 on phones upright,
+ *  20 sideways, the desktop value on desktop), plus on phones the largest bottom safe area seen so far. */
+function wordsBase(): number {
+  const base = parseFloat(getComputedStyle(doc).getPropertyValue('--words-base')) || 0;
+  return base + (deskMQ.matches ? 0 : insetMax);
+}
+/** Called on resize and on scroll: when the bottom safe area grows past the largest seen, place the pictures again. */
+function checkInset(): void {
+  const b = probeB.offsetHeight;
+  if (b > insetMax) { insetMax = b; layoutAll(); }
+}
 function geometry(view: View, s: SceneState): Box {
   const [iw, ih] = pictures[view.passes[0]].size;
   const f = view.frame, vw = VW, vh = VH;
@@ -128,9 +151,9 @@ function geometry(view: View, s: SceneState): Box {
   if (f.span) {
     const roomTop = (top ? top.getBoundingClientRect().bottom : 0) + 12;
     // the room ends above the words at their LOW place (on a phone they ride a browser's sliding bar, so where they
-    // are right now depends on the bar; the picture must not), so a scene built in either state gets the same box
-    const wb = room.words ? parseFloat(getComputedStyle(room.words).bottom) : NaN;
-    const roomBot = (room.words && Number.isFinite(wb) ? vh - wb - room.words.offsetHeight : vh) - 16;
+    // are right now depends on the bar; the picture must not), so a scene built in either state gets the same box.
+    // Worked out from the steady height, never read from the words' own place (their safe area part may glide).
+    const roomBot = (room.words ? vh - wordsBase() - room.words.offsetHeight : vh) - 16;
     const [y0, y1] = f.span;
     if (roomBot > roomTop && (topY + y0 * k < roomTop || topY + y1 * k > roomBot)) {
       const k2 = Math.min(k, (roomBot - roomTop) / (y1 - y0));
@@ -261,6 +284,7 @@ function near(i: number, y: number): boolean {
 function update(): void {
   ticking = false;
   if (!tops.length) return;
+  checkInset();
   const y = scrollY, mid = y + VH / 2;
   let i = 0;
   while (i < sections.length - 1 && mid >= tops[i + 1]) i++;
@@ -316,7 +340,7 @@ function onResizeSoon(): void {
   onResize();
   requestAnimationFrame(onResize);
   clearTimeout(settle);
-  settle = setTimeout(onResize, 150);
+  settle = setTimeout(() => { layoutAll(); onResize(); }, 150);
 }
 function onResize(): void {
   const w = innerWidth, h = probe.offsetHeight || innerHeight, f = formNow();
@@ -330,6 +354,7 @@ function onResize(): void {
     layoutAll();
     for (const s of S) if (s.built) build(S.indexOf(s) + 1);   // a bigger screen may want the bigger file
   }
+  checkInset();
   measure();
   update();
 }
@@ -349,5 +374,8 @@ addEventListener('pagehide', remember);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') remember(); });
 reducedMQ.addEventListener('change', schedule);
 portrait.addEventListener('change', onResizeSoon);
-if (typeof ResizeObserver === 'function') new ResizeObserver(() => onResize()).observe(probe);
+if (typeof ResizeObserver === 'function') {
+  new ResizeObserver(() => onResize()).observe(probe);
+  new ResizeObserver(() => checkInset()).observe(probeB);
+}
 if (document.fonts) document.fonts.ready.then(() => { layoutAll(); measure(); update(); });
