@@ -236,7 +236,8 @@ function light(n: number, prog: number): void {
       const pc = (v: number, d: number) => ((v / d) * 100).toFixed(2) + '%';
       m = `radial-gradient(ellipse ${pc(L(a[2], b[2], 1.6), W)} ${pc(L(a[3], b[3], 1.6), H)} at ${pc(L(a[0], b[0]), W)} ${pc(L(a[1], b[1]), H)},#000 0,#000 68%,transparent 100%)`;
     }
-    p.img.style.opacity = t > 0 ? '1' : '0';
+    // the new pass comes in over the first eighth of its step, so the rim of the light does not tick when it starts
+    p.img.style.opacity = t > 0 ? Math.min(1, t / 0.12).toFixed(3) : '0';
     p.img.style.webkitMaskImage = m;
     p.img.style.maskImage = m;
   });
