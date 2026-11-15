@@ -49,18 +49,31 @@ Source drawings (large PNG files) are not kept here. To make the web pictures ag
 npm run pictures -- <folder of the drawings> [--prefer <folder of bigger drawings>]
 ```
 
-Each picture gets a 1x file (desktop 1440 wide, phone 786 wide) and, when the source is at least twice that size, a
-2x file (2880, 1572). WebP always; AVIF too when it comes out smaller. File names carry a content hash, so they can be
-cached for a year. The film always places pictures from their logical size (1440 x 900, 786 x 1704), so bigger
-files change nothing in the layout. With `--prefer`, a bigger drawing of the same name in that folder is used when it
-is complete (when the folder has a `manifest.json`, only the files it names are used).
+Each picture gets a 1x file (desktop 1440 wide, phone 786 wide) made from the drawing named in
+`pictures/sources.json`, and a 2x file (2880, 1572) when a drawing twice that size exists. With `--prefer <folder>`
+the script looks there for `<name>@2x.png`; when the folder has a `manifest.json`, a file is used only if its own entry
+says `"status": "done"`. The script prints, for every picture, which drawings it used, and ends with a count such as
+`28 of 32 pictures have a 2x file`, so a silent miss cannot happen.
+
+Every file is AVIF (full colour detail, tuned for still pictures) with a WebP fallback. The quality was chosen by
+looking at the dark floors brightened 4 to 12 times at full size; the script prints how much fine grain each file
+keeps. In `sources.json` a picture may set its own `q`, a byte budget for its 2x file (`max2x`, used for the first
+picture so a sharp phone's first load stays small), or `only1x` (smooth pictures with no detail). File names carry a
+content hash, so they can be cached for a year. The film always places pictures from their logical size
+(1440 x 900, 786 x 1704), so bigger files change nothing in the layout.
+
+### The last scene's picture
+
+`content/site.json`, last scene, `"picture"`: `"own"` (its own picture, the default) or `"twin"` (the pool of light of
+scene 6, now empty, framed exactly like scene 6, so the cut between the two scenes keeps the light in place). The
+twin's film data is `"7twin"` in `src/film/scenes.json`; its pictures are `s7t-*`. Change the word, build, check.
 
 ### Replacing a drawing with a real photo
 
-1. Shoot or crop the photo to the same shape: 1440 x 900 (or 2880 x 1800) for wide screens, 786 x 1704 (or 1572 x 3408)
-   for upright screens. Save it as PNG.
+1. Shoot or crop the photo to the same shape: 1440 x 900 and 2880 x 1800 for wide screens, 786 x 1704 and
+   1572 x 3408 for upright screens. Save them as PNG; name the big one `<name>@2x.png` in the `--prefer` folder.
 2. In `pictures/sources.json`, point the picture's key (for example `s1-desk-p1`) at the new file.
-3. Run `npm run pictures -- <folder> --only s1-desk-p1,s1-phone-p1`.
+3. Run `npm run pictures -- <folder> --prefer <big folder> --only s1-desk-p1,s1-phone-p1`.
 4. In `content/site.json`, change that scene's `alt`: a photo's description does not start with "Drawing of". If no
    drawing is left on the site, change the line about drawings in `machines.pictures` and in the legal credits too.
 5. If the photo frames the thing differently, adjust the scene's `frame` in `src/film/scenes.json`.
@@ -75,12 +88,13 @@ Every company email already sent loads these straight from the site. `npm run ch
 - `public/icon-whatsapp-dark.png`
 - `public/icon-line-dark.png`
 
-Also kept at their addresses: `proxyz-lockup-e-horizontal.png`, `proxyz-tricolor.svg`, `favicon.svg`, `og.png`.
+Also kept at their addresses: `proxyz-lockup-e-horizontal.png`, `proxyz-tricolor.svg`, `favicon.svg`, `og.png`. The link preview picture the pages name is `og-2026-11.jpg` (the same picture, 143 KB; a new name so chat apps fetch it fresh).
 
 ## The host
 
 `vercel.json` holds the rules: no catch all (unknown addresses get `404.html` with status 404), `/privacy` and `/terms`
-redirect to the legal page, a strict content security policy (own host only, no inline script, no inline style
+redirect to the legal page (each listed with and without the trailing slash: the host adds the slash first and then
+matches redirects exactly, capitals included; `scripts/serve.mjs` matches the same way), a strict content security policy (own host only, no inline script, no inline style
 attributes: set styles from the script with `el.style`) on everything except the four email pictures, and a one year
 cache for files with a hash in their name (`/assets/`, `/pictures/`).
 

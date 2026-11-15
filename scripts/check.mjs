@@ -30,7 +30,7 @@ const EMAIL_PICTURES = {
   'icon-line-dark.png': '409f50b5d656b01873287c4d65cc72a72c758acf59c978482e29e5835c7eab05',
   'proxyz-lockup-e-horizontal-light.png': 'dcfaf306a333eb562c856b5b4815335172a42ec0c8ba607f1e1df37af1982da2',
 };
-const VIEWPORTS = [[393, 852], [430, 739], [320, 568], [852, 393], [1440, 900], [1512, 860], [2428, 1300]];
+const VIEWPORTS = [[393, 852], [430, 739], [320, 568], [852, 393], [932, 430], [1440, 900], [1512, 860], [2428, 1300]];
 const BUDGET = { firstLoad: 250 * 1024, firstPicture: 80 * 1024, script: 20 * 1024, style: 10 * 1024 };
 
 /* ---------- reporting ---------- */
@@ -51,22 +51,27 @@ const tool = content.scenes.find((s) => s.toolLine).toolLine;
 const machineLines = [content.machines.summary, content.machines.intro, ...content.ventures.map(ventureLine),
   content.machines.toolIntro, tool, content.machines.pictures, content.machines.company];
 const named = content.ventures.filter((v) => v.name).map((v) => v.name);
+const SWITCHES = [B.people, B.machines, B.people, B.machines];   // the top and the bottom copy
+// every word each page must show, in the order a reader meets it (the border first, then the page)
 const EXPECT = {
-  '/': [B.place, B.people, B.machines, B.people, B.machines, ...named,
-    ...content.scenes.flatMap((s) => [...s.lines, ...(s.toolLine ? [s.toolLine] : []), ...(s.letterhead ? [s.letterhead] : [])]),
+  '/': [B.place, ...named, ...SWITCHES,
+    ...content.scenes.flatMap((s) => [...(s.letterhead ? [s.letterhead] : []), ...(s.toolLine ? [s.toolLine] : []), s.lines.join(' ')]),
     B.legal, B.people, B.machines],
-  '/machines/': [B.place, B.people, B.machines, content.machines.title, ...machineLines, B.legal],
-  '/legal/': [B.place, B.people, B.machines, content.legal.title, content.legal.revised,
+  '/machines/': [B.place, ...SWITCHES, content.machines.title, ...machineLines, B.legal],
+  '/legal/': [B.place, ...SWITCHES, content.legal.title, content.legal.revised,
     ...content.legal.sections.flatMap((s) => [s.heading, ...s.lead, ...s.parts.flatMap((p) => [p.heading, ...p.text, ...(p.list ?? []), ...(p.after ?? [])])])],
   '/nope-nope/': [B.place, content.pages.notFound.line],
 };
+/** The film data of scene n as the build chose it (scene 7 may use the twin of scene 6). */
+const viewOf = (n, form) => film.scenes[content.scenes[n - 1]?.picture === 'twin' ? `${n}twin` : String(n)][form];
 const META = {
   '/': content.pages.home, '/machines/': content.pages.machines, '/legal/': content.pages.legal,
 };
-const sameList = (a, b) => {
-  const x = [...a].sort(), y = [...b].sort();
-  const missing = y.filter((v) => !x.includes(v)), extra = x.filter((v) => !y.includes(v));
-  return { equal: x.length === y.length && x.every((v, i) => v === y[i]), missing: [...new Set(missing)], extra: [...new Set(extra)] };
+/** Same words in the same order; on a difference, says where it starts. */
+const sameSeq = (got, want) => {
+  const n = Math.max(got.length, want.length);
+  for (let i = 0; i < n; i++) if (got[i] !== want[i]) return { equal: false, at: `item ${i + 1}: got "${got[i] ?? '(nothing)'}", want "${want[i] ?? '(nothing)'}"` };
+  return { equal: true };
 };
 
 /* ---------- browsers ---------- */
@@ -87,13 +92,17 @@ function findPlaywright() {
   return null;
 }
 
-/** Visible words of a page: every text node in the body, trimmed (scripts, styles and the ticking time left out). */
+/** Visible words of a page in page order: every text node in the body, trimmed (scripts, styles and the ticking time
+ *  left out). A line in capitals and the letterhead count as one text each; a no-break space counts as a space. */
 const TEXT_NODES = () => {
-  const out = [], w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const out = [], seen = new Set(), w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const norm = (t) => t.replace(/\u00a0/g, ' ').trim();
   for (let n = w.nextNode(); n; n = w.nextNode()) {
     const p = n.parentElement;
     if (!p || p.closest('script,style,noscript') || p.classList.contains('time')) continue;
-    const t = n.nodeValue.trim();
+    const whole = p.closest('.cap,.addr');
+    if (whole) { if (!seen.has(whole)) { seen.add(whole); out.push(norm(whole.textContent)); } continue; }
+    const t = norm(n.nodeValue);
     if (t) out.push(t);
   }
   return out;
@@ -170,8 +179,8 @@ async function main() {
     for (const [path, want] of Object.entries(EXPECT)) {
       const p = await open(c, path, 'words ' + path);
       const got = await p.evaluate(TEXT_NODES);
-      const d = sameList(got, want);
-      if (!d.equal) bad.push(`${path} missing [${d.missing.join(' | ')}] extra [${d.extra.join(' | ')}]`);
+      const d = sameSeq(got, want);
+      if (!d.equal) bad.push(`${path} ${d.at}`);
       const meta = META[path];
       if (meta) {
         const m = await p.evaluate(() => ({
@@ -188,11 +197,11 @@ async function main() {
         if (t[0] !== content.pages.notFound.title || t[1] !== 'noindex') bad.push('not found page: title or noindex');
       }
       if (path === '/') {
-        const h = await p.evaluate(() => [...document.querySelectorAll('h1')].map((e) => [...e.children].map((s) => s.textContent).join('|')));
+        const h = await p.evaluate(() => [...document.querySelectorAll('h1')].map((e) => [...e.children].map((s) => s.textContent.replace(/\u00a0/g, ' ')).join('|')));
         if (h.length !== 1 || h[0] !== content.scenes[0].lines.join('|')) bad.push(`film page h1: ${JSON.stringify(h)}`);
         const alts = await p.evaluate(() => [...document.querySelectorAll('#film img')].map((i) => i.alt));
-        const dA = sameList(alts, content.scenes.map((s) => s.alt));
-        if (!dA.equal) bad.push('picture descriptions differ from the content file');
+        const dA = sameSeq(alts, content.scenes.map((s) => s.alt));
+        if (!dA.equal) bad.push(`picture descriptions: ${dA.at}`);
         const ld = await p.evaluate(() => JSON.parse(document.querySelector('script[type="application/ld+json"]').textContent));
         if (ld.name !== content.site.name || ld.legalName !== content.site.legalName || ld.address?.addressLocality !== content.site.locality) bad.push('structured data differs from the content file');
       }
@@ -201,7 +210,17 @@ async function main() {
     const llms = readFileSync(join(DIST, 'llms.txt'), 'utf8').split('\n').map((l) => l.replace(/^# |^> /, '')).filter(Boolean);
     const wantLlms = [content.machines.title, ...machineLines];
     if (JSON.stringify(llms) !== JSON.stringify(wantLlms)) bad.push('llms.txt differs from the machine face');
-    ok(!bad.length, 1, 'Words on /, /machines/, /llms.txt, /legal/ and the not found page equal content/site.json; one h1 on the film', 'all equal', bad.join('; '));
+    ok(!bad.length, 1, 'Words on /, /machines/, /llms.txt, /legal/ and the not found page equal content/site.json, in order; one h1 on the film', 'all equal', bad.join('; '));
+  }
+
+  /* 1. with the film running: each scene's description is on its stage from the start */
+  {
+    const c = await ctx('chromium', { viewport: { width: 1440, height: 900 } });
+    const p = await open(c, '/', 'descriptions');
+    const got = await p.evaluate(() => [...document.querySelectorAll('#film .passes')].map((b) => (b.getAttribute('role') === 'img' ? b.getAttribute('aria-label') : '')));
+    const d = sameSeq(got, content.scenes.map((s) => s.alt));
+    ok(d.equal, 1, 'Film running: all seven picture descriptions are there before any scroll', 'all seven', d.at);
+    await c.close();
   }
 
   /* 2. hidden names (and no local paths, no other email addresses) */
@@ -261,6 +280,13 @@ async function main() {
     for (const [w, h] of VIEWPORTS) {
       const c = await ctx('chromium', { viewport: { width: w, height: h } });
       const p = await open(c, '/', `film ${w}x${h}`);
+      // each scene is as tall as the film data says (2.4 screens, scene 6 3.6)
+      const tall = await p.evaluate(() => { const vh = document.querySelector('.probe').offsetHeight; return [...document.querySelectorAll('#film .scene')].map((s) => s.offsetHeight / vh); });
+      tall.forEach((k, i) => { const want = film.tall[String(i + 1)] ?? 2.4; if (Math.abs(k - want) > 0.01) bad.push(`${w}x${h} scene ${i + 1}: ${k.toFixed(2)} screens tall, want ${want}`); });
+      // the first Tab stop is the wordmark, and the page does not move
+      await p.keyboard.press('Tab');
+      const tab = await p.evaluate(() => [document.activeElement?.className, scrollY]);
+      if (tab[0] !== 'homelink' || tab[1] !== 0) bad.push(`${w}x${h}: first Tab goes to "${tab[0]}" at scroll ${tab[1]}`);
       for (let n = 1; n <= content.scenes.length; n++) {
         for (const at of [0.5, 1]) {
           await toScene(p, n, at);
@@ -285,7 +311,7 @@ async function main() {
       }
       await c.close();
     }
-    // the Safari engine and Firefox, at the owner's phone and laptop sizes
+    // the Safari engine and Firefox, at a large phone and a laptop
     for (const engine of ['webkit', 'firefox']) {
       for (const [w, h] of [[430, 739], [1512, 860]]) {
         const c = await ctx(engine, { viewport: { width: w, height: h } });
@@ -300,7 +326,24 @@ async function main() {
         await c.close();
       }
     }
-    ok(!bad.length, 6, `No sideways scroll, no text under 12 px, no touch area under 44 px, one switch shown, at ${VIEWPORTS.map((v) => v.join('x')).join(', ')} (Chromium) and 430x739, 1512x860 (WebKit, Firefox)`, 'none', [...new Set(bad)].slice(0, 20).join('; '));
+    ok(!bad.length, 6, `No sideways scroll, no text under 12 px, no touch area under 44 px, one switch shown, scenes as tall as the film data, first Tab on the wordmark, at ${VIEWPORTS.map((v) => v.join('x')).join(', ')} (Chromium) and 430x739, 1512x860 (WebKit, Firefox)`, 'none', [...new Set(bad)].slice(0, 20).join('; '));
+  }
+
+  /* 6. old privacy and terms links land with their heading in view, below the border */
+  {
+    const bad = [];
+    for (const [engine, w, h] of [['chromium', 393, 852], ['chromium', 1512, 860], ['webkit', 430, 739], ['firefox', 2428, 1300]]) {
+      const c = await ctx(engine, { viewport: { width: w, height: h } });
+      for (const part of ['privacy', 'terms']) {
+        const p = await open(c, '/' + part, `landing ${engine} ${part}`);
+        await settle(p, 500);
+        const r = await p.evaluate((part) => ({ head: document.querySelector(`#${part} h2`).getBoundingClientRect().top, band: document.querySelector('#top').getBoundingClientRect().bottom, url: location.pathname + location.hash }), part);
+        if (r.url !== `/legal/#${part}` || r.head < r.band || r.head > h / 2) bad.push(`${engine} ${w}x${h} /${part}: at ${r.url}, heading at ${Math.round(r.head)}, border ends at ${Math.round(r.band)}`);
+        await p.close();
+      }
+      await c.close();
+    }
+    ok(!bad.length, 6, 'Old /privacy and /terms links land on LEGAL with the heading in view, below the border (Chromium, WebKit, Firefox)', 'heading in view', bad.join('; '));
   }
 
   /* 7. scripts off */
@@ -335,7 +378,7 @@ async function main() {
       const p = await open(c, '/', `less motion ${engine} ${w}x${h}`);
       const form = w / h <= 1 ? 'phone' : 'desktop';
       for (let n = 1; n <= content.scenes.length; n++) {
-        const view = film.scenes[n][form];
+        const view = viewOf(n, form);
         const q = view.still ?? view.rest ?? 1;
         const x = q * Math.max(0, view.passes.length - 1), hold = view.hold || 0;
         const want = view.passes.map((_, k) => (k === 0 ? 1 : Math.min(1, Math.max(0, (x - (k - 1) - hold / 2) / (1 - hold)))));
@@ -358,25 +401,88 @@ async function main() {
     ok(!bad.length, 8, 'Less motion: every scene in its resting light, at any scroll point, with no fades (Chromium, WebKit, Firefox)', 'all scenes', bad.slice(0, 8).join('; '));
   }
 
-  /* 9. turning the screen */
+  /* 9. turning the screen: every picture sits where a fresh load at that size puts it */
   {
     const bad = [];
+    const SHAPES = [[393, 852], [852, 393], [393, 852], [1440, 900], [801, 800], [799, 800], [801, 800], [393, 852], [1512, 860]];
+    const rects = async (p) => {
+      const out = {};
+      for (let n = 1; n <= content.scenes.length; n++) {
+        await toScene(p, n, 0.7);
+        out[n] = await p.evaluate((n) => [...document.querySelectorAll(`#s${n} .passes img`)].map((i) => {
+          const r = i.getBoundingClientRect();
+          return { src: (i.currentSrc || i.src).split('/').pop().split('.')[0], box: [r.left, r.top, r.width, r.height].map(Math.round) };
+        }), n);
+      }
+      return out;
+    };
     for (const engine of ['chromium', 'webkit', 'firefox']) {
       const c = await ctx(engine, { viewport: { width: 393, height: 852 } });
       const p = await open(c, '/', `turning ${engine}`);
-      for (const [w, h] of [[393, 852], [852, 393], [393, 852], [852, 393], [1440, 900], [393, 852], [1512, 860]]) {
+      const fresh = {};
+      for (const [w, h] of SHAPES) {
         await p.setViewportSize({ width: w, height: h });
-        await settle(p, 250);
-        for (let n = 1; n <= content.scenes.length; n++) await toScene(p, n, 0.7);
-        const form = w / h <= 1 ? '-phone-' : '-desk-';
-        const wrong = await p.evaluate((form) => [...document.querySelectorAll('#film .passes img')].filter((i) => !(i.currentSrc || i.src).includes(form)).map((i) => (i.currentSrc || i.src).split('/').pop()), form);
-        if (wrong.length) bad.push(`${engine} ${w}x${h}: ${wrong.join(', ')}`);
-        const placed = await p.evaluate(() => [...document.querySelectorAll('#film .passes img')].every((i) => parseFloat(i.style.width) > 0));
-        if (!placed) bad.push(`${engine} ${w}x${h}: a picture is not placed`);
+        await settle(p, 400);
+        const got = await rects(p);
+        const key = `${w}x${h}`;
+        if (!fresh[key]) {
+          const c2 = await ctx(engine, { viewport: { width: w, height: h } });
+          fresh[key] = await rects(await open(c2, '/', `fresh ${engine} ${key}`));
+          await c2.close();
+        }
+        for (let n = 1; n <= content.scenes.length; n++) {
+          const a = got[n], b = fresh[key][n];
+          const form = w / h <= 1 ? '-phone-' : '-desk-';
+          if (a.some((x) => !x.src.includes(form))) bad.push(`${engine} ${key} scene ${n}: ${a.map((x) => x.src).join(', ')}`);
+          else if (a.length !== b.length || a.some((x, i) => x.box.some((v, j) => Math.abs(v - b[i].box[j]) > 2))) bad.push(`${engine} ${key} scene ${n}: placed ${JSON.stringify(a.map((x) => x.box))}, fresh load ${JSON.stringify(b.map((x) => x.box))}`);
+        }
       }
       await c.close();
     }
-    ok(!bad.length, 9, 'Turning the screen back and forth (and resizing a window): every scene keeps the right pictures (Chromium, WebKit, Firefox)', 'right pictures every time', bad.slice(0, 6).join('; '));
+    ok(!bad.length, 9, 'Turning the screen back and forth and resizing a window (near square too): every picture is the right one and sits where a fresh load puts it, within 2 px (Chromium, WebKit, Firefox)', 'same as a fresh load every time', bad.slice(0, 6).join('; '));
+  }
+
+  /* 9. a reload in the middle of the film comes back to the same scene */
+  {
+    // Firefox under this test tool starts a reload with an empty history entry (history.state is null afterwards),
+    // so the film cannot know where the visitor was; reported, not failed
+    const bad = [], soft = [];
+    for (const engine of ['chromium', 'webkit', 'firefox']) {
+      const c = await ctx(engine, { viewport: { width: 393, height: 852 } });
+      const p = await open(c, '/', `reload ${engine}`);
+      for (const n of [3, 6, 7]) {
+        await toScene(p, n, 0.5);
+        const before = await p.evaluate(() => [document.querySelector('#film .scene.on')?.id, scrollY]);
+        await p.reload({ waitUntil: 'load' });
+        await settle(p, 600);
+        const after = await p.evaluate(() => [document.querySelector('#film .scene.on')?.id, scrollY]);
+        if (after[0] !== before[0] || Math.abs(after[1] - before[1]) > 4) (engine === 'firefox' ? soft : bad).push(`${engine} ${before[0]} at ${before[1]}: back at ${after[0]} ${after[1]}`);
+      }
+      await c.close();
+    }
+    ok(!bad.length, 9, 'Reload in the middle of the film: back in the same scene at the same light (Chromium, WebKit)', 'same place every time', bad.join('; '));
+    if (soft.length) warn(9, 'Reload in Firefox (this test tool keeps no history entry over a reload)', soft.join('; '));
+  }
+
+  /* 7. the film script blocked or failed to load: the page still shows every picture */
+  {
+    // WebKit uncovers the stage but does not then load the waiting pictures; reported, not failed
+    const bad = [], soft = [];
+    for (const engine of ['chromium', 'webkit', 'firefox']) {
+      const c = await ctx(engine, { viewport: { width: 393, height: 852 } });
+      await c.route(/\/assets\/main-[^/]*\.js$/, (r) => r.abort());
+      const p = await c.newPage();   // no error listener: the blocked script is the point of this test
+      await p.goto(BASE + '/', { waitUntil: 'load' });
+      await p.waitForTimeout(4500);
+      const total = await p.evaluate(() => document.documentElement.scrollHeight);
+      for (let y = 0; y < total; y += 400) { await p.evaluate((y) => scrollTo(0, y), y); await p.waitForTimeout(60); }
+      await p.waitForFunction(() => [...document.querySelectorAll('#film img')].every((i) => i.complete), null, { timeout: 15000 }).catch(() => {});
+      const r = await p.evaluate(() => ({ film: document.documentElement.classList.contains('film'), pics: [...document.querySelectorAll('#film section img')].filter((i) => i.complete && i.naturalWidth > 0 && getComputedStyle(i).display !== 'none').length }));
+      if (r.film || r.pics !== content.scenes.length) (engine === 'webkit' ? soft : bad).push(`${engine}: film ${r.film}, ${r.pics} pictures shown`);
+      await c.close();
+    }
+    ok(!bad.length, 7, 'Film script blocked: after a few seconds the plain page shows all seven pictures (Chromium, Firefox)', 'seven pictures', bad.join('; '));
+    if (soft.length) warn(7, 'Film script blocked, Safari engine: only the first picture shows (words and links are all there)', soft.join('; '));
   }
 
   /* 10. old addresses and unknown addresses (as far as a local server can tell) */
@@ -393,7 +499,7 @@ async function main() {
       }
       return { status: 0, chain };
     };
-    for (const [old, part] of [['/privacy', 'privacy'], ['/terms', 'terms']]) {
+    for (const [old, part] of [['/privacy', 'privacy'], ['/privacy/', 'privacy'], ['/terms', 'terms'], ['/terms/', 'terms']]) {
       const r = await hop(old);
       if (r.status !== 200 || !r.chain.some((c) => c.includes(`/legal/#${part}`)) || !r.body.includes(`id="${part}"`)) bad.push(`${old}: ${r.chain.join(' > ')}`);
     }
@@ -408,7 +514,9 @@ async function main() {
     }
     const cfg = readFileSync(join(ROOT, 'vercel.json'), 'utf8');
     if (/"rewrites"|"routes"/.test(cfg)) bad.push('vercel.json has a rewrite or route');
-    ok(!bad.length, 10, '/privacy and /terms reach LEGAL; unknown addresses give 404 with the not found page; no rule touches the email pictures', 'as vercel.json says', bad.join('; '));
+    for (const old of ['privacy.html', 'terms.html', 'privacy/index.html', 'terms/index.html']) if (existsSync(join(DIST, old))) bad.push(`dist/${old} exists: a second, older page`);
+    for (const path of ['/Privacy', '/legal/privacy']) { const r = await hop(path); if (r.status !== 404) bad.push(`${path}: ${r.chain.join(' > ')}`); }
+    ok(!bad.length, 10, '/privacy and /terms (with and without the slash) reach LEGAL, matched as strictly as the host does; unknown addresses give 404 with the not found page; no rule touches the email pictures', 'as vercel.json says', bad.join('; '));
     warn(10, 'Not testable here', 'the host\'s own 404 status, the # in its redirect and its real headers need one curl on the first test address');
   }
 

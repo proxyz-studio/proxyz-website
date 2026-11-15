@@ -6,7 +6,8 @@
 //   npm run build && node scripts/preview-file.mjs <out.html>
 //
 // Preview only: links between the three pages become #machines and #legal, and a tiny inline script switches them.
-// Pictures are WebP only (every browser that runs the film reads WebP), to keep the file small.
+// Pictures are AVIF only (every current browser reads it), each one stored once: the film's script carries every
+// size; the page itself carries only the 1x resting pictures, plus both sizes of the first picture.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -31,7 +32,9 @@ const legal = pageMain('legal/index.html', 'legal');
 // styles, with the fonts inside
 const cssHref = home.match(/<link rel="stylesheet"[^>]*href="([^"]+)"/)[1];
 let css = read(cssHref).toString().replace(/url\((\/assets\/[^)]+\.woff2)\)/g, (_, u) => `url(${dataUri(u)})`);
-css += '\n.pv-text #film,.pv-text .bottom-sw,html.pv-text body::before{display:none!important}.pv-text .marks{visibility:hidden}.pv-text .row2,.pv-text .top-sw{display:flex!important}';
+css += '\n.pv-text #film,html.pv-text body::before{display:none!important}.pv-text .marks{visibility:hidden}'
+  + '@media (max-height:500px) and (orientation:landscape){.pv-text .row2{display:flex!important}}'
+  + '.pv-note{position:relative;z-index:9;padding:120px 16px 0;font-size:12px;color:#f2f2f2}';
 
 // script: the shared clock chunk and the film, joined into one module without imports
 const mainSrc = home.match(/<script type="module"[^>]*src="([^"]+)"/)[1];
@@ -45,21 +48,29 @@ for (const m of [...js.matchAll(/import\{([^}]*)\}from"\.\/([^"]+)";/g)]) {
   js = js.replace(m[0], `const __c=(()=>{${body};return{${map}}})();const ${binds};`);
 }
 
-// pictures: WebP inside the file, AVIF left out
+// pictures: AVIF inside the file; a WebP address becomes a short token (a <picture> never fetches it when the AVIF
+// source matches), so the film still tells its files apart
 const pics = new Map();
 const pic = (u) => { if (!pics.has(u)) pics.set(u, dataUri(u)); return pics.get(u); };
-js = js.replace(/"\/pictures\/[^"]+\.avif"/g, '""').replace(/"(\/pictures\/[^"]+\.webp)"/g, (_, u) => `"${pic(u)}"`);
+// to stay under 6 MB the preview leaves out the 2x files of scenes 4 and 5 (the ones that need them least)
+js = js.replace(/,\{w:(?:2880|1572),[^}]*\/pictures\/s[45]-[^}]*\}/g, '');
+js = js.replace(/"(\/pictures\/[^"]+\.avif)"/g, (_, u) => `"${pic(u)}"`).replace(/"\/pictures\/([^"]+)\.webp"/g, '"#$1"');
+const firstKeys = /\/pictures\/s1-(?:desk|phone)-p1-/;
 home = home
-  .replace(/<source[^>]*type="image\/avif"[^>]*>/g, '')
+  .replace(/<source[^>]*type="image\/webp"[^>]*>/g, '')
   .replace(/<link rel="preload" as="image"[^>]*>/g, '')
-  .replace(/(\/pictures\/[^"\s]+\.webp)/g, (u) => pic(u))
+  // the resting pictures in the page: 1x only, except the first picture (the film keeps that one)
+  .replace(/srcset="([^"]+)"/g, (_, set) => `srcset="${set.split(', ').filter((e) => firstKeys.test(e) || / (?:1440|786)w$/.test(e)).map((e) => { const [u, w] = e.split(' '); return pic(u) + ' ' + w; }).join(', ')}"`)
+  .replace(/<img class="pass still" src="(\/pictures\/[^"]+)\.webp"/g, (_, u) => `<img class="pass still" src="#${u.split('/').pop()}"`)
   .replace(/<link rel="preload" as="font"[^>]*>/, '')
   .replace(/<link rel="modulepreload"[^>]*>/g, '')
   .replace(/<link rel="stylesheet"[^>]*>/, `<style>${css}</style>`)
   .replace(/<script type="module"[^>]*><\/script>/, '')
   .replace(/<link rel="icon"[^>]*>/, `<link rel="icon" href="${dataUri('/favicon.svg')}">`)
   .replace(/<link rel="apple-touch-icon"[^>]*>/, '')
-  .replace('<meta name="viewport"', '<meta name="robots" content="noindex">\n<meta name="viewport"');
+  .replace(/<link rel="alternate"[^>]*>/, '')
+  .replace('<meta name="viewport"', '<meta name="robots" content="noindex">\n<meta name="viewport"')
+  .replace('<body class="home">', '<body class="home">\n<noscript><p class="pv-note">Open this file in Safari or Chrome.</p></noscript>');
 
 // the three pages in one file
 const SWITCH = `<script>
@@ -86,7 +97,7 @@ home = home
   .replace(/href="\/"/g, 'href="#"')
   .replace('</body>', `${SWITCH}\n<script type="module">${js.replace(/<\/script/g, '<\\/script')}</script>\n</body>`);
 
-const leftover = [...home.matchAll(/(?:src|href|srcset)="(\/[^"]*)"/g)].map((m) => m[1]);
+const leftover = [...home.matchAll(/(?:src|href|srcset)="(\/[^"]*)"/g), ...home.matchAll(/"(\/pictures\/[^"]*)"/g)].map((m) => m[1]);
 if (leftover.length) { console.error('preview: local addresses left: ' + leftover.join(', ')); process.exit(1); }
 mkdirSync(dirname(resolve(out)), { recursive: true });
 writeFileSync(out, home);
