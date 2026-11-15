@@ -4,6 +4,8 @@ This repo holds the website at https://proxyz.studio.
 
 Right now the site is one static holding page: the PROXYZ name on a dark screen. A new site will replace it.
 
+Two plain pages stay beside it, `/privacy` and `/terms` (`public/privacy.html` and `public/terms.html`), because other services link to them.
+
 ## Run it
 
 ```sh
