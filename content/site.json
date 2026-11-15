@@ -6,7 +6,7 @@
     "locality": "Phuket",
     "country": "Thailand",
     "logo": "/proxyz-tricolor.svg",
-    "image": "/og.png"
+    "image": "/og-2026-11.jpg"
   },
   "pages": {
     "home": { "path": "/", "title": "PROXYZ", "description": "Venture studio. Phuket, Thailand. Run with AI." },
@@ -35,7 +35,7 @@
     { "id": "tool", "venture": "race", "lines": ["MADE FROM A GPS FILE."], "alt": "Drawing of the same disc, close and low along the route", "toolLine": "volumes: parts add up to 111.097 cm3, whole model 111.097 cm3, match=True" },
     { "id": "coach", "venture": "coach", "lines": ["AI COACH."], "alt": "Drawing of a dark phone lying face up, screen off" },
     { "id": "brain", "venture": "system", "lines": ["ONE BRAIN.", "EVERY VENTURE."], "alt": "Drawing of a small stand, a disc and a dark phone together in one pool of light" },
-    { "id": "next", "venture": "next", "lines": ["THE NEXT ONE."], "alt": "Drawing of an empty pool of light on a dark floor", "letterhead": "PROXYZ STUDIO CO., LTD. PHUKET, THAILAND." }
+    { "id": "next", "venture": "next", "lines": ["THE NEXT ONE."], "alt": "Drawing of an empty pool of light on a dark floor", "letterhead": "PROXYZ STUDIO CO., LTD. PHUKET, THAILAND.", "picture": "own" }
   ],
   "machines": {
     "title": "PROXYZ",

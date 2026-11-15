@@ -18,6 +18,21 @@ const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 const PORTRAIT = '(max-aspect-ratio: 1/1)';
 const LANDSCAPE = '(min-aspect-ratio: 1001/1000)';
 
+/** A one letter word is kept on the same line as the next word (no word changes, only where a line may break). */
+export const glue = (line: string) => line.replace(/(^|\s)([A-Z]) /g, '$1$2\u00a0');
+
+/** The views of scene n. Scene 7 has a build time choice of picture in the content file: its own, or the twin of
+ *  scene 6 (the same pool of light, now empty, framed exactly like scene 6). */
+export function sceneViews(film: FilmData, c: Content, n: number): { desktop: View; phone: View } {
+  const s = c.scenes[n - 1];
+  if (s?.picture === 'twin') {
+    const twin = film.scenes[`${n}twin`];
+    if (!twin) throw new Error(`site-pages: scene ${n} asks for the twin picture, but src/film/scenes.json has no "${n}twin"`);
+    return twin;
+  }
+  return film.scenes[String(n)];
+}
+
 /* ---------- words shared by several outputs ---------- */
 
 /** One venture's plain text line: "04  StudioOS. One brain ..." (the name and the address only when set). */
@@ -93,7 +108,7 @@ function border(c: Content, kind: Kind): string {
   const home = `<a class="homelink" href="${c.pages.home.path}"${kind === 'home' ? ' aria-current="page"' : ''}>${wordmark(c.border.wordmark)}</a>`;
   const clock = `<p class="clock"><span class="place">${esc(c.border.place)}</span> <b class="time"></b></p>`;
   const row2 = kind === 'notFound' ? '' : `<div class="row row2">${kind === 'home' ? marks(c) : '<div></div>'}${switchHtml(c, current, 'top-sw')}</div>`;
-  const bottom = kind === 'home' ? switchHtml(c, current, 'bottom-sw bord') : '';
+  const bottom = kind === 'notFound' ? '' : switchHtml(c, current, 'bottom-sw bord');
   return `<div id="frame" aria-hidden="true"><span class="hair"></span><i></i><i></i><i></i><i></i></div>
 <header id="top" class="bord"><div class="row row1">${home}${clock}</div>${row2}</header>${bottom}`;
 }
@@ -143,16 +158,20 @@ function firstPreload(film: FilmData, p: Pictures): string {
 
 function sceneHtml(c: Content, film: FilmData, p: Pictures, n: number): string {
   const s = c.scenes[n - 1];
+  film = { ...film, scenes: { ...film.scenes, [n]: sceneViews(film, c, n) } };
   const tag = n === 1 ? 'h1' : 'h2';
-  const cap = `<${tag} class="cap${n === film.brainScene ? ' w14' : ''}">${s.lines.map((l) => `<span>${esc(l)}</span>`).join('')}</${tag}>`;
+  const cls = n === 1 ? ' w15' : n === film.brainScene ? ' w14' : '';
+  const cap = `<${tag} class="cap${cls}">${s.lines.map((l) => `<span>${esc(glue(l))}</span>`).join(' ')}</${tag}>`;
   const extra = s.heightLine
     ? `<div class="hl" aria-hidden="true"><svg viewBox="0 0 1000 100" preserveAspectRatio="none"><polyline fill="none" stroke="rgba(242,242,242,.78)" stroke-width="1" vector-effect="non-scaling-stroke" points="${film.heightPoints}"/></svg><i class="dot"></i></div>`
     : s.toolLine ? `<p class="tool">${esc(s.toolLine)}</p>` : '';
-  const addr = s.letterhead ? `<p class="addr">${esc(s.letterhead)}</p>` : '';
+  // the letterhead breaks only between its sentences on a narrow phone
+  const addr = s.letterhead ? `<p class="addr">${s.letterhead.split(/(?<=\.) (?=[A-Z])/).map((t) => `<span>${esc(t)}</span>`).join(' ')}</p>` : '';
   const foot = n === c.scenes.length
     ? `<div class="foot"><a href="${c.pages.legal.path}">${esc(c.border.legal)}</a>${switchHtml(c, 'people', 'foot-sw')}</div>` : '';
   const mark = s.venture ? c.ventures.findIndex((v) => v.id === s.venture) : -1;
-  return `<section id="s${n}" class="scene" data-mark="${mark}"><div class="layer"><div class="passes ready">${scenePicture(n, film, p, s.alt)}</div><div class="dim"></div><div class="shade"></div>${addr}<div class="words">${extra}${cap}</div></div>${foot}</section>`;
+  const view = n === c.scenes.length && s.picture === 'twin' ? ' data-view="twin"' : '';
+  return `<section id="s${n}" class="scene" data-mark="${mark}"${view}><div class="layer"><div class="passes ready">${scenePicture(n, film, p, s.alt)}</div><div class="dim"></div><div class="shade"></div>${addr}<div class="words">${extra}${cap}</div></div>${foot}</section>`;
 }
 
 function head(c: Content, kind: Kind, entry: string, extra = ''): string {
@@ -174,7 +193,8 @@ function head(c: Content, kind: Kind, entry: string, extra = ''): string {
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${esc(title)}">
 <meta name="twitter:description" content="${esc(desc)}">
-<meta name="twitter:image" content="${c.site.url}${c.site.image}">` : '<meta name="robots" content="noindex">';
+<meta name="twitter:image" content="${c.site.url}${c.site.image}">
+<link rel="alternate" type="text/plain" href="/llms.txt">` : '<meta name="robots" content="noindex">';
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -210,10 +230,10 @@ export function homePage(): string {
   const scenes = c.scenes.map((_, i) => sceneHtml(c, film, p, i + 1)).join('\n');
   return `${head(c, 'home', '/src/main.ts', firstPreload(film, p) + '\n' + organisation(c))}
 <body class="home">
+${border(c, 'home')}
 <main id="film">
 ${scenes}
 </main>
-${border(c, 'home')}
 </body>
 </html>
 `;
@@ -233,12 +253,12 @@ export function machinesPage(): string {
   }).join('\n');
   return `${head(c, 'machines', '/src/page.ts')}
 <body class="text machines">
+${border(c, 'machines')}
 <main id="machine" class="plain">
 <h1>${esc(c.machines.title)}</h1>
 ${body}
 <p class="foot"><a href="${c.pages.legal.path}">${esc(c.border.legal)}</a></p>
 </main>
-${border(c, 'machines')}
 </body>
 </html>
 `;
@@ -253,12 +273,12 @@ export function legalPage(): string {
   }).join('\n');
   return `${head(c, 'legal', '/src/page.ts')}
 <body class="text legal">
+${border(c, 'legal')}
 <main id="legal" class="plain">
 <h1>${esc(L.title)}</h1>
 <p class="revised">${esc(L.revised)}</p>
 ${sections}
 </main>
-${border(c, 'legal')}
 </body>
 </html>
 `;
@@ -268,8 +288,8 @@ export function notFoundPage(): string {
   const { content: c } = load();
   return `${head(c, 'notFound', '/src/page.ts')}
 <body class="text nf">
-<main id="nf"><h1 class="cap">${esc(c.pages.notFound.line)}</h1></main>
 ${border(c, 'notFound')}
+<main id="nf"><h1 class="cap">${esc(c.pages.notFound.line)}</h1></main>
 </body>
 </html>
 `;
@@ -279,10 +299,11 @@ ${border(c, 'notFound')}
 
 /** CSS that places each scene's HTML picture as the film would place it, in steady screen units. */
 export function stillsCss(): string {
-  const { film, pictures: p } = load();
+  const { content: c, film, pictures: p } = load();
   const out: string[] = [];
   const W = 'var(--W)', H = 'var(--H)';
-  for (const [n, sc] of Object.entries(film.scenes)) {
+  for (const n of Object.keys(film.scenes).filter((k) => /^\d+$/.test(k))) {
+    const sc = sceneViews(film, c, Number(n));
     for (const [form, media] of [['desktop', LANDSCAPE], ['phone', PORTRAIT]] as const) {
       const view = sc[form];
       const key = view.passes[n === '1' ? 0 : restingPass(view)];
@@ -306,7 +327,8 @@ export function stillsCss(): string {
   }
   const last = film.heightPoints.trim().split(/\s+/).pop()!.split(',');
   out.push(`.hl .dot{top:${last[1]}%}`);
-  for (const [n, k] of Object.entries(film.tall)) out.push(`.film #s${n}{height:${(k * 100).toFixed(0)}vh;height:${(k * 100).toFixed(0)}lvh}`);
+  // #film in the selector: it must outweigh the general `.film #film .scene` height
+  for (const [n, k] of Object.entries(film.tall)) out.push(`.film #film #s${n}{height:${(k * 100).toFixed(0)}vh;height:${(k * 100).toFixed(0)}lvh}`);
   return out.join('\n') + '\n';
 }
 
@@ -319,6 +341,7 @@ const PAGES: Record<string, () => string> = {
   '/404.html': notFoundPage,
 };
 const FILES: Record<string, () => string> = {
+  'OFL.txt': () => readFileSync(root + 'src/fonts/OFL.txt', 'utf8'),
   'llms.txt': () => llmsTxt(load().content),
   'robots.txt': () => robotsTxt(load().content),
   'sitemap.xml': () => sitemapXml(load().content),

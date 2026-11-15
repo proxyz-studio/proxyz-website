@@ -15,8 +15,9 @@
   --bg: #0a0a0a; --film: #010101;
   --ink: #f2f2f2; --dim: rgba(242, 242, 242, .52);
   --pink: #FF4193;
-  --side: 16px; --strip: 92px;
   --safe-t: env(safe-area-inset-top, 0px); --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-x: max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+  --side: calc(16px + var(--safe-x)); --strip: 92px;
   /* steady screen units: the large viewport does not change when a phone browser's bar slides */
   --W: 100vw; --H: 100vh; --S: 100vh;
   color-scheme: dark;
@@ -24,7 +25,8 @@
 @supports (height: 100lvh) { :root { --H: 100lvh; --S: 100svh; } }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { background: var(--bg); overflow-x: hidden; overflow-x: clip; -webkit-text-size-adjust: 100%; }
+html { background: var(--bg); overflow-x: hidden; overflow-x: clip; -webkit-text-size-adjust: 100%; scrollbar-width: thin; scrollbar-color: rgba(242, 242, 242, .28) var(--film); }
+::selection { background: var(--pink); color: var(--bg); }
 body {
   background: var(--bg); color: var(--ink); overflow-x: hidden; overflow-x: clip;
   font: 400 12px/20px "Site Mono", "Mono Fallback", "Mono Fallback Courier", ui-monospace, monospace;
@@ -33,20 +35,34 @@ body {
 a { color: inherit; text-decoration: none; }
 a:focus-visible { outline: 1px solid var(--ink); outline-offset: 2px; }
 [hidden] { display: none !important; }
-@media (prefers-reduced-motion: no-preference) { @view-transition { navigation: auto; } }
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition { navigation: auto; }
+  /* the border holds still while the page behind it changes (one name per shown element) */
+  .homelink { view-transition-name: wordmark; }
+  .clock { view-transition-name: clock; }
+  .top-sw, .bottom-sw { view-transition-name: switch; }
+}
 
 /* ---------- the film page, as a document ---------- */
 #film .scene { position: relative; height: var(--H); overflow: hidden; background: var(--film); }
-/* with scripts on, the later resting pictures wait for the film, which loads each one as the visitor nears it */
-@media (scripting: enabled) { #film .scene:not(#s1) .still { display: none; } }
+/* with scripts on, the later resting pictures wait for the film, which takes them out and loads each one as the
+   visitor nears it. If the film script never arrives (blocked, failed), they show again after a few seconds. */
+@media (scripting: enabled) {
+  html:not(.film) #film .scene:not(#s1) .passes { content-visibility: hidden; animation: still-back 0s 4s forwards; }
+}
+@keyframes still-back { to { content-visibility: visible; } }
 .nofilm #film .scene .still { display: block !important; }
+.nofilm #film .scene .passes { content-visibility: visible; }
 .layer { position: absolute; top: 0; left: 0; right: 0; height: var(--H); overflow: hidden; }
 .passes { position: absolute; inset: 0; }
 .pass { position: absolute; display: block; max-width: none; user-select: none; -webkit-user-drag: none; }
 .dim { position: absolute; inset: 0; background: var(--film); opacity: 0; }
 .shade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(1, 1, 1, .88) 0%, rgba(1, 1, 1, .6) 22%, rgba(1, 1, 1, 0) 46%); }
 /* scene 6: the picture runs down to the words, so the dark band is kept low and short */
-#s6 .shade { background: linear-gradient(to top, rgba(1, 1, 1, .88) 0%, rgba(1, 1, 1, .45) 9%, rgba(1, 1, 1, 0) 20%); }
+#s6 .shade, #s7[data-view="twin"] .shade { background: linear-gradient(to top, rgba(1, 1, 1, .88) 0%, rgba(1, 1, 1, .45) 9%, rgba(1, 1, 1, 0) 20%); }
+@media (max-width: 899px), (max-height: 500px) and (orientation: landscape) {
+  #s4 .shade { background: linear-gradient(to top, rgba(1, 1, 1, .94) 0%, rgba(1, 1, 1, .86) 34%, rgba(1, 1, 1, 0) 60%); }
+}
 
 /* words: kept above a phone browser's bottom bar (the gap between the large and small viewport) */
 .words {
@@ -57,13 +73,15 @@ a:focus-visible { outline: 1px solid var(--ink); outline-offset: 2px; }
 .cap { font-weight: 600; font-size: min(38px, calc((100vw - 32px) / 7.9)); line-height: 1; letter-spacing: -.01em; text-transform: uppercase; }
 .cap, .cap span { text-wrap: balance; }
 .cap span { display: block; }
-/* w14: a line of 14 letters must fit on the narrowest phones (scene 6) */
+/* w14: a line of 14 letters must fit on the narrowest phones (scene 6); w15: the h1 keeps two lines at 320 to 360 */
 .cap.w14 { font-size: min(38px, calc((100vw - 32px) / 8.6)); }
+.cap.w15 { font-size: min(38px, calc((100vw - 32px) / 9.1)); }
 .tool { font-size: 12px; line-height: 18px; color: var(--dim); max-width: 46em; overflow-wrap: anywhere; }
 .hl { position: relative; width: 100%; height: 44px; }
 .hl svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .hl .dot { position: absolute; right: -3px; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: var(--ink); }
-.addr { position: absolute; left: var(--side); top: calc(var(--strip) + var(--safe-t) + 14px); font-size: 12px; letter-spacing: .04em; color: var(--dim); line-height: 20px; }
+.addr { position: absolute; left: var(--side); right: var(--side); top: calc(var(--strip) + var(--safe-t) + 22px); font-size: 12px; letter-spacing: .04em; color: var(--dim); line-height: 20px; }
+.addr span { display: inline-block; }
 .foot { position: absolute; z-index: 3; left: 0; right: 0; bottom: calc(4px + var(--safe-b)); display: flex; justify-content: center; }
 .foot > a, .foot-sw a { display: flex; align-items: center; height: 44px; padding: 0 14px; font-size: 12px; line-height: 20px; letter-spacing: .08em; color: var(--dim); }
 .foot .foot-sw { display: none; }
@@ -109,7 +127,7 @@ a.nm { min-width: 44px; }
 .sw a[aria-current="page"] { color: var(--ink); }
 .bottom-sw { display: none; }
 /* frame: four small corner marks (phone), joined by a hairline on desktop */
-#frame { position: fixed; z-index: 4; left: 8px; right: 8px; top: calc(var(--strip) + var(--safe-t) + 6px); bottom: 8px; pointer-events: none; }
+#frame { position: fixed; z-index: 4; left: calc(8px + var(--safe-x)); right: calc(8px + var(--safe-x)); top: calc(var(--strip) + var(--safe-t) + 6px); bottom: 8px; pointer-events: none; }
 #frame i { position: absolute; width: 10px; height: 10px; border: 0 solid rgba(242, 242, 242, .7); }
 #frame i:nth-of-type(1) { top: 0; left: 0; border-top-width: 1px; border-left-width: 1px; }
 #frame i:nth-of-type(2) { top: 0; right: 0; border-top-width: 1px; border-right-width: 1px; }
@@ -117,34 +135,43 @@ a.nm { min-width: 44px; }
 #frame i:nth-of-type(4) { bottom: 0; right: 0; border-bottom-width: 1px; border-right-width: 1px; }
 #frame .hair { display: none; }
 .nf #frame { top: calc(48px + var(--safe-t) + 6px); }
+.text #top { background: var(--bg); }
 
 /* ---------- desktop ---------- */
-@media (min-width: 900px) {
+@media (min-width: 900px) and (min-height: 501px) {
   :root { --side: 48px; }
   #top { background: none; padding: 0; pointer-events: none; }
   #top a { pointer-events: auto; }
   #top .row1 { position: absolute; left: 40px; right: 40px; top: 28px; height: 28px; }
   #top .row2 { position: absolute; left: 40px; top: 58px; height: 28px; }
   .wm { height: 17px; }
-  .home .top-sw { display: none; }
-  .home .bottom-sw { display: flex; position: fixed; right: 40px; bottom: 24px; }
+  .top-sw { display: none; }
+  .bottom-sw { display: flex; position: fixed; right: 40px; bottom: 24px; }
   .text #top .row2 { right: 40px; }
+  /* text pages: the band hides the text that scrolls under the border; the frame line stays on top of it */
+  .text #top { height: 104px; background: var(--bg); }
+  .text #frame { z-index: 6; }
+  .text #frame::after { content: ""; position: absolute; left: -16px; right: -16px; top: 100%; height: 16px; margin-top: 1px; background: var(--bg); }
   #frame, .nf #frame { inset: 16px; }
   #frame i { width: 12px; height: 12px; border-color: rgba(242, 242, 242, .75); }
   #frame .hair { display: block; position: absolute; inset: 0; border: 1px solid rgba(242, 242, 242, .13); }
   .words { left: var(--side); right: auto; max-width: 62vw; bottom: calc(var(--H) - var(--S) + 96px); gap: 24px; }
-  .cap, .cap.w14 { font-size: min(80px, 7.2vh); }
+  .cap, .cap.w14, .cap.w15 { font-size: min(80px, 7.2vh, 6.8vw); }
   .tool { font-size: 13px; line-height: 20px; }
   .hl { width: min(560px, 42vw); height: 72px; }
   .addr { top: 92px; left: 40px; font-size: 13px; }
   .foot { bottom: 24px; }
 }
+/* a tablet held upright: the capitals grow with the width */
+@media (min-width: 600px) and (max-width: 899px) and (orientation: portrait) {
+  .cap, .cap.w14, .cap.w15 { font-size: clamp(38px, 6.4vw, 56px); }
+}
 /* a phone held sideways: one row of border; PEOPLE and MACHINES move to the foot of the last scene */
-@media (max-width: 899px) and (max-height: 500px) {
+@media (max-height: 500px) and (orientation: landscape) {
   .home { --strip: 48px; }
   .home .row2 { display: none !important; }
   .words { bottom: calc(var(--H) - var(--S) + 20px + var(--safe-b)); }
-  .cap, .cap.w14 { font-size: min(30px, calc((100vw - 32px) / 7.9)); }
+  .cap, .cap.w14, .cap.w15 { font-size: min(30px, calc((100vw - 32px) / 7.9)); }
   .foot .foot-sw { display: flex; margin-left: 8px; }
 }
 
@@ -159,14 +186,19 @@ a.nm { min-width: 44px; }
 .plain .foot a { display: inline-flex; }
 #legal h1, #legal h2 { font-size: 12px; line-height: 20px; letter-spacing: .08em; font-weight: 600; color: var(--ink); }
 #legal h1 { margin-bottom: 4px; }
-#legal h2 { margin-top: 64px; scroll-margin-top: calc(var(--strip) + var(--safe-t) + 24px); }
+#legal h2 { margin-top: 64px; }
+#legal section { scroll-margin-top: calc(var(--strip) + var(--safe-t) + 24px); }
 #legal h3 { font-size: 13px; line-height: 22px; font-weight: 600; color: var(--ink); margin-top: 28px; }
 #legal h3 + p { margin-top: 4px; }
 #legal ul { padding-left: 2ch; }
 #legal li { margin-top: 4px; }
 #nf { position: relative; z-index: 3; min-height: var(--H); }
 #nf .cap { position: absolute; left: var(--side); right: var(--side); bottom: calc(var(--H) - var(--S) + 60px + var(--safe-b)); }
-@media (min-width: 900px) {
+@media (max-width: 899px) {
+  .plain { padding-left: calc(var(--side) + 8px); padding-right: calc(var(--side) + 8px); }
+}
+@media (min-width: 900px) and (min-height: 501px) {
   .plain { padding: 140px 96px 120px; }
+  #legal section { scroll-margin-top: 140px; }
   #nf .cap { bottom: calc(var(--H) - var(--S) + 96px); }
 }

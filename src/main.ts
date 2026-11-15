@@ -1,4 +1,4 @@
-// The film. Ported from the storyboard's film engine; its ideas and numbers are kept.
+// The film.
 // One fixed stage per scene, each scene a stack of light passes of one fixed camera. The scroll position sets how far
 // the light has come. A cut with a short fade between scenes. The border on top.
 // Without this script the page stays a plain document (seven sections, each with its resting picture).
@@ -25,20 +25,30 @@ const reduced = () => reducedMQ.matches;
 // the shape from the window itself: some engines answer the media query late during a resize
 const formNow = (): Form => (innerWidth / Math.max(1, innerHeight) <= 1 ? 'phone' : 'desktop');
 const top = $('#top');
+// the film puts the visitor back in the same scene after a reload itself (the page grows only once this script runs,
+// so a browser restoring the old place by itself lands too high)
+try { history.scrollRestoration = 'manual'; } catch { /* old browser: it restores what it can */ }
 
 /* ---------- start: take the later pictures out, then switch the film on ---------- */
 // The resting pictures of scenes 2 to 7 are for the page without the script. Taken out before the film styles apply,
 // so they do not all load at once; each is put back as a light pass when the visitor nears its scene.
 const sections = $$('#film .scene');
 const stills = new Map<number, HTMLElement>();
+// Each scene's description stays on its stage from the start (a screen reader hears it before the pictures load);
+// the light passes themselves are decoration.
+const alts = sections.map((s) => $<HTMLImageElement>('img', s)?.alt ?? '');
 sections.forEach((s, i) => {
   const pic = i > 0 ? $('picture', s) : null;
   if (pic) { stills.set(i + 1, pic); pic.remove(); }
+  const box = $('.passes', s)!;
+  box.setAttribute('role', 'img');
+  box.setAttribute('aria-label', alts[i]);
 });
 // If anything below fails, the page goes back to the plain document, pictures and all.
 addEventListener('error', () => {
   doc.classList.remove('film', 'film-init');
   doc.classList.add('nofilm');
+  sections.forEach((s) => { const box = $('.passes', s)!; box.removeAttribute('role'); box.removeAttribute('aria-label'); });
   stills.forEach((pic, n) => { if (!pic.isConnected) $('.passes', sections[n - 1])?.append(pic); });
 }, { once: true });
 const first = $<HTMLImageElement>('#s1 img.pass');
@@ -108,6 +118,7 @@ interface Box { left: number; top: number; w: number; h: number }
 function geometry(view: View, s: SceneState): Box {
   const [iw, ih] = pictures[view.passes[0]].size;
   const f = view.frame, vw = VW, vh = VH;
+  const room = view.placeAs ? S[view.placeAs - 1] : s;   // the words box that sets the span
   let k = f.fit === 'width' ? vw / iw : f.fit === 'contain' ? Math.min(vw / iw, vh / ih) : Math.max(vw / iw, vh / ih);
   k *= f.zoom ?? 1;
   let w = iw * k, h = ih * k;
@@ -116,7 +127,7 @@ function geometry(view: View, s: SceneState): Box {
   // span: picture rows that must fit between the border strip and the words (short phone screens)
   if (f.span) {
     const roomTop = (top ? top.getBoundingClientRect().bottom : 0) + 12;
-    const roomBot = (s.words ? s.words.getBoundingClientRect().top : vh) - 16;
+    const roomBot = (room.words ? room.words.getBoundingClientRect().top : vh) - 16;
     const [y0, y1] = f.span;
     if (roomBot > roomTop && (topY + y0 * k < roomTop || topY + y1 * k > roomBot)) {
       const k2 = Math.min(k, (roomBot - roomTop) / (y1 - y0));
@@ -148,7 +159,8 @@ function place(s: SceneState, view: View): void {
 }
 
 /* ---------- building the light passes of one scene ---------- */
-const viewOf = (n: number): View => scenes[n][form];
+// the last scene may use the twin of scene 6 (a build time choice, written on the section)
+const viewOf = (n: number): View => scenes[sections[n - 1].dataset.view === 'twin' ? `${n}twin` : String(n)][form];
 
 function build(n: number): void {
   const s = S[n - 1], view = viewOf(n);
@@ -157,24 +169,25 @@ function build(n: number): void {
   const want = form + '|' + files.map((f) => f.webp).join('|');
   if (s.built === want) return;
   s.built = want;
-  const alt = (first && n === 1 ? first.alt : '') || $<HTMLImageElement>('img', stills.get(n) ?? s.box)?.alt || '';
   const keepFirst = n === 1 && firstKept && first && keyOf(first) === view.passes[0] ? first : null;
   const still = stills.get(n);
   const stillImg = still ? $<HTMLImageElement>('img', still) : null;
+  let usedStill = false;
   s.passes = view.passes.map((key, k) => {
     let img: HTMLImageElement, node: HTMLElement;
     if (k === 0 && keepFirst) { img = keepFirst; node = keepFirst.parentElement!; }
     else if (still && stillImg && (stillImg.currentSrc || stillImg.complete) && keyOf(stillImg) === key && !still.isConnected) {
-      img = stillImg; node = still; img.loading = 'eager';
+      img = stillImg; node = still; img.loading = 'eager'; usedStill = true;
     } else ({ node, img } = makePicture(files[k]));
     img.classList.add('pass');
     img.classList.remove('still');
-    img.alt = k === 0 ? alt : '';
-    if (k > 0) img.setAttribute('aria-hidden', 'true'); else img.removeAttribute('aria-hidden');
+    img.alt = '';
+    img.setAttribute('aria-hidden', 'true');
     img.style.opacity = k === 0 ? '1' : '0';
     return { key, img, node, ready: false, lit: 0 };
   });
   if (n === 1 && !keepFirst) firstKept = false;
+  if (usedStill) stills.delete(n);
   const firstReady = !!keepFirst && keepFirst.complete && keepFirst.naturalWidth > 0;
   s.box.classList.toggle('ready', firstReady);
   s.box.replaceChildren(...s.passes.map((p) => p.node));
@@ -188,6 +201,16 @@ function build(n: number): void {
       schedule();
     });
   }
+}
+
+/** Lets go of a scene's pictures (a phone cannot hold every big picture of the film at once). */
+function release(n: number): void {
+  const s = S[n - 1];
+  s.built = '';
+  s.passes = [];
+  s.box.replaceChildren();
+  s.box.classList.remove('ready');
+  if (n === 1) firstKept = false;
 }
 
 /* ---------- the light ---------- */
@@ -243,9 +266,22 @@ function update(): void {
   }
   for (let k = 0; k < sections.length; k++) {
     if (!S[k].built && near(k, y)) build(k + 1);
+    else if (S[k].built && Math.abs(k + 1 - active) > 2 && !near(k, y)) release(k + 1);
     light(k + 1, progress(k, y));
   }
   marks();
+}
+
+/* ---------- coming back after a reload: the same scene, the same light ---------- */
+function remember(): void {
+  if (!tops.length) return;
+  const i = active - 1;
+  try { history.replaceState({ ...(history.state ?? {}), film: { i, f: (scrollY - tops[i]) / heights[i] } }, ''); } catch { /* not allowed now */ }
+}
+function returnTo(): void {
+  const at = (history.state as { film?: { i: number; f: number } } | null)?.film;
+  if (!at || !(at.i >= 0 && at.i < S.length) || !Number.isFinite(at.f)) return;
+  scrollTo(0, Math.round(tops[at.i] + clamp(at.f) * heights[at.i]));
 }
 let ticking = false;
 function schedule(): void { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
@@ -270,6 +306,14 @@ function marks(): void {
 
 /* ---------- size and shape changes ---------- */
 function layoutAll(): void { for (let n = 1; n <= S.length; n++) if (S[n - 1].passes.length) place(S[n - 1], viewOf(n)); }
+/** Some engines report the old steady height during a resize; look again once the layout has settled. */
+let settle = 0;
+function onResizeSoon(): void {
+  onResize();
+  requestAnimationFrame(onResize);
+  clearTimeout(settle);
+  settle = setTimeout(onResize, 150);
+}
 function onResize(): void {
   const w = innerWidth, h = probe.offsetHeight || innerHeight, f = formNow();
   // re-place only when the width, the steady height or the screen shape changes, never when a phone's bar slides
@@ -292,9 +336,14 @@ measure();
 // an address with #s1 to #s7 opens on that scene (the sections grew when the film switched on)
 const target = /^#s([1-9])$/.exec(location.hash);
 if (target && +target[1] <= S.length) scrollTo(0, tops[+target[1] - 1]);
+else returnTo();
 update();
-addEventListener('scroll', schedule, { passive: true });
-addEventListener('resize', onResize);
+let saveT = 0;
+addEventListener('scroll', () => { schedule(); clearTimeout(saveT); saveT = setTimeout(remember, 200); }, { passive: true });
+addEventListener('resize', onResizeSoon);
+addEventListener('pagehide', remember);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') remember(); });
 reducedMQ.addEventListener('change', schedule);
-portrait.addEventListener('change', onResize);
+portrait.addEventListener('change', onResizeSoon);
+if (typeof ResizeObserver === 'function') new ResizeObserver(() => onResize()).observe(probe);
 if (document.fonts) document.fonts.ready.then(() => { layoutAll(); measure(); update(); });

@@ -18,8 +18,10 @@ const TYPES = {
 };
 const TEXT = /^(text\/|application\/(json|xml)|image\/svg)/;
 
-/** Turns a host path pattern (the forms used in vercel.json) into a regular expression, like the host's matcher:
- *  ignores capitals, allows one trailing slash. Supports literal text, (regex), :name(regex), :name. */
+/** Turns a host path pattern (the forms used in vercel.json) into a regular expression, as strict as the host's
+ *  matcher: capitals count and the path must end where the pattern ends (no optional trailing slash). The host also
+ *  adds the trailing slash before it looks at the redirects, as handler() does. Supports literal text, (regex),
+ *  :name(regex), :name. */
 export function patternToRegExp(src) {
   let out = '', i = 0;
   const group = () => { // reads a balanced ( ... ) starting at src[i] === '('
@@ -39,7 +41,7 @@ export function patternToRegExp(src) {
     } else if (ch === '(') out += group();
     else { out += ch.replace(/[.*+?^${}|[\]\\/]/g, '\\$&'); i++; }
   }
-  return new RegExp('^' + out + '[\\/#\\?]?$', 'i');
+  return new RegExp('^' + out + '$');
 }
 
 export function loadRules(dir) {

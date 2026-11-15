@@ -8,6 +8,7 @@
      "s1-desk-p1",
      "s1-desk-p2"
     ],
+    "still": 0,
     "frame": {
      "fit": "cover",
      "zoom": 1,
@@ -22,6 +23,7 @@
      "s1-phone-p1",
      "s1-phone-p2"
     ],
+    "still": 0,
     "frame": {
      "fit": "width",
      "zoom": 1,
@@ -303,6 +305,45 @@
      "fy": 0.5,
      "vx": 0.5,
      "vy": 0.5
+    }
+   }
+  },
+  "7twin": {
+   "desktop": {
+    "passes": [
+     "s7t-desk-p1"
+    ],
+    "end": "dark",
+    "still": 0,
+    "placeAs": 6,
+    "frame": {
+     "fit": "cover",
+     "zoom": 1,
+     "fx": 0.5,
+     "fy": 0,
+     "vx": 0.5,
+     "vy": 0
+    }
+   },
+   "phone": {
+    "passes": [
+     "s7t-phone-p1"
+    ],
+    "end": "dark",
+    "still": 0,
+    "placeAs": 6,
+    "frame": {
+     "fit": "width",
+     "zoom": 1.4,
+     "fx": 0.485,
+     "fy": 0.372,
+     "vx": 0.5,
+     "vy": 0.47,
+     "span": [
+      236,
+      1032
+     ],
+     "sides": true
     }
    }
   }

@@ -19,6 +19,9 @@ export interface SceneWords {
   heightLine?: boolean;
   toolLine?: string;
   letterhead?: string;
+  /** Last scene only, chosen at build time: "own" (its own picture, the default) or "twin" (the pool of light of
+   *  scene 6, now empty, framed exactly like scene 6; film data "7twin"). */
+  picture?: 'own' | 'twin';
 }
 
 export interface PageMeta {
@@ -70,6 +73,8 @@ export interface View {
   filter?: string;
   end?: 'dark';
   opens?: [number, number, number, number][];
+  /** Place the picture exactly as scene n places its own (same words box for the span), so a cut keeps it in place. */
+  placeAs?: number;
 }
 
 export interface FilmData {
