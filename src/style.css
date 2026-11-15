@@ -92,6 +92,9 @@ html.film body::before { content: ""; position: fixed; top: 0; left: 0; right: 0
 .film #film .scene { height: 240vh; height: 240lvh; overflow: visible; background: none; }
 .film .layer { position: fixed; z-index: 1; opacity: 0; transition: opacity .4s ease; pointer-events: none; }
 .film .scene.on .layer { opacity: 1; }
+/* the last scene as the twin of scene 6: scene 6 stays at full strength under it while the twin fades in, so the
+   pool of light holds steady and only the three things leave it (where :has() is missing, the two simply blend) */
+.film #s6:has(+ #s7[data-view="twin"].on) .layer { opacity: 1; }
 .film .passes { opacity: 0; transition: opacity .3s ease; }
 .film .passes.ready { opacity: 1; }
 .film .scene .words, .film .scene .addr { opacity: 0; transition: opacity .15s ease; }

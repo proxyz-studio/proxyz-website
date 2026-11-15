@@ -64,9 +64,11 @@ content hash, so they can be cached for a year. The film always places pictures 
 
 ### The last scene's picture
 
-`content/site.json`, last scene, `"picture"`: `"own"` (its own picture, the default) or `"twin"` (the pool of light of
-scene 6, now empty, framed exactly like scene 6, so the cut between the two scenes keeps the light in place). The
-twin's film data is `"7twin"` in `src/film/scenes.json`; its pictures are `s7t-*`. Change the word, build, check.
+`content/site.json`, last scene, `"picture"`: `"twin"` (the default: the pool of light of scene 6, now empty, framed
+exactly like scene 6, so at the cut the light stays in place and only the three things leave it) or `"own"` (the
+alternative: its own small, faint pool of light). The twin's film data is `"7twin"` in `src/film/scenes.json`; its
+pictures are `s7t-*`. While the twin fades in, scene 6 holds at full strength under it, so the pool does not dim.
+Change the word, build, check.
 
 ### Replacing a drawing with a real photo
 
