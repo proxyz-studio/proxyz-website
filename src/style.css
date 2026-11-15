@@ -20,9 +20,12 @@
   --side: calc(16px + var(--safe-x)); --strip: 92px;
   /* steady screen units: the large viewport does not change when a phone browser's bar slides */
   --W: 100vw; --H: 100vh; --S: 100vh;
+  /* the height of a phone browser's bar while it shows (0 when it is away, and on every other screen) */
+  --bar: 0px;
   color-scheme: dark;
 }
 @supports (height: 100lvh) { :root { --H: 100lvh; --S: 100svh; } }
+@supports (height: 100dvh) { :root { --bar: max(0px, calc(var(--H) - 100dvh)); } }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { background: var(--bg); overflow-x: hidden; overflow-x: clip; -webkit-text-size-adjust: 100%; scrollbar-width: thin; scrollbar-color: rgba(242, 242, 242, .28) var(--film); }
@@ -60,9 +63,6 @@ a:focus-visible { outline: 1px solid var(--ink); outline-offset: 2px; }
 .shade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(1, 1, 1, .88) 0%, rgba(1, 1, 1, .6) 22%, rgba(1, 1, 1, 0) 46%); }
 /* scene 6: the picture runs down to the words, so the dark band is kept low and short */
 #s6 .shade, #s7[data-view="twin"] .shade { background: linear-gradient(to top, rgba(1, 1, 1, .88) 0%, rgba(1, 1, 1, .45) 9%, rgba(1, 1, 1, 0) 20%); }
-@media (max-width: 899px), (max-height: 500px) and (orientation: landscape) {
-  #s4 .shade { background: linear-gradient(to top, rgba(1, 1, 1, .94) 0%, rgba(1, 1, 1, .86) 34%, rgba(1, 1, 1, 0) 60%); }
-}
 
 /* words: kept above a phone browser's bottom bar (the gap between the large and small viewport) */
 .words {
@@ -173,6 +173,27 @@ a.nm { min-width: 44px; }
   .words { bottom: calc(var(--H) - var(--S) + 20px + var(--safe-b)); }
   .cap, .cap.w14, .cap.w15 { font-size: min(30px, calc((100vw - 32px) / 7.9)); }
   .foot .foot-sw { display: flex; margin-left: 8px; }
+}
+
+/* ---------- the film on phones: the words ride the bottom edge of what the visitor sees ---------- */
+/* They follow a phone browser's sliding bar. The pictures never move: they are placed for the words' low place. */
+@media (max-width: 899px), (max-height: 500px) and (orientation: landscape) {
+  .film .words { position: fixed; bottom: calc(60px + var(--safe-b)); }
+  /* scenes 3 and 4: a dark backing that travels with the words. --bar is the height of the browser's bar (0 when it is
+     away): the backing grows only while the bar shows and the words ride high over the bright part of the picture.
+     With the bar away it has no height at all. The other scenes stay readable without one (npm run check measures it). */
+  .film #s3 .words::before, .film #s4 .words::before {
+    content: ""; position: absolute; z-index: -1; pointer-events: none;
+    left: calc(-1 * var(--side)); right: calc(-1 * var(--side)); bottom: calc(-1 * var(--bar));
+    height: min(calc(var(--bar) * 6), calc(100% + var(--bar) + 24px));
+    background: linear-gradient(to bottom, rgba(1, 1, 1, 0) 0, rgba(1, 1, 1, .86) 24px, rgba(1, 1, 1, .92) 100%);
+  }
+  /* scene 4 on short screens: the small grey line lies on the bright disc even with no bar, so this backing is always
+     there; it fades in over the 24 px just above the words and leaves the picture above them as it is */
+  .film #s4 .words::before { height: calc(100% + var(--bar) + 24px); }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .film .words { bottom: calc(20px + var(--safe-b)); }
 }
 
 /* ---------- the plain pages: machines, legal, not found ---------- */

@@ -127,7 +127,10 @@ function geometry(view: View, s: SceneState): Box {
   // span: picture rows that must fit between the border strip and the words (short phone screens)
   if (f.span) {
     const roomTop = (top ? top.getBoundingClientRect().bottom : 0) + 12;
-    const roomBot = (room.words ? room.words.getBoundingClientRect().top : vh) - 16;
+    // the room ends above the words at their LOW place (on a phone they ride a browser's sliding bar, so where they
+    // are right now depends on the bar; the picture must not), so a scene built in either state gets the same box
+    const wb = room.words ? parseFloat(getComputedStyle(room.words).bottom) : NaN;
+    const roomBot = (room.words && Number.isFinite(wb) ? vh - wb - room.words.offsetHeight : vh) - 16;
     const [y0, y1] = f.span;
     if (roomBot > roomTop && (topY + y0 * k < roomTop || topY + y1 * k > roomBot)) {
       const k2 = Math.min(k, (roomBot - roomTop) / (y1 - y0));
