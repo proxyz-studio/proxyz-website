@@ -4,8 +4,8 @@
    The script adds the class "film" to <html>; only then do the film rules below apply. */
 
 /* ---------- type: IBM Plex Mono, self hosted (licence: src/fonts/OFL.txt) ---------- */
-@font-face { font-family: "Site Mono"; src: url("./fonts/IBMPlexMono-400-normal.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
-@font-face { font-family: "Site Mono"; src: url("./fonts/IBMPlexMono-600-normal.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: "Site Mono"; src: url("./fonts/IBMPlexMono-Regular-Latin1.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Site Mono"; src: url("./fonts/IBMPlexMono-SemiBold-Latin1.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: swap; }
 /* fallbacks measured to the same letter width, so nothing moves when the real font arrives */
 @font-face { font-family: "Mono Fallback"; src: local("Menlo"), local("Menlo-Regular"); size-adjust: 99.66%; ascent-override: 102.85%; descent-override: 27.6%; line-gap-override: 0%; }
 @font-face { font-family: "Mono Fallback Courier"; src: local("Courier New"), local("CourierNewPSMT"); size-adjust: 99.98%; ascent-override: 102.52%; descent-override: 27.51%; line-gap-override: 0%; }

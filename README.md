@@ -31,7 +31,7 @@ npm run check      # builds, serves dist/ locally and proves the rules (see belo
 | `public/` | Files served as they are. See the email pictures below. |
 | `scripts/check.mjs`, `scripts/serve.mjs` | The proof (`npm run check`) and the local server that follows `vercel.json`. |
 | `scripts/preview-file.mjs` | One self contained file of the real build, for looking at it without a server. |
-| `src/fonts/` | IBM Plex Mono (400 and 600) and its licence, `OFL.txt`. |
+| `src/fonts/` | IBM Plex Mono, Regular (400) and SemiBold (600): IBM's own split Latin 1 files from its package `@ibm/plex-mono` version 2.5.0 (licence OFL-1.1, source github.com/ibm/plex), byte for byte, with IBM's licence as `OFL.txt`. To prove it, unpack that package and compare: `fonts/split/woff2/IBMPlexMono-Regular-Latin1.woff2` sha256 `e8993d946649b9d01abb1ed06d574b19d8ea3e66b5c3948602db335c44c18e56`, `fonts/split/woff2/IBMPlexMono-SemiBold-Latin1.woff2` sha256 `b7acd05041ab65f3b7039e218ddd893065e11a07e85ea85019473152a51b6b7d`. |
 
 ## Names and links of ventures
 

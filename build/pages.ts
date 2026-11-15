@@ -219,7 +219,7 @@ ${social}
 <meta name="color-scheme" content="dark">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="preload" as="font" type="font/woff2" href="/src/fonts/IBMPlexMono-600-normal.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/src/fonts/IBMPlexMono-SemiBold-Latin1.woff2" crossorigin>
 ${extra}
 <script type="module" src="${entry}"></script>
 </head>`;
