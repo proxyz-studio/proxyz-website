@@ -189,7 +189,7 @@ a.nm { min-width: 44px; }
   #s4 .words::before {
     content: ""; position: absolute; z-index: -1; pointer-events: none;
     left: calc(-1 * var(--side)); bottom: calc(-1 * var(--words-base)); width: calc(100% + 24vw); height: calc(100% + var(--words-base) + 140px);
-    background: radial-gradient(farthest-side at 0 100%, rgba(1, 1, 1, .94) 0%, rgba(1, 1, 1, .88) 60%, rgba(1, 1, 1, 0) 100%);
+    background: radial-gradient(farthest-side at 0 100%, rgba(1, 1, 1, .94) 0%, rgba(1, 1, 1, .88) 70%, rgba(1, 1, 1, 0) 100%);
   }
   .small { max-width: 34ch; font-size: 19px; }
   .cap { font-size: min(80px, 7.2vh, 6.8vw); }

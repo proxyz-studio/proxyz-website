@@ -33,7 +33,9 @@ const EMAIL_PICTURES = {
   'icon-line-dark.png': '409f50b5d656b01873287c4d65cc72a72c758acf59c978482e29e5835c7eab05',
   'proxyz-lockup-e-horizontal-light.png': 'dcfaf306a333eb562c856b5b4815335172a42ec0c8ba607f1e1df37af1982da2',
 };
-const VIEWPORTS = [[393, 852], [430, 739], [320, 568], [852, 393], [932, 430], [1440, 900], [1512, 860], [2428, 1300], [430, 715], [430, 775], [430, 815], [393, 635]];
+const VIEWPORTS = [[393, 852], [430, 739], [320, 568], [852, 393], [932, 430], [1440, 900], [1512, 860], [2428, 1300], [430, 715], [430, 775], [430, 815], [393, 635],
+  // short wide windows: the Claude app's side panel, a 4:3 tablet sideways, a small laptop
+  [806, 516], [1024, 768], [1280, 720]];
 // A phone browser's bar, copied with test styles (a hidden browser has none): [width, large viewport (bar away), small
 // viewport (bar showing)]. 873/739 an older measure of the owner's phone; 815/715 and 815/775 Safari's classic bottom
 // bar and its compact bar on that phone (measured in Safari); 735/635 the classic bar on a 393 wide phone (worked out).
@@ -1009,7 +1011,7 @@ async function main() {
      giant line keeps at least 85% of its ink (the thing in front may hide only a little of it) */
   if (want(18)) {
     const place = [], inkBad = [], seenPlace = [], seenInk = [];
-    const runs = [...[[430, 873], [393, 852], [320, 568], [852, 393], [1512, 860], [2428, 1300]].map(([w, h]) => ({ w, h, css: '', label: `${w}x${h}` })),
+    const runs = [...[[430, 873], [393, 852], [320, 568], [852, 393], [806, 516], [1512, 860], [2428, 1300]].map(([w, h]) => ({ w, h, css: '', label: `${w}x${h}` })),
       ...[BARS[1], BARS[3]].map((bar) => ({ ...barState(bar, 'showing'), label: barLabel(bar, 'showing') }))];
     for (const engine of ['chromium', 'webkit', 'firefox']) {
       for (const run of engine === 'chromium' ? runs : runs.filter((r) => ['430x873', '1512x860'].includes(r.label))) {
