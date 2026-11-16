@@ -53,8 +53,9 @@ for (const m of [...js.matchAll(/import\{([^}]*)\}from"\.\/([^"]+)";/g)]) {
 // source matches), so the film still tells its files apart
 const pics = new Map();
 const pic = (u) => { if (!pics.has(u)) pics.set(u, dataUri(u)); return pics.get(u); };
-// to stay under 6 MB the preview leaves out the 2x files of scenes 4 and 5 (the ones that need them least)
-js = js.replace(/,\{w:(?:2880|1572),[^}]*\/pictures\/s[45]-[^}]*\}/g, '');
+// to stay under 6 MB the preview leaves out the 2x files of scene 4 (the one that needs them least; scene 5 keeps its
+// own, so the coach screens read on a sharp phone)
+js = js.replace(/,\{w:(?:2880|1572),[^}]*\/pictures\/s4-[^}]*\}/g, '');
 js = js.replace(/"(\/pictures\/[^"]+-matte-[^"]+\.webp)"/g, (_, u) => `"${pic(u)}"`);
 js = js.replace(/"(\/pictures\/[^"]+\.avif)"/g, (_, u) => `"${pic(u)}"`).replace(/"\/pictures\/([^"]+)\.webp"/g, '"#$1"');
 css = css.replace(/url\("?(\/pictures\/[^")]+-matte-[^")]+\.webp)"?\)/g, (_, u) => `url("${pic(u)}")`);

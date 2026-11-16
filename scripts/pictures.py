@@ -6,7 +6,8 @@ Usage:
 
   <source-folder>  the folder the paths in pictures/sources.json are relative to.
   --prefer <dir>   a folder of the same drawings at twice the size. For the drawing out2/s1-desk-p1.png it looks for
-                   <dir>/s1-desk-p1@2x.png (or <dir>/s1-desk-p1.png). The bigger drawing is used only when it is a PNG
+                   <dir>/s1-desk-p1@2x.png (or <dir>/s1-desk-p1.png); for out5/s2v2-desk-p1@1x.png it looks for
+                   <dir>/s2v2-desk-p1@2x.png. The bigger drawing is used only when it is a PNG
                    of the same shape and at least twice the 1x width, and, when <dir>/manifest.json exists, only when
                    the manifest's own entry for that file says "status": "done" (so half drawn pictures are never
                    taken). Repeatable.
@@ -66,19 +67,22 @@ def form_of(key):
 
 
 def bigger_drawing(rel, prefer, lw, lh):
-    """The 2x drawing of the 1x drawing rel, or None. Says why when it skips one."""
+    """The 2x drawing of the 1x drawing rel, or None. Says why when it skips one. A drawing named <name>@1x.png has its
+    bigger twin at <name>@2x.png; a manifest may name an entry with or without the @2x (its mattes too)."""
     stem = pathlib.Path(rel).stem
+    base = stem[:-3] if stem.endswith("@1x") else stem
     for folder in prefer:
         entries = None
         m = folder / "manifest.json"
         if m.exists():
-            entries = {e.get("name"): e for e in json.loads(m.read_text(encoding="utf-8")).get("pictures", [])}
-        for name in (stem + "@2x", stem):
+            data = json.loads(m.read_text(encoding="utf-8"))
+            entries = {e.get("name"): e for e in data.get("pictures", []) + data.get("mattes", [])}
+        for name in dict.fromkeys((base + "@2x", stem + "@2x", stem)):
             p = folder / (name + ".png")
-            if not p.exists():
+            if not p.exists() or (p.name == pathlib.Path(rel).name and name.endswith("@1x")):
                 continue
             if entries is not None:
-                e = entries.get(name)
+                e = entries.get(name) or entries.get(base)
                 if not e or e.get("status") != "done":
                     print(f"  skip {p.name}: not marked done in {m.name}")
                     continue

@@ -53,96 +53,152 @@
   "2": {
    "desktop": {
     "passes": [
-     "s2-desk-p1"
+     "s2-desk-p1",
+     "s2-desk-p2",
+     "s2-desk-p3"
     ],
+    "hold": 0.4,
     "frame": {
-     "fit": "contain",
+     "fit": "cover",
      "zoom": 1,
      "fx": 0.5,
      "fy": 0.5,
-     "vx": 0.56,
-     "vy": 0.46,
-     "shade": [
-      495,
-      567,
-      950,
-      660,
-      4,
-      22
+     "vx": 0.5,
+     "vy": 0.5
+    },
+    "matte": "s2-desk-matte",
+    "later": [
+     [
+      2,
+      896.0,
+      538.5,
+      102.5,
+      58.5
      ],
-     "below": [
-      230,
-      24
+     [
+      2,
+      847.0,
+      544.5,
+      267.0,
+      214.5
+     ],
+     [
+      2,
+      851.0,
+      544.0,
+      256.5,
+      193.5
+     ],
+     [
+      3,
+      1058.5,
+      247.5,
+      233.0,
+      442.0
+     ],
+     [
+      3,
+      1065.0,
+      253.5,
+      220.0,
+      430.5
      ]
-    }
+    ]
    },
    "phone": {
     "passes": [
-     "s2-phone-p1"
+     "s2-phone-p1",
+     "s2-phone-p2",
+     "s2-phone-p3"
     ],
+    "hold": 0.4,
     "frame": {
-     "fit": "width",
-     "zoom": 1.1,
-     "fx": 0.47,
-     "fy": 0.55,
+     "fit": "cover",
+     "zoom": 1,
+     "fx": 0.5,
+     "fy": 0.5,
      "vx": 0.5,
-     "vy": 0.45,
-     "shade": [
-      135,
-      990,
-      660,
-      1095,
-      4,
-      20
+     "vy": 0.5,
+     "span": [
+      569,
+      1178
      ],
-     "below": [
-      600,
-      24
+     "sides": true
+    },
+    "matte": "s2-phone-matte",
+    "later": [
+     [
+      2,
+      394.5,
+      843.0,
+      140.5,
+      100.5
+     ],
+     [
+      2,
+      326.5,
+      870.5,
+      315.0,
+      307.0
+     ],
+     [
+      2,
+      333.0,
+      869.5,
+      298.5,
+      280.5
+     ],
+     [
+      3,
+      185.5,
+      569.5,
+      290.0,
+      593.0
+     ],
+     [
+      3,
+      195.5,
+      579.0,
+      271.0,
+      574.0
      ]
-    }
+    ]
    }
   },
   "3": {
    "desktop": {
     "passes": [
      "s3-desk-p1",
-     "s3-desk-p2",
-     "s3-desk-p3"
+     "s3-desk-p2"
     ],
     "hold": 0.3,
-    "rest": 0.72,
     "filter": "saturate(.8)",
     "frame": {
-     "fit": "contain",
-     "zoom": 0.86,
+     "fit": "cover",
+     "zoom": 1,
      "fx": 0.5,
      "fy": 0.5,
-     "vx": 0.7,
-     "vy": 0.44,
-     "oval": true
-    }
+     "vx": 0.5,
+     "vy": 0.5
+    },
+    "matte": "s3-desk-matte"
    },
    "phone": {
     "passes": [
      "s3-phone-p1",
-     "s3-phone-p2",
-     "s3-phone-p3"
+     "s3-phone-p2"
     ],
     "hold": 0.3,
-    "rest": 0.72,
     "filter": "saturate(.8)",
     "frame": {
-     "fit": "width",
-     "zoom": 1.35,
+     "fit": "cover",
+     "zoom": 1,
      "fx": 0.5,
-     "fy": 0.37,
+     "fy": 0.5,
      "vx": 0.5,
-     "vy": 0.4,
-     "span": [
-      372,
-      1063
-     ]
-    }
+     "vy": 0.5
+    },
+    "matte": "s3-phone-matte"
    }
   },
   "4": {
@@ -195,25 +251,24 @@
      "s5-desk-p3"
     ],
     "hold": 0.7,
-    "still": 0.5,
     "frame": {
      "fit": "cover",
      "zoom": 1,
      "fx": 0.5,
      "fy": 0.5,
      "vx": 0.5,
-     "vy": 0.5,
-     "below": [
-      234,
-      24
-     ],
-     "fade": [
-      0,
-      0.1,
-      1,
-      1
+     "vy": 0.5
+    },
+    "matte": "s5-desk-matte",
+    "later": [
+     [
+      2,
+      771.0,
+      273.5,
+      511.5,
+      486.5
      ]
-    }
+    ]
    },
    "phone": {
     "passes": [
@@ -222,7 +277,6 @@
      "s5-phone-p3"
     ],
     "hold": 0.7,
-    "still": 0.5,
     "frame": {
      "fit": "cover",
      "zoom": 1,
@@ -230,11 +284,22 @@
      "fy": 0.5,
      "vx": 0.5,
      "vy": 0.5,
-     "below": [
-      533,
-      16
+     "span": [
+      560,
+      1172
+     ],
+     "sides": true
+    },
+    "matte": "s5-phone-matte",
+    "later": [
+     [
+      2,
+      70.0,
+      560.5,
+      630.0,
+      597.5
      ]
-    }
+    ]
    }
   },
   "6": {
@@ -288,7 +353,8 @@
       361,
       117
      ]
-    ]
+    ],
+    "matte": "s6-desk-matte"
    },
    "phone": {
     "passes": [
@@ -328,7 +394,8 @@
       236,
       1032
      ],
-     "sides": true
+     "sides": true,
+     "tuck": 0.12
     },
     "later": [
      [
@@ -345,7 +412,8 @@
       215,
       215
      ]
-    ]
+    ],
+    "matte": "s6-phone-matte"
    }
   },
   "7": {

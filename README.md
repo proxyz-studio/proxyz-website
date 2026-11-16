@@ -52,8 +52,8 @@ npm run pictures -- <folder of the drawings> [--prefer <folder of bigger drawing
 
 Each picture gets a 1x file (desktop 1440 wide, phone 786 wide) made from the drawing named in
 `pictures/sources.json`, and a 2x file (2880, 1572) when a drawing twice that size exists. With `--prefer <folder>`
-the script looks there for `<name>@2x.png`; when the folder has a `manifest.json`, a file is used only if its own entry
-says `"status": "done"`. The script prints, for every picture, which drawings it used, and ends with a count such as
+the script looks there for `<name>@2x.png` (a drawing named `<name>@1x.png` finds its `<name>@2x.png`); when the
+folder has a `manifest.json`, a file is used only if its own entry (a picture or a matte) says `"status": "done"`. The script prints, for every picture, which drawings it used, and ends with a count such as
 `28 of 32 pictures have a 2x file`, so a silent miss cannot happen.
 
 Every file is AVIF (full colour detail, tuned for still pictures) with a WebP fallback. The quality was chosen by
