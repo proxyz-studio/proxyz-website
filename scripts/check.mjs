@@ -1034,6 +1034,8 @@ async function main() {
           const fb = await pf.evaluate((n) => { const b = document.querySelector(`#s${n} .bbox`); if (!b || !b.isConnected) return null; const r = b.getBoundingClientRect(); return [r.left, r.top, r.width, r.height]; }, n);
           await po.evaluate((n) => document.getElementById('s' + n).scrollIntoView(), n);
           await settle(po, 150);
+          // with scripts off the board waits 1.2 s before it fades in (time for its matte), then shows whole
+          await po.waitForFunction(() => document.getAnimations().every((a) => a.playState === 'finished'), null, { timeout: 8000 }).catch(() => {});
           const ob = await po.evaluate((n) => {
             const s = document.getElementById('s' + n), l = s.querySelector('.layer').getBoundingClientRect(), b = s.querySelector('.bbox');
             const svg = [...s.querySelectorAll('svg.board')].filter((e) => getComputedStyle(e).display !== 'none');
@@ -1082,6 +1084,20 @@ async function main() {
         if (least < Infinity) seenInk.push([least, `${tag} ${(100 * least).toFixed(1)}%`]);
         await film1.close(); await off.close();
       }
+    }
+    // the first moment with scripts off: the board is not drawn yet (it would show over the things until its matte is in)
+    {
+      const early = [];
+      for (const engine of ['chromium', 'webkit', 'firefox']) {
+        const off = await ctx(engine, { viewport: { width: 1512, height: 860 }, javaScriptEnabled: false });
+        const po = await off.newPage();
+        await po.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+        const r = await po.evaluate(() => { const b = document.querySelector('.bbox'); return { t: document.timeline.currentTime, o: b ? getComputedStyle(b).opacity : 'none', anim: b ? b.getAnimations().map((a) => a.animationName).join(',') : '' }; });
+        if (r.t < 1100 && r.o !== '0') early.push(`${engine}: board opacity ${r.o} at ${Math.round(r.t)} ms`);
+        if (!/board-in/.test(r.anim)) early.push(`${engine}: no fade-in on the board (${r.anim || 'none'})`);
+        await off.close();
+      }
+      ok(!early.length, 18, 'Scripts off: scene 6\'s board is not drawn for its first 1.2 s after the page starts, then fades in (time for the matte that hides it inside the things; Chromium, WebKit, Firefox)', 'hidden at the start, fade in place', early.join('; '));
     }
     ok(!place.length, 18, 'Scripts off: every scene\'s picture, and scene 6\'s board at rest (whole, its matte on), sits where the film puts it at rest, within 1.5 px (phones, both Safari bar layouts showing, laptop, monitor; Chromium, and 430x873 and 1512x860 in WebKit and Firefox)', `largest ${seenPlace.sort((a, b) => b[0] - a[0])[0]?.[1]}`, place.slice(0, 6).join('; '));
     ok(!inkBad.length, 18, 'Scripts off: every giant line keeps at least 85% of its ink (the thing in front hides only a little), the same sizes and engines', `least: ${seenInk.sort((a, b) => a[0] - b[0])[0]?.[1] ?? 'no cut'}`, inkBad.slice(0, 6).join('; '));
@@ -1262,7 +1278,7 @@ async function main() {
      step, clear of the giant words, its two labels readable and on screen, still with less motion */
   const BOARD_N = content.scenes.findIndex((s) => s.board) + 1;
   const boardForms = BOARD_N ? ['desktop', 'phone'].filter((f) => viewOf(BOARD_N, f).things) : [];
-  const wantBoard = [19, 20, 21, 22, 23].some(want);
+  const wantBoard = [19, 20, 21, 22, 23, 24].some(want);
   if (wantBoard && !boardForms.length) warn(19, 'BOARD NOT TESTED', 'no scene of this build has a board with a things matte');
   /** Scroll scene 6 to a point of its film: u, a share of its scroll (0 its top, 1 its end), or pre, the half screen
    *  before its top (0 the moment it comes on, 1 its top). Waits for its pictures and for the board to show. */
@@ -1298,6 +1314,26 @@ async function main() {
     g.drawImage(i, box[0], box[1], box[2], box[3]); const d = g.getImageData(0, 0, w, h).data;
     const a = new Uint8Array(w * h); for (let k = 0; k < w * h; k++) a[k] = d[k * 4 + 3]; return a; }`;
   const matteBytes = (url) => readFileSync(join(DIST, new URL(url, BASE).pathname)).toString('base64');
+  /** each live trace's resting main run, as built, per drawing: { bd: { stand: 'M..', ... }, bp: {...} } */
+  const traceRest = {};
+  for (const m of readFileSync(join(DIST, 'index.html'), 'utf8').matchAll(/<svg class="board (b[dp])"[\s\S]*?<\/svg>/g)) {
+    traceRest[m[1]] = {};
+    for (const g of m[0].matchAll(/<g class="tr t-(\w+)"[\s\S]*?<\/g>/g)) traceRest[m[1]][g[1]] = /class="co wl" d="([^"]*)"/.exec(g[0])[1];
+  }
+  /** in the page: for each live trace, whether its head has reached its pad, how far it has come along its main run
+   *  (picture px), and how far along that run each side line reaches (its end's nearest place on the run) */
+  const traceState = (p, rest) => p.evaluate(([n, rest]) => {
+    const svg = [...document.querySelectorAll(`#s${n} svg.board`)].find((e) => getComputedStyle(e).display !== 'none');
+    const k = [...svg.classList].find((c) => /^b[dp]$/.test(c));
+    const pts = (d) => [...(d || '').matchAll(/(-?[\d.]+),(-?[\d.]+)/g)].map((m) => [+m[1], +m[2]]);
+    const along = (line, q) => { let best = Infinity, at = 0, acc = 0; for (let i = 1; i < line.length; i++) { const a = line[i - 1], b = line[i], dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1, t = Math.max(0, Math.min(1, ((q[0] - a[0]) * dx + (q[1] - a[1]) * dy) / (L * L))), d = Math.hypot(a[0] + dx * t - q[0], a[1] + dy * t - q[1]); if (d < best) { best = d; at = acc + t * L; } acc += L; } return at; };
+    return Object.fromEntries(['stand', 'coin', 'phone'].map((t) => {
+      const g = svg.querySelector('.t-' + t), main = pts(rest[k][t]), co = g.querySelector('.co').getAttribute('d') || '';
+      const head = co ? along(main, pts(co).pop()) : 0;
+      const sides = [...g.querySelectorAll('.sd')].map((e) => { const q = pts(e.getAttribute('d')); return q.length ? along(main, q[q.length - 1]) : -1; });
+      return [t, { arrived: co === rest[k][t], head, sides }];
+    }));
+  }, [BOARD_N, rest]);
 
   // 19. the board's box is the picture's box, film and scripts off, every listed size and bar state
   if (want(19) && boardForms.length) {
@@ -1401,7 +1437,66 @@ async function main() {
       }
       await c.close();
     }
+    // the dim side lines never run ahead of their trace's head (more than 2 px), all through the steps, both forms
+    const sideBad = [];
+    let sideMax = -Infinity;
+    for (const [w, h] of [[1512, 860], [430, 739]]) {
+      const c = await ctx('chromium', { viewport: { width: w, height: h } });
+      const p = await open(c, '/', `side lines ${w}x${h}`);
+      for (let i = 0; i <= 48; i++) {
+        await toBoard(p, i < 8 ? { pre: i / 8 } : { u: ((i - 8) / 40) * 0.72 });
+        const st = await traceState(p, traceRest);
+        for (const [t, v] of Object.entries(st)) for (const e of v.sides) {
+          if (e < 0) continue;
+          sideMax = Math.max(sideMax, e - v.head);
+          if (e > v.head + 2) sideBad.push(`${w}x${h} step ${i} ${t}: a side line ${(e - v.head).toFixed(1)} px ahead of the head`);
+        }
+      }
+      await c.close();
+    }
+    ok(!sideBad.length, 21, `Scene ${BOARD_N}: no dim side line is drawn ahead of its trace's head (by more than 2 picture px), at 49 points from before the scene through the third pass (Chromium, 1512x860 and 430x739)`, `furthest ahead: ${sideMax.toFixed(1)} px`, sideBad.slice(0, 6).join('; '));
     ok(!bad.length, 21, `Scene ${BOARD_N}: no tell: before its first step nothing of the board shows; at pass 1's hold no pixel of the race piece's and the phone's traces, side lines and pads, the net, the dashed trace, the empty place or NEXT; at pass 2's hold none of the phone's or of the last step (Chromium at 1512x860, 806x516, 430x739, 393x635; WebKit, Firefox)`, 'zero pixels each time', bad.slice(0, 6).join('; '));
+  }
+
+  // 24. the current and the light arrive together: through the change that lights the race piece (second pass) and
+  // the coach phone (third pass), the thing's own brightness (its box, board hidden) as a share of the change; the
+  // head of its trace must be on its pad once that share is 75% and must not be there while it is at most 40%
+  if (want(24) && boardForms.length) {
+    const bad = [], seen = [];
+    const sizes = JSON.parse(readFileSync(join(ROOT, 'src/generated/pictures.json'), 'utf8'));
+    for (const [engine, w, h] of [['chromium', 1512, 860], ['chromium', 430, 739], ['webkit', 1512, 860], ['webkit', 430, 739]]) {
+      const form = w / h <= 1 ? 'phone' : 'desktop', view = viewOf(BOARD_N, form), iw = sizes[view.passes[0]].size[0];
+      const c = await ctx(engine, { viewport: { width: w, height: h }, bypassCSP: true });
+      const p = await open(c, '/', `sync ${engine} ${w}x${h}`);
+      for (const [thing, k] of [['coin', 2], ['phone', 3]]) {
+        const box = view.later.find((b) => b[0] === k);
+        // the film's scroll window of pass k's change (src/film/math.ts passStrength, light share of the scene)
+        const n = view.passes.length - 1, hold = view.hold || 0, rest = view.rest ?? 1;
+        const q0 = (k - 2 + hold / 2) / n, q1 = (k - 1 - hold / 2) / n;
+        const u = (q) => (q / rest) * film.lightShare;
+        const rows = [];
+        for (let i = 0; i <= 30; i++) {
+          await toBoard(p, { u: u(q0 + ((q1 - q0) * i) / 30) });
+          const st = (await traceState(p, traceRest))[thing];
+          await styleIt(p, QUIET + `#s${BOARD_N} .bbox,#s${BOARD_N} .cut{visibility:hidden !important}`); await settle(p, 80);
+          const img = await p.evaluate((n) => { const r = document.querySelector(`#s${n} .passes img`).getBoundingClientRect(); return [r.left, r.top, r.width]; }, BOARD_N);
+          const kk = img[2] / iw, shot = await p.screenshot();
+          const [m] = await lab(shot, [[img[0] + box[1] * kk, img[1] + box[2] * kk, box[3] * kk, box[4] * kk]]);
+          await styleIt(p, '');
+          rows.push({ mean: m.mean, arrived: st.arrived });
+        }
+        const L0 = rows[0].mean, L1 = rows[rows.length - 1].mean;
+        const share = rows.map((r) => (r.mean - L0) / ((L1 - L0) || 1));
+        const first = rows.findIndex((r) => r.arrived);
+        seen.push(`${engine} ${w}x${h} ${thing} arrives at ${first < 0 ? 'never' : (100 * share[first]).toFixed(0) + '%'}`);
+        rows.forEach((r, i) => {
+          if (share[i] >= 0.75 && !r.arrived) bad.push(`${engine} ${w}x${h} ${thing}: ${(100 * share[i]).toFixed(0)}% lit, its trace not there yet`);
+          if (share[i] <= 0.4 && r.arrived) bad.push(`${engine} ${w}x${h} ${thing}: its trace there at only ${(100 * share[i]).toFixed(0)}% lit`);
+        });
+      }
+      await c.close();
+    }
+    ok(!bad.length, 24, `Scene ${BOARD_N}: the race piece and the coach phone wake as their current arrives: through each one's change (31 points), its trace is on its pad by the time the thing is 75% lit and never while it is 40% lit or less (Chromium, WebKit; 1512x860 and 430x739)`, seen.join(', '), [...new Set(bad)].slice(0, 6).join('; '));
   }
 
   // 22. no board ink within 8 px of the giant words' ink; the two labels at least 12 px, at least 4.5 to 1, fully on
