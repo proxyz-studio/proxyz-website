@@ -33,7 +33,23 @@ const EMAIL_PICTURES = {
   'icon-line-dark.png': '409f50b5d656b01873287c4d65cc72a72c758acf59c978482e29e5835c7eab05',
   'proxyz-lockup-e-horizontal-light.png': 'dcfaf306a333eb562c856b5b4815335172a42ec0c8ba607f1e1df37af1982da2',
 };
-const VIEWPORTS = [[393, 852], [430, 739], [320, 568], [852, 393], [932, 430], [1440, 900], [1512, 860], [2428, 1300]];
+const VIEWPORTS = [[393, 852], [430, 739], [320, 568], [852, 393], [932, 430], [1440, 900], [1512, 860], [2428, 1300], [430, 715], [430, 775], [430, 815], [393, 635]];
+// A phone browser's bar, copied with test styles (a hidden browser has none): [width, large viewport (bar away), small
+// viewport (bar showing)]. 873/739 an older measure of the owner's phone; 815/715 and 815/775 Safari's classic bottom
+// bar and its compact bar on that phone (measured in Safari); 735/635 the classic bar on a 393 wide phone (worked out).
+const BARS = [[430, 873, 739], [430, 815, 715], [430, 815, 775], [393, 735, 635]];
+/** The window and test styles of one bar state. Away: the window as tall as the large viewport, the small one held.
+ *  Showing: the window as tall as the small viewport, the large one (and everything sized from it) held. */
+const barState = ([w, L, Sm], state) => state === 'away'
+  ? { w, h: L, css: `:root{--S:${Sm}px !important}.probe-s{height:${Sm}px !important}` }
+  : { w, h: Sm, css: `:root{--H:${L}px !important}.probe{height:${L}px !important}.film #film .scene{height:${2.4 * L}px !important}${Object.entries(film.tall).map(([n, k]) => `.film #film #s${n}{height:${k * L}px !important}`).join('')}` };
+const barLabel = ([w, L, Sm], state) => `${w}x${state === 'away' ? L : Sm} bar ${state} (${L}/${Sm})`;
+/** Adds test styles to a page as soon as it has a head (passed to addInitScript). */
+const INJECT = (css) => {
+  const s = document.createElement('style'); s.textContent = css;
+  const put = () => { const r = document.head || document.documentElement; if (r) r.appendChild(s); return !!r; };
+  if (!put() || !document.head) new MutationObserver((_, o) => { if (document.head) { put(); o.disconnect(); } }).observe(document, { childList: true, subtree: true });
+};
 const BUDGET = { firstLoad: 250 * 1024, firstPicture: 80 * 1024, script: 20 * 1024, style: 10 * 1024 };
 const ONLY = process.env.CHECK_TESTS ? new Set(process.env.CHECK_TESTS.split(',').map(Number)) : null;
 const want = (n) => !ONLY || ONLY.has(n);
@@ -654,24 +670,12 @@ async function main() {
     // Contexts that take screenshots skip the security policy: the Safari engine's test tool adds a style of its own
     // for each screenshot, which the policy refuses (a tool quirk, not the site).
     // A hidden browser has no sliding bar, so each state is copied with test styles (allowed past the security
-    // policy in the test only). His phone: large viewport 873 px, small 739 px; the visible height is 739 with the bar
-    // showing and 873 with it away. Away: a 430 x 873 window whose small viewport is held at 739. Showing: a 430 x 739
-    // window whose large viewport (and everything sized from it) is held at 873, so the lower 134 px of the stage lie
-    // below the window.
-    const L = 873, Sm = 739;
-    const STATES = {
-      away: { w: 430, h: L, css: `:root{--S:${Sm}px !important}` },
-      showing: { w: 430, h: Sm, css: `:root{--H:${L}px !important}.probe{height:${L}px !important}.film #film .scene{height:${2.4 * L}px !important}${Object.entries(film.tall).map(([n, k]) => `.film #film #s${n}{height:${k * L}px !important}`).join('')}` },
-    };
-    const inject = (css) => {
-      const s = document.createElement('style'); s.textContent = css;
-      const put = () => { const r = document.head || document.documentElement; if (r) r.appendChild(s); return !!r; };
-      if (!put() || !document.head) new MutationObserver((_, o) => { if (document.head) { put(); o.disconnect(); } }).observe(document, { childList: true, subtree: true });
-    };
-    async function stateCtx(engine, state, css = '', o = {}) {
-      const st = STATES[state];
+    // policy in the test only), for every bar layout in BARS (the older measure and Safari's classic bar in both
+    // engines, the others in Chromium).
+    async function stateCtx(engine, state, css = '', o = {}, bar = BARS[0]) {
+      const st = barState(bar, state);
       const c = await ctx(engine, { viewport: { width: st.w, height: st.h }, bypassCSP: true, ...o });
-      await c.addInitScript(inject, st.css + css);
+      await c.addInitScript(INJECT, st.css + css);
       return c;
     }
     const HIDE = INK_HIDE;
@@ -690,29 +694,31 @@ async function main() {
     };
     const place = [], read = [], back = [], s4 = [];
     const boxes = {}, tops = {};
-    for (const engine of ['chromium', 'webkit']) {
+    for (const bar of BARS) for (const engine of bar === BARS[0] || bar === BARS[1] ? ['chromium', 'webkit'] : ['chromium']) {
+      const bk = `${engine} ${bar.join('/')}`;
       for (const state of ['away', 'showing']) {
-        const c = await stateCtx(engine, state);
+        const c = await stateCtx(engine, state, '', {}, bar);
         const p = await open(c, '/', `bar ${state} ${engine}`);
-        boxes[engine + state] = []; tops[engine + state] = [];
+        const tag = `${engine} ${barLabel(bar, state)}`;
+        boxes[bk + state] = []; tops[bk + state] = [];
         for (let n = 1; n <= content.scenes.length; n++) {
           await toScene(p, n, 1);
           await settle(p, 700);   // the scene before has faded out
           const g = await p.evaluate(where, n);
-          boxes[engine + state].push(g.pics);
-          tops[engine + state].push(g.top);
+          boxes[bk + state].push(g.pics);
+          tops[bk + state].push(g.top);
           // the words at the foot (the giant words of the first and last scene, the small words of the others) ride
           // the visible bottom; the giant words at the top stay where they are
-          if (g.gap !== null && Math.abs(g.gap - 60) > 1) place.push(`${engine} bar ${state} scene ${n}: words ${g.gap.toFixed(1)} px above the visible bottom`);
+          if (g.gap !== null && Math.abs(g.gap - 60) > 1) place.push(`${tag} scene ${n}: words ${g.gap.toFixed(1)} px above the visible bottom`);
           const ink = await inkOf(p, n);
-          for (const t of ink) if (t.ink >= 20 && t.ratio < t.need) read.push(`${engine} bar ${state} scene ${n} ${t.kind}: ${t.ratio.toFixed(2)} to 1`);
-          if (!ink.some((t) => t.kind === 'giant' && t.ink >= 20)) read.push(`${engine} bar ${state} scene ${n}: no giant words drawn`);
+          for (const t of ink) if (t.ink >= 20 && t.ratio < t.need) read.push(`${tag} scene ${n} ${t.kind}: ${t.ratio.toFixed(2)} to 1`);
+          if (!ink.some((t) => t.kind === 'giant' && t.ink >= 20)) read.push(`${tag} scene ${n}: no giant words drawn`);
           // with the bar away the backings of scenes 3 and 4 leave the picture above the words as it is
           await p.evaluate((css) => { const s = document.createElement('style'); s.id = 'hide-all'; s.textContent = css; document.head.append(s); }, HIDE);
           await settle(p, 120);
           const bare0 = await p.screenshot();
           await p.evaluate(() => document.getElementById('hide-all').remove());
-          if (state === 'away' && (n === 3 || n === 4)) {
+          if (bar === BARS[0] && state === 'away' && (n === 3 || n === 4)) {
             const without = await stateCtx(engine, state, HIDE + NOBACK);
             const q = await open(without, '/', `bar away no backing ${engine}`);
             await toScene(q, n, 1);
@@ -736,12 +742,13 @@ async function main() {
         await c.close();
       }
       // every picture box, and the giant words at the top, the same in both states (each film built fresh in its state)
-      const a = boxes[engine + 'away'], b = boxes[engine + 'showing'];
-      a.forEach((pics, n) => pics.forEach((box, i) => { if (!b[n][i] || box.some((v, j) => Math.abs(v - b[n][i][j]) > 1)) place.push(`${engine} scene ${n + 1} picture ${i + 1}: ${box} with the bar away, ${b[n][i]} with it showing`); }));
-      tops[engine + 'away'].forEach((t, n) => { const u = tops[engine + 'showing'][n]; if (t && (!u || t.some((v, j) => Math.abs(v - u[j]) > 1))) place.push(`${engine} scene ${n + 1} giant words at the top: ${t} with the bar away, ${u} with it showing`); });
+      const a = boxes[bk + 'away'], b = boxes[bk + 'showing'];
+      a.forEach((pics, n) => pics.forEach((box, i) => { if (!b[n][i] || box.some((v, j) => Math.abs(v - b[n][i][j]) > 1)) place.push(`${bk} scene ${n + 1} picture ${i + 1}: ${box} with the bar away, ${b[n][i]} with it showing`); }));
+      tops[bk + 'away'].forEach((t, n) => { const u = tops[bk + 'showing'][n]; if (t && (!u || t.some((v, j) => Math.abs(v - u[j]) > 1))) place.push(`${bk} scene ${n + 1} giant words at the top: ${t} with the bar away, ${u} with it showing`); });
     }
-    ok(!place.length, 12, 'Phone, bar showing and bar away: the words at the foot (giant words of scenes 1 and 7, the small line of the others) sit 60 px above the visible bottom in each; the giant words at the top and every picture box are the same in both states (Chromium, WebKit)', 'words on the edge, pictures and top words still', place.slice(0, 6).join('; '));
-    ok(!read.length, 12, 'Phone, both states: the giant words, the small line, its note and the grey tool line at least 4.5 to 1 against what lies behind their letters, the height line at least 3 to 1, all seven scenes (Chromium, WebKit)', 'all readable', read.slice(0, 6).join('; '));
+    const bars = BARS.map((b) => `${b[0]} wide ${b[1]}/${b[2]}`).join(', ');
+    ok(!place.length, 12, `Phone, bar showing and bar away (${bars}): the words at the foot (giant words of scenes 1 and 7, the small line of the others) sit 60 px above the visible bottom in each; the giant words at the top and every picture box are the same in both states (Chromium; WebKit for the first two)`, 'words on the edge, pictures and top words still', place.slice(0, 6).join('; '));
+    ok(!read.length, 12, `Phone, both states (${bars}): the giant words, the small line, its note and the grey tool line at least 4.5 to 1 against what lies behind their letters, the height line at least 3 to 1, all seven scenes (Chromium; WebKit for the first two)`, 'all readable', read.slice(0, 6).join('; '));
     ok(!back.length, 12, 'Phone, bar away: the backings of scenes 3 and 4 leave the picture above the words as it is (within 2%); scene 4 keeps at least 88% of its drawing\'s light there', `no dimming; scene 4 keeps ${s4.join(', ')}`, back.join('; '));
 
     /* the last scene: the twin fades in over a steady pool of light */
@@ -924,26 +931,34 @@ async function main() {
     ok(!bad.length, 15, `Contrast at ${VIEWPORTS.map((v) => v.join('x')).join(', ')} (Chromium): every text at least 4.5 to 1 (the height line 3 to 1) against what lies behind its letters`, `lowest: ${low.slice(0, 3).map((x) => x[1]).join(', ')}`, bad.slice(0, 8).join('; '));
   }
 
-  /* 16. things that appear after the first pass never overlap the giant words, at any listed size */
+  /* 16. things that appear after the first pass never overlap the giant words, never touch the words at the foot
+     (the small line, its note, the tool line, the height line) and stay fully on screen, at every listed size and in
+     every bar state */
   if (want(16)) {
-    const bad = [], seen = [];
+    const bad = [], foot = [], seen = [], seenFoot = [];
     const views = [];
     for (let n = 1; n <= content.scenes.length; n++) for (const form of ['desktop', 'phone']) if (viewOf(n, form).later?.length) views.push([n, form]);
     if (!views.length) warn(16, 'No scene lists things that appear after the first pass', 'nothing to test');
     else {
-      const runs = [...VIEWPORTS.map(([w, h]) => ['chromium', w, h, '']), ['chromium', 430, 873, 'away'], ['chromium', 430, 739, 'showing'], ['chromium', 834, 1194, ''], ['webkit', 430, 739, ''], ['webkit', 1512, 860, '']];
-      for (const [engine, w, h, state] of runs) {
-        const css = state === 'away' ? ':root{--S:739px !important}' : state === 'showing' ? `:root{--H:873px !important}.probe{height:873px !important}` : '';
+      const sizes = JSON.parse(readFileSync(join(ROOT, 'src/generated/pictures.json'), 'utf8'));
+      const runs = [...VIEWPORTS.map(([w, h]) => ({ engine: 'chromium', w, h, css: '', label: `${w}x${h}` })),
+        ...BARS.flatMap((bar) => ['away', 'showing'].map((state) => ({ engine: 'chromium', ...barState(bar, state), label: barLabel(bar, state) }))),
+        { engine: 'chromium', w: 834, h: 1194, css: '', label: '834x1194' },
+        ...[[430, 739], [1512, 860]].map(([w, h]) => ({ engine: 'webkit', w, h, css: '', label: `${w}x${h}` })),
+        { engine: 'webkit', ...barState(BARS[1], 'showing'), label: barLabel(BARS[1], 'showing') }];
+      for (const run of runs) {
+        const { engine, w, h, css } = run, tag = `${engine} ${run.label}`;
         const c = await ctx(engine, { viewport: { width: w, height: h }, bypassCSP: !!css });
-        if (css) await c.addInitScript((css) => { const s = document.createElement('style'); s.textContent = css; const put = () => { if (document.head) { document.head.append(s); return true; } return false; }; if (!put()) new MutationObserver((_, o) => { if (put()) o.disconnect(); }).observe(document, { childList: true, subtree: true }); }, css);
-        const p = await open(c, '/', `later ${engine} ${w}x${h}`);
+        if (css) await c.addInitScript(INJECT, css);
+        const p = await open(c, '/', `later ${tag}`);
         const form = w / h <= 1 ? 'phone' : 'desktop';
         for (const [n, f] of views) {
           if (f !== form) continue;
-          const view = viewOf(n, form), size = JSON.parse(readFileSync(join(ROOT, 'src/generated/pictures.json'), 'utf8'))[view.passes[0]].size;
+          const view = viewOf(n, form), size = sizes[view.passes[0]].size;
           await toScene(p, n, 1);
           // the ink of each giant line: across its text, and from the top of its capitals to its baseline (the face's
-          // own metrics, read by the browser; a text box would add the face's empty space above and below)
+          // own metrics, read by the browser; a text box would add the face's empty space above and below); the
+          // words at the foot, each a box
           const r = await p.evaluate((n) => {
             const s = document.getElementById('s' + n), img = s.querySelector('.passes img').getBoundingClientRect();
             const upright = innerWidth / innerHeight <= 1;
@@ -956,24 +971,96 @@ async function main() {
               const base = box.top + (parseFloat(cs.lineHeight) - (m.fontBoundingBoxAscent + m.fontBoundingBoxDescent)) / 2 + m.fontBoundingBoxAscent;
               return [t.left, base - m.actualBoundingBoxAscent, t.right, base + m.actualBoundingBoxDescent];
             });
-            return { img: [img.left, img.top, img.width], lines };
+            const words = s.querySelector('.words');
+            const small = words && !words.querySelector('.big') ? [...words.children].map((e) => {
+              const g = document.createRange(); g.selectNodeContents(e); const t = e.classList.contains('hl') ? e.getBoundingClientRect() : g.getBoundingClientRect();
+              return [t.left, t.top, t.right, t.bottom];
+            }) : [];
+            return { img: [img.left, img.top, img.width], lines, small, vw: innerWidth, vh: innerHeight };
           }, n);
           const k = r.img[2] / size[0];
-          let gap = Infinity;
+          let gap = Infinity, gapFoot = Infinity;
           for (const [pass, x, y, bw, bh] of view.later) {
             const box = [r.img[0] + x * k, r.img[1] + y * k, r.img[0] + (x + bw) * k, r.img[1] + (y + bh) * k];
             for (const l of r.lines) {
               const dx = Math.max(l[0] - box[2], box[0] - l[2]), dy = Math.max(l[1] - box[3], box[1] - l[3]);
               gap = Math.min(gap, Math.max(dx, dy));
-              if (dx < 0 && dy < 0) bad.push(`${engine} ${w}x${h}${state ? ' ' + state : ''} scene ${n}: the thing of pass ${pass} overlaps the giant words`);
+              if (dx < 0 && dy < 0) bad.push(`${tag} scene ${n}: the thing of pass ${pass} overlaps the giant words`);
             }
+            for (const q of r.small) {
+              const d = Math.max(q[0] - box[2], box[0] - q[2], q[1] - box[3], box[1] - q[3]);
+              gapFoot = Math.min(gapFoot, d);
+              if (d <= 0) foot.push(`${tag} scene ${n}: the thing of pass ${pass} touches the words at the foot (${d.toFixed(1)} px)`);
+            }
+            if (box[0] < -0.5 || box[1] < -0.5 || box[2] > r.vw + 0.5 || box[3] > r.vh + 0.5) foot.push(`${tag} scene ${n}: the thing of pass ${pass} runs off the visible area (${box.map(Math.round).join(', ')} in ${r.vw}x${r.vh})`);
           }
-          seen.push([gap, `${engine} ${w}x${h}${state ? ' ' + state : ''} scene ${n} ${gap.toFixed(1)} px`]);
+          seen.push([gap, `${tag} scene ${n} ${gap.toFixed(1)} px`]);
+          if (gapFoot < Infinity) seenFoot.push([gapFoot, `${tag} scene ${n} ${gapFoot.toFixed(1)} px`]);
         }
         await c.close();
       }
-      ok(!bad.length, 16, `Things that first appear in a later pass (scene ${[...new Set(views.map((v) => v[0]))].join(', ')}) never overlap the giant words, at ${VIEWPORTS.map((v) => v.join('x')).join(', ')}, both phone states and 834x1194 (Chromium), 430x739 and 1512x860 (WebKit)`, `closest: ${seen.sort((a, b) => a[0] - b[0])[0]?.[1]}`, [...new Set(bad)].slice(0, 6).join('; '));
+      const what = `at ${VIEWPORTS.map((v) => v.join('x')).join(', ')}, 834x1194 and every bar state of ${BARS.map((b) => `${b[0]} wide ${b[1]}/${b[2]}`).join(', ')} (Chromium); 430x739, 1512x860 and Safari's classic bar showing (WebKit)`;
+      ok(!bad.length, 16, `Things that first appear in a later pass (scene ${[...new Set(views.map((v) => v[0]))].join(', ')}) never overlap the giant words, ${what}`, `closest: ${seen.sort((a, b) => a[0] - b[0])[0]?.[1]}`, [...new Set(bad)].slice(0, 6).join('; '));
+      ok(!foot.length, 16, `Those things never touch the words at the foot (the small line, its note, the tool and height lines) and stay fully on the visible screen, ${what}`, `closest to the words at the foot: ${seenFoot.sort((a, b) => a[0] - b[0])[0]?.[1] ?? 'none'}`, [...new Set(foot)].slice(0, 6).join('; '));
     }
+  }
+
+  /* 18. scripts off: every scene's picture sits where the film puts it at rest (same size, place and tuck), and every
+     giant line keeps at least 85% of its ink (the thing in front may hide only a little of it) */
+  if (want(18)) {
+    const place = [], inkBad = [], seenPlace = [], seenInk = [];
+    const runs = [...[[430, 873], [393, 852], [320, 568], [852, 393], [1512, 860], [2428, 1300]].map(([w, h]) => ({ w, h, css: '', label: `${w}x${h}` })),
+      ...[BARS[1], BARS[3]].map((bar) => ({ ...barState(bar, 'showing'), label: barLabel(bar, 'showing') }))];
+    for (const engine of ['chromium', 'webkit', 'firefox']) {
+      for (const run of engine === 'chromium' ? runs : runs.filter((r) => ['430x873', '1512x860'].includes(r.label))) {
+        const { w, h, css } = run, tag = `${engine} ${run.label}`;
+        const film1 = await ctx(engine, { viewport: { width: w, height: h }, bypassCSP: true });
+        if (css) await film1.addInitScript(INJECT, css);
+        const pf = await open(film1, '/', `film ${tag}`);
+        const off = await ctx(engine, { viewport: { width: w, height: h }, bypassCSP: true, javaScriptEnabled: false });
+        const po = await open(off, '/', `scripts off ${tag}`);
+        // with scripts off no init script runs: the test styles go in once the page is there
+        if (css) await po.evaluate((css) => { const s = document.createElement('style'); s.textContent = css; document.head.append(s); }, css);
+        let worst = 0, least = Infinity;
+        for (let n = 1; n <= content.scenes.length; n++) {
+          await toScene(pf, n, 1);
+          const a = await pf.evaluate((n) => { const i = document.querySelector(`#s${n} .passes img`).getBoundingClientRect(); return [i.left, i.top, i.width, i.height]; }, n);
+          await po.evaluate((n) => document.getElementById('s' + n).scrollIntoView(), n);
+          await settle(po, 150);
+          const b = await po.evaluate((n) => { const s = document.getElementById('s' + n), l = s.querySelector('.layer').getBoundingClientRect(), i = s.querySelector('.passes img').getBoundingClientRect(); return [i.left - l.left, i.top - l.top, i.width, i.height]; }, n);
+          const err = Math.max(...a.map((v, k) => Math.abs(v - b[k])));
+          worst = Math.max(worst, err);
+          if (err > 1.5) place.push(`${tag} scene ${n}: film ${a.map((v) => v.toFixed(1)).join(', ')}, scripts off ${b.map((v) => v.toFixed(1)).join(', ')}`);
+          // the ink of each giant line with the cut and without it, the pictures hidden (white letters on black)
+          if (!(await po.evaluate((n) => !!document.querySelector(`#s${n} .cut`), n))) continue;
+          const lines = await po.evaluate((n) => [...document.querySelectorAll(`#s${n} .big .pl`)].map((e) => { const g = document.createRange(); g.selectNodeContents(e); const t = g.getBoundingClientRect(); return [t.left, t.top, t.width, t.height]; }), n);
+          const style = (x) => po.evaluate((x) => { let s = document.getElementById('t-ink'); if (!s) { s = document.createElement('style'); s.id = 't-ink'; document.head.append(s); } s.textContent = x; }, x);
+          const bare = `#s${n} .passes,#s${n} .shade,#s${n} .words,#top,#frame,.bottom-sw{visibility:hidden !important}#s${n} .big{color:#fff !important}`;
+          await style(bare); await settle(po, 120);
+          const A = await po.screenshot();
+          await style(bare + `#s${n} .cut{-webkit-mask:none !important;mask:none !important}`); await settle(po, 120);
+          const B = await po.screenshot();
+          await style('');
+          const m = await labPage.evaluate(async ([a64, b64, boxes, decode]) => {
+            const dec = (0, eval)(decode); const [a, b] = await Promise.all([dec(a64), dec(b64)]);
+            return boxes.map(([x, y, w, h]) => {
+              let na = 0, nb = 0;
+              for (let yy = Math.max(0, Math.round(y)); yy < Math.min(a.height, Math.round(y + h)); yy++) for (let xx = Math.max(0, Math.round(x)); xx < Math.min(a.width, Math.round(x + w)); xx++) {
+                const i = (yy * a.width + xx) * 4;
+                if (b.data[i] >= 160) { nb++; if (a.data[i] >= 160) na++; }
+              }
+              return nb ? na / nb : 1;
+            });
+          }, [A.toString('base64'), B.toString('base64'), lines, decode]);
+          m.forEach((v, i) => { least = Math.min(least, v); if (v < 0.85) inkBad.push(`${tag} scene ${n} line ${i + 1}: ${(100 * v).toFixed(1)}% of its ink shows`); });
+        }
+        seenPlace.push([worst, `${tag} ${worst.toFixed(2)} px`]);
+        if (least < Infinity) seenInk.push([least, `${tag} ${(100 * least).toFixed(1)}%`]);
+        await film1.close(); await off.close();
+      }
+    }
+    ok(!place.length, 18, 'Scripts off: every scene\'s picture sits where the film puts it at rest, within 1.5 px (phones, both Safari bar layouts showing, laptop, monitor; Chromium, and 430x873 and 1512x860 in WebKit and Firefox)', `largest ${seenPlace.sort((a, b) => b[0] - a[0])[0]?.[1]}`, place.slice(0, 6).join('; '));
+    ok(!inkBad.length, 18, 'Scripts off: every giant line keeps at least 85% of its ink (the thing in front hides only a little), the same sizes and engines', `least: ${seenInk.sort((a, b) => a[0] - b[0])[0]?.[1] ?? 'no cut'}`, inkBad.slice(0, 6).join('; '));
   }
 
   /* 17. the cut-out: where a scene has the matte of the thing lit from its first pass, the letters are hidden inside
@@ -1091,6 +1178,58 @@ async function main() {
         }
       }
       ok(!geoBad.length, 17, `Cut-out placement (scenes ${scenes.join(', ')}): the matte sits on the picture within 1 px, at every size, after resizes and turns (Chromium, WebKit, Firefox)`, `largest error ${worst.toFixed(2)} px`, geoBad.slice(0, 6).join('; '));
+      // how much of a giant line the thing in front hides, as the film shows it at rest: the hidden part may reach at
+      // most the lowest 15% of the capitals (17% allowed for the soft edge), at every listed phone size and bar state
+      {
+        const deepBad = [];
+        let deepest = 0, deepAt = '';
+        const runs = [...[[430, 873], [393, 852], [320, 568], [834, 1194], [1512, 860], [852, 393]].map(([w, h]) => ({ w, h, css: '', label: `${w}x${h}` })),
+          ...BARS.map((bar) => ({ ...barState(bar, 'showing'), label: barLabel(bar, 'showing') }))];
+        for (const run of runs) {
+          const c = await ctx('chromium', { viewport: { width: run.w, height: run.h }, bypassCSP: true });
+          if (run.css) await c.addInitScript(INJECT, run.css);
+          const p = await open(c, '/', `cut depth ${run.label}`);
+          for (const n of scenes) {
+            await toScene(p, n, 1);
+            await p.waitForFunction((n) => document.querySelector(`#s${n} .passes`).classList.contains('ready'), n, { timeout: 8000 }).catch(() => {});
+            // each line's text box, baseline and capitals' height, from the browser's own metrics of the face
+            const lines = await p.evaluate((n) => {
+              const g2 = document.createElement('canvas').getContext('2d');
+              return [...document.querySelectorAll(`#s${n} .big .pl`)].map((e) => {
+                const g = document.createRange(); g.selectNodeContents(e); const t = g.getBoundingClientRect();
+                const cs = getComputedStyle(e), fs = parseFloat(cs.fontSize), line = (innerWidth / innerHeight <= 1 ? e : e.closest('.ln')).getBoundingClientRect();
+                g2.font = `400 ${fs}px "Site Display"`; const m = g2.measureText('H');
+                const base = line.top + (parseFloat(cs.lineHeight) - (m.fontBoundingBoxAscent + m.fontBoundingBoxDescent)) / 2 + m.fontBoundingBoxAscent;
+                return { box: [t.left, t.top, t.width, t.height], base, cap: m.actualBoundingBoxAscent };
+              });
+            }, n);
+            const style = (x) => p.evaluate((x) => { let s = document.getElementById('t-deep'); if (!s) { s = document.createElement('style'); s.id = 't-deep'; document.head.append(s); } s.textContent = x; }, x);
+            const bare = `#s${n} .passes,#s${n} .shade,#s${n} .words,#top,#frame,.bottom-sw{visibility:hidden !important}#s${n} .big{color:#fff !important}`;
+            await style(bare); await settle(p, 150);
+            const A = await p.screenshot();
+            await style(bare + `#s${n} .cut{-webkit-mask:none !important;mask:none !important}`); await settle(p, 150);
+            const Bs = await p.screenshot();
+            await style('');
+            const res = await labPage.evaluate(async ([a64, b64, lines, decode]) => {
+              const dec = (0, eval)(decode); const [a, b] = await Promise.all([dec(a64), dec(b64)]);
+              return lines.map(({ box: [x, y, w, h], base, cap }) => {
+                let top = Infinity;
+                for (let yy = Math.max(0, Math.round(y)); yy < Math.min(a.height, Math.round(y + h)); yy++) for (let xx = Math.max(0, Math.round(x)); xx < Math.min(a.width, Math.round(x + w)); xx++) {
+                  const i = (yy * a.width + xx) * 4;
+                  if (b.data[i] >= 160 && a.data[i] < 80) { top = Math.min(top, yy); break; }
+                }
+                return top === Infinity ? 0 : (base - top) / cap;
+              });
+            }, [A.toString('base64'), Bs.toString('base64'), lines, decode]);
+            res.forEach((d, i) => {
+              if (d > deepest) { deepest = d; deepAt = `${run.label} scene ${n} line ${i + 1}`; }
+              if (d > 0.17) deepBad.push(`${run.label} scene ${n} line ${i + 1}: the thing hides up to ${(100 * d).toFixed(1)}% of the capitals`);
+            });
+          }
+          await c.close();
+        }
+        ok(!deepBad.length, 17, 'The thing in front hides at most the lowest 15% of a giant line\'s capitals (17% allowed for the soft edge), as the film shows each scene at rest, at the phone sizes, every bar layout showing, 834x1194, 1512x860 and 852x393 (Chromium)', `deepest ${(100 * deepest).toFixed(1)}% (${deepAt || 'nothing hidden'})`, deepBad.slice(0, 6).join('; '));
+      }
       ok(!pixBad.length, 17, `Cut-out pixels (scenes ${scenes.join(', ')}): letters moved onto the thing are hidden inside it and show outside it, at least 99% each (Chromium, WebKit, Firefox; laptop and phone)`, seen.join('; '), pixBad.join('; '));
     }
   }
