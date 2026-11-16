@@ -233,6 +233,8 @@ function build(n: number): void {
 function release(n: number): void {
   const s = S[n - 1];
   s.built = '';
+  // Firefox picks the fallback file of a picture it is about to drop and fetches it; with no src it fetches nothing
+  for (const p of s.passes) p.img.removeAttribute('src');
   s.passes = [];
   s.box.replaceChildren();
   s.box.classList.remove('ready');
