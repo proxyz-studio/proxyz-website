@@ -96,7 +96,17 @@ probeB.className = 'probe-b';
 probeB.setAttribute('aria-hidden', 'true');
 document.body.append(probeB);
 let insetMax = probeB.offsetHeight;
-let VW = innerWidth, VH = probe.offsetHeight || innerHeight, form: Form = formNow();
+// the small viewport (a phone browser's bar showing): the pictures leave room for the words at the foot as they sit
+// then, so nothing that appears later ever runs under them, whichever bar layout the browser uses
+const probeS = document.createElement('div');
+probeS.className = 'probe-s';
+probeS.setAttribute('aria-hidden', 'true');
+document.body.append(probeS);
+// the width the styles call 100vw (Firefox leaves a classic scroll bar out of it, the window's own width keeps it in)
+const vwNow = () => probe.getBoundingClientRect().width || innerWidth;
+let VW = vwNow(), VH = probe.offsetHeight || innerHeight, SVH = Math.min(VH, probeS.offsetHeight || VH), form: Form = formNow();
+// in em of a giant line (set by the build from the display face): its capitals' height, its box under the baseline
+const typeEm = (name: string) => parseFloat(getComputedStyle(doc).getPropertyValue(name)) || 0;
 
 startClock();
 
@@ -142,12 +152,9 @@ async function whenReady(img: HTMLImageElement): Promise<void> {
 interface Box { left: number; top: number; w: number; h: number }
 // the screens on which the words stand without the safe area (as in style.css)
 const deskMQ = matchMedia('(min-width: 900px) and (min-height: 501px)');
-/** How far the words' low place stands above the bottom: the base from style.css (--words-base: 60 on phones upright,
- *  20 sideways, the desktop value on desktop), plus on phones the largest bottom safe area seen so far. */
-function wordsBase(): number {
-  const base = parseFloat(getComputedStyle(doc).getPropertyValue('--words-base')) || 0;
-  return base + (deskMQ.matches ? 0 : insetMax);
-}
+/** How far the words at the foot stand above the visible bottom: the base from style.css (--words-base: 60 on
+ *  phones upright, 20 sideways, the desktop value on desktop); on phones the bottom safe area comes on top. */
+const wordsBase = (): number => parseFloat(getComputedStyle(doc).getPropertyValue('--words-base')) || 0;
 /** Called on resize and on scroll: when the bottom safe area grows past the largest seen, place the pictures again. */
 function checkInset(): void {
   const b = probeB.offsetHeight;
@@ -158,39 +165,42 @@ const matteOf = (view: View): string | null => (view.matte && pictures[view.matt
 
 function geometry(view: View, s: SceneState): Box {
   const [iw, ih] = pictures[view.passes[0]].size;
-  const f = view.frame, vw = VW, vh = VH;
+  const f = view.frame, vw = VW, vh = VH, vs = SVH;
   const roomN = view.placeAs ?? S.indexOf(s) + 1;
-  const room = S[roomN - 1];   // the words that set the span (and the view that may tuck the thing under them)
+  const room = S[roomN - 1];   // the words that set the room (and the view that may tuck the thing under them)
+  // the words at the foot start here: at the small height (the bar showing) or, without a bar, above the home bar
+  const foot = room.words ? room.words.getBoundingClientRect().height : 0;
+  const inset = deskMQ.matches ? 0 : insetMax;
+  const footTop = Math.min(vs - wordsBase() - foot, vh - wordsBase() - inset - foot);
+  // the giant words at the top end here; a thing with a matte may reach into the capitals of their lowest line
+  const topEnd = room.top ? room.top.offsetTop + room.top.getBoundingClientRect().height : 0;
   let k = f.fit === 'width' ? vw / iw : f.fit === 'contain' ? Math.min(vw / iw, vh / ih) : Math.max(vw / iw, vh / ih);
   k *= f.zoom ?? 1;
-  let w = iw * k, h = ih * k;
-  let left = f.vx * vw - f.fx * w, topY = f.vy * vh - f.fy * h;
-  if (f.fit === 'cover') { left = clamp(left, vw - w, 0); topY = clamp(topY, vh - h, 0); }
-  // above and below: a picture row kept clear of the giant words at the foot (at their low place, as for the span)
-  // or at the top
-  if (f.above && room.words && !room.top) topY = Math.min(topY, vh - wordsBase() - room.words.offsetHeight - f.above[1] - f.above[0] * k);
-  if (f.below && room.top) topY = Math.max(topY, room.top.offsetTop + room.top.offsetHeight + f.below[1] - f.below[0] * k);
-  // span: picture rows that must fit in the room the words leave (short phone screens)
+  let roomTop = 0, roomBot = 0;
   if (f.span) {
-    // the room starts under the border, or under the giant words at the top: below them, or a little into them when
-    // the thing has a matte and stands in front of their lowest letters
+    // span: these picture rows fit in the room the words leave, the picture made smaller when it must (never under
+    // half); the room ends 16 px over the words at the foot
     const rv = viewOf(roomN);
     const tuck = matteOf(rv) ? rv.frame.tuck ?? 0 : 0;
-    const roomTop = room.top
-      ? room.top.offsetTop + room.top.offsetHeight * (1 - tuck) + (tuck ? 0 : 12)
-      : (top ? top.getBoundingClientRect().bottom : 0) + 12;
-    // the room ends above the words at the foot at their LOW place (on a phone they ride a browser's sliding bar, so
-    // where they are right now depends on the bar; the picture must not), so a scene built in either state gets the
-    // same box. Worked out from the steady height, never read from the words' own place (their safe area may glide).
-    const roomBot = vh - wordsBase() - (room.words ? room.words.offsetHeight : 0) - 16;
-    const [y0, y1] = f.span;
-    if (roomBot > roomTop && (topY + y0 * k < roomTop || topY + y1 * k > roomBot)) {
-      const k2 = Math.min(k, (roomBot - roomTop) / (y1 - y0));
-      w = iw * k2; h = ih * k2;
-      left = f.vx * vw - f.fx * w;
-      topY = (roomTop + roomBot) / 2 - ((y0 + y1) / 2) * k2;
-    }
+    // the lowest line's size (on a wide screen every line has the block's size, so the last .pl serves both shapes)
+    const lines = room.top ? room.top.querySelectorAll<HTMLElement>('.pl') : null;
+    const last = lines && lines.length ? parseFloat(getComputedStyle(lines[lines.length - 1]).fontSize) : 0;
+    roomTop = !room.top ? (top ? top.getBoundingClientRect().bottom : 0) + 12
+      : tuck ? topEnd - (typeEm('--type-under') + tuck * typeEm('--type-cap')) * last
+      : topEnd + 12;
+    roomBot = footTop - 16;
+    const rows = f.span[1] - f.span[0];
+    k = Math.min(k, Math.max(roomBot - roomTop, 0.5 * k * rows) / rows);
   }
+  const w = iw * k, h = ih * k;
+  let left = f.vx * vw - f.fx * w, topY = f.vy * vh - f.fy * h;
+  // cover: a picture wider than the screen covers it; one narrower stays inside it
+  if (f.fit === 'cover') { left = clamp(left, Math.min(0, vw - w), Math.max(0, vw - w)); topY = clamp(topY, Math.min(0, vh - h), Math.max(0, vh - h)); }
+  // above and below: a picture row kept clear of the giant words at the foot or at the top
+  if (f.above && room.words && !room.top) topY = Math.min(topY, footTop - f.above[1] - f.above[0] * k);
+  if (f.below && room.top) topY = Math.max(topY, topEnd + f.below[1] - f.below[0] * k);
+  // the span's rows inside the room (as CSS clamp: when the room is too small, its top wins)
+  if (f.span) topY = Math.max(roomTop - f.span[0] * k, Math.min(topY, roomBot - f.span[1] * k));
   return { left, top: topY, w, h };
 }
 
@@ -414,14 +424,14 @@ function onResizeSoon(): void {
   settle = setTimeout(() => { layoutAll(); onResize(); }, 150);
 }
 function onResize(): void {
-  const w = innerWidth, h = probe.offsetHeight || innerHeight, f = formNow();
-  // re-place only when the width, the steady height or the screen shape changes, never when a phone's bar slides
+  const w = vwNow(), h = probe.offsetHeight || innerHeight, hs = Math.min(h, probeS.offsetHeight || h), f = formNow();
+  // re-place only when the width, the steady heights or the screen shape change, never when a phone's bar slides
   if (f !== form) {
     form = f;
-    VW = w; VH = h;
+    VW = w; VH = h; SVH = hs;
     for (const s of S) if (s.built) { s.built = ''; build(S.indexOf(s) + 1); }
-  } else if (w !== VW || h !== VH) {
-    VW = w; VH = h;
+  } else if (w !== VW || h !== VH || hs !== SVH) {
+    VW = w; VH = h; SVH = hs;
     layoutAll();
     for (const s of S) if (s.built) build(S.indexOf(s) + 1);   // a bigger screen may want the bigger file
   }
@@ -447,6 +457,7 @@ reducedMQ.addEventListener('change', schedule);
 portrait.addEventListener('change', onResizeSoon);
 if (typeof ResizeObserver === 'function') {
   new ResizeObserver(() => onResize()).observe(probe);
+  new ResizeObserver(() => onResize()).observe(probeS);
   new ResizeObserver(() => checkInset()).observe(probeB);
 }
 if (document.fonts) document.fonts.ready.then(() => { layoutAll(); measure(); update(); });

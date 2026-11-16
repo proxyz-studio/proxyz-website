@@ -167,6 +167,11 @@ export interface FontMetrics {
   /** Width of a line of text at a font size of 1 px, with the font's pair kerning and a letter spacing (in em)
    *  after every character, as browsers draw it. */
   width(text: string, letterSpacing?: number): number;
+  /** In em: the height of the capitals, and the ascent and descent browsers set the line by (hhea, or the typo
+   *  metrics when the font asks for them). */
+  capHeight: number;
+  ascent: number;
+  descent: number;
 }
 
 export function readFont(path: string): FontMetrics {
@@ -180,7 +185,13 @@ export function readFont(path: string): FontMetrics {
   const advance = (g: number) => hmtx.data.readUInt16BE(advAt + Math.min(g, metrics - 1) * advStep);
   const glyphOf = charMap(need('cmap').data);
   const kern = pairKerning(t.get('GPOS')?.data);
+  const hhea = need('hhea').data, os2 = t.get('OS/2')?.data;
+  const typo = !!os2 && (os2.readUInt16BE(62) & 0x80) !== 0;
+  const ascent = (typo ? os2!.readInt16BE(68) : hhea.readInt16BE(4)) / upm;
+  const descent = -(typo ? os2!.readInt16BE(70) : hhea.readInt16BE(6)) / upm;
+  const capHeight = os2 && os2.readUInt16BE(0) >= 2 ? os2.readInt16BE(88) / upm : 0.7;
   return {
+    capHeight, ascent, descent,
     width(text, letterSpacing = 0) {
       const chars = [...text];
       const glyphs = chars.map((c) => {

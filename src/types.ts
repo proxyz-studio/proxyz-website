@@ -80,8 +80,9 @@ export interface Frame {
   /** [y0, y1]: picture rows that must fit in the room the words leave: between the border strip (or the giant words
    *  at the top) and the words at the foot of the screen */
   span?: [number, number];
-  /** With a matte: how far (a share of the giant words' height) the span may reach up into the giant words, the
-   *  thing then standing in front of their lowest letters. Without a matte the room starts below the words. */
+  /** With a matte: how far the span's top row may reach up into the giant words at the top, as a share of the
+   *  capitals' height of their lowest line (0.15: the thing hides at most the lowest 15% of those letters). Without a
+   *  matte the room starts 12 px under the words. */
   tuck?: number;
   sides?: boolean;
 }

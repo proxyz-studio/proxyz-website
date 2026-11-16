@@ -376,7 +376,11 @@ export function typeCss(): string {
   const T = film.type;
   // the letter spacing is set on each line too: an em value turns into pixels where it is declared, and an upright
   // screen sizes each line on its own
-  const out = [`.big{line-height:${T.lineHeight}}.big,.big .ln,.big .pl{letter-spacing:${T.letterSpacing}em}`];
+  const font = readFont(root + DISPLAY_FONT);
+  const under = (T.lineHeight + font.descent - font.ascent) / 2;
+  const out = [`.big{line-height:${T.lineHeight}}.big,.big .ln,.big .pl{letter-spacing:${T.letterSpacing}em}`,
+    // in em of a giant line: its capitals' height, and how far its box reaches under the baseline (film and stills)
+    `:root{--type-cap:${font.capHeight.toFixed(5)};--type-under:${under.toFixed(5)}}`];
   const wide: string[] = [], upright: string[] = [];
   c.scenes.forEach((s, i) => {
     const z = typeSizes(film, s, i + 1);
@@ -392,41 +396,31 @@ export function typeCss(): string {
 export function stillsCss(): string {
   const { content: c, film, pictures: p } = load();
   const out: string[] = [];
-  const W = 'var(--W)', H = 'var(--H)';
   for (const n of Object.keys(film.scenes).filter((k) => /^\d+$/.test(k))) {
     const sc = sceneViews(film, c, Number(n));
     for (const [form, media] of [['desktop', LANDSCAPE], ['phone', PORTRAIT]] as const) {
       const view = sc[form];
       const key = view.passes[n === '1' ? 0 : restingPass(view)];
       const [iw, ih] = p[key].size;
-      const f = view.frame, z = f.zoom ?? 1;
-      const s = f.fit === 'width' ? `calc(${W} / ${iw} * ${z})`
-        : f.fit === 'contain' ? `calc(min(${W} / ${iw}, ${H} / ${ih}) * ${z})`
-        : `calc(max(${W} / ${iw}, ${H} / ${ih}) * ${z})`;
-      let left = `calc(${f.vx} * ${W} - ${f.fx} * var(--s) * ${iw})`;
-      let top = `calc(${f.vy} * ${H} - ${f.fy} * var(--s) * ${ih})`;
-      if (f.fit === 'cover') {
-        left = `clamp(calc(${W} - var(--s) * ${iw}), ${left}, 0px)`;
-        top = `clamp(calc(${H} - var(--s) * ${ih}), ${top}, 0px)`;
-      }
-      const words = c.scenes[Number(n) - 1], atFoot = film.type.bottom.includes(Number(n));
-      if (f.above && atFoot) {
-        top = `min(${top}, calc(${H} - var(--words-base) - var(--safe-b) - ${typeHeightCss(film, words, Number(n), form)} - ${f.above[1]}px - ${f.above[0]} * var(--s)))`;
-      }
-      if (f.below && !atFoot) {
-        top = `max(${top}, calc(var(--type-top) + ${typeHeightCss(film, words, Number(n), form)} + ${f.below[1]}px - ${f.below[0]} * var(--s)))`;
-      }
+      const f = view.frame;
+      const place = placement(film, c, p, Number(n), form, view, iw, ih);
       const mask = frameMask(view, [iw, ih]);
-      const decl = [`--s:${s}`, `width:calc(var(--s) * ${iw})`, `height:calc(var(--s) * ${ih})`, `left:${left}`, `top:${top}`];
+      const decl = [...place.vars, `width:${place.w}`, `height:${place.h}`, `left:${place.left}`, `top:${place.top}`];
       if (mask) decl.push(`-webkit-mask-image:${mask}`, `mask-image:${mask}`);
       if (view.filter) decl.push(`filter:${view.filter}`);
       out.push(`@media ${media}{#s${n} .still{${decl.join(';')}}}`);
+      // sides: a picture narrower than the screen fades into black at its left and right edges (as the film does)
+      if (f.sides) {
+        const L = 'var(--l)', w = place.w, fe = `calc(0.14 * ${w})`;
+        const grad = `linear-gradient(to right,transparent ${L},#000 calc(${L} + ${fe}),#000 calc(${L} + ${w} - ${fe}),transparent calc(${L} + ${w}))`;
+        out.push(`@media ${media}{#s${n} .passes:has(.still){${place.vars.join(';')};--l:${place.left};-webkit-mask-image:${grad};mask-image:${grad}}}`);
+      }
       // the cut, with scripts off (and once the film has given up): never while the film may still start, so the
       // mattes of later scenes do not load with the first screen
       const matte = view.matte && p[view.matte]?.matte ? p[view.matte] : null;
       if (matte && !film.type.bottom.includes(Number(n))) {
-        const m = cutMask(matte.files[0].webp, view.opens ? '' : mask, { left, top, w: `calc(var(--s) * ${iw})`, h: `calc(var(--s) * ${ih})` });
-        const rule = `#s${n} .cut{--s:${s};${maskDecl(m).join(';')}}`;
+        const m = cutMask(matte.files[0].webp, view.opens ? '' : mask, { left: place.left, top: place.top, w: place.w, h: place.h });
+        const rule = `#s${n} .cut{${place.vars.join(';')};${maskDecl(m).join(';')}}`;
         out.push(`@media (scripting: none) and ${media}{${rule}}`, `@media ${media}{.nofilm ${rule}}`);
       }
     }
@@ -436,6 +430,76 @@ export function stillsCss(): string {
   // #film in the selector: it must outweigh the general `.film #film .scene` height
   for (const [n, k] of Object.entries(film.tall)) out.push(`.film #film #s${n}{height:${(k * 100).toFixed(0)}vh;height:${(k * 100).toFixed(0)}lvh}`);
   return out.join('\n') + '\n';
+}
+
+/** Lines a monospaced paragraph breaks into at a width of `chars` characters (words never split). */
+function wrapCount(text: string, chars: number): number {
+  let lines = 1, len = 0;
+  for (const word of text.split(' ')) {
+    if (len && len + 1 + word.length > chars) { lines++; len = word.length; } else len += (len ? 1 : 0) + word.length;
+  }
+  return lines;
+}
+
+/** On an upright screen, the height of the words at the foot of a scene with its giant words at the top (the
+ *  height line, the small line and its note; as style.css sets them: 44 px, 15 px at 1.45, 20 px less 8, gaps of
+ *  18 px). The small line is 30 characters wide on every phone of 302 px and more. The film measures the same block. */
+function footPortrait(s: SceneWords): number {
+  if (s.toolLine) throw new Error(`site-pages: scene "${s.id}" needs its foot height for a span, but its tool line wraps with the width`);
+  const items = [...(s.heightLine ? [44] : []), ...(s.small ? [wrapCount(s.small, 30) * 15 * 1.45] : []), ...(s.note ? [20] : [])];
+  return items.reduce((a, b) => a + b, 0) + 18 * Math.max(0, items.length - 1) - (s.note ? 8 : 0);
+}
+
+/** Where the film puts a scene's pictures, as CSS: the same arithmetic as geometry() in src/main.ts, in steady screen
+ *  units (--H the large viewport, --S the small one, so nothing moves when a phone browser's bar slides). The scale is
+ *  carried as the picture's width in px (--sw), never as px per picture pixel: Firefox keeps lengths in sixtieths of a
+ *  pixel, so a tiny length like 0.547px would come back as 0.533px. */
+function placement(film: FilmData, c: Content, p: Pictures, n: number, form: 'desktop' | 'phone', view: View, iw: number, ih: number): { vars: string[]; left: string; top: string; w: string; h: string } {
+  const W = 'var(--W)', H = 'var(--H)', S = 'var(--S)';
+  const f = view.frame, z = f.zoom ?? 1, r6 = (v: number) => +v.toFixed(6);
+  const aspect = r6(ih / iw), per = (row: number) => r6(row / iw);   // a picture row as a share of the picture's width
+  const roomN = view.placeAs ?? n, roomWords = c.scenes[roomN - 1];
+  const atFoot = film.type.bottom.includes(roomN);
+  const k0w = f.fit === 'width' ? `calc(${W} * ${z})`
+    : f.fit === 'contain' ? `calc(min(${W}, ${H} * ${r6(iw / ih)}) * ${z})`
+    : `calc(max(${W}, ${H} * ${r6(iw / ih)}) * ${z})`;
+  const typeH = typeHeightCss(film, roomWords, roomN, form);
+  // the words at the foot: the giant words of scenes 1 and 7, or the small words of the others (upright screens
+  // only); where they start, at the small height (a phone browser's bar showing) or, without a bar, above the home bar
+  const footTop = () => {
+    const foot = atFoot ? typeH : form === 'phone' ? `${footPortrait(roomWords).toFixed(2)}px` : '0px';
+    return `min(calc(${S} - var(--words-base) - ${foot}), calc(${H} - var(--words-base) - var(--safe-b) - ${foot}))`;
+  };
+  const vars = [`--k0w:${k0w}`];
+  let sw = 'var(--k0w)';
+  if (f.span) {
+    if (form !== 'phone') throw new Error(`site-pages: scene ${n} has a span on a wide screen; only upright screens know their foot`);
+    const rv = sceneViews(film, c, roomN)[form];
+    const tuck = rv.matte && p[rv.matte]?.matte ? rv.frame.tuck ?? 0 : 0;
+    const z2 = typeSizes(film, roomWords, roomN);
+    const lastSize = z2.upright[z2.upright.length - 1];
+    const roomTop = atFoot ? `calc(var(--strip) + var(--safe-t) + 12px)`
+      : tuck ? `calc(var(--type-top) + ${typeH} - (var(--type-under) + ${tuck} * var(--type-cap)) * ${lastSize})`
+      : `calc(var(--type-top) + ${typeH} + 12px)`;
+    const rows = f.span[1] - f.span[0];
+    vars.push(`--rt:${roomTop}`, `--rb:calc(${footTop()} - 16px)`);
+    // the span's rows fill the room at most (never under half the picture's size)
+    sw = `min(var(--k0w), max(calc((var(--rb) - var(--rt)) * ${r6(iw / rows)}), calc(0.5 * var(--k0w))))`;
+  }
+  vars.push(`--sw:${sw}`);
+  const w = 'var(--sw)', h = `calc(var(--sw) * ${aspect})`;
+  let left = `calc(${f.vx} * ${W} - ${f.fx} * var(--sw))`;
+  let top = `calc(${f.vy} * ${H} - ${r6(f.fy * ih / iw)} * var(--sw))`;
+  if (f.fit === 'cover') {
+    // a picture wider than the screen covers it; one narrower stays inside it
+    const dw = `calc(${W} - var(--sw))`, dh = `calc(${H} - var(--sw) * ${aspect})`;
+    left = `clamp(min(0px, ${dw}), ${left}, max(0px, ${dw}))`;
+    top = `clamp(min(0px, ${dh}), ${top}, max(0px, ${dh}))`;
+  }
+  if (f.above && atFoot) top = `min(${top}, calc(${footTop()} - ${f.above[1]}px - ${per(f.above[0])} * var(--sw)))`;
+  if (f.below && !atFoot) top = `max(${top}, calc(var(--type-top) + ${typeH} + ${f.below[1]}px - ${per(f.below[0])} * var(--sw)))`;
+  if (f.span) top = `clamp(calc(var(--rt) - ${per(f.span[0])} * var(--sw)), ${top}, calc(var(--rb) - ${per(f.span[1])} * var(--sw)))`;
+  return { vars, left, top, w, h };
 }
 
 /* ---------- the Vite plugin ---------- */

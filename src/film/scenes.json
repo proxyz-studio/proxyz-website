@@ -120,10 +120,11 @@
      "vx": 0.5,
      "vy": 0.5,
      "span": [
-      569,
+      487,
       1178
      ],
-     "sides": true
+     "sides": true,
+     "tuck": 0.15
     },
     "matte": "s2-phone-matte",
     "later": [
@@ -196,7 +197,13 @@
      "fx": 0.5,
      "fy": 0.5,
      "vx": 0.5,
-     "vy": 0.5
+     "vy": 0.5,
+     "span": [
+      683,
+      1173
+     ],
+     "tuck": 0.15,
+     "sides": true
     },
     "matte": "s3-phone-matte"
    }
@@ -391,11 +398,11 @@
      "vx": 0.5,
      "vy": 0.47,
      "span": [
-      236,
+      246,
       1032
      ],
      "sides": true,
-     "tuck": 0.12
+     "tuck": 0.15
     },
     "later": [
      [
@@ -480,7 +487,7 @@
      "vx": 0.5,
      "vy": 0.47,
      "span": [
-      236,
+      246,
       1032
      ],
      "sides": true

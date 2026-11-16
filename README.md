@@ -69,8 +69,13 @@ Every scene has its giant lines (`lines` in `content/site.json`; `phoneLines` br
 upright screen). Scenes 1 and 7 hold them at the foot of the screen, the others at the top under the border
 (`type.bottom` in `src/film/scenes.json`, where the size rules live too). A scene's `frame` can keep a picture clear of
 them: `below: [row, gap]` keeps that picture row at least `gap` px under the giant words at the top, `above` the same
-over the words at the foot. `later` lists the boxes of things that first appear in a later pass; `npm run check`
-proves they never overlap the giant words.
+over the words at the foot, and `span: [y0, y1]` fits those picture rows between the giant words at the top and the
+words at the foot (the picture made smaller on short screens). The words at the foot ride a phone browser's bar, so
+`above` and `span` leave room for them where they sit with the bar showing (the small viewport, `100svh`); the
+pictures never move when the bar slides. `later` lists the boxes of things that first appear in a later pass;
+`npm run check` proves they never overlap the giant words, never touch the words at the foot and stay on screen, for
+every bar layout it knows. The film places pictures in `src/main.ts` and the same arithmetic is written as CSS in
+`build/pages.ts` for the page without scripts; the check proves the two agree.
 
 ### Mattes: the thing in front of the words
 
@@ -82,8 +87,9 @@ scene's pictures, at 1x and if possible 2x (`<name>@2x.png` in the `--prefer` fo
 2. In `src/film/scenes.json` add `"matte": "s2-desk-matte"` to that scene's view.
 3. Run `npm run pictures -- <folder> --prefer <big folder> --only s2-desk-matte,s2-phone-matte`.
 
-A view that names a matte the manifest does not hold simply has no cut. With a matte, `frame.tuck` lets a span reach a
-little into the giant words. Then run `npm run check`: its cut-out test runs for every scene with a matte.
+A view that names a matte the manifest does not hold simply has no cut. With a matte, `frame.tuck` lets a span's top row
+reach into the lowest giant line, as a share of its capitals' height (0.15: the thing hides at most the lowest 15% of
+those letters). Then run `npm run check`: its cut-out tests run for every scene with a matte.
 
 ### The last scene's picture
 

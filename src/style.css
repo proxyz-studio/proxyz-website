@@ -105,7 +105,9 @@ a:focus-visible { outline: 1px solid var(--ink); outline-offset: 2px; }
 .foot .foot-sw { display: none; }
 
 /* ---------- the film (only once the script runs) ---------- */
-.probe { position: fixed; top: 0; left: 0; width: 0; height: 100vh; height: 100lvh; visibility: hidden; pointer-events: none; }
+.probe { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; height: 100lvh; visibility: hidden; pointer-events: none; }
+/* the small viewport (a phone browser's bar showing), measured by the script */
+.probe-s { position: fixed; top: 0; left: 0; width: 0; height: 100vh; height: 100svh; visibility: hidden; pointer-events: none; }
 /* the bottom safe area, measured by the script (it places the pictures for the largest it has seen) */
 .probe-b { position: fixed; top: 0; left: 0; width: 0; height: var(--safe-b); visibility: hidden; pointer-events: none; }
 html.film body::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: var(--H); background: var(--film); }
