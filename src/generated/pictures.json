@@ -746,18 +746,18 @@
    {
     "w": 1440,
     "avifQ": 70,
-    "avif": "/pictures/s6-desk-p3-1440.0a8b72cd6a.avif",
-    "avifBytes": 15917,
-    "webp": "/pictures/s6-desk-p3-1440.6ad6710280.webp",
-    "webpBytes": 19100
+    "avif": "/pictures/s6-desk-p3-1440.bc6ff53781.avif",
+    "avifBytes": 18910,
+    "webp": "/pictures/s6-desk-p3-1440.3dc6515c7e.webp",
+    "webpBytes": 22388
    },
    {
     "w": 2880,
     "avifQ": 70,
-    "avif": "/pictures/s6-desk-p3-2880.2deb76b9e7.avif",
-    "avifBytes": 58477,
-    "webp": "/pictures/s6-desk-p3-2880.ca3ca42152.webp",
-    "webpBytes": 74154
+    "avif": "/pictures/s6-desk-p3-2880.a194bc6544.avif",
+    "avifBytes": 67900,
+    "webp": "/pictures/s6-desk-p3-2880.0ab4001b70.webp",
+    "webpBytes": 89994
    }
   ]
  },
@@ -818,18 +818,18 @@
    {
     "w": 786,
     "avifQ": 70,
-    "avif": "/pictures/s6-phone-p3-786.450f02ed6e.avif",
-    "avifBytes": 19701,
-    "webp": "/pictures/s6-phone-p3-786.58409b77d9.webp",
-    "webpBytes": 23794
+    "avif": "/pictures/s6-phone-p3-786.e5e8346213.avif",
+    "avifBytes": 23385,
+    "webp": "/pictures/s6-phone-p3-786.23d9d3f7c5.webp",
+    "webpBytes": 28416
    },
    {
     "w": 1572,
     "avifQ": 70,
-    "avif": "/pictures/s6-phone-p3-1572.680c9f3133.avif",
-    "avifBytes": 69476,
-    "webp": "/pictures/s6-phone-p3-1572.7372122e51.webp",
-    "webpBytes": 91970
+    "avif": "/pictures/s6-phone-p3-1572.d7473a1b1d.avif",
+    "avifBytes": 80594,
+    "webp": "/pictures/s6-phone-p3-1572.9861c24cfc.webp",
+    "webpBytes": 104308
    }
   ]
  },
@@ -868,6 +868,44 @@
     "w": 1572,
     "webp": "/pictures/s6-phone-matte-1572.c0d37ee569.webp",
     "webpBytes": 8426
+   }
+  ]
+ },
+ "s6-desk-things-matte": {
+  "size": [
+   1440,
+   900
+  ],
+  "matte": true,
+  "files": [
+   {
+    "w": 1440,
+    "webp": "/pictures/s6-desk-things-matte-1440.3a99321fe3.webp",
+    "webpBytes": 6114
+   },
+   {
+    "w": 2880,
+    "webp": "/pictures/s6-desk-things-matte-2880.5bdfdda675.webp",
+    "webpBytes": 16672
+   }
+  ]
+ },
+ "s6-phone-things-matte": {
+  "size": [
+   786,
+   1704
+  ],
+  "matte": true,
+  "files": [
+   {
+    "w": 786,
+    "webp": "/pictures/s6-phone-things-matte-786.ae9cab6d74.webp",
+    "webpBytes": 7284
+   },
+   {
+    "w": 1572,
+    "webp": "/pictures/s6-phone-things-matte-1572.3f6ce200cf.webp",
+    "webpBytes": 18014
    }
   ]
  },

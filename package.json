@@ -13,6 +13,7 @@
     "typecheck": "tsc -b --pretty",
     "preview": "vite preview",
     "pictures": "python3 scripts/pictures.py",
+    "board": "node scripts/board.mjs",
     "check": "npm run build && node scripts/check.mjs",
     "preview-file": "node scripts/preview-file.mjs"
   },

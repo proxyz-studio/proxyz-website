@@ -30,6 +30,7 @@ npm run check      # builds, serves dist/ locally and proves the rules (see belo
 | `pictures/sources.json` | Which drawing each web picture is made from. |
 | `scripts/pictures.py` | Makes the web pictures in `public/pictures/` and `src/generated/pictures.json`. |
 | `public/` | Files served as they are. See the email pictures below. |
+| `src/film/board.json`, `scripts/board.mjs`, `build/board.ts` | Scene 6's board on the floor: its layout in millimetres and the two drawing cameras; the generator that projects it into picture pixels (`npm run board`, writes `src/generated/board.json`); the drawing of it in the page. See "Scene 6: the board" below. |
 | `scripts/check.mjs`, `scripts/serve.mjs` | The proof (`npm run check`) and the local server that follows `vercel.json`. |
 | `scripts/preview-file.mjs` | One self contained file of the real build, for looking at it without a server. |
 | `src/fonts/` | IBM Plex Mono, Regular (400) and SemiBold (600): IBM's own split Latin 1 files from its package `@ibm/plex-mono` version 2.5.0 (licence OFL-1.1, source github.com/ibm/plex), byte for byte, with IBM's licence as `OFL.txt`. To prove it, unpack that package and compare: `fonts/split/woff2/IBMPlexMono-Regular-Latin1.woff2` sha256 `e8993d946649b9d01abb1ed06d574b19d8ea3e66b5c3948602db335c44c18e56`, `fonts/split/woff2/IBMPlexMono-SemiBold-Latin1.woff2` sha256 `b7acd05041ab65f3b7039e218ddd893065e11a07e85ea85019473152a51b6b7d`. The giant lines: Anton (400), the Latin file of the package `@fontsource/anton` version 5.3.0 (`files/anton-latin-400-normal.woff2`, Anton 2.116, licence OFL-1.1, copyright The Anton Project Authors, no reserved font name, source github.com/googlefonts/AntonFont), byte for byte, sha256 `d0fa07ff63dd60cbc0e2f58e29c802dca2a5ae0276c999f59c6111ab7bbaec3b`, with the package's licence as `OFL-Anton.txt`. |
@@ -90,6 +91,27 @@ scene's pictures, at 1x and if possible 2x (`<name>@2x.png` in the `--prefer` fo
 A view that names a matte the manifest does not hold simply has no cut. With a matte, `frame.tuck` lets a span's top row
 reach into the lowest giant line, as a share of its capitals' height (0.15: the thing hides at most the lowest 15% of
 those letters). Then run `npm run check`: its cut-out tests run for every scene with a matte.
+
+### Scene 6: the board
+
+Scene 6's floor is one circuit board: a chip marked with the system's name in the middle, a live trace from it to
+each thing (butter to the stand, mint to the race piece, pink to the coach phone), a quiet net of traces, and a dashed
+trace to an empty place marked NEXT. It is drawn by the page over the drawing, not into it:
+
+- `src/film/board.json`: the layout in millimetres on the floor, one per screen shape, with the camera of each drawing
+  (copied from the drawing program's job). Change it here, then run `npm run board`, which projects every line
+  through that camera into picture pixels and writes `src/generated/board.json`. The site build reads only that file;
+  it never needs the drawings' folder. A route that never meets its pad stops the generator.
+- `build/board.ts` writes the board into the page at rest (an SVG per screen shape, in the picture's own box, and the
+  two labels as real text, from `board` in scene 6 of `content/site.json`). Lines keep their width in screen pixels.
+- `src/main.ts` draws it in as a pure function of the scroll: the chip and the stand's trace as the scene comes in,
+  the race piece's trace with the second pass, the phone's with the third, then the net, the darker floor, the dashed
+  trace and NEXT. At rest small pulses run the three live traces (only while the scene is on screen). With less
+  motion, the rest state and no pulses. With scripts off, or once the film gives up, the rest state.
+- Behind the things: the board is hidden inside the matte of all three things (`things` in scene 6's view, a
+  `-things-matte` picture in `pictures/sources.json`). No matte, no board.
+- `npm run check` tests 19 to 23 prove it: placed as the picture, hidden inside the things, no tell before each step,
+  clear of the giant words, the labels readable and on screen, still with less motion.
 
 ### The last scene's picture
 

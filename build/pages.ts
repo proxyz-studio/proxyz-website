@@ -3,9 +3,10 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { Plugin } from 'vite';
-import type { Content, FilmData, Pictures, SceneWords, View, Venture } from '../src/types';
+import type { BoardForm, Content, FilmData, Pictures, SceneWords, View, Venture } from '../src/types';
 import { cutMask, frameMask, restingPass } from '../src/film/math';
 import { readFont } from './font';
+import { boardLabels, boardSvg, labelCss } from './board';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const readJson = <T>(rel: string): T => JSON.parse(readFileSync(root + rel, 'utf8')) as T;
@@ -13,6 +14,7 @@ export const load = () => ({
   content: readJson<Content>('content/site.json'),
   film: readJson<FilmData>('src/film/scenes.json'),
   pictures: readJson<Pictures>('src/generated/pictures.json'),
+  board: readJson<Record<'desktop' | 'phone', BoardForm>>('src/generated/board.json'),
 });
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -216,7 +218,10 @@ function sceneHtml(c: Content, film: FilmData, p: Pictures, n: number): string {
     ? `<div class="foot"><a href="${c.pages.legal.path}">${esc(c.border.legal)}</a>${switchHtml(c, 'people', 'foot-sw')}</div>` : '';
   const mark = s.venture ? c.ventures.findIndex((v) => v.id === s.venture) : -1;
   const view = n === c.scenes.length && s.picture === 'twin' ? ' data-view="twin"' : '';
-  return `<section id="s${n}" class="scene" data-mark="${mark}"${view}><div class="layer"><div class="passes ready">${scenePicture(n, film, p, s.alt)}</div><div class="dim"></div><div class="shade"></div>${cut}${words}${addr}</div>${foot}</section>`;
+  // scene 6: the board on the floor, at rest, in the picture's own box (one drawing per screen shape)
+  const b = s.board ? load().board : null;
+  const board = s.board && b ? `<div class="bbox">${boardSvg(b.desktop, 'd')}${boardSvg(b.phone, 'p')}${boardLabels(s.board, b.desktop, b.phone)}</div>` : '';
+  return `<section id="s${n}" class="scene" data-mark="${mark}"${view}><div class="layer"><div class="passes ready">${scenePicture(n, film, p, s.alt)}${board}</div><div class="dim"></div><div class="shade"></div>${cut}${words}${addr}</div>${foot}</section>`;
 }
 
 function head(c: Content, kind: Kind, entry: string, extra = ''): string {
@@ -394,7 +399,7 @@ export function typeCss(): string {
 /** CSS that places each scene's HTML picture as the film would place it, in steady screen units. With scripts off,
  *  a scene with a matte also gets its cut in the giant words (the film sets its own once it runs). */
 export function stillsCss(): string {
-  const { content: c, film, pictures: p } = load();
+  const { content: c, film, pictures: p, board } = load();
   const out: string[] = [];
   for (const n of Object.keys(film.scenes).filter((k) => /^\d+$/.test(k))) {
     const sc = sceneViews(film, c, Number(n));
@@ -422,6 +427,17 @@ export function stillsCss(): string {
         const m = cutMask(matte.files[0].webp, view.opens ? '' : mask, { left: place.left, top: place.top, w: place.w, h: place.h });
         const rule = `#s${n} .cut{${place.vars.join(';')};${maskDecl(m).join(';')}}`;
         out.push(`@media (scripting: none) and ${media}{${rule}}`, `@media ${media}{.nofilm ${rule}}`);
+      }
+      // the board: in the picture's box, its lines in screen pixels (--bw: screen pixels per picture pixel), hidden
+      // inside the three things (their matte), with scripts off, once the film has given up, and when the film
+      // script never arrives (then it shows with the resting pictures, a few seconds in; the matte loads only then)
+      const things = view.things && p[view.things]?.matte ? p[view.things] : null;
+      if (things) {
+        const f = board[form], k = form === 'desktop' ? 'd' : 'p';
+        out.push(`@media ${media}{#s${n} .bbox{${[...place.vars, `--bw:calc(var(--sw) / ${iw})`, `width:${place.w}`, `height:${place.h}`, `left:${place.left}`, `top:${place.top}`].join(';')}}#s${n} .board:not(.b${k}){display:none}${labelCss(f).replace(/\.blab/g, `#s${n} .blab`)}}`);
+        const u = `url("${things.files[0].webp}")`;
+        const rule = `#s${n} .board{-webkit-mask:linear-gradient(#000,#000),${u};-webkit-mask-size:100% 100%;-webkit-mask-composite:xor;mask:linear-gradient(#000,#000),${u};mask-size:100% 100%;mask-composite:exclude}`;
+        out.push(`@media (scripting: none) and ${media}{${rule}}`, `@media ${media}{.nofilm ${rule}}`, `@media (scripting: enabled) and ${media}{html:not(.film):not(.nofilm) ${rule}}`);
       }
     }
   }

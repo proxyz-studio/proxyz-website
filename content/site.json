@@ -34,7 +34,7 @@
     { "id": "race", "venture": "race", "lines": ["YOUR RACE.", "YOUR TROPHY."], "small": "Your route, 3D printed as the ground you covered.", "alt": "Drawing of a printed disc with the hills and route of a race, standing on a plain base", "heightLine": true },
     { "id": "tool", "venture": "race", "lines": ["EVERY HILL", "IS REAL."], "small": "The red line is your route. Made from your own GPS file.", "alt": "Drawing of the same disc, close and low along the route", "toolLine": "volumes: parts add up to 111.097 cm3, whole model 111.097 cm3, match=True" },
     { "id": "coach", "venture": "coach", "lines": ["AI COACH."], "small": "It plans training, food and sleep. You tell it things in plain words.", "note": "SAMPLE DAY ON SCREEN", "alt": "Drawing of a phone showing a coach app: a sample day, then a sample request and its answer" },
-    { "id": "brain", "venture": "system", "lines": ["ONE BRAIN.", "EVERY VENTURE."], "alt": "Drawing of a small stand, a disc and a dark phone together in one pool of light" },
+    { "id": "brain", "venture": "system", "lines": ["ONE BRAIN.", "EVERY VENTURE."], "alt": "Drawing of a dark floor made as one circuit board. A chip marked StudioOS sits in the middle. Lines of light run from it to a counter stand, a round race piece and a phone showing a sample day. A dashed line runs to an empty place marked NEXT.", "board": { "chip": "StudioOS", "next": "NEXT" } },
     { "id": "next", "venture": "next", "lines": ["THE NEXT ONE."], "alt": "Drawing of an empty pool of light on a dark floor", "letterhead": "PROXYZ STUDIO CO., LTD. PHUKET, THAILAND.", "picture": "twin" }
   ],
   "machines": {

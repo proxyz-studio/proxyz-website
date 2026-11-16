@@ -365,7 +365,8 @@
       117
      ]
     ],
-    "matte": "s6-desk-matte"
+    "matte": "s6-desk-matte",
+  "things": "s6-desk-things-matte"
    },
    "phone": {
     "passes": [
@@ -424,7 +425,8 @@
       215
      ]
     ],
-    "matte": "s6-phone-matte"
+    "matte": "s6-phone-matte",
+  "things": "s6-phone-things-matte"
    }
   },
   "7": {

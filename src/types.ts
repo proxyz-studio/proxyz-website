@@ -30,6 +30,25 @@ export interface SceneWords {
   /** Last scene only, chosen at build time: "own" (its own picture, the default) or "twin" (the pool of light of
    *  scene 6, now empty, framed exactly like scene 6; film data "7twin"). */
   picture?: 'own' | 'twin';
+  /** Scene 6 only: the two labels of the board drawn on its floor (the chip, and the place for the next one). */
+  board?: BoardWords;
+}
+
+export interface BoardWords { chip: string; next: string }
+
+/** One screen shape of the board on scene 6's floor, in picture pixels (src/generated/board.json, made by
+ *  scripts/board.mjs). Paths are SVG path data; points are [x, y]. */
+export interface BoardForm {
+  size: [number, number];
+  /** the pool of light of the last pass [cx, cy, rx, ry] */
+  pool: number[];
+  net: string;
+  vias: string;
+  chip: { top: string; inner: string; sides: string[]; pins: string; dot: number[]; glow: number[]; leader: number[][] };
+  live: Record<'stand' | 'coin' | 'phone', { pts: number[][]; side: number[][][]; pad: string }>;
+  empty: { pts: number[][]; pad: string };
+  labels: { studio: number[]; studioSide: 'l' | 'r'; next: number[]; nextSide: 'a' | 'b' };
+  footprints: Record<string, string>;
 }
 
 export interface PageMeta {
@@ -105,6 +124,9 @@ export interface View {
   /** Boxes of things that first appear in a later pass, [pass, x, y, w, h] in the picture's logical pixels (pass 1 is
    *  the first). They must never overlap the giant words, at any screen size. */
   later?: [number, number, number, number, number][];
+  /** Scene 6: the matte of all three things together (a key in the picture manifest). The board on the floor is
+   *  hidden inside it, so every line runs behind the things. No board without it. */
+  things?: string;
 }
 
 /** How the giant lines are set (the same numbers for the page builder, the film and the check). */

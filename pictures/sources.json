@@ -53,16 +53,24 @@
  },
  "s6-desk-p1": "out3/brain-desk-p1.png",
  "s6-desk-p2": "out3/brain-desk-p2.png",
- "s6-desk-p3": "out3/brain-desk-p3.png",
+ "s6-desk-p3": "out6/brain-desk-p3@1x.png",
  "s6-phone-p1": "out3/brain-phone-p1.png",
  "s6-phone-p2": "out3/brain-phone-p2.png",
- "s6-phone-p3": "out3/brain-phone-p3.png",
+ "s6-phone-p3": "out6/brain-phone-p3@1x.png",
  "s6-desk-matte": {
   "src": "out5/brain-desk-matte@1x.png",
   "matte": true
  },
  "s6-phone-matte": {
   "src": "out5/brain-phone-matte@1x.png",
+  "matte": true
+ },
+ "s6-desk-things-matte": {
+  "src": "out6/brain-desk-things-matte@1x.png",
+  "matte": true
+ },
+ "s6-phone-things-matte": {
+  "src": "out6/brain-phone-things-matte@1x.png",
   "matte": true
  },
  "s7-desk-p1": {

@@ -21,6 +21,8 @@ interface SceneState {
   mark: number; built: string; passes: Pass[];
   /** the matte of the thing lit from the first pass, when the scene's view names one the manifest holds */
   matte: Matte | null;
+  /** scene 6: the matte of all three things, which the board on the floor is hidden in */
+  things: Matte | null;
 }
 
 const pictures = pictureData as unknown as Pictures;
@@ -43,6 +45,7 @@ try { history.scrollRestoration = 'manual'; } catch { /* old browser: it restore
 // The resting pictures of scenes 2 to 7 are for the page without the script. Taken out before the film styles apply,
 // so they do not all load at once; each is put back as a light pass when the visitor nears its scene.
 const sections = $$('#film .scene');
+let boardBox: HTMLElement | null = null;
 const stills = new Map<number, HTMLElement>();
 // Each scene's description stays on its stage from the start (a screen reader hears it before the pictures load);
 // the light passes themselves are decoration.
@@ -50,6 +53,9 @@ const alts = sections.map((s) => $<HTMLImageElement>('img', s)?.alt ?? '');
 sections.forEach((s, i) => {
   const pic = i > 0 ? $('picture', s) : null;
   if (pic) { stills.set(i + 1, pic); pic.remove(); }
+  // the board waits for its scene too (it goes back in with the scene's pictures)
+  const bb = $('.bbox', s);
+  if (bb) { boardBox = bb; bb.remove(); }
   const box = $('.passes', s)!;
   box.setAttribute('role', 'img');
   box.setAttribute('aria-label', alts[i]);
@@ -60,6 +66,12 @@ addEventListener('error', () => {
   doc.classList.add('nofilm');
   sections.forEach((s) => { const box = $('.passes', s)!; box.removeAttribute('role'); box.removeAttribute('aria-label'); });
   stills.forEach((pic, n) => { if (!pic.isConnected) $('.passes', sections[n - 1])?.append(pic); });
+  if (boardBox) {
+    stopPulses();
+    for (const e of [boardBox, ...boardBox.querySelectorAll<HTMLElement>('[style]')]) e.removeAttribute('style');
+    restD.forEach((d, e) => e.setAttribute('d', d));
+    if (!boardBox.isConnected) $('.passes', sections[BRAIN - 1])?.append(boardBox);
+  }
   // the plain page's own cut (style.css) takes over from the film's
   $$('.cut').forEach((c) => c.removeAttribute('style'));
 }, { once: true });
@@ -77,6 +89,7 @@ const S: SceneState[] = sections.map((el) => ({
   built: '',
   passes: [],
   matte: null,
+  things: null,
 }));
 S.slice(1).forEach((s) => s.box.classList.remove('ready'));
 doc.classList.add('film', 'film-init');
@@ -238,6 +251,7 @@ function place(s: SceneState, view: View): void {
   }
   s.box.style.webkitMaskImage = sm;
   s.box.style.maskImage = sm;
+  if (S.indexOf(s) === BRAIN - 1) placeBoard(view, g);
 }
 
 /* ---------- building the light passes of one scene ---------- */
@@ -279,9 +293,18 @@ function build(n: number): void {
     img.src = file.webp;
     s.matte = { url: file.webp, img, ready: false };
   }
+  // scene 6: the matte of all three things; the board shows only once it is there (its lines run behind them)
+  s.things = null;
+  if (n === BRAIN && boardBox && view.things && pictures[view.things]?.matte) {
+    const file = fileFor(view.things, width), img = new Image();
+    img.decoding = 'async';
+    img.src = file.webp;
+    s.things = { url: file.webp, img, ready: false };
+  }
   const firstReady = !!keepFirst && keepFirst.complete && keepFirst.naturalWidth > 0 && !s.matte;
   s.box.classList.toggle('ready', firstReady);
-  s.box.replaceChildren(...s.passes.map((p) => p.node));
+  s.box.replaceChildren(...s.passes.map((p) => p.node), ...(s.things && boardBox ? [boardBox] : []));
+  if (n === BRAIN) boardForm();
   place(s, view);
   const mine = s.built;
   const shown = () => {
@@ -297,6 +320,11 @@ function build(n: number): void {
       schedule();
     });
   }
+  const t = s.things;
+  if (t) whenReady(t.img).then(() => {
+    if (s.built !== mine || !boardBox) return;
+    if (t.img.naturalWidth > 0) { t.ready = true; boardMask(t.url); schedule(); }
+  });
   const m = s.matte;
   if (m) whenReady(m.img).then(() => {
     if (s.built !== mine) return;
@@ -314,6 +342,8 @@ function release(n: number): void {
   for (const p of s.passes) p.img.removeAttribute('src');
   s.passes = [];
   s.matte = null;
+  s.things = null;
+  if (n === BRAIN) boardGone();
   s.cut?.removeAttribute('style');
   s.box.replaceChildren();
   s.box.classList.remove('ready');
@@ -348,6 +378,151 @@ function light(n: number, prog: number): void {
   $('.dim', s.layer)!.style.opacity = view.end === 'dark' ? (q * 0.75).toFixed(3) : '0';
 }
 
+/* ---------- scene 6: the board on the floor ---------- */
+// The page holds the board at rest (build/board.ts). The film draws it in as a pure function of the scroll, in steps
+// tied to the light: the chip and the stand's trace as the scene comes in, the race piece's trace with the second
+// pass, the phone's with the third, then the net and the place for the next one. At rest small pulses run the three
+// live traces. With less motion: the rest state, no pulses.
+type Pt = number[];
+interface Line { pts: Pt[]; at: number[]; d: string }
+interface Trace { co: SVGPathElement; gl: SVGPathElement; sd: SVGPathElement[]; pd: SVGPathElement; pu: SVGPathElement; fl: SVGPathElement; line: Line; side: Line[]; f: number }
+interface BoardView { svg: SVGSVGElement; b1: SVGElement; b4: SVGElement[]; dm: SVGElement; tr: Trace[]; dr: SVGPathElement; dp: SVGPathElement; route: Line }
+/** every path's resting d, so the plain page gets the board back whole if the film gives up */
+const restD = new Map<SVGPathElement, string>();
+const lineOf = (d: string): Line => {
+  const pts = [...d.matchAll(/(-?[\d.]+),(-?[\d.]+)/g)].map((m) => [+m[1], +m[2]]);
+  const at = [0];
+  for (let i = 1; i < pts.length; i++) at.push(at[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  return { pts, at, d };
+};
+/** the part of a line between lengths a and b (in picture pixels), as path data */
+function partD(l: Line, a: number, b: number): string {
+  const L = l.at[l.at.length - 1];
+  a = Math.max(0, a); b = Math.min(L, b);
+  if (b <= a) return '';
+  if (a <= 0 && b >= L) return l.d;   // whole: the page's own path, exactly
+  const pos = (v: number): Pt => {
+    let i = 1;
+    while (i < l.at.length - 1 && l.at[i] < v) i++;
+    const s = l.at[i] - l.at[i - 1] || 1, t = (v - l.at[i - 1]) / s, p = l.pts[i - 1], q = l.pts[i];
+    return [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
+  };
+  const out = [pos(a)];
+  for (let i = 1; i < l.pts.length; i++) if (l.at[i] > a && l.at[i] < b) out.push(l.pts[i]);
+  out.push(pos(b));
+  return 'M' + out.map((p) => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join('L');
+}
+const lenOf = (l: Line) => l.at[l.at.length - 1];
+const setD = (e: SVGPathElement, d: string) => { if (e.getAttribute('d') !== d) e.setAttribute('d', d); };
+const setO = (e: Element, o: number) => { const v = o >= 1 ? '' : o.toFixed(3); const st = (e as HTMLElement).style; if (st.opacity !== v) st.opacity = v; };
+const ramp = (v: number, a: number, b: number) => clamp((v - a) / (b - a));
+
+let BV: BoardView | null = null;
+// how a label stands off its point (as build/board.ts LABEL_SHIFT)
+const SHIFT: Record<string, string> = { r: 'translate(8px,-50%)', l: 'translate(calc(-100% - 8px),-50%)', b: 'translate(-50%,4px)', a: 'translate(-50%,calc(-100% - 4px))' };
+function boardForm(): void {
+  if (!boardBox) return;
+  const k = form === 'desktop' ? 'bd' : 'bp';
+  for (const svg of boardBox.querySelectorAll<SVGSVGElement>('svg.board')) svg.style.display = svg.classList.contains(k) ? '' : 'none';
+  const svg = boardBox.querySelector<SVGSVGElement>('svg.' + k)!;
+  if (BV?.svg === svg) return;
+  const q = <T extends Element>(sel: string, el: ParentNode = svg) => el.querySelector<T>(sel)!;
+  for (const e of svg.querySelectorAll('path')) if (!restD.has(e)) restD.set(e, e.getAttribute('d') ?? '');
+  const tr = ['stand', 'coin', 'phone'].map((t): Trace => {
+    const g = q<SVGGElement>('.t-' + t), sd = [...g.querySelectorAll<SVGPathElement>('.sd')];
+    const co = q<SVGPathElement>('.co', g);
+    return { co, gl: q('.gl', g), sd, pd: q('.pd', g), pu: q('.pu', g), fl: q('.fl', g), line: lineOf(restD.get(co)!), side: sd.map((e) => lineOf(restD.get(e)!)), f: -1 };
+  });
+  const dr = q<SVGPathElement>('.dr');
+  BV = { svg, b1: q('.b1'), dm: q('.dm'), b4: [...svg.querySelectorAll<SVGElement>('g.b4:not(.nx)')], tr, dr, dp: q('.dp'), route: lineOf(restD.get(dr)!) };
+  // the labels sit by share of the picture box, for this screen shape
+  for (const e of $$('.blab', boardBox)) {
+    const [x, y, side] = (e.dataset[form === 'desktop' ? 'd' : 'p'] ?? '0,0,r').split(',');
+    e.style.left = x + '%'; e.style.top = y + '%'; e.style.transform = SHIFT[side] ?? '';
+  }
+  schedule();
+}
+function placeBoard(view: View, g: Box): void {
+  if (!boardBox) return;
+  const st = boardBox.style;
+  Object.assign(st, { left: g.left + 'px', top: g.top + 'px', width: g.w + 'px', height: g.h + 'px' });
+  st.setProperty('--bw', (g.w / pictures[view.passes[0]].size[0]).toFixed(4) + 'px');
+}
+/** the board hidden inside the three things */
+function boardMask(url: string): void {
+  if (!boardBox) return;
+  for (const svg of boardBox.querySelectorAll<SVGSVGElement>('svg.board')) {
+    const st = svg.style, img = `linear-gradient(#000, #000), url("${url}")`;
+    st.setProperty('-webkit-mask-image', img); st.setProperty('mask-image', img);
+    st.setProperty('-webkit-mask-size', '100% 100%'); st.setProperty('mask-size', '100% 100%');
+    st.setProperty('-webkit-mask-repeat', 'no-repeat'); st.setProperty('mask-repeat', 'no-repeat');
+    st.setProperty('-webkit-mask-composite', 'xor'); st.setProperty('mask-composite', 'exclude');
+  }
+}
+function boardGone(): void { stopPulses(); BV = null; }
+
+let pulseRaf = 0, pulsing = false;
+function stopPulses(): void {
+  cancelAnimationFrame(pulseRaf);
+  pulseRaf = 0;
+  if (pulsing && BV) for (const t of BV.tr) { setD(t.pu, ''); setO(t.fl, 0); }
+  pulsing = false;
+}
+// a loop of 3.6 s: each pulse runs its trace in 1.5 s, the three 0.4 s apart; the pad flashes as it arrives
+function pulseFrame(now: number): void {
+  pulseRaf = requestAnimationFrame(pulseFrame);
+  if (!BV) return;
+  const sec = now / 1000;
+  BV.tr.forEach((t, k) => {
+    const L = lenOf(t.line), ph = ((((sec - 0.4 * k) % 3.6) + 3.6) % 3.6) / 1.5;
+    setD(t.pu, ph <= 1 ? partD(t.line, ph * L - 46, ph * L) : '');
+    const since = (ph - 1) * 1.5;
+    setO(t.fl, ph < 1 ? 0 : since < 0.08 ? since / 0.08 : Math.max(0, 1 - (since - 0.08) / 0.5));
+  });
+}
+
+function boardAt(y: number): void {
+  const s = S[BRAIN - 1];
+  if (!BV || !boardBox || !s.things?.ready || !tops.length) { if (boardBox) boardBox.style.visibility = 'hidden'; return; }
+  boardBox.style.visibility = '';
+  const i = BRAIN - 1, view = viewOf(BRAIN), rest = reduced();
+  const pre = clamp((y - tops[i] + VH / 2) / (VH / 2)), u = (y - tops[i]) / Math.max(1, heights[i] - VH);
+  const q = lightAt(view, clamp(u / LIGHT_SHARE), false);
+  const step = rest ? [1, 1, 1, 1, 1, 1, 1] : [
+    ramp(pre, 0.05, 0.25),                       // the chip and its label
+    ramp(pre, 0.2, 0.7),                         // the stand's trace
+    ramp(passStrength(view, q, 1), 0, 0.7),      // the race piece's, with the second pass
+    ramp(passStrength(view, q, 2), 0, 0.7),      // the phone's, with the third
+    ramp(u, 0.7, 0.78),                          // the net and the dimmed floor
+    ramp(u, 0.78, 0.92),                         // the dashed trace to the empty place
+    ramp(u, 0.92, 0.98),                         // its ring and NEXT
+  ];
+  setO(BV.b1, step[0]);
+  const chip = $('.blab.chip', boardBox), next = $('.blab.next', boardBox);
+  if (chip) setO(chip, step[0]);
+  BV.tr.forEach((t, k) => {
+    const f = step[1 + k];
+    if (f === t.f) return;
+    t.f = f;
+    const L = lenOf(t.line), d = partD(t.line, 0, f * L);
+    setD(t.co, d); setD(t.gl, d);
+    t.sd.forEach((e, j) => setD(e, partD(t.side[j], 0, ramp(f, 0.3, 0.78) * lenOf(t.side[j]))));
+    setO(t.pd, ramp(f, 0.96, 1));
+    // the head of a trace being drawn is brighter
+    if (!pulsing) setD(t.pu, f > 0 && f < 1 ? partD(t.line, f * L - 30, f * L) : '');
+  });
+  for (const g of BV.b4) setO(g, step[4]);
+  // the darker floor lifts again over the scene's last stretch, so at the cut to the empty pool the light holds still
+  setO(BV.dm, rest ? 1 : 1 - ramp(u, 1.02, 1.15));
+  setD(BV.dr, partD(BV.route, 0, step[5] * lenOf(BV.route)));
+  setO(BV.dp, step[6]);
+  if (next) setO(next, step[6]);
+  // pulses: at rest, while the scene is on screen, with motion allowed
+  const want = !rest && active === BRAIN && step[3] >= 1 && document.visibilityState === 'visible';
+  if (want && !pulsing) { pulsing = true; pulseRaf = requestAnimationFrame(pulseFrame); }
+  else if (!want && pulsing) stopPulses();
+}
+
 /* ---------- scroll: which scene, how far through its light ---------- */
 let tops: number[] = [], heights: number[] = [], active = 1;
 function measure(): void {
@@ -378,6 +553,7 @@ function update(): void {
     else if (S[k].built && Math.abs(k + 1 - active) > 2 && !near(k, y)) release(k + 1);
     light(k + 1, progress(k, y));
   }
+  boardAt(y);
   marks();
 }
 
@@ -430,6 +606,7 @@ function onResize(): void {
     form = f;
     VW = w; VH = h; SVH = hs;
     for (const s of S) if (s.built) { s.built = ''; build(S.indexOf(s) + 1); }
+    boardForm();
   } else if (w !== VW || h !== VH || hs !== SVH) {
     VW = w; VH = h; SVH = hs;
     layoutAll();
@@ -452,7 +629,7 @@ let saveT = 0;
 addEventListener('scroll', () => { schedule(); clearTimeout(saveT); saveT = setTimeout(remember, 200); }, { passive: true });
 addEventListener('resize', onResizeSoon);
 addEventListener('pagehide', remember);
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') remember(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') remember(); schedule(); });
 reducedMQ.addEventListener('change', schedule);
 portrait.addEventListener('change', onResizeSoon);
 if (typeof ResizeObserver === 'function') {
