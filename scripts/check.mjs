@@ -78,7 +78,7 @@ const SWITCHES = [B.people, B.machines, B.people, B.machines];   // the top and 
 // every word each page must show, in the order a reader meets it (the border first, then the page)
 const EXPECT = {
   '/': [B.place, ...named, ...SWITCHES,
-    ...content.scenes.flatMap((s) => [s.lines.join(' '), ...[s.toolLine, s.small, s.note, s.letterhead].filter(Boolean)]),
+    ...content.scenes.flatMap((s) => [...(s.board ? [s.board.chip, s.board.next] : []), s.lines.join(' '), ...[s.toolLine, s.small, s.note, s.letterhead].filter(Boolean)]),
     B.legal, B.people, B.machines],
   '/machines/': [B.place, ...SWITCHES, content.machines.title, ...machineLines, B.legal],
   '/legal/': [B.place, ...SWITCHES, content.legal.title, content.legal.revised,
@@ -244,8 +244,9 @@ async function main() {
   }
   // every kind of text on the film: its colour and opacity (the grey lines are see through), and the ratio it needs
   const TEXT_KINDS = [['.big', 'giant', [243, 238, 228, 1], 4.5], ['.small', 'small', [242, 215, 140, 1], 4.5], ['.note', 'note', [242, 242, 242, 0.52], 4.5],
-    ['.tool', 'tool', [242, 242, 242, 0.52], 4.5], ['.hl', 'line', [242, 242, 242, 0.78], 3]];
-  const INK_HIDE = '.big,.small,.note,.tool{color:transparent !important}.hl{visibility:hidden !important}';
+    ['.tool', 'tool', [242, 242, 242, 0.52], 4.5], ['.hl', 'line', [242, 242, 242, 0.78], 3],
+    ['.blab.chip', 'chip', [243, 238, 228, 1], 4.5], ['.blab.next', 'next', [243, 238, 228, 0.72], 4.5]];
+  const INK_HIDE = '.big,.small,.note,.tool,.blab{color:transparent !important}.hl{visibility:hidden !important}';
   /** Contrast of a text kind against a background of luminance Y. */
   function contrastOf(Y, kind) {
     const lin = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
@@ -1024,6 +1025,27 @@ async function main() {
         // with scripts off no init script runs: the test styles go in once the page is there
         if (css) await po.evaluate((css) => { const s = document.createElement('style'); s.textContent = css; document.head.append(s); }, css);
         let worst = 0, least = Infinity;
+        // scene 6's board: with scripts off it is there at rest (every line whole, every part shown, its matte on) and
+        // sits where the film puts it
+        for (let n = 1; n <= content.scenes.length; n++) {
+          if (!content.scenes[n - 1].board) continue;
+          await toScene(pf, n, 1);
+          await pf.waitForFunction((n) => { const b = document.querySelector(`#s${n} .bbox`); return b && b.isConnected && getComputedStyle(b).visibility !== 'hidden'; }, n, { timeout: 8000 }).catch(() => {});
+          const fb = await pf.evaluate((n) => { const b = document.querySelector(`#s${n} .bbox`); if (!b || !b.isConnected) return null; const r = b.getBoundingClientRect(); return [r.left, r.top, r.width, r.height]; }, n);
+          await po.evaluate((n) => document.getElementById('s' + n).scrollIntoView(), n);
+          await settle(po, 150);
+          const ob = await po.evaluate((n) => {
+            const s = document.getElementById('s' + n), l = s.querySelector('.layer').getBoundingClientRect(), b = s.querySelector('.bbox');
+            const svg = [...s.querySelectorAll('svg.board')].filter((e) => getComputedStyle(e).display !== 'none');
+            const op = (e) => { let o = 1; for (let x = e; x && x !== s; x = x.parentElement) o *= +getComputedStyle(x).opacity; return o; };
+            const cs = svg[0] ? getComputedStyle(svg[0]) : null, mask = cs ? cs.getPropertyValue('mask-image') || cs.getPropertyValue('-webkit-mask-image') : '';
+            const r = b.getBoundingClientRect();
+            return { box: [r.left - l.left, r.top - l.top, r.width, r.height], shown: svg.length, empty: svg[0] ? [...svg[0].querySelectorAll('path.co, path.dr, path.pd, path.dp')].filter((e) => !e.getAttribute('d') || op(e) < 0.999).length : -1, labels: [...s.querySelectorAll('.blab')].filter((e) => op(e) < 0.999 || getComputedStyle(e).visibility === 'hidden').length, mask: /-matte-/.test(mask) };
+          }, n);
+          const err = fb ? Math.max(...fb.map((v, k) => Math.abs(v - ob.box[k]))) : Infinity;
+          worst = Math.max(worst, err);
+          if (ob.shown !== 1 || ob.empty || ob.labels || !ob.mask || err > 1.5) place.push(`${tag} scene ${n} board: ${ob.shown} drawings shown, ${ob.empty} parts missing, ${ob.labels} labels hidden, matte ${ob.mask}, ${err.toFixed(2)} px from the film's place`);
+        }
         for (let n = 1; n <= content.scenes.length; n++) {
           await toScene(pf, n, 1);
           const a = await pf.evaluate((n) => { const i = document.querySelector(`#s${n} .passes img`).getBoundingClientRect(); return [i.left, i.top, i.width, i.height]; }, n);
@@ -1061,7 +1083,7 @@ async function main() {
         await film1.close(); await off.close();
       }
     }
-    ok(!place.length, 18, 'Scripts off: every scene\'s picture sits where the film puts it at rest, within 1.5 px (phones, both Safari bar layouts showing, laptop, monitor; Chromium, and 430x873 and 1512x860 in WebKit and Firefox)', `largest ${seenPlace.sort((a, b) => b[0] - a[0])[0]?.[1]}`, place.slice(0, 6).join('; '));
+    ok(!place.length, 18, 'Scripts off: every scene\'s picture, and scene 6\'s board at rest (whole, its matte on), sits where the film puts it at rest, within 1.5 px (phones, both Safari bar layouts showing, laptop, monitor; Chromium, and 430x873 and 1512x860 in WebKit and Firefox)', `largest ${seenPlace.sort((a, b) => b[0] - a[0])[0]?.[1]}`, place.slice(0, 6).join('; '));
     ok(!inkBad.length, 18, 'Scripts off: every giant line keeps at least 85% of its ink (the thing in front hides only a little), the same sizes and engines', `least: ${seenInk.sort((a, b) => a[0] - b[0])[0]?.[1] ?? 'no cut'}`, inkBad.slice(0, 6).join('; '));
   }
 
@@ -1234,6 +1256,262 @@ async function main() {
       }
       ok(!pixBad.length, 17, `Cut-out pixels (scenes ${scenes.join(', ')}): letters moved onto the thing are hidden inside it and show outside it, at least 99% each (Chromium, WebKit, Firefox; laptop and phone)`, seen.join('; '), pixBad.join('; '));
     }
+  }
+
+  /* 19 to 23. scene 6, the board on the floor: placed as the picture, hidden inside the things, no tell before each
+     step, clear of the giant words, its two labels readable and on screen, still with less motion */
+  const BOARD_N = content.scenes.findIndex((s) => s.board) + 1;
+  const boardForms = BOARD_N ? ['desktop', 'phone'].filter((f) => viewOf(BOARD_N, f).things) : [];
+  const wantBoard = [19, 20, 21, 22, 23].some(want);
+  if (wantBoard && !boardForms.length) warn(19, 'BOARD NOT TESTED', 'no scene of this build has a board with a things matte');
+  /** Scroll scene 6 to a point of its film: u, a share of its scroll (0 its top, 1 its end), or pre, the half screen
+   *  before its top (0 the moment it comes on, 1 its top). Waits for its pictures and for the board to show. */
+  async function toBoard(p, at) {
+    await p.evaluate(([n, at]) => {
+      const s = document.getElementById('s' + n), vh = document.querySelector('.probe')?.offsetHeight || innerHeight;
+      scrollTo(0, Math.round(at.pre !== undefined ? s.offsetTop - vh / 2 + (at.pre * vh) / 2 : s.offsetTop + at.u * Math.max(0, s.offsetHeight - vh)));
+    }, [BOARD_N, at]);
+    await p.waitForFunction((n) => {
+      const s = document.getElementById('s' + n), b = s.querySelector('.bbox');
+      return [...s.querySelectorAll('.passes img')].every((i) => i.complete && i.naturalWidth > 0) && b && b.isConnected && getComputedStyle(b).visibility !== 'hidden';
+    }, BOARD_N, { timeout: 8000 }).catch(() => {});
+    await settle(p, 600);
+  }
+  const styleIt = (p, css) => p.evaluate((css) => { let s = document.getElementById('t-board'); if (!s) { s = document.createElement('style'); s.id = 't-board'; document.head.append(s); } s.textContent = css; }, css);
+  const QUIET = '#top,#frame,.bottom-sw,.marks{visibility:hidden !important}';
+  /** the board's box and the picture's box (first pass, or the resting picture with scripts off), relative to the layer */
+  const boxes = (p) => p.evaluate((n) => {
+    const s = document.getElementById('s' + n), l = s.querySelector('.layer').getBoundingClientRect();
+    const r = (e) => { const b = e.getBoundingClientRect(); return [b.left - l.left, b.top - l.top, b.width, b.height]; };
+    const b = s.querySelector('.bbox');
+    return { board: b && b.isConnected ? r(b) : null, img: r(s.querySelector('.passes img')) };
+  }, BOARD_N);
+  /** the things matte of the form on screen: its address (from the board's mask) */
+  const matteUrl = (p) => p.evaluate((n) => {
+    const svg = [...document.querySelectorAll(`#s${n} svg.board`)].find((e) => getComputedStyle(e).display !== 'none');
+    const cs = svg ? getComputedStyle(svg) : null, m = cs ? (cs.getPropertyValue('mask-image') || cs.getPropertyValue('-webkit-mask-image')) : '';
+    return (/url\("?([^")]+)"?\)/.exec(m) || [])[1] ?? null;
+  }, BOARD_N);
+  /** In the lab: the matte drawn where the board's box is, as alpha per screen pixel (0 to 255), w x h. */
+  const matteLab = `async (url64, box, w, h) => { const i = new Image(); i.src = 'data:image/webp;base64,' + url64; await i.decode();
+    const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d');
+    g.drawImage(i, box[0], box[1], box[2], box[3]); const d = g.getImageData(0, 0, w, h).data;
+    const a = new Uint8Array(w * h); for (let k = 0; k < w * h; k++) a[k] = d[k * 4 + 3]; return a; }`;
+  const matteBytes = (url) => readFileSync(join(DIST, new URL(url, BASE).pathname)).toString('base64');
+
+  // 19. the board's box is the picture's box, film and scripts off, every listed size and bar state
+  if (want(19) && boardForms.length) {
+    const bad = [], seen = [];
+    const runs = [...VIEWPORTS, [1000, 1000], [834, 1194]].map(([w, h]) => ({ engine: 'chromium', w, h, css: '', label: `${w}x${h}` }))
+      .concat(BARS.flatMap((bar) => ['away', 'showing'].map((state) => ({ engine: 'chromium', ...barState(bar, state), label: barLabel(bar, state) }))))
+      .concat(['webkit', 'firefox'].flatMap((engine) => [[430, 873], [1512, 860]].map(([w, h]) => ({ engine, w, h, css: '', label: `${w}x${h}` }))));
+    for (const run of runs) {
+      const { engine, w, h, css } = run, tag = `${engine} ${run.label}`;
+      const c = await ctx(engine, { viewport: { width: w, height: h }, bypassCSP: !!css });
+      if (css) await c.addInitScript(INJECT, css);
+      const p = await open(c, '/', `board box ${tag}`);
+      await toBoard(p, { u: 1 });
+      const f = await boxes(p);
+      const off = await ctx(engine, { viewport: { width: w, height: h }, bypassCSP: true, javaScriptEnabled: false });
+      const po = await open(off, '/', `board box scripts off ${tag}`);
+      if (css) await styleIt(po, css);
+      await po.evaluate((n) => document.getElementById('s' + n).scrollIntoView(), BOARD_N);
+      await settle(po, 200);
+      const o = await boxes(po);
+      for (const [mode, b] of [['film', f], ['scripts off', o]]) {
+        if (!b.board) { bad.push(`${tag} ${mode}: no board`); continue; }
+        const err = Math.max(...b.board.map((v, k) => Math.abs(v - b.img[k])));
+        seen.push([err, `${tag} ${mode} ${err.toFixed(2)} px`]);
+        if (err > 0.5) bad.push(`${tag} ${mode}: board ${b.board.map((v) => v.toFixed(1)).join(', ')}, picture ${b.img.map((v) => v.toFixed(1)).join(', ')}`);
+      }
+      await c.close(); await off.close();
+    }
+    ok(!bad.length, 19, `Scene ${BOARD_N}: the board's box is the picture's box within 0.5 px, with the film and with scripts off, at every listed size, 1000x1000, 834x1194 and every bar state (Chromium; 430x873 and 1512x860 in WebKit and Firefox)`, `largest ${seen.sort((a, b) => b[0] - a[0])[0]?.[1]}`, bad.slice(0, 6).join('; '));
+  }
+
+  // 20. behind the things: the board forced to one flat colour shows nothing inside the things matte
+  if (want(20) && boardForms.length) {
+    const bad = [], seen = [];
+    const FLAT = `#s${BOARD_N} .board *{stroke:#ff00ff !important;fill:#ff00ff !important;stroke-opacity:1 !important;fill-opacity:1 !important;opacity:1 !important}#s${BOARD_N} .blab{visibility:hidden !important}`;
+    for (const engine of ['chromium', 'webkit', 'firefox']) {
+      for (const [w, h] of [[430, 739], [1512, 860]]) {
+        const tag = `${engine} ${w}x${h}`;
+        const c = await ctx(engine, { viewport: { width: w, height: h }, bypassCSP: true });
+        const p = await open(c, '/', `behind ${tag}`);
+        await toBoard(p, { u: 1 });
+        const url = await matteUrl(p), b = (await boxes(p)).board;
+        if (!url || !b) { bad.push(`${tag}: no board or no matte`); await c.close(); continue; }
+        const lay = await p.evaluate((n) => { const l = document.querySelector(`#s${n} .layer`).getBoundingClientRect(); return [l.left, l.top]; }, BOARD_N);
+        const box = [b[0] + lay[0], b[1] + lay[1], b[2], b[3]];
+        await styleIt(p, QUIET + `#s${BOARD_N} .bbox{visibility:hidden !important}`); await settle(p, 150);
+        const A = await p.screenshot();
+        await styleIt(p, QUIET + FLAT); await settle(p, 150);
+        const B = await p.screenshot();
+        const r = await labPage.evaluate(async ([a64, b64, m64, box, decode, matte]) => {
+          const dec = (0, eval)(decode); const [a, b] = await Promise.all([dec(a64), dec(b64)]);
+          const al = await (0, eval)(matte)(m64, box, a.width, a.height);
+          let n = 0, hid = 0, flat = 0;
+          for (let y = 2; y < a.height - 2; y++) for (let x = 2; x < a.width - 2; x++) {
+            let core = true;
+            for (let dy = -2; dy <= 2 && core; dy++) for (let dx = -2; dx <= 2; dx++) if (al[(y + dy) * a.width + x + dx] < 250) { core = false; break; }
+            const i = (y * a.width + x) * 4, d = Math.max(Math.abs(a.data[i] - b.data[i]), Math.abs(a.data[i + 1] - b.data[i + 1]), Math.abs(a.data[i + 2] - b.data[i + 2]));
+            if (core) { n++; if (d <= 3) hid++; } else if (al[y * a.width + x] === 0 && d > 3) flat++;
+          }
+          return { n, hid, flat };
+        }, [A.toString('base64'), B.toString('base64'), matteBytes(url), box, decode, matteLab]);
+        const share = r.n ? r.hid / r.n : 0;
+        seen.push([share, `${tag} ${(100 * share).toFixed(2)}% of ${r.n} px`]);
+        // the flat colour must also show outside the things (else the test proves nothing)
+        if (!r.n || share < 0.99 || r.flat < 1000) bad.push(`${tag}: ${(100 * share).toFixed(2)}% of ${r.n} pixels inside the things show none of the board (${r.flat} board pixels outside)`);
+        await c.close();
+      }
+    }
+    ok(!bad.length, 20, `Scene ${BOARD_N}: behind the things: with the board forced to one flat colour, at least 99% of the pixels inside the three things' matte show none of it (Chromium, WebKit, Firefox; 430x739 and 1512x860)`, `least: ${seen.sort((a, b) => a[0] - b[0])[0]?.[1]}`, bad.slice(0, 6).join('; '));
+  }
+
+  // 21. no tell: before step 1 nothing of the board shows; at pass 1's hold nothing of the race piece's and the phone's
+  // traces, side lines and pads, nor the net, the dashed trace, the empty place and NEXT; at pass 2's hold nothing of
+  // the phone's nor of the last step
+  if (want(21) && boardForms.length) {
+    const bad = [], N = `#s${BOARD_N}`;
+    const STEP4 = [`${N} .b4`, `${N} .blab.next`];
+    const states = [
+      ['before step 1', { pre: 0 }, [`${N} .board`, `${N} .blab`]],
+      ["pass 1's hold", { u: 0.06 }, [`${N} .t-coin`, `${N} .t-phone`, ...STEP4]],
+      ["pass 2's hold", { u: 0.4 }, [`${N} .t-phone`, ...STEP4]],
+    ];
+    const runs = [['chromium', 1512, 860], ['chromium', 806, 516], ['chromium', 430, 739], ['chromium', 393, 635], ['webkit', 430, 739], ['webkit', 1512, 860], ['firefox', 1512, 860]];
+    for (const [engine, w, h] of runs) {
+      const c = await ctx(engine, { viewport: { width: w, height: h }, bypassCSP: true });
+      const p = await open(c, '/', `no tell ${engine} ${w}x${h}`);
+      for (const [name, at, forbid] of states) {
+        await styleIt(p, ''); await toBoard(p, at);
+        const all = forbid.map((s) => `${s},${s} *`).join(',');
+        await styleIt(p, QUIET + `${N} .board *,${N} .blab{visibility:hidden !important}`); await settle(p, 150);
+        const A = await p.screenshot();
+        await styleIt(p, QUIET + `${N} .board *,${N} .blab{visibility:hidden !important}${all}{visibility:visible !important;stroke:#ff00ff !important;color:#ff00ff !important;text-shadow:none !important}`); await settle(p, 150);
+        const B = await p.screenshot();
+        const n = await labPage.evaluate(async ([a64, b64, decode]) => {
+          const dec = (0, eval)(decode); const [a, b] = await Promise.all([dec(a64), dec(b64)]);
+          let n = 0;
+          for (let i = 0; i < a.data.length; i += 4) if (Math.max(Math.abs(a.data[i] - b.data[i]), Math.abs(a.data[i + 1] - b.data[i + 1]), Math.abs(a.data[i + 2] - b.data[i + 2])) > 2) n++;
+          return n;
+        }, [A.toString('base64'), B.toString('base64'), decode]);
+        if (n) bad.push(`${engine} ${w}x${h} ${name}: ${n} pixels show`);
+      }
+      await c.close();
+    }
+    ok(!bad.length, 21, `Scene ${BOARD_N}: no tell: before its first step nothing of the board shows; at pass 1's hold no pixel of the race piece's and the phone's traces, side lines and pads, the net, the dashed trace, the empty place or NEXT; at pass 2's hold none of the phone's or of the last step (Chromium at 1512x860, 806x516, 430x739, 393x635; WebKit, Firefox)`, 'zero pixels each time', bad.slice(0, 6).join('; '));
+  }
+
+  // 22. no board ink within 8 px of the giant words' ink; the two labels at least 12 px, at least 4.5 to 1, fully on
+  // the visible screen, never on the giant words, a thing or each other
+  if (want(22) && boardForms.length) {
+    const bad = [], lbad = [], seen = [], seenC = [], N = `#s${BOARD_N}`;
+    const runs = [...VIEWPORTS, [1000, 1000], [834, 1194]].map(([w, h]) => ({ w, h, css: '', label: `${w}x${h}` }))
+      .concat(BARS.flatMap((bar) => ['away', 'showing'].map((state) => ({ ...barState(bar, state), label: barLabel(bar, state) }))));
+    const PICS = `${N} .passes picture,${N} .passes img{visibility:hidden !important}`;
+    for (const run of runs) {
+      const { w, h, css } = run, tag = run.label;
+      const c = await ctx('chromium', { viewport: { width: w, height: h }, bypassCSP: true });
+      if (css) await c.addInitScript(INJECT, css);
+      const p = await open(c, '/', `board words ${tag}`);
+      await toBoard(p, { u: 1 });
+      // the ink of the giant words alone (white on black), then the board alone in one flat colour (its darkened floor
+      // and the chip's soft glow left out: they are shade, not lines)
+      await styleIt(p, QUIET + PICS + `${N} .bbox{visibility:hidden !important}${N} .big{color:#fff !important}`); await settle(p, 150);
+      const W = await p.screenshot();
+      await styleIt(p, QUIET + PICS + `${N} .cut{visibility:hidden !important}${N} .board *{stroke:#ff00ff !important;stroke-opacity:1 !important;fill-opacity:1 !important}${N} .board rect,${N} .board ellipse{visibility:hidden !important}${N} .board path[fill]{fill:#ff00ff !important}${N} .blab{color:#ff00ff !important;text-shadow:none !important}`); await settle(p, 150);
+      const K = await p.screenshot();
+      await styleIt(p, '');
+      const d = await labPage.evaluate(async ([w64, k64, decode]) => {
+        const dec = (0, eval)(decode); const [a, b] = await Promise.all([dec(w64), dec(k64)]);
+        const W = a.width, H = a.height, R = 30, word = new Uint8Array(W * H);
+        for (let k = 0; k < W * H; k++) word[k] = a.data[k * 4] > 100 && a.data[k * 4 + 1] > 100 ? 1 : 0;
+        let best = Infinity, near = 0;
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          const i = (y * W + x) * 4, r = b.data[i], g = b.data[i + 1], bl = b.data[i + 2];
+          if (!(r > 40 && bl > 40 && g < 0.5 * Math.min(r, bl))) continue;
+          for (let dy = -R; dy <= R; dy++) { const yy = y + dy; if (yy < 0 || yy >= H) continue; for (let dx = -R; dx <= R; dx++) { const xx = x + dx; if (xx < 0 || xx >= W || !word[yy * W + xx]) continue; const dd = Math.hypot(dx, dy); if (dd < best) best = dd; if (dd <= 8) near++; } }
+        }
+        return { best, near };
+      }, [W.toString('base64'), K.toString('base64'), decode]);
+      seen.push([d.best, `${tag} ${d.best === Infinity ? 'over 30' : d.best.toFixed(1)} px`]);
+      if (d.near) bad.push(`${tag}: board ink ${d.best.toFixed(1)} px from the giant words`);
+      // the labels
+      const L = await p.evaluate((n) => {
+        const s = document.getElementById('s' + n), rect = (e) => { const g = document.createRange(); g.selectNodeContents(e); const t = g.getBoundingClientRect(); return [t.left, t.top, t.right, t.bottom]; };
+        const top = document.getElementById('top').getBoundingClientRect().bottom;
+        return { top, vw: document.documentElement.clientWidth, vh: innerHeight, labs: [...s.querySelectorAll('.blab')].map((e) => ({ k: e.className, size: parseFloat(getComputedStyle(e).fontSize), r: rect(e), o: getComputedStyle(e).opacity })), words: [...s.querySelectorAll('.big .pl')].map(rect) };
+      }, BOARD_N);
+      const hit = (a, b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
+      for (const l of L.labs) {
+        if (l.size < 12) lbad.push(`${tag} ${l.k}: ${l.size} px`);
+        if (l.r[0] < 0 || l.r[2] > L.vw || l.r[1] < L.top || l.r[3] > L.vh) lbad.push(`${tag} ${l.k}: off the visible screen (${l.r.map(Math.round).join(', ')} in ${L.vw}x${L.vh}, border to ${Math.round(L.top)})`);
+        if (L.words.some((q) => hit(l.r, q))) lbad.push(`${tag} ${l.k}: on the giant words`);
+        if (+l.o < 1) lbad.push(`${tag} ${l.k}: not fully shown at rest (${l.o})`);
+      }
+      if (L.labs.length === 2 && hit(L.labs[0].r, L.labs[1].r)) lbad.push(`${tag}: the two labels touch`);
+      const url = await matteUrl(p), b = (await boxes(p)).board;
+      if (url && b) {
+        const lay = await p.evaluate((n) => { const l = document.querySelector(`#s${n} .layer`).getBoundingClientRect(); return [l.left, l.top]; }, BOARD_N);
+        const on = await labPage.evaluate(async ([m64, box, w, h, rects, matte]) => {
+          const al = await (0, eval)(matte)(m64, box, w, h);
+          return rects.map((r) => { let mx = 0; for (let y = Math.max(0, Math.floor(r[1])); y < Math.min(h, Math.ceil(r[3])); y++) for (let x = Math.max(0, Math.floor(r[0])); x < Math.min(w, Math.ceil(r[2])); x++) mx = Math.max(mx, al[y * w + x]); return mx; });
+        }, [matteBytes(url), [b[0] + lay[0], b[1] + lay[1], b[2], b[3]], w, h, L.labs.map((l) => l.r), matteLab]);
+        on.forEach((mx, i) => { if (mx > 25) lbad.push(`${tag} ${L.labs[i].k}: on a thing (matte ${mx})`); });
+      } else lbad.push(`${tag}: no board`);
+      for (const t of (await inkOf(p, BOARD_N)).filter((t) => t.kind === 'chip' || t.kind === 'next')) {
+        seenC.push([t.ratio, `${tag} ${t.kind} ${t.ratio.toFixed(2)}`]);
+        if (t.ink < 20 || t.ratio < t.need) lbad.push(`${tag} ${t.kind}: ${t.ratio.toFixed(2)} to 1 (${t.ink} ink pixels)`);
+      }
+      await c.close();
+    }
+    ok(!bad.length, 22, `Scene ${BOARD_N}: no board ink within 8 px of the giant words' ink, at every listed size, 1000x1000, 834x1194 and every bar state (Chromium)`, `closest: ${seen.sort((a, b) => a[0] - b[0])[0]?.[1]}`, bad.slice(0, 6).join('; '));
+    ok(!lbad.length, 22, `Scene ${BOARD_N}: its two labels at least 12 px, at least 4.5 to 1, fully on the visible screen below the border, never on the giant words, a thing or each other, the same sizes and states`, `lowest contrast: ${seenC.sort((a, b) => a[0] - b[0]).slice(0, 2).map((x) => x[1]).join(', ')}`, [...new Set(lbad)].slice(0, 8).join('; '));
+  }
+
+  // 23. less motion: nothing on the board moves and its rest state is complete; with motion, the pulses run at rest
+  // and stop once the scene is off screen
+  if (want(23) && boardForms.length) {
+    const bad = [];
+    // every path's d in the page as built (the rest state), per drawing
+    const html = readFileSync(join(DIST, 'index.html'), 'utf8'), restOf = {};
+    for (const m of html.matchAll(/<svg class="board (b[dp])"[\s\S]*?<\/svg>/g)) restOf[m[1]] = [...m[0].matchAll(/<path[^>]*?\sd="([^"]*)"/g)].map((x) => x[1]);
+    for (const engine of ['chromium', 'webkit', 'firefox']) {
+      for (const [w, h] of [[430, 739], [1512, 860]]) {
+        const tag = `${engine} ${w}x${h}`;
+        const c = await ctx(engine, { viewport: { width: w, height: h }, reducedMotion: 'reduce', bypassCSP: true });
+        const p = await open(c, '/', `board less motion ${tag}`);
+        await toBoard(p, { u: 0.3 });
+        const st = await p.evaluate(([n, restOf]) => {
+          const svg = [...document.querySelectorAll(`#s${n} svg.board`)].find((e) => getComputedStyle(e).display !== 'none');
+          const want = restOf[[...svg.classList].find((k) => /^b[dp]$/.test(k))] ?? [];
+          const live = [...svg.querySelectorAll('path')];
+          const op = (e) => { let o = 1; for (let x = e; x && x !== document.body; x = x.parentElement) o *= +getComputedStyle(x).opacity; return o; };
+          const diff = live.filter((e, i) => !e.classList.contains('pu') && !e.classList.contains('fl') && e.getAttribute('d') !== want[i]).length;
+          const dim = live.filter((e) => !e.classList.contains('pu') && !e.classList.contains('fl') && op(e) < 0.999).length;
+          const labs = [...document.querySelectorAll(`#s${n} .blab`)].filter((e) => op(e) < 0.999).length;
+          return { diff, dim, labs, pulses: svg.querySelectorAll('.pu:not([d=""])').length };
+        }, [BOARD_N, restOf]);
+        if (st.diff || st.dim || st.labs || st.pulses) bad.push(`${tag} less motion: ${st.diff} lines not whole, ${st.dim} parts not full, ${st.labs} labels not full, ${st.pulses} pulses`);
+        await styleIt(p, QUIET);
+        const a = await p.screenshot(); await settle(p, 800); const b = await p.screenshot();
+        if (!a.equals(b)) bad.push(`${tag} less motion: the scene changes over 0.8 s`);
+        await c.close();
+        const c2 = await ctx(engine, { viewport: { width: w, height: h }, bypassCSP: true });
+        const p2 = await open(c2, '/', `board pulses ${tag}`);
+        await toBoard(p2, { u: 1 });
+        const ds = () => p2.evaluate((n) => [...document.querySelectorAll(`#s${n} .board .pu`)].map((e) => e.getAttribute('d')).join('|'), BOARD_N);
+        const d1 = await ds(); await settle(p2, 300); const d2 = await ds();
+        if (d1 === d2) bad.push(`${tag}: no pulses at rest`);
+        await p2.evaluate(() => scrollTo(0, 0)); await settle(p2, 600);
+        const e1 = await ds(); await settle(p2, 400); const e2 = await ds();
+        if (e1.replace(/\|/g, '') || e2.replace(/\|/g, '')) bad.push(`${tag}: pulses still drawn with the scene off screen`);
+        await c2.close();
+      }
+    }
+    ok(!bad.length, 23, `Scene ${BOARD_N}: with less motion every line of the board whole, every part fully shown, no pulse, nothing changes over 0.8 s; with motion the pulses run at rest and stop once the scene is off screen (Chromium, WebKit, Firefox; 430x739, 1512x860)`, 'as specified', bad.slice(0, 6).join('; '));
   }
 
   /* 6. LEGAL: the email address is a mail link, in the text's grey, underlined, at least 44 px tall to tap */
