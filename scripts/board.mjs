@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const layout = JSON.parse(readFileSync(ROOT + 'src/film/board.json', 'utf8'));
+const film = JSON.parse(readFileSync(ROOT + 'src/film/scenes.json', 'utf8'));
 const DEG = Math.PI / 180;
 const G = layout.grid;
 const r1 = (v) => Math.round(v * 10) / 10;
@@ -101,8 +102,31 @@ function subLine(pts, f0, f1) {
   return out;
 }
 
+/* ---------- when each thing's light has come ---------- */
+/** How far the light of pass k (1 the second pass) covers the floor points pts (picture pixels) when that pass's
+ *  strength is t: the film's own arithmetic (src/main.ts light(): the pass shows through an oval that grows from the
+ *  old pool to 1.6 times the new one, solid to 68% of its radius, with an opacity of t / 0.12 at the start). */
+function cover(view, k, t, pts) {
+  if (t >= 1) return 1;
+  if (t <= 0) return 0;
+  const a = view.opens[k - 1], b = view.opens[k], e = t * t * (3 - 2 * t), L = (u, v, g = 1) => u + (v * g - u) * e;
+  const cx = L(a[0], b[0]), cy = L(a[1], b[1]), rx = L(a[2], b[2], 1.6), ry = L(a[3], b[3], 1.6), o = Math.min(1, t / 0.12);
+  let s = 0;
+  for (const [x, y] of pts) { const d = Math.hypot((x - cx) / rx, (y - cy) / ry); s += d <= 0.68 ? 1 : d >= 1 ? 0 : 1 - (d - 0.68) / 0.32; }
+  return (o * s) / pts.length;
+}
+/** The pass strengths at which the light covers 40% and 70% of a thing (its floor outline, filled). */
+function arrival(view, k, outline) {
+  const xs = outline.map((p) => p[0]), ys = outline.map((p) => p[1]), pts = [];
+  for (let x = Math.min(...xs); x <= Math.max(...xs); x += 2) for (let y = Math.min(...ys); y <= Math.max(...ys); y += 2) if (inPoly([x, y], outline)) pts.push([x, y]);
+  if (!view.opens) return [0.4, 0.7];
+  let t40 = 1, t70 = 1;
+  for (let t = 1; t >= 0; t -= 0.001) { const c = cover(view, k, t, pts); if (c >= 0.4) t40 = t; if (c >= 0.7) t70 = t; }
+  return [+t40.toFixed(3), +t70.toFixed(3)];
+}
+
 /* ---------- one form ---------- */
-function form(F) {
+function form(F, key) {
   const P = camera(F.camera, F.size);
   const pt = ([x, z], y = 0) => P(x, z, y).map(r1);
   const T = F.things, gap = layout.padGap;
@@ -208,6 +232,16 @@ function form(F) {
     empty: { pts: routes.empty.map((q) => pt(q)), pad: poly(pads.empty) },
     // where the words sit: the chip's word to the right (r) or left (l) of its leader, NEXT below (b) or above (a)
     labels: { studio: end.map(r1), studioSide: run < 0 ? 'l' : 'r', next: nextAt, nextSide: nextSide === 'above' ? 'a' : 'b' },
+    // the pass strengths at which the light covers 40% and 70% of the race piece (second pass) and the coach phone
+    // (third pass): each trace's head reaches its pad at the 70% mark
+    arrive: (() => {
+      const view = film.scenes[String(film.brainScene)][key];
+      const fp = (q) => q.map(([x, z]) => P(x, z));
+      return {
+        coin: arrival(view, 1, fp(circle(T.coin[0], T.coin[1], T.coin[2], 120))),
+        phone: arrival(view, 2, fp(rect(T.phone[0], T.phone[1], T.phone[3], T.phone[4], T.phone[2]))),
+      };
+    })(),
     footprints: {
       stand: poly(rect(T.stand[0], T.stand[1], T.stand[3], T.stand[4], T.stand[2])),
       coin: poly(circle(T.coin[0], T.coin[1], T.coin[2], 120)),
@@ -216,7 +250,7 @@ function form(F) {
   };
 }
 
-const out = { _note: 'Made by scripts/board.mjs from src/film/board.json. Do not edit by hand.', desktop: form(layout.forms.desktop), phone: form(layout.forms.phone) };
+const out = { _note: 'Made by scripts/board.mjs from src/film/board.json. Do not edit by hand.', desktop: form(layout.forms.desktop, 'desktop'), phone: form(layout.forms.phone, 'phone') };
 const proof = process.argv.indexOf('--proof');
 if (proof > 0) {
   const f = out[process.argv[proof + 1]];

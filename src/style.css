@@ -282,5 +282,11 @@ a.nm { min-width: 44px; }
 .blab.chip { font-size: 14px; font-weight: 600; letter-spacing: .06em; }
 .blab.next { font-size: 12px; letter-spacing: .08em; color: rgba(243, 238, 228, .72); }
 /* the film script has not run yet: the board waits with the resting pictures (and loads its matte only if it shows) */
-@media (scripting: enabled) { html:not(.film):not(.nofilm) .bbox { display: none; animation: board-back 0s 4s forwards; } }
+@media (scripting: enabled) { html:not(.film):not(.nofilm) .bbox { display: none; animation: board-back 0s 4s forwards, board-in .5s 5.2s both; } }
 @keyframes board-back { to { display: block; } }
+/* with scripts off, or once the film has given up, the board waits a moment for its matte (a mask that has not
+   loaded yet hides nothing), then fades in; with less motion it simply appears */
+@media (scripting: none) { .bbox { animation: board-in .5s 1.2s both; } }
+.nofilm .bbox { animation: board-in .5s 1.2s both; }
+@media (prefers-reduced-motion: reduce) { .bbox { animation-duration: 0s !important; } }
+@keyframes board-in { from { opacity: 0; } }

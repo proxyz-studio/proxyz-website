@@ -49,6 +49,8 @@ export interface BoardForm {
   empty: { pts: number[][]; pad: string };
   labels: { studio: number[]; studioSide: 'l' | 'r'; next: number[]; nextSide: 'a' | 'b' };
   footprints: Record<string, string>;
+  /** the pass strengths [at 40%, at 70%] at which the light covers the race piece and the coach phone */
+  arrive: Record<'coin' | 'phone', [number, number]>;
 }
 
 export interface PageMeta {

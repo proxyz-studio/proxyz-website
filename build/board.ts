@@ -30,7 +30,9 @@ export function boardSvg(f: BoardForm, k: 'd' | 'p'): string {
       + `<path class="pd wp" d="${L.pad}" stroke-opacity=".62"/>`
       + `<path class="pu wu" d=""/><path class="fl wf" d="${L.pad}" stroke-opacity="0"/></g>`;
   }).join('');
-  return `<svg class="board b${k}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true" focusable="false"><defs>${defs}</defs>`
+  // data-arrive: the pass strengths at which the race piece and the coach phone are 70% lit (the film lands each
+  // trace's head on its pad there)
+  return `<svg class="board b${k}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true" focusable="false" data-arrive="${f.arrive.coin[1]},${f.arrive.phone[1]}"><defs>${defs}</defs>`
     + `<g class="b4"><rect class="dm" width="${W}" height="${H}" fill="url(#${id('m')})"/><path class="w1" d="${f.net}" stroke="url(#${id('n')})"/><path class="wv" d="${f.vias}" stroke="url(#${id('n')})"/></g>`
     + `<g class="b1"><ellipse class="cg" cx="${c.glow[0]}" cy="${c.glow[1]}" rx="${c.glow[2]}" ry="${c.glow[3]}" fill="url(#${id('c')})"/>`
     + `<path class="w1" d="${c.pins}" stroke="${WHITE}" stroke-opacity=".7"/>`

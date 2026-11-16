@@ -386,7 +386,7 @@ function light(n: number, prog: number): void {
 type Pt = number[];
 interface Line { pts: Pt[]; at: number[]; d: string }
 interface Trace { co: SVGPathElement; gl: SVGPathElement; sd: SVGPathElement[]; pd: SVGPathElement; pu: SVGPathElement; fl: SVGPathElement; line: Line; side: Line[]; f: number }
-interface BoardView { svg: SVGSVGElement; b1: SVGElement; b4: SVGElement[]; dm: SVGElement; tr: Trace[]; dr: SVGPathElement; dp: SVGPathElement; route: Line }
+interface BoardView { svg: SVGSVGElement; b1: SVGElement; b4: SVGElement[]; dm: SVGElement; arrive: number[]; tr: Trace[]; dr: SVGPathElement; dp: SVGPathElement; route: Line }
 /** every path's resting d, so the plain page gets the board back whole if the film gives up */
 const restD = new Map<SVGPathElement, string>();
 const lineOf = (d: string): Line => {
@@ -413,6 +413,33 @@ function partD(l: Line, a: number, b: number): string {
   return 'M' + out.map((p) => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join('L');
 }
 const lenOf = (l: Line) => l.at[l.at.length - 1];
+/** where a point sits along a line: the length up to its nearest point on it */
+function alongOf(l: Line, p: Pt): number {
+  let best = Infinity, at = 0;
+  for (let i = 1; i < l.pts.length; i++) {
+    const a = l.pts[i - 1], b = l.pts[i], dx = b[0] - a[0], dy = b[1] - a[1], L2 = dx * dx + dy * dy || 1;
+    const t = clamp(((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / L2), d = Math.hypot(a[0] + dx * t - p[0], a[1] + dy * t - p[1]);
+    if (d < best) { best = d; at = l.at[i - 1] + t * Math.sqrt(L2); }
+  }
+  return at;
+}
+/** a side line drawn only as far as the main trace's head: up to the length whose end sits at most h along the main
+ *  run (searched, since a mitred corner bends the relation) */
+function sideD(s: Line, main: Line, h: number): string {
+  const L = lenOf(s), at = (v: number) => alongOf(main, ptAt(s, v));
+  if (at(L) <= h + 0.01) return partD(s, 0, L);
+  if (at(0) > h) return '';
+  let lo = 0, hi = L;
+  for (let i = 0; i < 22; i++) { const m = (lo + hi) / 2; if (at(m) <= h) lo = m; else hi = m; }
+  return partD(s, 0, lo);
+}
+/** the point at length v along a line */
+function ptAt(l: Line, v: number): Pt {
+  let i = 1;
+  while (i < l.at.length - 1 && l.at[i] < v) i++;
+  const t = clamp((v - l.at[i - 1]) / (l.at[i] - l.at[i - 1] || 1)), p = l.pts[i - 1], q = l.pts[i];
+  return [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
+}
 const setD = (e: SVGPathElement, d: string) => { if (e.getAttribute('d') !== d) e.setAttribute('d', d); };
 const setO = (e: Element, o: number) => { const v = o >= 1 ? '' : o.toFixed(3); const st = (e as HTMLElement).style; if (st.opacity !== v) st.opacity = v; };
 const ramp = (v: number, a: number, b: number) => clamp((v - a) / (b - a));
@@ -431,10 +458,11 @@ function boardForm(): void {
   const tr = ['stand', 'coin', 'phone'].map((t): Trace => {
     const g = q<SVGGElement>('.t-' + t), sd = [...g.querySelectorAll<SVGPathElement>('.sd')];
     const co = q<SVGPathElement>('.co', g);
-    return { co, gl: q('.gl', g), sd, pd: q('.pd', g), pu: q('.pu', g), fl: q('.fl', g), line: lineOf(restD.get(co)!), side: sd.map((e) => lineOf(restD.get(e)!)), f: -1 };
+    const line = lineOf(restD.get(co)!), side = sd.map((e) => lineOf(restD.get(e)!));
+    return { co, gl: q('.gl', g), sd, pd: q('.pd', g), pu: q('.pu', g), fl: q('.fl', g), line, side, f: -1 };
   });
   const dr = q<SVGPathElement>('.dr');
-  BV = { svg, b1: q('.b1'), dm: q('.dm'), b4: [...svg.querySelectorAll<SVGElement>('g.b4:not(.nx)')], tr, dr, dp: q('.dp'), route: lineOf(restD.get(dr)!) };
+  BV = { svg, b1: q('.b1'), dm: q('.dm'), arrive: (svg.dataset.arrive ?? '0.7,0.7').split(',').map(Number), b4: [...svg.querySelectorAll<SVGElement>('g.b4:not(.nx)')], tr, dr, dp: q('.dp'), route: lineOf(restD.get(dr)!) };
   // the labels sit by share of the picture box, for this screen shape
   for (const e of $$('.blab', boardBox)) {
     const [x, y, side] = (e.dataset[form === 'desktop' ? 'd' : 'p'] ?? '0,0,r').split(',');
@@ -491,8 +519,10 @@ function boardAt(y: number): void {
   const step = rest ? [1, 1, 1, 1, 1, 1, 1] : [
     ramp(pre, 0.05, 0.25),                       // the chip and its label
     ramp(pre, 0.2, 0.7),                         // the stand's trace
-    ramp(passStrength(view, q, 1), 0, 0.7),      // the race piece's, with the second pass
-    ramp(passStrength(view, q, 2), 0, 0.7),      // the phone's, with the third
+    // the race piece's with the second pass, the phone's with the third: each head lands on its pad where the light
+    // has covered 70% of its thing (the strengths come from the build, which runs the film's own light arithmetic)
+    ramp(passStrength(view, q, 1), 0, BV.arrive[0]),
+    ramp(passStrength(view, q, 2), 0, BV.arrive[1]),
     ramp(u, 0.7, 0.78),                          // the net and the dimmed floor
     ramp(u, 0.78, 0.92),                         // the dashed trace to the empty place
     ramp(u, 0.92, 0.98),                         // its ring and NEXT
@@ -506,7 +536,8 @@ function boardAt(y: number): void {
     t.f = f;
     const L = lenOf(t.line), d = partD(t.line, 0, f * L);
     setD(t.co, d); setD(t.gl, d);
-    t.sd.forEach((e, j) => setD(e, partD(t.side[j], 0, ramp(f, 0.3, 0.78) * lenOf(t.side[j]))));
+    // the side lines never run ahead of the head
+    t.sd.forEach((e, j) => setD(e, sideD(t.side[j], t.line, f * L)));
     setO(t.pd, ramp(f, 0.96, 1));
     // the head of a trace being drawn is brighter
     if (!pulsing) setD(t.pu, f > 0 && f < 1 ? partD(t.line, f * L - 30, f * L) : '');
