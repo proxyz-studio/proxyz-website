@@ -3,8 +3,9 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { Plugin } from 'vite';
-import type { Content, FilmData, Pictures, View, Venture } from '../src/types';
-import { frameMask, restingPass } from '../src/film/math';
+import type { Content, FilmData, Pictures, SceneWords, View, Venture } from '../src/types';
+import { cutMask, frameMask, restingPass } from '../src/film/math';
+import { readFont } from './font';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const readJson = <T>(rel: string): T => JSON.parse(readFileSync(root + rel, 'utf8')) as T;
@@ -19,9 +20,8 @@ const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 const escMail = (s: string) => esc(s).replace(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g, (m) => `<a class="mail" href="mailto:${m}">${m}</a>`);
 const PORTRAIT = '(max-aspect-ratio: 1/1)';
 const LANDSCAPE = '(min-aspect-ratio: 1001/1000)';
-
-/** A one letter word is kept on the same line as the next word (no word changes, only where a line may break). */
-export const glue = (line: string) => line.replace(/(^|\s)([A-Z]) /g, '$1$2\u00a0');
+/** The display face of the giant lines (its widths size every line in CSS, see typeCss). */
+export const DISPLAY_FONT = 'src/fonts/anton-latin-400-normal.woff2';
 
 /** The views of scene n. Scene 7 has a build time choice of picture in the content file: its own, or the twin of
  *  scene 6 (the same pool of light, now empty, framed exactly like scene 6). */
@@ -169,22 +169,54 @@ function firstPreload(film: FilmData, p: Pictures): string {
 
 /* ---------- the film page ---------- */
 
+/** The phone lines of a scene, grouped by the wide screen line they belong to. A phone line may not run across two
+ *  wide screen lines (each wide line keeps its own words, so the heading reads the same on every screen). */
+export function lineGroups(s: SceneWords): string[][] {
+  const phone = [...(s.phoneLines ?? s.lines)];
+  const groups = s.lines.map((line) => {
+    const group: string[] = [];
+    let got = '';
+    while (got !== line) {
+      const next = phone.shift();
+      if (next === undefined) throw new Error(`site-pages: the phone lines of scene "${s.id}" do not make "${line}"`);
+      got = got ? `${got} ${next}` : next;
+      group.push(next);
+      if (got !== line && !line.startsWith(got + ' ')) throw new Error(`site-pages: the phone line "${next}" of scene "${s.id}" runs across two lines`);
+    }
+    return group;
+  });
+  if (phone.length) throw new Error(`site-pages: scene "${s.id}" has phone lines left over`);
+  return groups;
+}
+
+/** The giant heading: one block per wide screen line (.ln), one block per phone line (.pl, numbered l1, l2 ...). */
+function bigHeading(s: SceneWords, tag: string): string {
+  let k = 0;
+  const lns = lineGroups(s).map((g) => `<span class="ln">${g.map((pl) => `<span class="pl l${++k}">${esc(pl)}</span>`).join(' ')}</span>`);
+  return `<${tag} class="big">${lns.join(' ')}</${tag}>`;
+}
+
 function sceneHtml(c: Content, film: FilmData, p: Pictures, n: number): string {
   const s = c.scenes[n - 1];
+  const atBottom = film.type.bottom.includes(n);
   film = { ...film, scenes: { ...film.scenes, [n]: sceneViews(film, c, n) } };
-  const tag = n === 1 ? 'h1' : 'h2';
-  const cls = n === 1 ? ' w15' : n === film.brainScene ? ' w14' : '';
-  const cap = `<${tag} class="cap${cls}">${s.lines.map((l) => `<span>${esc(glue(l))}</span>`).join(' ')}</${tag}>`;
+  const heading = bigHeading(s, n === 1 ? 'h1' : 'h2');
   const extra = s.heightLine
     ? `<div class="hl" aria-hidden="true"><svg viewBox="0 0 1000 100" preserveAspectRatio="none"><polyline fill="none" stroke="rgba(242,242,242,.78)" stroke-width="1" vector-effect="non-scaling-stroke" points="${film.heightPoints}"/></svg><i class="dot"></i></div>`
     : s.toolLine ? `<p class="tool">${esc(s.toolLine)}</p>` : '';
+  const small = (s.small ? `<p class="small">${esc(s.small)}</p>` : '') + (s.note ? `<p class="note">${esc(s.note)}</p>` : '');
+  // the giant words: at the foot of the screen (with the small words, which ride a phone browser's bar), or at the
+  // top under the border, where the thing lit from the first pass may stand in front of them (see .cut)
+  const cut = atBottom ? '' : `<div class="cut">${heading}</div>`;
+  const foot1 = atBottom ? heading + extra + small : extra + small;
+  const words = foot1 ? `<div class="words">${foot1}</div>` : '';
   // the letterhead breaks only between its sentences on a narrow phone
   const addr = s.letterhead ? `<p class="addr">${s.letterhead.split(/(?<=\.) (?=[A-Z])/).map((t) => `<span>${esc(t)}</span>`).join(' ')}</p>` : '';
   const foot = n === c.scenes.length
     ? `<div class="foot"><a href="${c.pages.legal.path}">${esc(c.border.legal)}</a>${switchHtml(c, 'people', 'foot-sw')}</div>` : '';
   const mark = s.venture ? c.ventures.findIndex((v) => v.id === s.venture) : -1;
   const view = n === c.scenes.length && s.picture === 'twin' ? ' data-view="twin"' : '';
-  return `<section id="s${n}" class="scene" data-mark="${mark}"${view}><div class="layer"><div class="passes ready">${scenePicture(n, film, p, s.alt)}</div><div class="dim"></div><div class="shade"></div>${addr}<div class="words">${extra}${cap}</div></div>${foot}</section>`;
+  return `<section id="s${n}" class="scene" data-mark="${mark}"${view}><div class="layer"><div class="passes ready">${scenePicture(n, film, p, s.alt)}</div><div class="dim"></div><div class="shade"></div>${cut}${words}${addr}</div>${foot}</section>`;
 }
 
 function head(c: Content, kind: Kind, entry: string, extra = ''): string {
@@ -221,7 +253,7 @@ ${social}
 <meta name="color-scheme" content="dark">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="preload" as="font" type="font/woff2" href="/src/fonts/IBMPlexMono-SemiBold-Latin1.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="${filmPage ? '/' + DISPLAY_FONT : '/src/fonts/IBMPlexMono-SemiBold-Latin1.woff2'}" crossorigin>
 ${extra}
 <script type="module" src="${entry}"></script>
 </head>`;
@@ -312,7 +344,51 @@ ${border(c, 'notFound')}
 
 /* ---------- picture placement without the script (and the first paint) ---------- */
 
-/** CSS that places each scene's HTML picture as the film would place it, in steady screen units. */
+const maskDecl = (m: Record<string, string>) => [
+  `-webkit-mask-image:${m.image}`, `mask-image:${m.image}`, `-webkit-mask-size:${m.size}`, `mask-size:${m.size}`,
+  `-webkit-mask-position:${m.position}`, `mask-position:${m.position}`, `-webkit-mask-repeat:${m.repeat}`, `mask-repeat:${m.repeat}`,
+  `-webkit-mask-composite:${m.webkitComposite}`, `mask-composite:${m.composite}`,
+];
+
+/** The size rules of the giant lines, from the display face's own widths: on a wide screen one size per block (its
+ *  widest line a share of the window width, the block never taller than a share of the height); on an upright screen
+ *  each line fitted to the width between the side margins, but never taller than a share of the height. */
+/** The font size of the giant lines of scene n as CSS: wide, one size for the block; upright, one per phone line. */
+function typeSizes(film: FilmData, s: SceneWords, n: number): { wide: string; upright: string[] } {
+  const T = film.type, font = readFont(root + DISPLAY_FONT);
+  const w = (t: string) => font.width(t, T.letterSpacing);
+  const share = T.share[n] ?? T.shareDefault;
+  const widest = Math.max(...s.lines.map(w)).toFixed(5);
+  return {
+    wide: `min(calc(var(--W) * ${share} / ${widest}), calc(var(--H) * ${T.blockMax} / ${(T.lineHeight * s.lines.length).toFixed(3)}))`,
+    upright: lineGroups(s).flat().map((pl) => `min(calc((var(--W) - 2 * var(--side)) / ${w(pl).toFixed(5)}), calc(var(--H) * ${T.lineMax}))`),
+  };
+}
+
+/** The height of the giant words of scene n, as CSS (the line height times each line's size). */
+function typeHeightCss(film: FilmData, s: SceneWords, n: number, form: 'desktop' | 'phone'): string {
+  const z = typeSizes(film, s, n), lh = film.type.lineHeight;
+  return form === 'desktop' ? `${(lh * s.lines.length).toFixed(3)} * ${z.wide}` : `${lh} * (${z.upright.join(' + ')})`;
+}
+
+export function typeCss(): string {
+  const { content: c, film } = load();
+  const T = film.type;
+  // the letter spacing is set on each line too: an em value turns into pixels where it is declared, and an upright
+  // screen sizes each line on its own
+  const out = [`.big{line-height:${T.lineHeight}}.big,.big .ln,.big .pl{letter-spacing:${T.letterSpacing}em}`];
+  const wide: string[] = [], upright: string[] = [];
+  c.scenes.forEach((s, i) => {
+    const z = typeSizes(film, s, i + 1);
+    wide.push(`#s${i + 1} .big{font-size:${z.wide}}`);
+    z.upright.forEach((e, k) => upright.push(`#s${i + 1} .l${k + 1}{font-size:${e}}`));
+  });
+  out.push(`@media ${LANDSCAPE}{${wide.join('')}}`, `@media ${PORTRAIT}{${upright.join('')}}`);
+  return out.join('\n') + '\n';
+}
+
+/** CSS that places each scene's HTML picture as the film would place it, in steady screen units. With scripts off,
+ *  a scene with a matte also gets its cut in the giant words (the film sets its own once it runs). */
 export function stillsCss(): string {
   const { content: c, film, pictures: p } = load();
   const out: string[] = [];
@@ -333,11 +409,26 @@ export function stillsCss(): string {
         left = `clamp(calc(${W} - var(--s) * ${iw}), ${left}, 0px)`;
         top = `clamp(calc(${H} - var(--s) * ${ih}), ${top}, 0px)`;
       }
+      const words = c.scenes[Number(n) - 1], atFoot = film.type.bottom.includes(Number(n));
+      if (f.above && atFoot) {
+        top = `min(${top}, calc(${H} - var(--words-base) - var(--safe-b) - ${typeHeightCss(film, words, Number(n), form)} - ${f.above[1]}px - ${f.above[0]} * var(--s)))`;
+      }
+      if (f.below && !atFoot) {
+        top = `max(${top}, calc(var(--type-top) + ${typeHeightCss(film, words, Number(n), form)} + ${f.below[1]}px - ${f.below[0]} * var(--s)))`;
+      }
       const mask = frameMask(view, [iw, ih]);
       const decl = [`--s:${s}`, `width:calc(var(--s) * ${iw})`, `height:calc(var(--s) * ${ih})`, `left:${left}`, `top:${top}`];
       if (mask) decl.push(`-webkit-mask-image:${mask}`, `mask-image:${mask}`);
       if (view.filter) decl.push(`filter:${view.filter}`);
       out.push(`@media ${media}{#s${n} .still{${decl.join(';')}}}`);
+      // the cut, with scripts off (and once the film has given up): never while the film may still start, so the
+      // mattes of later scenes do not load with the first screen
+      const matte = view.matte && p[view.matte]?.matte ? p[view.matte] : null;
+      if (matte && !film.type.bottom.includes(Number(n))) {
+        const m = cutMask(matte.files[0].webp, view.opens ? '' : mask, { left, top, w: `calc(var(--s) * ${iw})`, h: `calc(var(--s) * ${ih})` });
+        const rule = `#s${n} .cut{--s:${s};${maskDecl(m).join(';')}}`;
+        out.push(`@media (scripting: none) and ${media}{${rule}}`, `@media ${media}{.nofilm ${rule}}`);
+      }
     }
   }
   const last = film.heightPoints.trim().split(/\s+/).pop()!.split(',');
@@ -357,6 +448,7 @@ const PAGES: Record<string, () => string> = {
 };
 const FILES: Record<string, () => string> = {
   'OFL.txt': () => readFileSync(root + 'src/fonts/OFL.txt', 'utf8'),
+  'OFL-Anton.txt': () => readFileSync(root + 'src/fonts/OFL-Anton.txt', 'utf8'),
   'llms.txt': () => llmsTxt(load().content),
   'robots.txt': () => robotsTxt(load().content),
   'sitemap.xml': () => sitemapXml(load().content),
@@ -366,7 +458,7 @@ export function sitePages(): Plugin {
   return {
     name: 'site-pages',
     // the picture placement is added to the one style file, so every page shares one stylesheet
-    transform(code, id) { return id.endsWith('/src/style.css') ? code + '\n' + stillsCss() : null; },
+    transform(code, id) { return id.endsWith('/src/style.css') ? code + '\n' + typeCss() + stillsCss() : null; },
     transformIndexHtml: {
       order: 'pre',
       handler(_html, ctx) {

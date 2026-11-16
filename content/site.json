@@ -22,18 +22,18 @@
     "legal": "LEGAL"
   },
   "ventures": [
-    { "id": "stand", "line": "A small 3D printed stand for a shop counter. Each tile opens any link when a phone taps it." },
-    { "id": "race", "line": "A race, printed: the ground and the route, made from a GPS file." },
-    { "id": "coach", "line": "An AI coach that plans your training, your food and your week. Nothing from it is shown here." },
+    { "id": "stand", "line": "A small 3D printed stand for a shop counter. An NFC tag in every tile: tap a phone and it opens a menu, a QR, any link." },
+    { "id": "race", "line": "A race trophy, 3D printed: the ground and the route of your race, made from your own GPS file. Every hill is real." },
+    { "id": "coach", "line": "An AI coach that plans your training, your food and your sleep. You tell it things in plain words. The screen shown is a sample day, not a real person's data." },
     { "id": "system", "name": "StudioOS", "line": "One brain, built for the studio and every venture in it." },
     { "id": "next", "hollow": true, "line": "The next one." }
   ],
   "scenes": [
-    { "id": "name", "venture": null, "lines": ["VENTURE STUDIO.", "RUN WITH AI."], "alt": "Drawing of raised letters on a printed plate, in hard side light" },
-    { "id": "stand", "venture": "stand", "lines": ["EACH TILE IS PROGRAMMABLE."], "alt": "Drawing of a small printed stand with four plain tiles, in a pool of light" },
-    { "id": "race", "venture": "race", "lines": ["A RACE, PRINTED."], "alt": "Drawing of a printed disc with hills and a route, seen from straight above", "heightLine": true },
-    { "id": "tool", "venture": "race", "lines": ["MADE FROM A GPS FILE."], "alt": "Drawing of the same disc, close and low along the route", "toolLine": "volumes: parts add up to 111.097 cm3, whole model 111.097 cm3, match=True" },
-    { "id": "coach", "venture": "coach", "lines": ["AI COACH."], "alt": "Drawing of a dark phone lying face up, screen off" },
+    { "id": "name", "venture": null, "lines": ["VENTURE STUDIO.", "RUN WITH AI."], "phoneLines": ["VENTURE", "STUDIO.", "RUN WITH AI."], "alt": "Drawing of raised letters on a printed plate, in hard side light" },
+    { "id": "stand", "venture": "stand", "lines": ["EACH TILE IS", "PROGRAMMABLE."], "small": "An NFC tag in every tile. Tap a phone and it opens a menu, a QR, any link.", "alt": "Drawing of a small printed stand with four tiles; a phone taps one tile and a menu opens on its screen" },
+    { "id": "race", "venture": "race", "lines": ["YOUR RACE.", "YOUR TROPHY."], "small": "Your route, 3D printed as the ground you covered.", "alt": "Drawing of a printed disc with the hills and route of a race, standing on a plain base", "heightLine": true },
+    { "id": "tool", "venture": "race", "lines": ["EVERY HILL", "IS REAL."], "small": "The red line is your route. Made from your own GPS file.", "alt": "Drawing of the same disc, close and low along the route", "toolLine": "volumes: parts add up to 111.097 cm3, whole model 111.097 cm3, match=True" },
+    { "id": "coach", "venture": "coach", "lines": ["AI COACH."], "small": "It plans training, food and sleep. You tell it things in plain words.", "note": "SAMPLE DAY ON SCREEN", "alt": "Drawing of a phone showing a coach app: a sample day, then a sample request and its answer" },
     { "id": "brain", "venture": "system", "lines": ["ONE BRAIN.", "EVERY VENTURE."], "alt": "Drawing of a small stand, a disc and a dark phone together in one pool of light" },
     { "id": "next", "venture": "next", "lines": ["THE NEXT ONE."], "alt": "Drawing of an empty pool of light on a dark floor", "letterhead": "PROXYZ STUDIO CO., LTD. PHUKET, THAILAND.", "picture": "twin" }
   ],
@@ -96,7 +96,7 @@
         "lead": [
           "The pictures on this site are drawings, made from the studio's own 3D files. They are not photographs.",
           "Map data. Produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved. The organisations in charge of the Copernicus programme by law or by delegation do not incur any liability for any use of the Copernicus WorldDEM-30.",
-          "Type. IBM Plex Mono, © IBM Corp., used under the SIL Open Font License 1.1.",
+          "Type. IBM Plex Mono, © IBM Corp., and Anton, © The Anton Project Authors, used under the SIL Open Font License 1.1.",
           "Questions? Write to hello@proxyz.studio."
         ],
         "parts": []

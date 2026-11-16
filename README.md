@@ -25,13 +25,14 @@ npm run check      # builds, serves dist/ locally and proves the rules (see belo
 | `src/main.ts` | The film: scroll position to light, scene changes, the five marks. |
 | `src/film/math.ts` | The light and mask arithmetic, shared by the film and the build. |
 | `src/style.css` | The one style file for every page. |
-| `build/pages.ts` | Writes the pages from the three data files (and the picture placement used before the script runs). |
+| `build/pages.ts` | Writes the pages from the three data files (and the picture placement and the size of every giant line, used before the script runs and with no script at all). |
+| `build/font.ts` | Reads the widths of the display face at build time, so each giant line gets its exact size in CSS (no script has to measure the words, so nothing jumps when the font arrives). |
 | `pictures/sources.json` | Which drawing each web picture is made from. |
 | `scripts/pictures.py` | Makes the web pictures in `public/pictures/` and `src/generated/pictures.json`. |
 | `public/` | Files served as they are. See the email pictures below. |
 | `scripts/check.mjs`, `scripts/serve.mjs` | The proof (`npm run check`) and the local server that follows `vercel.json`. |
 | `scripts/preview-file.mjs` | One self contained file of the real build, for looking at it without a server. |
-| `src/fonts/` | IBM Plex Mono, Regular (400) and SemiBold (600): IBM's own split Latin 1 files from its package `@ibm/plex-mono` version 2.5.0 (licence OFL-1.1, source github.com/ibm/plex), byte for byte, with IBM's licence as `OFL.txt`. To prove it, unpack that package and compare: `fonts/split/woff2/IBMPlexMono-Regular-Latin1.woff2` sha256 `e8993d946649b9d01abb1ed06d574b19d8ea3e66b5c3948602db335c44c18e56`, `fonts/split/woff2/IBMPlexMono-SemiBold-Latin1.woff2` sha256 `b7acd05041ab65f3b7039e218ddd893065e11a07e85ea85019473152a51b6b7d`. |
+| `src/fonts/` | IBM Plex Mono, Regular (400) and SemiBold (600): IBM's own split Latin 1 files from its package `@ibm/plex-mono` version 2.5.0 (licence OFL-1.1, source github.com/ibm/plex), byte for byte, with IBM's licence as `OFL.txt`. To prove it, unpack that package and compare: `fonts/split/woff2/IBMPlexMono-Regular-Latin1.woff2` sha256 `e8993d946649b9d01abb1ed06d574b19d8ea3e66b5c3948602db335c44c18e56`, `fonts/split/woff2/IBMPlexMono-SemiBold-Latin1.woff2` sha256 `b7acd05041ab65f3b7039e218ddd893065e11a07e85ea85019473152a51b6b7d`. The giant lines: Anton (400), the Latin file of the package `@fontsource/anton` version 5.3.0 (`files/anton-latin-400-normal.woff2`, Anton 2.116, licence OFL-1.1, copyright The Anton Project Authors, no reserved font name, source github.com/googlefonts/AntonFont), byte for byte, sha256 `d0fa07ff63dd60cbc0e2f58e29c802dca2a5ae0276c999f59c6111ab7bbaec3b`, with the package's licence as `OFL-Anton.txt`. |
 
 ## Names and links of ventures
 
@@ -61,6 +62,28 @@ keeps. In `sources.json` a picture may set its own `q`, a byte budget for its 2x
 picture so a sharp phone's first load stays small), or `only1x` (smooth pictures with no detail). File names carry a
 content hash, so they can be cached for a year. The film always places pictures from their logical size
 (1440 x 900, 786 x 1704), so bigger files change nothing in the layout.
+
+### The giant words and the pictures around them
+
+Every scene has its giant lines (`lines` in `content/site.json`; `phoneLines` breaks the same words otherwise on an
+upright screen). Scenes 1 and 7 hold them at the foot of the screen, the others at the top under the border
+(`type.bottom` in `src/film/scenes.json`, where the size rules live too). A scene's `frame` can keep a picture clear of
+them: `below: [row, gap]` keeps that picture row at least `gap` px under the giant words at the top, `above` the same
+over the words at the foot. `later` lists the boxes of things that first appear in a later pass; `npm run check`
+proves they never overlap the giant words.
+
+### Mattes: the thing in front of the words
+
+Where the thing a scene lights first overlaps its giant words, it stands in front of them: the letters are hidden
+inside its outline. That needs its matte, a PNG with alpha (white thing, transparent elsewhere) framed exactly like the
+scene's pictures, at 1x and if possible 2x (`<name>@2x.png` in the `--prefer` folder). To add one:
+
+1. In `pictures/sources.json` add `"s2-desk-matte": { "src": "<file>.png", "matte": true }` (one per screen shape).
+2. In `src/film/scenes.json` add `"matte": "s2-desk-matte"` to that scene's view.
+3. Run `npm run pictures -- <folder> --prefer <big folder> --only s2-desk-matte,s2-phone-matte`.
+
+A view that names a matte the manifest does not hold simply has no cut. With a matte, `frame.tuck` lets a span reach a
+little into the giant words. Then run `npm run check`: its cut-out test runs for every scene with a matte.
 
 ### The last scene's picture
 
@@ -107,3 +130,5 @@ Needs hidden browsers (Chromium, WebKit, Firefox) through `playwright-core`, whi
 set `PLAYWRIGHT_CORE` to a copy whose browsers are already installed. It never downloads anything. Set
 `BLOCKED_WORDS_FILE` to an optional local file, one word or phrase per line, that must never ship: the check fails if
 any of them appears in a tracked file, a file name or the build. Without it that test is skipped with a warning.
+The cut-out test runs only for scenes that have a matte; without any it says so with a warning. While working on one
+part, `CHECK_TESTS=14,17 npm run check` runs only those tests; the proof is always the full run.

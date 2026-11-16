@@ -42,3 +42,19 @@ export function frameMask(view: View, size: [number, number]): string {
   if (f.oval) return 'radial-gradient(closest-side at 50% 50%,#000 82%,transparent 100%)';
   return '';
 }
+
+/** The mask that lets the thing lit from the first pass stand in front of the giant words: the whole box, minus the
+ *  matte (where the matte is white the letters are hidden), the matte taken through the frame's own mask when it has
+ *  one. Each value a list over the layers. Where a browser cannot combine masks, the letters simply show. */
+export function cutMask(matteUrl: string, frame: string, box: { left: string; top: string; w: string; h: string }): Record<string, string> {
+  const at = `${box.left} ${box.top}`, size = `${box.w} ${box.h}`;
+  const layers = ['linear-gradient(#000, #000)', `url("${matteUrl}")`, ...(frame ? [frame] : [])];
+  return {
+    image: layers.join(', '),
+    size: ['100% 100%', size, ...(frame ? [size] : [])].join(', '),
+    position: ['0 0', at, ...(frame ? [at] : [])].join(', '),
+    repeat: 'no-repeat',
+    composite: frame ? 'exclude, intersect' : 'exclude',
+    webkitComposite: frame ? 'xor, source-in' : 'xor',
+  };
+}

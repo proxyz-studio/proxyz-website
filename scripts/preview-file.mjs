@@ -7,7 +7,8 @@
 //
 // Preview only: links between the three pages become #machines and #legal, and a tiny inline script switches them.
 // Pictures are AVIF only (every current browser reads it), each one stored once: the film's script carries every
-// size; the page itself carries only the 1x resting pictures, plus both sizes of the first picture.
+// size; the page itself carries only the 1x resting pictures, plus both sizes of the first picture. Mattes (the cut
+// in the giant words) are WebP with alpha and go in as they are, from the script and from the styles.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -54,7 +55,9 @@ const pics = new Map();
 const pic = (u) => { if (!pics.has(u)) pics.set(u, dataUri(u)); return pics.get(u); };
 // to stay under 6 MB the preview leaves out the 2x files of scenes 4 and 5 (the ones that need them least)
 js = js.replace(/,\{w:(?:2880|1572),[^}]*\/pictures\/s[45]-[^}]*\}/g, '');
+js = js.replace(/"(\/pictures\/[^"]+-matte-[^"]+\.webp)"/g, (_, u) => `"${pic(u)}"`);
 js = js.replace(/"(\/pictures\/[^"]+\.avif)"/g, (_, u) => `"${pic(u)}"`).replace(/"\/pictures\/([^"]+)\.webp"/g, '"#$1"');
+css = css.replace(/url\("?(\/pictures\/[^")]+-matte-[^")]+\.webp)"?\)/g, (_, u) => `url("${pic(u)}")`);
 const firstKeys = /\/pictures\/s1-(?:desk|phone)-p1-/;
 home = home
   .replace(/<source[^>]*type="image\/webp"[^>]*>/g, '')

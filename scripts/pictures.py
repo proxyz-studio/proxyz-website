@@ -20,6 +20,11 @@ and it writes src/generated/pictures.json, which the film and the pages read.
 The 1x file is made from the 1x drawing named in sources.json (when that drawing is itself 2x, it is halved).
 The 2x file is made from the bigger drawing. Neither is ever made from a JPG or WebP.
 
+Mattes: a picture in sources.json with "matte": true is the matte of the thing a scene lights first (a PNG with
+alpha, white thing on transparent, framed exactly like that scene's pictures). It becomes a small WebP with the same
+alpha (white, so only the alpha counts) at 1x and, when a bigger matte exists, 2x, and its manifest entry says
+"matte": true. The film uses a matte only when the scene's view names it and the manifest holds it.
+
 Quality: AVIF first (full colour detail 4:4:4, which keeps the black neutral, and the encoder's tuning for still
 pictures, which keeps the grain), WebP as the fallback. Chosen by looking at the dark floors brightened 4 to 12 times at
 full size: at Q_AVIF the lit floors keep their grain; the flat black floor is first set to pure black (see
@@ -45,6 +50,8 @@ LOGICAL = {"desk": (1440, 900), "phone": (786, 1704)}
 AVIF = dict(subsampling="4:4:4", speed=4, advanced={"tune": "iq"})
 Q_AVIF = 70
 WEBP = dict(quality=86, method=6)
+# a matte: the alpha kept exactly (lossless), the white colour costs next to nothing
+WEBP_MATTE = dict(lossless=True, quality=100, method=6, exact=False)
 
 
 def fail(msg):
@@ -115,6 +122,34 @@ def decode(blob):
     return Image.open(io.BytesIO(blob)).convert("RGB")
 
 
+def matte_files(key, one, two, lw, lh):
+    """The web files of one matte: (manifest files, notes). one and two are RGBA drawings (two may be None)."""
+    files, notes = [], []
+    for scale, im in ((1, one), (2, two)):
+        if im is None:
+            continue
+        tw, th = lw * scale, lh * scale
+        alpha = im.getchannel("A")
+        if alpha.size != (tw, th):
+            alpha = alpha.reduce(alpha.width // tw) if alpha.width % tw == 0 and alpha.width // tw == alpha.height // th else alpha.resize((tw, th), Image.LANCZOS)
+        if alpha.getextrema() == (0, 0):
+            fail(f"{key}: the matte is empty (no thing in it)")
+        white = Image.new("L", (tw, th), 255)
+        out = Image.merge("RGBA", (white, white, white, alpha))
+        b = io.BytesIO()
+        out.save(b, "WEBP", **WEBP_MATTE)
+        blob = b.getvalue()
+        back = Image.open(io.BytesIO(blob)).getchannel("A")
+        worst = ImageChops.difference(back, alpha).getextrema()[1]
+        if worst > 1:
+            fail(f"{key}: the encoded matte differs from its drawing by {worst} of 255")
+        name = f"{key}-{tw}.{hashlib.sha256(blob).hexdigest()[:10]}.webp"
+        (OUT_DIR / name).write_bytes(blob)
+        files.append({"w": tw, "webp": "/pictures/" + name, "webpBytes": len(blob)})
+        notes.append(f"{tw}w matte webp {len(blob) // 1024} KB")
+    return files, notes
+
+
 def best_avif(im, q=Q_AVIF, max_bytes=None):
     """(bytes, quality, grain kept on the dark floor or None) for one AVIF file."""
     if max_bytes:
@@ -170,6 +205,28 @@ def main(argv):
         if not p1.exists():
             fail(f"missing source for {key}: {rel}")
         p2 = bigger_drawing(rel, prefer, lw, lh)
+        if spec.get("matte"):
+            with Image.open(p1) as a:
+                if "A" not in a.getbands():
+                    fail(f"{key}: {rel} has no alpha (a matte is white on transparent)")
+                one = a.convert("RGBA")
+            if abs(one.width / one.height - lw / lh) > 0.005 or one.width < lw:
+                fail(f"{key}: {rel} is {one.width}x{one.height}, not the shape {lw}x{lh}")
+            two = None
+            if p2 is None and one.width >= 2 * lw:
+                p2 = p1
+            if p2 is not None:
+                with Image.open(p2) as b:
+                    if "A" not in b.getbands():
+                        fail(f"{key}: {p2.name} has no alpha")
+                    two = b.convert("RGBA")
+                big_count += 1
+            files, notes = matte_files(key, one, two, lw, lh)
+            for f in files:
+                keep.add(pathlib.Path(f["webp"]).name)
+            manifest[key] = {"size": [lw, lh], "matte": True, "files": files}
+            print(f"{key}: {rel}" + (f" + {p2.name}" if p2 is not None and p2 != p1 else "") + " -> " + "; ".join(notes))
+            continue
         with Image.open(p1) as a:
             one = a.convert("RGB")
         if abs(one.width / one.height - lw / lh) > 0.005 or one.width < lw:

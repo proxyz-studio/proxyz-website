@@ -6,12 +6,22 @@ import './style.css';
 import { startClock } from './clock';
 import { scenes as SCENES, lightShare as LIGHT_SHARE, brainScene as BRAIN } from './film/scenes.json';
 import pictureData from './generated/pictures.json';
-import { clamp, frameMask, lightAt, passStrength } from './film/math';
+import { clamp, cutMask, frameMask, lightAt, passStrength } from './film/math';
 import type { Pictures, PictureFile, View } from './types';
 
 type Form = 'desktop' | 'phone';
 interface Pass { key: string; img: HTMLImageElement; node: HTMLElement; ready: boolean; lit: number }
-interface SceneState { el: HTMLElement; layer: HTMLElement; box: HTMLElement; words: HTMLElement | null; mark: number; built: string; passes: Pass[] }
+interface Matte { url: string; img: HTMLImageElement; ready: boolean }
+interface SceneState {
+  el: HTMLElement; layer: HTMLElement; box: HTMLElement;
+  /** the words at the foot of the screen (the giant words of scenes 1 and 7, the small line of the others) */
+  words: HTMLElement | null;
+  /** the stage wide box of the giant words at the top, and the heading in it (scenes 2 to 6) */
+  cut: HTMLElement | null; top: HTMLElement | null;
+  mark: number; built: string; passes: Pass[];
+  /** the matte of the thing lit from the first pass, when the scene's view names one the manifest holds */
+  matte: Matte | null;
+}
 
 const pictures = pictureData as unknown as Pictures;
 const scenes = SCENES as unknown as Record<string, Record<Form, View>>;
@@ -50,6 +60,8 @@ addEventListener('error', () => {
   doc.classList.add('nofilm');
   sections.forEach((s) => { const box = $('.passes', s)!; box.removeAttribute('role'); box.removeAttribute('aria-label'); });
   stills.forEach((pic, n) => { if (!pic.isConnected) $('.passes', sections[n - 1])?.append(pic); });
+  // the plain page's own cut (style.css) takes over from the film's
+  $$('.cut').forEach((c) => c.removeAttribute('style'));
 }, { once: true });
 const first = $<HTMLImageElement>('#s1 img.pass');
 let firstKept = true;   // the first paint picture is reused until a full rebuild for the other screen shape
@@ -59,9 +71,12 @@ const S: SceneState[] = sections.map((el) => ({
   layer: $('.layer', el)!,
   box: $('.passes', el)!,
   words: $('.words', el),
+  cut: $('.cut', el),
+  top: $('.cut .big', el),
   mark: Number(el.dataset.mark ?? -1),
   built: '',
   passes: [],
+  matte: null,
 }));
 S.slice(1).forEach((s) => s.box.classList.remove('ready'));
 doc.classList.add('film', 'film-init');
@@ -138,22 +153,36 @@ function checkInset(): void {
   const b = probeB.offsetHeight;
   if (b > insetMax) { insetMax = b; layoutAll(); }
 }
+/** The scene's matte, when its view names one and the picture manifest holds it. */
+const matteOf = (view: View): string | null => (view.matte && pictures[view.matte]?.matte ? view.matte : null);
+
 function geometry(view: View, s: SceneState): Box {
   const [iw, ih] = pictures[view.passes[0]].size;
   const f = view.frame, vw = VW, vh = VH;
-  const room = view.placeAs ? S[view.placeAs - 1] : s;   // the words box that sets the span
+  const roomN = view.placeAs ?? S.indexOf(s) + 1;
+  const room = S[roomN - 1];   // the words that set the span (and the view that may tuck the thing under them)
   let k = f.fit === 'width' ? vw / iw : f.fit === 'contain' ? Math.min(vw / iw, vh / ih) : Math.max(vw / iw, vh / ih);
   k *= f.zoom ?? 1;
   let w = iw * k, h = ih * k;
   let left = f.vx * vw - f.fx * w, topY = f.vy * vh - f.fy * h;
   if (f.fit === 'cover') { left = clamp(left, vw - w, 0); topY = clamp(topY, vh - h, 0); }
-  // span: picture rows that must fit between the border strip and the words (short phone screens)
+  // above and below: a picture row kept clear of the giant words at the foot (at their low place, as for the span)
+  // or at the top
+  if (f.above && room.words && !room.top) topY = Math.min(topY, vh - wordsBase() - room.words.offsetHeight - f.above[1] - f.above[0] * k);
+  if (f.below && room.top) topY = Math.max(topY, room.top.offsetTop + room.top.offsetHeight + f.below[1] - f.below[0] * k);
+  // span: picture rows that must fit in the room the words leave (short phone screens)
   if (f.span) {
-    const roomTop = (top ? top.getBoundingClientRect().bottom : 0) + 12;
-    // the room ends above the words at their LOW place (on a phone they ride a browser's sliding bar, so where they
-    // are right now depends on the bar; the picture must not), so a scene built in either state gets the same box.
-    // Worked out from the steady height, never read from the words' own place (their safe area part may glide).
-    const roomBot = (room.words ? vh - wordsBase() - room.words.offsetHeight : vh) - 16;
+    // the room starts under the border, or under the giant words at the top: below them, or a little into them when
+    // the thing has a matte and stands in front of their lowest letters
+    const rv = viewOf(roomN);
+    const tuck = matteOf(rv) ? rv.frame.tuck ?? 0 : 0;
+    const roomTop = room.top
+      ? room.top.offsetTop + room.top.offsetHeight * (1 - tuck) + (tuck ? 0 : 12)
+      : (top ? top.getBoundingClientRect().bottom : 0) + 12;
+    // the room ends above the words at the foot at their LOW place (on a phone they ride a browser's sliding bar, so
+    // where they are right now depends on the bar; the picture must not), so a scene built in either state gets the
+    // same box. Worked out from the steady height, never read from the words' own place (their safe area may glide).
+    const roomBot = vh - wordsBase() - (room.words ? room.words.offsetHeight : 0) - 16;
     const [y0, y1] = f.span;
     if (roomBot > roomTop && (topY + y0 * k < roomTop || topY + y1 * k > roomBot)) {
       const k2 = Math.min(k, (roomBot - roomTop) / (y1 - y0));
@@ -165,6 +194,21 @@ function geometry(view: View, s: SceneState): Box {
   return { left, top: topY, w, h };
 }
 
+/** The cut in the giant words, placed exactly where the picture sits; or none. */
+function setCut(s: SceneState, view: View, g: Box | null): void {
+  const c = s.cut;
+  if (!c) return;
+  if (!g || !s.matte?.ready) { c.removeAttribute('style'); return; }
+  const px = (v: number) => v.toFixed(2) + 'px';
+  const m = cutMask(s.matte.url, view.opens ? '' : frameMask(view, pictures[view.passes[0]].size), { left: px(g.left), top: px(g.top), w: px(g.w), h: px(g.h) });
+  const st = c.style;
+  st.setProperty('-webkit-mask-image', m.image); st.setProperty('mask-image', m.image);
+  st.setProperty('-webkit-mask-size', m.size); st.setProperty('mask-size', m.size);
+  st.setProperty('-webkit-mask-position', m.position); st.setProperty('mask-position', m.position);
+  st.setProperty('-webkit-mask-repeat', m.repeat); st.setProperty('mask-repeat', m.repeat);
+  st.setProperty('-webkit-mask-composite', m.webkitComposite); st.setProperty('mask-composite', m.composite);
+}
+
 function place(s: SceneState, view: View): void {
   const g = geometry(view, s);
   const mask = frameMask(view, pictures[view.passes[0]].size);
@@ -172,6 +216,8 @@ function place(s: SceneState, view: View): void {
     Object.assign(p.img.style, { width: g.w + 'px', height: g.h + 'px', left: g.left + 'px', top: g.top + 'px', filter: view.filter ?? '' });
     if (!view.opens) { p.img.style.webkitMaskImage = mask; p.img.style.maskImage = mask; }
   }
+  // the cut only once the first pass shows: a hole in the letters before the thing is there would give it away
+  setCut(s, view, s.box.classList.contains('ready') ? g : null);
   // sides: a picture narrower than the screen fades into black at its left and right edges
   let sm = '';
   if (view.frame.sides) {
@@ -214,19 +260,40 @@ function build(n: number): void {
   });
   if (n === 1 && !keepFirst) firstKept = false;
   if (usedStill) stills.delete(n);
-  const firstReady = !!keepFirst && keepFirst.complete && keepFirst.naturalWidth > 0;
+  // the matte loads with the passes; the first pass waits for it, so the thing and its cut arrive together
+  const mk = s.cut ? matteOf(view) : null;
+  s.matte = null;
+  if (mk) {
+    const file = fileFor(mk, width), img = new Image();
+    img.decoding = 'async';
+    img.src = file.webp;
+    s.matte = { url: file.webp, img, ready: false };
+  }
+  const firstReady = !!keepFirst && keepFirst.complete && keepFirst.naturalWidth > 0 && !s.matte;
   s.box.classList.toggle('ready', firstReady);
   s.box.replaceChildren(...s.passes.map((p) => p.node));
   place(s, view);
+  const mine = s.built;
+  const shown = () => {
+    if (s.built !== mine || !s.passes[0].ready || (s.matte && !s.matte.ready)) return;
+    s.box.classList.add('ready');
+    place(s, view);
+  };
   for (const p of s.passes) {
-    const mine = s.built;
     whenReady(p.img).then(() => {
       if (s.built !== mine) return;
       p.ready = true;
-      if (p === s.passes[0]) s.box.classList.add('ready');
+      if (p === s.passes[0]) shown();
       schedule();
     });
   }
+  const m = s.matte;
+  if (m) whenReady(m.img).then(() => {
+    if (s.built !== mine) return;
+    // a matte that cannot load: the letters simply show, whole
+    if (m.img.naturalWidth > 0) m.ready = true; else s.matte = null;
+    shown();
+  });
 }
 
 /** Lets go of a scene's pictures (a phone cannot hold every big picture of the film at once). */
@@ -236,6 +303,8 @@ function release(n: number): void {
   // Firefox picks the fallback file of a picture it is about to drop and fetches it; with no src it fetches nothing
   for (const p of s.passes) p.img.removeAttribute('src');
   s.passes = [];
+  s.matte = null;
+  s.cut?.removeAttribute('style');
   s.box.replaceChildren();
   s.box.classList.remove('ready');
   if (n === 1) firstKept = false;
