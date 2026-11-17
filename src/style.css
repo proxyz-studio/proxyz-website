@@ -1,0 +1,292 @@
+/* PROXYZ: one style file for every page.
+   At build time build/pages.ts adds, at the end, where each scene's picture sits without the script.
+   Without the script the film page is a plain document: seven sections under each other.
+   The script adds the class "film" to <html>; only then do the film rules below apply. */
+
+/* ---------- type: IBM Plex Mono and Anton, self hosted (licences: src/fonts/OFL.txt, src/fonts/OFL-Anton.txt) ---------- */
+@font-face { font-family: "Site Mono"; src: url("./fonts/IBMPlexMono-Regular-Latin1.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Site Mono"; src: url("./fonts/IBMPlexMono-SemiBold-Latin1.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: swap; }
+/* fallbacks measured to the same letter width, so nothing moves when the real font arrives */
+@font-face { font-family: "Mono Fallback"; src: local("Menlo"), local("Menlo-Regular"); size-adjust: 99.66%; ascent-override: 102.85%; descent-override: 27.6%; line-gap-override: 0%; }
+@font-face { font-family: "Mono Fallback Courier"; src: local("Courier New"), local("CourierNewPSMT"); size-adjust: 99.98%; ascent-override: 102.52%; descent-override: 27.51%; line-gap-override: 0%; }
+/* the giant lines: their sizes are worked out from this face's own widths, so they wait for it (preloaded on the film
+   page) instead of showing in another face first */
+@font-face { font-family: "Site Display"; src: url("./fonts/anton-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: block; }
+
+/* ---------- tokens ---------- */
+:root {
+  --bg: #0a0a0a; --film: #010101;
+  --ink: #f2f2f2; --dim: rgba(242, 242, 242, .52);
+  --pink: #FF4193;
+  --safe-t: env(safe-area-inset-top, 0px); --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-x: max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+  --side: calc(16px + var(--safe-x)); --strip: 92px;
+  /* steady screen units: the large viewport does not change when a phone browser's bar slides */
+  --W: 100vw; --H: 100vh; --S: 100vh;
+  /* how far the film's words stand above the bottom of the screen (plus the safe area on phones); the script reads it */
+  --words-base: 60px;
+  color-scheme: dark;
+}
+@supports (height: 100lvh) { :root { --H: 100lvh; --S: 100svh; } }
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { background: var(--bg); overflow-x: hidden; overflow-x: clip; -webkit-text-size-adjust: 100%; scrollbar-width: thin; scrollbar-color: rgba(242, 242, 242, .28) var(--film); }
+/* the film page: the page itself in the film's black (Safari paints the strip under its bar with it) */
+html.film-page, html.film-page body { background: var(--film); }
+::selection { background: var(--pink); color: var(--bg); }
+body {
+  background: var(--bg); color: var(--ink); overflow-x: hidden; overflow-x: clip;
+  font: 400 12px/20px "Site Mono", "Mono Fallback", "Mono Fallback Courier", ui-monospace, monospace;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+a:focus-visible { outline: 1px solid var(--ink); outline-offset: 2px; }
+[hidden] { display: none !important; }
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition { navigation: auto; }
+  /* the border holds still while the page behind it changes (one name per shown element) */
+  .homelink { view-transition-name: wordmark; }
+  .clock { view-transition-name: clock; }
+  .top-sw, .bottom-sw { view-transition-name: switch; }
+}
+
+/* ---------- the film page, as a document ---------- */
+#film .scene { position: relative; height: var(--H); overflow: hidden; background: var(--film); }
+/* with scripts on, the later resting pictures wait for the film, which takes them out and loads each one as the
+   visitor nears it. If the film script never arrives (blocked, failed), they show again after a few seconds. */
+@media (scripting: enabled) {
+  html:not(.film):not(.nofilm) #film .scene:not(#s1) .passes { transform: translateY(-1000vh); animation: still-back 0s 4s forwards; }
+}
+@keyframes still-back { to { transform: none; } }
+.nofilm #film .scene .still { display: block !important; }
+.layer { position: absolute; top: 0; left: 0; right: 0; height: var(--H); overflow: hidden; }
+.passes { position: absolute; inset: 0; }
+.pass { position: absolute; display: block; max-width: none; user-select: none; -webkit-user-drag: none; }
+.dim { position: absolute; inset: 0; background: var(--film); opacity: 0; }
+.shade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(1, 1, 1, .88) 0%, rgba(1, 1, 1, .6) 22%, rgba(1, 1, 1, 0) 46%); }
+/* scenes 4 and 6: the picture runs down to the words at the foot, so the dark band is kept low and short (scene 4
+   keeps the light of its hills; its small words have their own glow, and on phones a backing) */
+#s4 .shade, #s6 .shade, #s7[data-view="twin"] .shade { background: linear-gradient(to top, rgba(1, 1, 1, .88) 0%, rgba(1, 1, 1, .45) 9%, rgba(1, 1, 1, 0) 20%); }
+
+/* words: kept above a phone browser's bottom bar (the gap between the large and small viewport) */
+.words {
+  position: absolute; left: var(--side); right: var(--side);
+  bottom: calc(var(--H) - var(--S) + var(--words-base) + var(--safe-b));
+  display: flex; flex-direction: column; align-items: flex-start; gap: 18px;
+}
+/* the not found line */
+.cap { font-weight: 600; font-size: min(38px, calc((100vw - 32px) / 7.9)); line-height: 1; letter-spacing: -.01em; text-transform: uppercase; }
+.cap { text-wrap: balance; }
+/* the giant lines, in Anton (copy already in capitals). Each line's size is set at the end of this file from the
+   face's own widths: on a wide screen one size per block, on an upright screen each line (.pl) its own. */
+.big { font-family: "Site Display", Impact, "Arial Narrow", sans-serif; font-weight: 400; color: #f3eee4; }
+.big .ln { display: block; white-space: nowrap; }
+@media (max-aspect-ratio: 1/1) { .big .pl { display: block; } }
+/* the giant words at the top of a scene, just under the border. The box covers the stage, so a mask made from the
+   matte of the thing lit from the first pass can sit exactly where its picture sits: inside the thing's outline the
+   letters are hidden, so the thing stands in front of them. */
+.cut { position: absolute; inset: 0; pointer-events: none; }
+.cut .big { position: absolute; left: var(--side); top: var(--type-top); }
+/* where the giant words at the top start: just under the border (set on the page, where the border strip is known) */
+.home { --type-top: calc(var(--strip) + var(--safe-t) + 20px); }
+/* the small line under each scene's giant words, its note and the grey tool line: a soft dark glow keeps them readable
+   on any picture */
+.small, .note, .tool { text-shadow: 0 0 2px rgba(1, 1, 1, .9), 0 0 10px rgba(1, 1, 1, .8), 0 0 24px rgba(1, 1, 1, .7); }
+.small { max-width: 30ch; font-size: 15px; line-height: 1.45; color: #F2D78C; text-wrap: balance; }
+.note { margin-top: -8px; font-size: 12px; line-height: 20px; letter-spacing: .08em; color: var(--dim); }
+.tool { font-size: 12px; line-height: 18px; color: var(--dim); max-width: 46em; overflow-wrap: anywhere; }
+.hl { position: relative; width: 100%; height: 44px; }
+.hl svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.hl .dot { position: absolute; right: -3px; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: var(--ink); }
+.addr { position: absolute; left: var(--side); right: var(--side); top: calc(var(--strip) + var(--safe-t) + 22px); font-size: 12px; letter-spacing: .04em; color: var(--dim); line-height: 20px; }
+.addr span { display: inline-block; }
+.foot { position: absolute; z-index: 3; left: 0; right: 0; bottom: calc(4px + var(--safe-b)); display: flex; justify-content: center; }
+.foot > a, .foot-sw a { display: flex; align-items: center; height: 44px; padding: 0 14px; font-size: 12px; line-height: 20px; letter-spacing: .08em; color: var(--dim); }
+.foot .foot-sw { display: none; }
+
+/* ---------- the film (only once the script runs) ---------- */
+.probe { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; height: 100lvh; visibility: hidden; pointer-events: none; }
+/* the small viewport (a phone browser's bar showing), measured by the script */
+.probe-s { position: fixed; top: 0; left: 0; width: 0; height: 100vh; height: 100svh; visibility: hidden; pointer-events: none; }
+/* the bottom safe area, measured by the script (it places the pictures for the largest it has seen) */
+.probe-b { position: fixed; top: 0; left: 0; width: 0; height: var(--safe-b); visibility: hidden; pointer-events: none; }
+html.film body::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: var(--H); background: var(--film); }
+.film #film .scene { height: 240vh; height: 240lvh; overflow: visible; background: none; }
+.film .layer { position: fixed; z-index: 1; opacity: 0; transition: opacity .4s ease; pointer-events: none; }
+.film .scene.on .layer { opacity: 1; }
+/* the last scene as the twin of scene 6: scene 6 stays at full strength under it while the twin fades in, so the
+   pool of light holds steady and only the three things leave it (where :has() is missing, the two simply blend) */
+.film #s6:has(+ #s7[data-view="twin"].on) .layer { opacity: 1; }
+/* the twin's own stage is dark, so scene 6 never shows through at its soft side edges (short phones) */
+.film #s7[data-view="twin"] .layer { background: var(--film); }
+.film .passes { opacity: 0; transition: opacity .3s ease; }
+.film .passes.ready { opacity: 1; }
+.film .scene .words, .film .scene .cut, .film .scene .addr { opacity: 0; transition: opacity .15s ease; }
+.film .scene.on .words, .film .scene.on .cut, .film .scene.on .addr { opacity: 1; transition: opacity .25s ease .2s; }
+/* the first frame after the switch: nothing fades, so no scene shows on top of the first one */
+.film-init *, .film-init *::before { transition: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .film .layer, .film .passes, .film .scene .words, .film .scene .cut, .film .scene .addr, .marks i { transition: none !important; }
+}
+
+/* ---------- the border ---------- */
+.bord { position: fixed; z-index: 5; font-size: 12px; line-height: 20px; letter-spacing: .08em; text-transform: uppercase; }
+#top { top: 0; left: 0; right: 0; padding: var(--safe-t) var(--side) 0; background: rgba(1, 1, 1, .94); }
+.row { display: flex; align-items: center; justify-content: space-between; }
+.row1 { height: 44px; }
+.row2 { height: 44px; margin-bottom: 4px; }
+.homelink { display: flex; align-items: center; height: 44px; margin-left: -8px; padding: 0 8px; flex-shrink: 0; }
+.wm { display: block; height: 14px; width: auto; }
+.clock { color: var(--dim); white-space: nowrap; }
+.clock b { display: inline-block; min-width: 8ch; color: var(--ink); font-weight: 400; font-variant-numeric: tabular-nums; }
+.marks { display: flex; align-items: center; gap: 8px; height: 44px; }
+.marks i { display: block; width: 6px; height: 6px; background: rgba(242, 242, 242, .36); transition: background-color .4s, border-color .4s; }
+.marks i.hollow { background: none; border: 1px solid rgba(242, 242, 242, .5); }
+.marks i.on { background: var(--ink); }
+.marks i.hollow.on { background: none; border-color: var(--pink); }
+/* names are written as they are spelled (StudioOS), never in capitals */
+.marks .nm { display: flex; align-items: center; gap: 4px; min-height: 44px; font-size: 12px; color: var(--ink); letter-spacing: .08em; margin: 0 2px; text-transform: none; }
+a.nm { min-width: 44px; }
+.nm .arr { width: 8px; height: 8px; }
+.sw { display: flex; align-items: center; }
+.sw a { display: flex; align-items: center; height: 44px; padding: 0 8px; color: var(--dim); }
+.top-sw a:last-child, .bottom-sw a:last-child { padding-right: 0; }
+.sw a[aria-current="page"] { color: var(--ink); }
+.bottom-sw { display: none; }
+/* frame: four small corner marks (phone), joined by a hairline on desktop */
+#frame { position: fixed; z-index: 4; left: calc(8px + var(--safe-x)); right: calc(8px + var(--safe-x)); top: calc(var(--strip) + var(--safe-t) + 6px); bottom: 8px; pointer-events: none; }
+#frame i { position: absolute; width: 10px; height: 10px; border: 0 solid rgba(242, 242, 242, .7); }
+#frame i:nth-of-type(1) { top: 0; left: 0; border-top-width: 1px; border-left-width: 1px; }
+#frame i:nth-of-type(2) { top: 0; right: 0; border-top-width: 1px; border-right-width: 1px; }
+#frame i:nth-of-type(3) { bottom: 0; left: 0; border-bottom-width: 1px; border-left-width: 1px; }
+#frame i:nth-of-type(4) { bottom: 0; right: 0; border-bottom-width: 1px; border-right-width: 1px; }
+#frame .hair { display: none; }
+.nf #frame { top: calc(48px + var(--safe-t) + 6px); }
+.text #top { background: var(--bg); }
+
+/* ---------- desktop ---------- */
+@media (min-width: 900px) and (min-height: 501px) {
+  :root { --side: 48px; --words-base: 96px; }
+  #top { background: none; padding: 0; pointer-events: none; }
+  #top a { pointer-events: auto; }
+  #top .row1 { position: absolute; left: 40px; right: 40px; top: 28px; height: 28px; }
+  #top .row2 { position: absolute; left: 40px; top: 58px; height: 28px; }
+  .wm { height: 17px; }
+  .top-sw { display: none; }
+  .bottom-sw { display: flex; position: fixed; right: 40px; bottom: 24px; }
+  .text #top .row2 { right: 40px; }
+  /* text pages: the band hides the text that scrolls under the border; the frame line stays on top of it */
+  .text #top { height: 104px; background: var(--bg); }
+  .text #frame { z-index: 6; }
+  .text #frame::after { content: ""; position: absolute; left: -16px; right: -16px; top: 100%; height: 16px; margin-top: 1px; background: var(--bg); }
+  #frame, .nf #frame { inset: 16px; }
+  #frame i { width: 12px; height: 12px; border-color: rgba(242, 242, 242, .75); }
+  #frame .hair { display: block; position: absolute; inset: 0; border: 1px solid rgba(242, 242, 242, .13); }
+  .words { left: var(--side); right: auto; max-width: 62vw; bottom: calc(var(--H) - var(--S) + var(--words-base)); gap: 24px; }
+  .home { --type-top: 104px; }
+  /* scene 4: its hills reach the foot of the screen, so a soft dark corner sits behind the small words there */
+  #s4 .words { isolation: isolate; }
+  #s4 .words::before {
+    content: ""; position: absolute; z-index: -1; pointer-events: none;
+    left: calc(-1 * var(--side)); bottom: calc(-1 * var(--words-base)); width: calc(100% + 24vw); height: calc(100% + var(--words-base) + 140px);
+    background: radial-gradient(farthest-side at 0 100%, rgba(1, 1, 1, .94) 0%, rgba(1, 1, 1, .88) 70%, rgba(1, 1, 1, 0) 100%);
+  }
+  .small { max-width: 34ch; font-size: 19px; }
+  .cap { font-size: min(80px, 7.2vh, 6.8vw); }
+  .tool { font-size: 13px; line-height: 20px; }
+  .hl { width: min(560px, 42vw); height: 72px; }
+  .addr { top: 92px; left: 40px; font-size: 13px; }
+  .foot { bottom: 24px; }
+}
+/* a tablet held upright: the capitals grow with the width */
+@media (min-width: 600px) and (max-width: 899px) and (orientation: portrait) {
+  .cap { font-size: clamp(38px, 6.4vw, 56px); }
+}
+/* a phone held sideways: one row of border; PEOPLE and MACHINES move to the foot of the last scene */
+@media (max-height: 500px) and (orientation: landscape) {
+  :root { --words-base: 20px; }
+  .home { --strip: 48px; }
+  .home .row2 { display: none !important; }
+  .words { bottom: calc(var(--H) - var(--S) + var(--words-base) + var(--safe-b)); }
+  .cap { font-size: min(30px, calc((100vw - 32px) / 7.9)); }
+  .foot .foot-sw { display: flex; margin-left: 8px; }
+}
+
+/* ---------- the film on phones: the words ride the bottom edge of what the visitor sees ---------- */
+/* They follow a phone browser's sliding bar. The pictures never move: they are placed for the words' low place. */
+@media (max-width: 899px), (max-height: 500px) and (orientation: landscape) {
+  .film .words { position: fixed; bottom: calc(var(--words-base) + var(--safe-b)); }
+  /* a late change of the bottom safe area (an iPhone's home bar inset as the bar slides) is a short glide, not a jump.
+     The ride with the browser's bar is the screen itself moving, not this value, so it is not slowed. */
+  .film .scene .words { transition: opacity .15s ease, bottom .2s ease; }
+  .film .scene.on .words { transition: opacity .25s ease .2s, bottom .2s ease; }
+  /* scenes 3 and 4: a dark backing that travels with the words, always there (it does not wait for the bar's height).
+     It fades in over the 24 px just above the words and leaves the picture above them as it is. */
+  .film #s3 .words::before, .film #s4 .words::before {
+    content: ""; position: absolute; z-index: -1; pointer-events: none;
+    left: calc(-1 * var(--side)); right: calc(-1 * var(--side)); top: -24px; bottom: -260px;
+    background: linear-gradient(to bottom, rgba(1, 1, 1, 0) 0, rgba(1, 1, 1, .86) 24px, rgba(1, 1, 1, .92) 100%);
+  }
+}
+
+/* ---------- the plain pages: machines, legal, not found ---------- */
+.plain { position: relative; z-index: 3; min-height: 100vh; padding: calc(var(--strip) + var(--safe-t) + 80px) var(--side) 80px; color: rgba(242, 242, 242, .66); font-size: 13px; line-height: 22px; overflow-wrap: anywhere; }
+.plain h1 { font: inherit; color: inherit; }
+.plain p, .plain ol, .plain ul { max-width: 44em; margin-top: 22px; }
+.plain h1 + p, .plain .revised { margin-top: 0; }
+.plain p span { display: block; }
+.plain ol { list-style: none; white-space: pre-wrap; }
+.plain .foot { position: static; display: block; margin: 40px 0 0 -14px; }
+.plain .foot a { display: inline-flex; }
+#legal h1, #legal h2 { font-size: 12px; line-height: 20px; letter-spacing: .08em; font-weight: 600; color: var(--ink); }
+#legal h1 { margin-bottom: 4px; }
+#legal h2 { margin-top: 64px; }
+#legal section { scroll-margin-top: calc(var(--strip) + var(--safe-t) + 24px); }
+#legal h3 { font-size: 13px; line-height: 22px; font-weight: 600; color: var(--ink); margin-top: 28px; }
+#legal h3 + p { margin-top: 4px; }
+#legal ul { padding-left: 2ch; }
+#legal li { margin-top: 4px; }
+/* the email address: a mail link in the text's own grey, a thin underline; plain inline text (so a full stop after it
+   stays on its line), with a 44 px tall tap area from its padding, which does not change the line spacing */
+#legal a.mail { padding: 14px 0; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+#nf { position: relative; z-index: 3; min-height: var(--H); }
+#nf .cap { position: absolute; left: var(--side); right: var(--side); bottom: calc(var(--H) - var(--S) + 60px + var(--safe-b)); }
+/* on phones the line rides the bottom edge of what the visitor sees, 60 px above it, like the film's words */
+@media (max-width: 899px), (max-height: 500px) and (orientation: landscape) {
+  #nf .cap { position: fixed; bottom: calc(60px + var(--safe-b)); }
+}
+@media (max-width: 899px) {
+  .plain { padding-left: calc(var(--side) + 8px); padding-right: calc(var(--side) + 8px); }
+}
+@media (min-width: 900px) and (min-height: 501px) {
+  .plain { padding: 140px 96px 120px; }
+  #legal section { scroll-margin-top: 140px; }
+  #nf .cap { bottom: calc(var(--H) - var(--S) + 96px); }
+}
+
+/* ---------- scene 6: the board on the floor (build/board.ts; the film draws it in, src/main.ts) ---------- */
+/* in the picture's own box; every line in screen pixels (--bw: screen pixels per picture pixel) */
+.bbox { position: absolute; --bw: 1px; pointer-events: none; }
+.board { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.board path { vector-effect: non-scaling-stroke; }
+.board .w0 { stroke-width: clamp(.6px, calc(var(--bw) * .8), 1px); }
+.board .w1 { stroke-width: clamp(.75px, var(--bw), 1.25px); }
+.board .wr, .board .wp, .board .wn { stroke-width: clamp(1px, calc(var(--bw) * 1.25), 1.75px); }
+.board .wl { stroke-width: clamp(1.5px, calc(var(--bw) * 2.25), 3.25px); }
+.board .wg { stroke-width: clamp(4px, calc(var(--bw) * 6), 8px); }
+.board .wu { stroke-width: clamp(2.25px, calc(var(--bw) * 3), 4px); }
+.board .wf { stroke-width: clamp(2px, calc(var(--bw) * 2.5), 3.5px); }
+.board .wv { stroke-width: clamp(2.5px, calc(var(--bw) * 3.4), 4.5px); }
+.board .wn { stroke-dasharray: 5 6; }
+.blab { position: absolute; line-height: 1; white-space: nowrap; color: #f3eee4; text-shadow: 0 0 6px #000, 0 0 2px #000; }
+.blab.chip { font-size: 14px; font-weight: 600; letter-spacing: .06em; }
+.blab.next { font-size: 12px; letter-spacing: .08em; color: rgba(243, 238, 228, .72); }
+/* the film script has not run yet: the board waits with the resting pictures (and loads its matte only if it shows) */
+@media (scripting: enabled) { html:not(.film):not(.nofilm) .bbox { display: none; animation: board-back 0s 4s forwards, board-in .5s 5.2s both; } }
+@keyframes board-back { to { display: block; } }
+/* with scripts off, or once the film has given up, the board waits a moment for its matte (a mask that has not
+   loaded yet hides nothing), then fades in; with less motion it simply appears */
+@media (scripting: none) { .bbox { animation: board-in .5s 1.2s both; } }
+.nofilm .bbox { animation: board-in .5s 1.2s both; }
+@media (prefers-reduced-motion: reduce) { .bbox { animation-duration: 0s !important; } }
+@keyframes board-in { from { opacity: 0; } }

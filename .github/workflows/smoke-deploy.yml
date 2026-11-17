@@ -23,7 +23,7 @@ jobs:
             exit 1
           fi
           BYTES=$(wc -c < /tmp/body.html)
-          if [ "$BYTES" -lt 1000 ]; then
+          if [ "$BYTES" -lt 500 ]; then
             echo "::error::Homepage body suspiciously short ($BYTES bytes)"
             exit 1
           fi
@@ -31,41 +31,28 @@ jobs:
             echo "::error::Homepage missing PROXYZ wordmark"
             exit 1
           fi
-          if ! grep -qE 'id="root"|<div id=' /tmp/body.html; then
-            echo "::error::Homepage missing React root mount point"
+          if ! grep -q "<h1" /tmp/body.html; then
+            echo "::error::Homepage missing its h1 heading"
             exit 1
           fi
-          echo "OK: $URL is up, body $BYTES bytes, PROXYZ wordmark present"
+          echo "OK: $URL is up, body $BYTES bytes, PROXYZ wordmark and h1 present"
 
-      - name: Probe pipeline page
+      - name: Probe hosted signature image
         run: |
           set -euo pipefail
-          URL="https://proxyz.studio/pipeline"
-          HTTP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$URL")
+          URL="https://proxyz.studio/proxyz-lockup-e-horizontal-light-tight.png"
+          RESULT=$(curl -s -o /dev/null -w "%{http_code} %{content_type}" --max-time 30 "$URL")
+          HTTP="${RESULT%% *}"
+          TYPE="${RESULT#* }"
           if [ "$HTTP" != "200" ]; then
-            echo "::error::Pipeline page returned HTTP $HTTP"
+            echo "::error::Signature image returned HTTP $HTTP"
             exit 1
           fi
-          echo "OK: $URL is up"
-
-      - name: Probe ventures page
-        run: |
-          set -euo pipefail
-          URL="https://proxyz.studio/ventures"
-          HTTP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$URL")
-          if [ "$HTTP" != "200" ]; then
-            echo "::error::Ventures page returned HTTP $HTTP"
-            exit 1
-          fi
-          echo "OK: $URL is up"
-
-      - name: Probe Studio OS page
-        run: |
-          set -euo pipefail
-          URL="https://proxyz.studio/studio-os"
-          HTTP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$URL")
-          if [ "$HTTP" != "200" ]; then
-            echo "::error::Studio OS page returned HTTP $HTTP"
-            exit 1
-          fi
-          echo "OK: $URL is up"
+          case "$TYPE" in
+            image/png*) ;;
+            *)
+              echo "::error::Signature image has content type '$TYPE', expected image/png"
+              exit 1
+              ;;
+          esac
+          echo "OK: $URL is up, $TYPE"

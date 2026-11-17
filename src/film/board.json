@@ -1,0 +1,82 @@
+{
+  "_note": "Scene 6, the board: a circuit board drawn on the floor of the drawing, in millimetres on the floor (x to the right, z toward the camera), one layout per screen shape. scripts/board.mjs projects it through the drawing's own camera into picture pixels and writes src/generated/board.json; run it by hand (npm run board) after a change here. things: where the drawing puts the stand [x, z, turn, width, depth], the race piece [x, z, radius] and the coach phone [x, z, turn, width, length]. chip [x, z, half side]. empty [x, z, radius]: the place for the next one. routes: the live traces from the chip, in order of the film (each ends where it meets its pad). buses: [centre line, count] groups of parallel traces 6 mm apart. vias [start, step, count]. parts [x, z, 0 along x or 1 along z]. pool: the pool of light of the last pass [cx, cy, rx, ry] in picture pixels. keep: picture pixel boxes [x0, y0, x1, y1] where the board never draws (the giant words). label: the StudioOS label's leader: from the chip corner [x sign, z sign], [dx, dy, run] in picture pixels (a negative run puts the word to the left), and NEXT below or above the empty place.",
+  "grid": 6,
+  "padGap": 9,
+  "forms": {
+    "desktop": {
+      "size": [1440, 900],
+      "camera": {"az": 20, "el": 20, "dist": 950, "lx": 0, "ly": 30, "lz": 90, "fov": 30, "sx": 0.1, "sy": 0.12},
+      "things": {
+        "stand": [0, -90, 20, 146.3, 54.3],
+        "coin": [-114, 127, 65],
+        "phone": [103, 300, -60, 72, 150]
+      },
+      "chip": [20, 100, 30],
+      "empty": [-205, 318, 50],
+      "routes": {
+        "stand": [[20, 70], [20, -260]],
+        "coin": [[-10, 100], [-260, 100]],
+        "phone": [[50, 100], [92, 100], [116, 124], [116, 420]],
+        "empty": [[20, 130], [20, 196], [-10, 226], [-128, 226], [-260, 358]]
+      },
+      "buses": [
+        [[[336, -48], [162, -48], [120, -6]], 4],
+        [[[336, 54], [210, 54], [174, 90], [96, 90]], 5],
+        [[[336, 156], [246, 156], [216, 186]], 3],
+        [[[-336, 36], [-228, 36], [-186, -6], [-114, -6]], 4],
+        [[[-336, 186], [-258, 186], [-240, 204]], 3],
+        [[[-300, -126], [-162, -126], [-132, -96]], 3],
+        [[[-150, 444], [54, 444], [84, 474], [264, 474]], 4],
+        [[[264, 414], [264, 318], [294, 288], [294, 222]], 3],
+        [[[-66, 312], [-66, 384], [-36, 414], [30, 414]], 4],
+        [[[96, -12], [96, 36], [120, 60], [150, 60]], 3],
+        [[[150, -150], [276, -150]], 3],
+        [[[-240, -60], [-150, -60], [-120, -30]], 3],
+        [[[198, 252], [198, 330], [228, 360], [228, 396]], 3]
+      ],
+      "vias": [[[108, 132], [1, 0], 5], [[-294, -42], [1, 0], 4], [[-48, 384], [1, 0], 6], [[228, -102], [0, 1], 4]],
+      "parts": [[150, 222, 0], [-270, 102, 1], [180, -102, 0]],
+      "pool": [780, 430, 660, 326],
+      "keep": [[0, 0, 760, 330]],
+      "label": {
+        "corner": [1, -1],
+        "leader": [34, -34, 40],
+        "next": "below"
+      }
+    },
+    "phone": {
+      "size": [786, 1704],
+      "camera": {"az": 15, "el": 30, "dist": 1600, "lx": 0, "ly": 30, "lz": 140, "fov": 30, "sx": 0, "sy": 0.14},
+      "things": {
+        "stand": [0, -90, 20, 146.3, 54.3],
+        "coin": [-74, 135, 65],
+        "phone": [80, 330, 25, 72, 150]
+      },
+      "chip": [75, 150, 30],
+      "empty": [-150, 15, 30],
+      "routes": {
+        "stand": [[75, 120], [75, -260]],
+        "coin": [[45, 150], [-260, 150]],
+        "phone": [[75, 180], [75, 420]],
+        "empty": [[55, 120], [55, 40], [35, 20], [-260, 20]]
+      },
+      "buses": [
+        [[[-250, -60], [-140, -60], [-110, -90]], 3],
+        [[[-260, -130], [-180, -130], [-156, -154], [-110, -154]], 4],
+        [[[-60, 250], [-60, 330], [-30, 360], [-30, 430]], 4],
+        [[[-110, 270], [-110, 380], [-80, 410], [-80, 470]], 3],
+        [[[-60, 530], [50, 530], [80, 500], [210, 500]], 4],
+        [[[100, 570], [230, 570]], 3]
+      ],
+      "vias": [[[-120, -110], [1, 0], 4], [[-30, 476], [1, 0], 5]],
+      "parts": [[-190, -20, 1], [-20, 300, 1], [150, 535, 0]],
+      "pool": [392, 674, 392, 434],
+      "keep": [[0, 0, 786, 300]],
+      "label": {
+        "corner": [-1, 1],
+        "leader": [-30, 30, -14],
+        "next": "above"
+      }
+    }
+  }
+}

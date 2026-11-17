@@ -1,0 +1,106 @@
+{
+  "site": {
+    "url": "https://proxyz.studio",
+    "name": "PROXYZ",
+    "legalName": "PROXYZ STUDIO CO., LTD.",
+    "locality": "Phuket",
+    "country": "Thailand",
+    "logo": "/proxyz-tricolor.svg",
+    "image": "/og-2026-11.jpg"
+  },
+  "pages": {
+    "home": { "path": "/", "title": "PROXYZ", "description": "Venture studio. Phuket, Thailand. Run with AI." },
+    "machines": { "path": "/machines/", "title": "PROXYZ / MACHINES", "description": "Venture studio. Phuket, Thailand. Run with AI." },
+    "legal": { "path": "/legal/", "title": "PROXYZ / LEGAL", "description": "Privacy, terms and credits for proxyz.studio." },
+    "notFound": { "title": "PROXYZ", "line": "NOTHING HERE." }
+  },
+  "border": {
+    "wordmark": "PROXYZ",
+    "place": "PHUKET",
+    "people": "PEOPLE",
+    "machines": "MACHINES",
+    "legal": "LEGAL"
+  },
+  "ventures": [
+    { "id": "stand", "line": "A small 3D printed stand for a shop counter. An NFC tag in every tile: tap a phone and it opens a menu, a QR, any link." },
+    { "id": "race", "line": "A race trophy, 3D printed: the ground and the route of your race, made from your own GPS file. Every hill is real." },
+    { "id": "coach", "line": "An AI coach that plans your training, your food and your sleep. You tell it things in plain words. The screen shown is a sample day, not a real person's data." },
+    { "id": "system", "name": "StudioOS", "line": "One brain, built for the studio and every venture in it." },
+    { "id": "next", "hollow": true, "line": "The next one." }
+  ],
+  "scenes": [
+    { "id": "name", "venture": null, "lines": ["VENTURE STUDIO.", "RUN WITH AI."], "phoneLines": ["VENTURE", "STUDIO.", "RUN WITH AI."], "alt": "Drawing of raised letters on a printed plate, in hard side light" },
+    { "id": "stand", "venture": "stand", "lines": ["EACH TILE IS", "PROGRAMMABLE."], "small": "An NFC tag in every tile. Tap a phone and it opens a menu, a QR, any link.", "alt": "Drawing of a small printed stand with four tiles; a phone taps one tile and a menu opens on its screen" },
+    { "id": "race", "venture": "race", "lines": ["YOUR RACE.", "YOUR TROPHY."], "small": "Your route, 3D printed as the ground you covered.", "alt": "Drawing of a printed disc with the hills and route of a race, standing on a plain base", "heightLine": true },
+    { "id": "tool", "venture": "race", "lines": ["EVERY HILL", "IS REAL."], "small": "The red line is your route. Made from your own GPS file.", "alt": "Drawing of the same disc, close and low along the route", "toolLine": "volumes: parts add up to 111.097 cm3, whole model 111.097 cm3, match=True" },
+    { "id": "coach", "venture": "coach", "lines": ["AI COACH."], "small": "It plans training, food and sleep. You tell it things in plain words.", "note": "SAMPLE DAY ON SCREEN", "alt": "Drawing of a phone showing a coach app: a sample day, then a sample request and its answer" },
+    { "id": "brain", "venture": "system", "lines": ["ONE BRAIN.", "EVERY VENTURE."], "alt": "Drawing of a dark floor made as one circuit board. A chip marked StudioOS sits in the middle. Lines of light run from it to a counter stand, a round race piece and a phone showing a sample day. A dashed line runs to an empty place marked NEXT.", "board": { "chip": "StudioOS", "next": "NEXT" } },
+    { "id": "next", "venture": "next", "lines": ["THE NEXT ONE."], "alt": "Drawing of an empty pool of light on a dark floor", "letterhead": "PROXYZ STUDIO CO., LTD. PHUKET, THAILAND.", "picture": "twin" }
+  ],
+  "machines": {
+    "title": "PROXYZ",
+    "summary": "Venture studio. Phuket, Thailand. Run with AI.",
+    "intro": "This is the same site as plain text.",
+    "toolIntro": "A line from the tool that builds the model, about its own work:",
+    "pictures": "The pictures on this site are drawings, made from the studio's own 3D files. They are not photographs.",
+    "company": "PROXYZ STUDIO CO., LTD. Phuket, Thailand.",
+    "pagesHeading": "Pages",
+    "pageNotes": { "home": "the film", "machines": "the same site as plain text", "legal": "privacy, terms and credits" }
+  },
+  "legal": {
+    "title": "LEGAL",
+    "revised": "Revised 15 November 2026",
+    "sections": [
+      {
+        "id": "privacy",
+        "heading": "PRIVACY",
+        "lead": ["This part tells you what PROXYZ collects, why, and what you can ask us to do about it. We aim for a short, honest policy instead of a long one written for lawyers."],
+        "parts": [
+          { "heading": "Who we are", "text": ["PROXYZ is a venture studio based in Phuket, Thailand. It is run by PROXYZ STUDIO CO., LTD. You can reach us at hello@proxyz.studio."] },
+          { "heading": "What we collect", "text": [
+            "This site has no forms, sets no cookies and runs no tracking. We do not use analytics that profile individual visitors. We do not place advertising pixels. We do not sell or share your data with third parties for marketing.",
+            "If you write to us, we get your name, your email address and the contents of your message.",
+            "Like any website, the company that hosts ours (Vercel) handles technical data, such as your internet address, when your browser asks for a page. We do not use it to identify you."
+          ] },
+          { "heading": "Earlier visitors", "text": ["If you gave us your details through an earlier version of this site, for example to book a call, this policy covers them too. They stay in our work email and our internal records."] },
+          { "heading": "Why we collect it", "text": ["To reply to you. Nothing else."] },
+          { "heading": "How long we keep it", "text": ["Until you ask us to delete it, or until there is no reason to keep it. Whichever comes first."] },
+          { "heading": "Where it lives", "text": ["Email and message content stays in our work email (Google Workspace). We do not export your data outside these systems without telling you."] },
+          { "heading": "Your rights under Thailand's PDPA", "text": ["Under the Personal Data Protection Act B.E. 2562, you can:"], "list": [
+            "Ask what personal data we hold about you.",
+            "Ask us to correct it if it is wrong.",
+            "Ask us to delete it.",
+            "Withdraw consent to processing at any time.",
+            "Lodge a complaint with the Personal Data Protection Committee of Thailand."
+          ], "after": ["To exercise any of these, email hello@proxyz.studio. We respond within 30 days."] },
+          { "heading": "Children", "text": ["This site is not aimed at children. We do not knowingly collect data from anyone under 18. If you believe a minor has sent us personal data, write to us and we will delete it."] },
+          { "heading": "Changes to this policy", "text": ["We can update this page. The date at the top tells you when it was last changed. If a change is material we will mark it on this page for at least 30 days."] }
+        ]
+      },
+      {
+        "id": "terms",
+        "heading": "TERMS",
+        "lead": ["These terms cover use of proxyz.studio."],
+        "parts": [
+          { "heading": "Using the site", "text": ["You can read the site and share links to it freely."] },
+          { "heading": "Content ownership", "text": ["All copy, design, code, pictures and visual identity on proxyz.studio are owned by PROXYZ STUDIO CO., LTD. unless explicitly credited otherwise. You may not republish substantial portions of the content as your own."] },
+          { "heading": "No warranty", "text": ["The site is provided as-is. We do our best to keep it accurate and available, but we cannot promise it is always either. Use what you find here at your own discretion."] },
+          { "heading": "Limitation of liability", "text": ["PROXYZ STUDIO CO., LTD. is not liable for damages arising from your use of the site, except where Thai law does not permit such limitation."] },
+          { "heading": "Jurisdiction", "text": ["These terms are governed by the laws of Thailand. Any dispute that cannot be resolved by discussion is handled in the courts of Bangkok."] },
+          { "heading": "Changes", "text": ["We can update these terms. The date at the top tells you when. If a change is material we will mark it on this page for at least 30 days. Continuing to use the site after a change means you accept the updated version."] }
+        ]
+      },
+      {
+        "id": "credits",
+        "heading": "CREDITS",
+        "lead": [
+          "The pictures on this site are drawings, made from the studio's own 3D files. They are not photographs.",
+          "Map data. Produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved. The organisations in charge of the Copernicus programme by law or by delegation do not incur any liability for any use of the Copernicus WorldDEM-30.",
+          "Type. IBM Plex Mono, © IBM Corp., and Anton, © The Anton Project Authors, used under the SIL Open Font License 1.1.",
+          "Questions? Write to hello@proxyz.studio."
+        ],
+        "parts": []
+      }
+    ]
+  }
+}

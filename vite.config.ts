@@ -1,31 +1,24 @@
-import path from "path"
-import react from "@vitejs/plugin-react"
-import { defineConfig } from "vite"
+import { defineConfig } from 'vite'
+import { sitePages } from './build/pages'
 
-// https://vite.dev/config/
 export default defineConfig({
-  base: '/',
-  plugins: [react()],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
+  plugins: [sitePages()],
   build: {
+    target: 'es2020',
+    // fonts and pictures stay real files: the content security policy allows no data: addresses
+    assetsInlineLimit: 0,
+    modulePreload: { polyfill: false },
     rollupOptions: {
+      input: {
+        main: 'index.html',
+        machines: 'machines/index.html',
+        legal: 'legal/index.html',
+        notfound: '404.html',
+      },
       output: {
-        manualChunks(id) {
-          if (!id.includes('node_modules')) return;
-          if (id.includes('/motion/') || id.includes('framer-motion')) return 'vendor-motion';
-          if (id.includes('@radix-ui/')) return 'vendor-radix';
-          if (id.includes('react-router')) return 'vendor-router';
-          if (id.includes('recharts') || id.includes('d3-')) return 'vendor-charts';
-          if (id.includes('react-hook-form') || id.includes('@hookform/') || id.includes('zod/')) return 'vendor-forms';
-          if (id.includes('lucide-react')) return 'vendor-icons';
-          if (id.includes('react/') || id.includes('react-dom/') || id.includes('scheduler/')) return 'vendor-react';
-        },
+        // the one stylesheet every page shares
+        assetFileNames: (a) => (a.names.some((n) => n.endsWith('.css')) ? 'assets/site-[hash][extname]' : 'assets/[name]-[hash][extname]'),
       },
     },
-    chunkSizeWarningLimit: 600,
   },
-});
+})
