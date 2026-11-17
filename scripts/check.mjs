@@ -1122,71 +1122,39 @@ async function main() {
       }
       ok(!early.length, 18, 'Scripts off: scene 6\'s board and its labels\' box are not drawn for their first 1.2 s after the page starts, then fade in, the labels never before the board (time for the matte that hides it inside the things; Chromium, WebKit, Firefox)', 'hidden at the start, fade in place', early.join('; '));
     }
-    // before the film script runs (here: it never arrives) and once the film has given up: the labels' box does what
-    // the board's box does, sits where it sits, and holds every label at rest
+    // scripts on but the film script never arrives (blocked): every scene's resting picture comes back after a few
+    // seconds, the board and its labels stay away for good (not displayed) and the things matte is never fetched
     {
-      const bad = [], oldBug = [], BN = content.scenes.findIndex((s) => s.board) + 1;
-      const state = (p) => p.evaluate((n) => {
-        const s = document.getElementById('s' + n), b = s.querySelector('.bbox'), l = s.querySelector('.lbox');
-        const one = (e) => { if (!e || !e.isConnected) return null; const cs = getComputedStyle(e), r = e.getBoundingClientRect(); return { d: cs.display, o: +cs.opacity, v: cs.visibility, r: [r.left, r.top, r.width, r.height] }; };
-        return { t: document.timeline.currentTime, b: one(b), l: one(l), after: !!l && l.parentElement?.classList.contains('layer') && l.previousElementSibling === s.querySelector('.passes'),
-          styled: l ? [l, ...l.querySelectorAll('*')].filter((e) => (e.getAttribute('style') ?? '').trim()).length : -1, labs: l ? [...l.querySelectorAll('.blab')].filter((e) => +getComputedStyle(e).opacity < 0.999).length : -1, nofilm: document.documentElement.classList.contains('nofilm') };
-      }, BN);
-      const shown = (x) => x && x.d !== 'none' && x.v !== 'hidden' ? x.o : 0;
-      const same = (a, b) => a && b ? Math.max(...a.r.map((v, k) => Math.abs(v - b.r[k]))) : Infinity;
+      const bad = [], BN = content.scenes.findIndex((s) => s.board) + 1;
       for (const engine of ['chromium', 'webkit', 'firefox']) {
-        // the script never arrives: both wait 4 s with the resting pictures, then fade in; the labels never ahead
-        const c = await ctx(engine, { viewport: { width: 1512, height: 860 } });
-        const p = await c.newPage();
-        await p.route(/\/assets\/main-[^/]+\.js$/, (r) => r.abort());
-        await p.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
-        await p.evaluate((n) => document.getElementById('s' + n).scrollIntoView(), BN);
-        let last = null;
-        for (let i = 0; i < 70; i++) {
-          const x = await state(p);
-          if (shown(x.l) > shown(x.b) + 0.02) bad.push(`${engine} no script, ${Math.round(x.t)} ms: labels ${shown(x.l).toFixed(2)}, board ${shown(x.b).toFixed(2)}`);
-          if (x.t < 3900 && shown(x.l) > 0) bad.push(`${engine} no script: labels show at ${Math.round(x.t)} ms`);
-          last = x;
-          if (x.t > 6200) break;
-          await settle(p, 100);
-        }
-        // the board's box never comes back when the script never arrives (known before this change, the live build
-        // does the same: an element that is display:none runs no CSS animation, so board-back never fires); the labels
-        // must do exactly what the board does
-        if (shown(last.l) !== shown(last.b) || (last.b && last.l && same(last.l, last.b) > 0.5) || !last.after) bad.push(`${engine} no script, at ${Math.round(last.t)} ms: board ${shown(last.b)}, labels ${shown(last.l)}, ${same(last.l, last.b).toFixed(2)} px apart, after the pictures ${last.after}`);
-        if (shown(last.b) < 0.999) oldBug.push(`${engine} no script: board ${last.b ? last.b.d + ' ' + shown(last.b) : 'none'} at ${Math.round(last.t)} ms`);
-        await c.close();
-        // the film gives up, once with the scene built and once with it never built: read at once, in the same task as
-        // the give-up (its scroll loop keeps running afterwards, see the warning below)
-        for (const [w, h, where] of [[430, 739, 'in'], [1512, 860, 'in'], [430, 739, 'top']]) {
-          const c2 = await ctx(engine, { viewport: { width: w, height: h } });
-          const p2 = await open(c2, '/', `give up ${engine} ${w}x${h} ${where}`);
-          if (where === 'in') await toScene(p2, BN, 1); else await settle(p2, 300);
-          const x = await p2.evaluate((n) => {
-            dispatchEvent(new ErrorEvent('error', { message: 'check: the film gives up' }));
-            const s = document.getElementById('s' + n), b = s.querySelector('.bbox'), l = s.querySelector('.lbox'), pa = s.querySelector('.passes');
-            const styled = (e) => (e ? [e, ...e.querySelectorAll('*')].filter((x) => (x.getAttribute('style') ?? '').trim() && !x.closest('picture')).length : -1);
-            return { nofilm: document.documentElement.classList.contains('nofilm'), board: !!b && b.parentElement === pa, after: !!l && l.parentElement === s.querySelector('.layer') && l.previousElementSibling === pa, sb: styled(b), sl: styled(l) };
-          }, BN);
-          if (!x.nofilm || !x.board || !x.after || x.sb || x.sl) bad.push(`${engine} ${w}x${h} gave up (${where}): nofilm ${x.nofilm}, board in the pictures ${x.board}, labels just after them ${x.after}, inline styles left: board ${x.sb}, labels ${x.sl}`);
-          if (where === 'top') {
-            // nothing scrolls: the scene stays as handed back; after the fade both boxes show, on the picture
-            await settle(p2, 2200);
-            const y = await state(p2);
-            const pic = await p2.evaluate((n) => { const i = document.querySelector(`#s${n} .passes img`); if (!i) return null; const r = i.getBoundingClientRect(); return [r.left, r.top, r.width, r.height]; }, BN);
-            const offPic = y.l && pic ? Math.max(...y.l.r.map((v, k) => Math.abs(v - pic[k]))) : Infinity;
-            if (y.styled || y.labs || shown(y.l) < 0.999 || shown(y.b) < 0.999 || same(y.l, y.b) > 0.5 || offPic > 1.5) bad.push(`${engine} ${w}x${h} gave up (${where}), 2.2 s on: ${y.styled} inline styles, ${y.labs} labels not full, board ${shown(y.b)}, labels ${shown(y.l)}, ${same(y.l, y.b).toFixed(2)} px from the board, ${offPic.toFixed(2)} px from the picture`);
-          } else {
-            await settle(p2, 1500);
-            const gone = await p2.evaluate((n) => ({ pic: !!document.querySelector(`#s${n} .passes img`), b: !!document.querySelector(`#s${n} .bbox`)?.isConnected, l: !!document.querySelector(`#s${n} .lbox`)?.isConnected }), BN);
-            if (!gone.pic) oldBug.push(`${engine} ${w}x${h} gave up in the scene: the scene emptied`);
-            if (gone.b !== gone.l) bad.push(`${engine} ${w}x${h} gave up (${where}), 1.5 s on: board ${gone.b ? 'in' : 'out'}, labels ${gone.l ? 'in' : 'out'}`);
+        for (const [w, h] of [[430, 739], [1512, 860]]) {
+          const tag = `${engine} ${w}x${h}`;
+          const c = await ctx(engine, { viewport: { width: w, height: h } });
+          const p = await c.newPage();
+          const asked = [];
+          p.on('request', (r) => asked.push(r.url()));
+          await p.route(/\/assets\/main-[^/]+\.js$/, (r) => r.abort());
+          await p.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+          await p.waitForFunction(() => document.timeline.currentTime > 6000, null, { timeout: 15000, polling: 100 }).catch(() => {});
+          for (let n = 1; n <= content.scenes.length; n++) {
+            await p.evaluate((n) => document.getElementById('s' + n).scrollIntoView(), n);
+            await p.waitForFunction((n) => { const i = document.querySelector(`#s${n} .passes img`); return i && i.complete && i.naturalWidth > 0; }, n, { timeout: 8000 }).catch(() => {});
+            await settle(p, 150);
+            const r = await p.evaluate((n) => {
+              const s = document.getElementById('s' + n), i = s.querySelector('.passes img'), q = i ? i.getBoundingClientRect() : null, cs = i ? getComputedStyle(i) : null;
+              const disp = (sel) => { const e = s.querySelector(sel); return e ? getComputedStyle(e).display : 'absent'; };
+              return { film: document.documentElement.className, img: !!i, loaded: !!i && i.complete && i.naturalWidth > 0, onScreen: !!q && q.bottom > 0 && q.top < innerHeight && q.right > 0 && q.left < innerWidth && q.width > 0,
+                shown: !!cs && cs.visibility !== 'hidden' && cs.display !== 'none' && +cs.opacity > 0.99, moved: getComputedStyle(s.querySelector('.passes')).transform, bbox: disp('.bbox'), lbox: disp('.lbox') };
+            }, n);
+            if (!r.img || !r.loaded || !r.onScreen || !r.shown || (r.moved !== 'none' && r.moved !== 'matrix(1, 0, 0, 1, 0, 0)')) bad.push(`${tag} scene ${n}: resting picture ${r.img ? (r.loaded ? 'loaded' : 'not loaded') : 'missing'}, on screen ${r.onScreen}, shown ${r.shown}, moved ${r.moved} (root ${r.film})`);
+            if (n === BN && (r.bbox !== 'none' || r.lbox !== 'none')) bad.push(`${tag}: the board is ${r.bbox}, the labels' box ${r.lbox}`);
           }
-          await c2.close();
+          const matte = asked.filter((u) => /-things-matte/.test(u));
+          if (matte.length) bad.push(`${tag}: the things matte was fetched (${matte.length})`);
+          await c.close();
         }
       }
-      ok(!bad.length, 18, 'Scene 6\'s labels follow the board when the film script never arrives (never ahead of it, the same state at the end) and when the film gives up (handed back just after the pictures with no inline style, in the same moment as the board; scene not yet built: on the board\'s box, every label at rest after the fade; Chromium, WebKit, Firefox)', 'as the board', bad.slice(0, 6).join('; '));
-      if (oldBug.length) warn(18, 'Known before this change (the live build does the same; the labels do exactly what the board does): when the film script never arrives the board never comes back (display:none runs no animation), and once the film gives up inside scene 6 its scroll loop lets the scene go, leaving it empty', oldBug.join('; '));
+      ok(!bad.length, 18, 'Scripts on but the film script blocked: 6 s in, every scene\'s resting picture shows where it belongs, scene 6\'s board and its labels\' box are not displayed and the things matte is never fetched (Chromium, WebKit, Firefox; 430x739 and 1512x860)', 'as specified', bad.slice(0, 6).join('; '));
     }
     ok(!place.length, 18, 'Scripts off: every scene\'s picture, and scene 6\'s board at rest (whole, its matte on), sits where the film puts it at rest, within 1.5 px (phones, both Safari bar layouts showing, laptop, monitor; Chromium, and 430x873 and 1512x860 in WebKit and Firefox)', `largest ${seenPlace.sort((a, b) => b[0] - a[0])[0]?.[1]}`, place.slice(0, 6).join('; '));
     ok(!inkBad.length, 18, 'Scripts off: every giant line keeps at least 85% of its ink (the thing in front hides only a little), the same sizes and engines', `least: ${seenInk.sort((a, b) => a[0] - b[0])[0]?.[1] ?? 'no cut'}`, inkBad.slice(0, 6).join('; '));
@@ -1511,6 +1479,109 @@ async function main() {
       await c.close();
     }
     ok(!bad.length, 19, `Scene ${BOARD_N}: after a reload in the middle of the scene no label shows ahead of the scene's pictures and the label box is shown or hidden exactly with the board, every frame watched (about the first 6 s); then at rest; it leaves and returns with the board (Chromium, WebKit 430x739 and 1512x860; Firefox 1512x860)`, seen.join(', ') + (noReturn.length ? `; no return to the scene after the reload in ${noReturn.join(', ')} (reached by scrolling)` : ''), bad.slice(0, 6).join('; '));
+  }
+
+  // 25. the film gives up (its safety net): an error thrown while it runs hands back the plain page whole and the film
+  // stops for good. Given up before any scroll, in scene 2 half way through its light, in scene 6 at pass 2's hold and
+  // at rest, and in scene 7; checked at once, 1.5 s on and after a scroll through the whole page and back
+  if (want(25)) {
+    const bad = [], seen = [];
+    const html = readFileSync(join(DIST, 'index.html'), 'utf8'), restD = {};
+    for (const m of html.matchAll(/<svg class="board (b[dp])"[\s\S]*?<\/svg>/g)) restD[m[1]] = [...m[0].matchAll(/<path[^>]*?\sd="([^"]*)"/g)].map((x) => x[1]);
+    const INJECTED = 'check: the film gives up';
+    const NS = content.scenes.length, BN = content.scenes.findIndex((s) => s.board) + 1;
+    /** every scene's picture relative to its layer, and how many pictures each scene holds */
+    const pics = (p) => p.evaluate(() => [...document.querySelectorAll('#film .scene')].map((s) => {
+      const l = s.querySelector('.layer').getBoundingClientRect(), imgs = [...s.querySelectorAll('.passes img')];
+      const r = imgs[0] ? imgs[0].getBoundingClientRect() : null;
+      return { n: imgs.length, still: !!imgs[0] && imgs[0].classList.contains('still'), r: r ? [r.left - l.left, r.top - l.top, r.width, r.height] : null };
+    }));
+    /** the state checks (a), (b), (c), (e); full: the board's fade must be over */
+    const judge = async (p, tag, ref, onScene, full) => {
+      const P = await pics(p);
+      P.forEach((x, i) => {
+        if (x.n !== 1 || !x.still || !x.r) { bad.push(`${tag} scene ${i + 1}: ${x.n} pictures (resting one ${x.still})`); return; }
+        const err = Math.max(...x.r.map((v, k) => Math.abs(v - ref[i][k])));
+        seen.push(err);
+        if (err > 1.5) bad.push(`${tag} scene ${i + 1}: picture ${err.toFixed(1)} px from the scripts off place`);
+      });
+      const st = await p.evaluate(([n, restD]) => {
+        const s = document.getElementById('s' + n), pa = s.querySelector('.passes'), b = s.querySelector('.bbox'), l = s.querySelector('.lbox');
+        const svg = [...s.querySelectorAll('svg.board')].filter((e) => getComputedStyle(e).display !== 'none');
+        const k = svg[0] ? [...svg[0].classList].find((c) => /^b[dp]$/.test(c)) : null;
+        const ds = svg[0] ? [...svg[0].querySelectorAll('path')].map((e) => e.getAttribute('d')) : [];
+        const cs = svg[0] ? getComputedStyle(svg[0]) : null, mask = cs ? cs.getPropertyValue('mask-image') || cs.getPropertyValue('-webkit-mask-image') : '';
+        const op = (e) => { let o = 1; for (let x = e; x && x !== s; x = x.parentElement) o *= +getComputedStyle(x).opacity; return o; };
+        const pic = pa.querySelector('img').getBoundingClientRect(), lr = l ? l.getBoundingClientRect() : null, br = b ? b.getBoundingClientRect() : null;
+        const off = (r) => (r ? Math.max(Math.abs(r.left - pic.left), Math.abs(r.top - pic.top), Math.abs(r.width - pic.width), Math.abs(r.height - pic.height)) : Infinity);
+        const styled = [...document.querySelectorAll('#film, #film *, #top, #top *')].filter((e) => e.hasAttribute('style')).map((e) => e.tagName + '.' + (e.getAttribute('class') || ''));
+        const vh = innerHeight, mid = scrollY + vh / 2, on = [...document.querySelectorAll('#film .scene')].findIndex((x) => x.offsetTop <= mid && mid < x.offsetTop + x.offsetHeight) + 1;
+        const labs = l ? [...l.querySelectorAll('.blab')] : [];
+        return {
+          root: document.documentElement.className, boardIn: !!b && b.parentElement === pa, labelsAfter: !!l && l.parentElement === s.querySelector('.layer') && l.previousElementSibling === pa,
+          shown: svg.length, whole: k ? ds.length === restD[k].length && ds.every((d, i) => d === restD[k][i]) : false, matte: /-matte-/.test(mask),
+          labs: labs.length, labsOwn: labs.filter((e) => +getComputedStyle(e).opacity < 0.999 || getComputedStyle(e).visibility === 'hidden').length,
+          labsFull: labs.filter((e) => op(e) < 0.999).length, boardFull: b ? op(b) : 0, offL: off(lr), offB: off(br), styled, on,
+        };
+      }, [BN, restD]);
+      if (!/\bnofilm\b/.test(st.root) || /\bfilm\b/.test(st.root.replace('film-page', ''))) bad.push(`${tag}: the root is "${st.root}"`);
+      if (!st.boardIn || !st.labelsAfter || st.shown !== 1 || !st.whole || !st.matte) bad.push(`${tag} scene ${BN}: board in the pictures ${st.boardIn}, labels just after them ${st.labelsAfter}, ${st.shown} drawings shown, lines whole ${st.whole}, matte ${st.matte}`);
+      if (st.labs !== 2 + BOARD_NAMES.length || st.labsOwn || st.offL > 1.5 || st.offB > 1.5) bad.push(`${tag} scene ${BN}: ${st.labs} labels, ${st.labsOwn} not at rest, label box ${st.offL.toFixed(1)} px and board ${st.offB.toFixed(1)} px from the picture`);
+      if (full && (st.labsFull || st.boardFull < 0.999)) bad.push(`${tag} scene ${BN}: after the fade ${st.labsFull} labels and the board at ${st.boardFull.toFixed(2)} not at full strength`);
+      if (st.styled.length) bad.push(`${tag}: inline styles left on ${[...new Set(st.styled)].slice(0, 4).join(', ')} (${st.styled.length})`);
+      if (st.on !== onScene) bad.push(`${tag}: scene ${st.on} on screen, scene ${onScene} was`);
+    };
+    /** (d) nothing still running: two pictures of the screen 1 s apart, the clock hidden */
+    const still = async (p, tag) => {
+      await p.addStyleTag({ content: '.clock{visibility:hidden !important}' });
+      await settle(p, 100);
+      const a = await p.screenshot(); await settle(p, 1000); const b = await p.screenshot();
+      if (!a.equals(b)) {
+        const n = await labPage.evaluate(async ([a64, b64, decode]) => { const dec = (0, eval)(decode); const [x, y] = await Promise.all([dec(a64), dec(b64)]); let n = 0; for (let i = 0; i < x.data.length; i += 4) if (x.data[i] !== y.data[i] || x.data[i + 1] !== y.data[i + 1] || x.data[i + 2] !== y.data[i + 2]) n++; return n; }, [a.toString('base64'), b.toString('base64'), decode]);
+        bad.push(`${tag}: the screen changes over 1 s (${n} pixels)`);
+      }
+    };
+    const moments = [['before any scroll', 1, null], ['scene 2 half way', 2, (p) => toScene(p, 2, 0.5)], ["scene 6 at pass 2's hold", BN, (p) => toBoard(p, { u: 0.4 })], ['scene 6 at rest', BN, (p) => toBoard(p, { u: 1 })], ['scene 7', NS, (p) => toScene(p, NS, 1)]];
+    for (const engine of ['chromium', 'webkit', 'firefox']) {
+      for (const [w, h] of [[430, 739], [1512, 860]]) {
+        // the scripts off page: where every scene's picture sits
+        const off = await ctx(engine, { viewport: { width: w, height: h }, javaScriptEnabled: false });
+        const po = await open(off, '/', `give up reference ${engine} ${w}x${h}`);
+        await settle(po, 300);
+        const ref = (await pics(po)).map((x) => x.r);
+        await off.close();
+        for (const [name, onScene, go] of moments) {
+          const tag = `${engine} ${w}x${h} ${name}`;
+          const c = await ctx(engine, { viewport: { width: w, height: h }, bypassCSP: true });
+          const p = await c.newPage(), errs = [];
+          p.on('pageerror', (e) => { if (!String(e).includes(INJECTED)) errs.push(String(e).slice(0, 160)); });
+          p.on('console', (m) => { if (m.type() === 'error' && !m.text().includes(INJECTED)) errs.push(m.text().slice(0, 160)); });
+          await p.goto(BASE + '/', { waitUntil: 'load' });
+          await settle(p, 300);
+          if (go) await go(p);
+          // a real error, thrown where the film runs
+          await p.evaluate((msg) => setTimeout(() => { throw new Error(msg); }), INJECTED);
+          await p.waitForFunction(() => document.documentElement.classList.contains('nofilm'), null, { timeout: 5000 }).catch(() => bad.push(`${tag}: the film never gave up`));
+          await judge(p, `${tag}, at once`, ref, onScene, false);
+          await settle(p, 1500);
+          await judge(p, `${tag}, 1.5 s on`, ref, onScene, false);
+          await settle(p, 600);
+          await still(p, `${tag}, 2 s on`);
+          // through the whole page and back
+          for (let n = 1; n <= NS; n++) { await p.evaluate((n) => document.getElementById('s' + n).scrollIntoView(), n); await settle(p, 250); }
+          await p.evaluate((n) => document.getElementById('s' + n).scrollIntoView(), onScene);
+          await p.waitForFunction(() => [...document.querySelectorAll('#film .scene')].filter((s) => { const r = s.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight; }).every((s) => { const i = s.querySelector('.passes img'); return i && i.complete && i.naturalWidth > 0; }), null, { timeout: 8000 }).catch(() => {});
+          await p.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'), null, { timeout: 8000 }).catch(() => {});
+          await settle(p, 400);
+          await judge(p, `${tag}, after a scroll through the page`, ref, onScene, true);
+          await still(p, `${tag}, after a scroll through the page`);
+          if (errs.length) bad.push(`${tag}: ${errs.slice(0, 2).join(' | ')}`);
+          await c.close();
+        }
+      }
+    }
+    seen.sort((a, b) => b - a);
+    ok(!bad.length, 25, 'The film gives up (an error thrown before any scroll, in scene 2 half way, in scene 6 at pass 2\'s hold and at rest, in scene 7): at once, 1.5 s on and after a scroll through the page and back, no scene is empty and each holds only its resting picture, where the scripts off page puts it; scene 6\'s board whole, its matte on, its five labels at rest on the picture\'s box (at full strength once the fade is over); no inline style in the film or the border; the scene that was on screen is on screen; the screen still over 1 s (clock hidden); no other error (Chromium, WebKit, Firefox; 430x739 and 1512x860)', `largest picture offset ${(seen[0] ?? 0).toFixed(2)} px`, [...new Set(bad)].slice(0, 8).join('; '));
   }
 
   // 20. behind the things: the board forced to one flat colour shows nothing inside the things matte
