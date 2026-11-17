@@ -1512,7 +1512,7 @@ async function main() {
         const ds = svg[0] ? [...svg[0].querySelectorAll('path')].map((e) => e.getAttribute('d')) : [];
         const cs = svg[0] ? getComputedStyle(svg[0]) : null, mask = cs ? cs.getPropertyValue('mask-image') || cs.getPropertyValue('-webkit-mask-image') : '';
         const op = (e) => { let o = 1; for (let x = e; x && x !== s; x = x.parentElement) o *= +getComputedStyle(x).opacity; return o; };
-        const pic = pa.querySelector('img').getBoundingClientRect(), lr = l ? l.getBoundingClientRect() : null, br = b ? b.getBoundingClientRect() : null;
+        const im = pa.querySelector('img'), pic = im ? im.getBoundingClientRect() : { left: NaN, top: NaN, width: NaN, height: NaN }, lr = l ? l.getBoundingClientRect() : null, br = b ? b.getBoundingClientRect() : null;
         const off = (r) => (r ? Math.max(Math.abs(r.left - pic.left), Math.abs(r.top - pic.top), Math.abs(r.width - pic.width), Math.abs(r.height - pic.height)) : Infinity);
         const styled = [...document.querySelectorAll('#film, #film *, #top, #top *')].filter((e) => e.hasAttribute('style')).map((e) => e.tagName + '.' + (e.getAttribute('class') || ''));
         const vh = innerHeight, mid = scrollY + vh / 2, on = [...document.querySelectorAll('#film .scene')].findIndex((x) => x.offsetTop <= mid && mid < x.offsetTop + x.offsetHeight) + 1;
@@ -1526,7 +1526,7 @@ async function main() {
       }, [BN, restD]);
       if (!/\bnofilm\b/.test(st.root) || /\bfilm\b/.test(st.root.replace('film-page', ''))) bad.push(`${tag}: the root is "${st.root}"`);
       if (!st.boardIn || !st.labelsAfter || st.shown !== 1 || !st.whole || !st.matte) bad.push(`${tag} scene ${BN}: board in the pictures ${st.boardIn}, labels just after them ${st.labelsAfter}, ${st.shown} drawings shown, lines whole ${st.whole}, matte ${st.matte}`);
-      if (st.labs !== 2 + BOARD_NAMES.length || st.labsOwn || st.offL > 1.5 || st.offB > 1.5) bad.push(`${tag} scene ${BN}: ${st.labs} labels, ${st.labsOwn} not at rest, label box ${st.offL.toFixed(1)} px and board ${st.offB.toFixed(1)} px from the picture`);
+      if (st.labs !== 2 + BOARD_NAMES.length || st.labsOwn || !(st.offL <= 1.5) || !(st.offB <= 1.5)) bad.push(`${tag} scene ${BN}: ${st.labs} labels, ${st.labsOwn} not at rest, label box ${st.offL.toFixed(1)} px and board ${st.offB.toFixed(1)} px from the picture`);
       if (full && (st.labsFull || st.boardFull < 0.999)) bad.push(`${tag} scene ${BN}: after the fade ${st.labsFull} labels and the board at ${st.boardFull.toFixed(2)} not at full strength`);
       if (st.styled.length) bad.push(`${tag}: inline styles left on ${[...new Set(st.styled)].slice(0, 4).join(', ')} (${st.styled.length})`);
       if (st.on !== onScene) bad.push(`${tag}: scene ${st.on} on screen, scene ${onScene} was`);
