@@ -67,6 +67,7 @@
      "vy": 0.5
     },
     "matte": "s2-desk-matte",
+    "doors": { "stand": { "letters": [824, 1059, 420], "stand": [743, 290, 1114, 659] } },
     "later": [
      [
       2,
@@ -127,6 +128,7 @@
      "tuck": 0.15
     },
     "matte": "s2-phone-matte",
+    "doors": { "stand": { "letters": [278, 620, 687], "stand": [176, 487, 696, 1033] } },
     "later": [
      [
       2,
@@ -366,6 +368,7 @@
      ]
     ],
     "matte": "s6-desk-matte",
+    "doors": { "stand": { "letters": [874, 1040, 182], "stand": [846, 112, 1071, 310], "hit": [846, 112, 1185, 316] } },
   "things": "s6-desk-things-matte"
    },
    "phone": {
@@ -426,6 +429,7 @@
      ]
     ],
     "matte": "s6-phone-matte",
+    "doors": { "stand": { "letters": [398, 594, 332], "stand": [365, 247, 632, 490], "hit": [365, 247, 632, 548] } },
   "things": "s6-phone-things-matte"
    }
   },

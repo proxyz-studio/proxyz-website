@@ -11,6 +11,43 @@ export interface Venture {
   line: string;
 }
 
+/** The product's first picture as its own page shows it (fixed, full window, object-fit cover, centred), with the
+ *  PROXYZ letters on its stand [left, right, middle height] in that picture's own pixels. The studio places its
+ *  growing picture so its own letters land there. */
+export interface DoorPicture { src: string; size: [number, number]; letters: [number, number, number] }
+
+/** A door to a product's own site, served under the studio's address (vercel.json forwards `path` to `target`). */
+export interface Door {
+  /** the address hash that opens the studio at this product's scene at rest (/#tapz) */
+  id: string;
+  /** the venture (by id) whose scenes hold the door */
+  venture: string;
+  /** off: no door anywhere on the site, and no forwarding in vercel.json */
+  on: boolean;
+  path: string;
+  target: string | null;
+  /** the address the door opens (the path, with a query when the product needs one) */
+  open?: string;
+  /** the link's accessible name */
+  label?: string;
+  /** the product's logo for dark grounds (a file in this repo, plain shapes only) */
+  logo?: string;
+  /** the scenes that hold the door: the product's own scene (its logo) and, optionally, the board (its name tag) */
+  scenes?: number[];
+  /** the product's first picture: on screens at least wideFrom px wide, else narrow */
+  first?: { wideFrom: number; wide: DoorPicture; narrow: DoorPicture };
+}
+
+/** Scene data for a door (src/film/scenes.json, per screen shape), in the scene's picture pixels. */
+export interface DoorView {
+  /** the PROXYZ letters on the stand [left, right, middle height] */
+  letters: [number, number, number];
+  /** the stand [x0, y0, x1, y1] (the bounds of its matte) */
+  stand: [number, number, number, number];
+  /** the board scene only: the area that is the link, the stand and its name tag [x0, y0, x1, y1] */
+  hit?: [number, number, number, number];
+}
+
 export interface SceneWords {
   id: string;
   venture: string | null;
@@ -77,6 +114,7 @@ export interface Content {
   pages: { home: PageMeta; machines: PageMeta; legal: PageMeta; notFound: { title: string; line: string } };
   border: { wordmark: string; place: string; people: string; machines: string; legal: string };
   ventures: Venture[];
+  doors: Door[];
   scenes: SceneWords[];
   machines: {
     title: string; summary: string; intro: string; toolIntro: string; pictures: string; company: string;
@@ -135,6 +173,9 @@ export interface View {
   /** Scene 6: the matte of all three things together (a key in the picture manifest). The board on the floor is
    *  hidden inside it, so every line runs behind the things. No board without it. */
   things?: string;
+  /** A scene that holds products' doors, by venture id: where each product's stand and the PROXYZ letters on it sit in
+   *  the picture. */
+  doors?: Record<string, DoorView>;
 }
 
 /** How the giant lines are set (the same numbers for the page builder, the film and the check). */

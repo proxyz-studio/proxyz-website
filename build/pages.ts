@@ -7,6 +7,7 @@ import type { BoardForm, Content, FilmData, Pictures, SceneWords, View, Venture 
 import { cutMask, frameMask, restingPass } from '../src/film/math';
 import { readFont } from './font';
 import { boardLabels, boardSvg, labelCss, nameCss } from './board';
+import { DOOR_ARROW, boardDoor, boardDoorCss, doorCss, doorsOf, hashMark, hashMarkCss, hashScene, sceneDoor, speculationRules } from './door';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const readJson = <T>(rel: string): T => JSON.parse(readFileSync(root + rel, 'utf8')) as T;
@@ -222,8 +223,14 @@ function sceneHtml(c: Content, film: FilmData, p: Pictures, n: number): string {
   // box of their own just after the pictures, the same size and place, where the picture's soft side edges never reach
   const b = s.board ? load().board : null;
   const board = s.board && b ? `<div class="bbox">${boardSvg(b.desktop, 'd')}${boardSvg(b.phone, 'p')}</div>` : '';
-  const labels = s.board && b ? boardLabels(s.board, c.ventures, b.desktop, b.phone) : '';
-  return `<section id="s${n}" class="scene" data-mark="${mark}"${view}><div class="layer"><div class="passes ready">${scenePicture(n, film, p, s.alt)}${board}</div>${labels}<div class="dim"></div><div class="shade"></div>${cut}${words}${addr}</div>${foot}</section>`;
+  // a product's door (build/door.ts): in its own scene the logo and an arrow; on the board its name tag and its thing
+  // are one link. Its address hash (/#tapz) lands on its own scene.
+  const doors = doorsOf(c, n);
+  const own = s.board ? '' : doors.map((d) => sceneDoor(root, d, n)).join('');
+  const onBoard = s.board ? doors.map((d) => ({ venture: d.venture, arrow: DOOR_ARROW, link: boardDoor(d, n) })) : [];
+  const labels = s.board && b ? boardLabels(s.board, c.ventures, b.desktop, b.phone, onBoard) : '';
+  const marks = c.doors.filter((d) => hashScene(c, d) === n).map(hashMark).join('');
+  return `<section id="s${n}" class="scene" data-mark="${mark}"${view}><div class="layer"><div class="passes ready">${scenePicture(n, film, p, s.alt)}${board}</div>${labels}<div class="dim"></div><div class="shade"></div>${cut}${words}${addr}${own}</div>${marks}${foot}</section>`;
 }
 
 function head(c: Content, kind: Kind, entry: string, extra = ''): string {
@@ -411,6 +418,8 @@ export function stillsCss(): string {
       const [iw, ih] = p[key].size;
       const f = view.frame;
       const place = placement(film, c, p, Number(n), form, view, iw, ih);
+      // the door's place without the film (its own scene; on the board, its link in the labels' box)
+      for (const d of doorsOf(c, Number(n))) out.push(c.scenes[Number(n) - 1].board ? boardDoorCss(d, Number(n), media, view, iw, ih) : doorCss(d, Number(n), form, media, view, place, iw));
       const mask = frameMask(view, [iw, ih]);
       const decl = [...place.vars, `width:${place.w}`, `height:${place.h}`, `left:${place.left}`, `top:${place.top}`];
       if (mask) decl.push(`-webkit-mask-image:${mask}`, `mask-image:${mask}`);
@@ -445,6 +454,8 @@ export function stillsCss(): string {
     }
   }
   out.push(nameCss());
+  // each door's hash mark: at the top of its scene's resting light with the film
+  for (const d of c.doors) { const n = hashScene(c, d); if (n > 0) out.push(hashMarkCss(n, film.lightShare)); }
   const last = film.heightPoints.trim().split(/\s+/).pop()!.split(',');
   out.push(`.hl .dot{top:${last[1]}%}`);
   // #film in the selector: it must outweigh the general `.film #film .scene` height
@@ -536,6 +547,8 @@ const FILES: Record<string, () => string> = {
   'llms.txt': () => llmsTxt(load().content),
   'robots.txt': () => robotsTxt(load().content),
   'sitemap.xml': () => sitemapXml(load().content),
+  // the open doors, for the Speculation-Rules header of the home page (vercel.json)
+  'doors.json': () => speculationRules(load().content),
 };
 
 export function sitePages(): Plugin {
@@ -556,7 +569,7 @@ export function sitePages(): Plugin {
         const name = (req.url ?? '').replace(/^\//, '').split('?')[0];
         const make = FILES[name];
         if (!make) return next();
-        res.setHeader('Content-Type', name.endsWith('.xml') ? 'application/xml' : 'text/plain; charset=utf-8');
+        res.setHeader('Content-Type', name.endsWith('.xml') ? 'application/xml' : name.endsWith('.json') ? 'application/speculationrules+json' : 'text/plain; charset=utf-8');
         res.end(make());
       });
     },

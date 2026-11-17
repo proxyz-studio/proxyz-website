@@ -299,3 +299,71 @@ a.nm { min-width: 44px; }
 .nofilm .bbox, .nofilm .lbox { animation: board-in .5s 1.2s both; }
 @media (prefers-reduced-motion: reduce) { .bbox, .lbox { animation-duration: 0s !important; } .film .lbox { transition: none !important; } }
 @keyframes board-in { from { opacity: 0; } }
+
+/* ---------- the doors: a product's own site (build/door.ts writes them, src/door.ts runs the hand-over) ---------- */
+/* In the product's scene: its logo for dark grounds (tiles var(--t) tall, never under 16 px) and a small cream arrow,
+   one link. Its padding is the logo's clear space (half a tile) and gives a touch area at least 44 px tall. Without
+   the film it sits where build/door.ts puts it; with the film src/door.ts places it, clear of the giant words, the
+   small words and the things, and it shows once the scene's light has come to rest. */
+.door { position: absolute; z-index: 2; pointer-events: auto; -webkit-tap-highlight-color: transparent; }
+.door.dlogo { --t: 20px; display: flex; align-items: flex-start; gap: calc(var(--t) * .3); min-height: 44px; padding: max(calc(var(--t) / 2), calc((44px - var(--t) * 1.1) / 2)) calc(var(--t) / 2); }
+@media (min-width: 900px) and (min-height: 501px) { .door.dlogo { --t: 24px; } }
+.door .tlogo { display: block; flex: none; width: calc(var(--t) * 4.36); height: calc(var(--t) * 1.1); overflow: visible; }
+.door .arr { display: block; flex: none; width: calc(var(--t) * .45); height: calc(var(--t) * .45); transition: transform .2s ease; }
+/* the lit Z presses like a key: half way on hover or focus (a tenth of a tile; the logo's own units, 200 to a tile) */
+.door .dz { transition: transform .16s cubic-bezier(.3, 0, .3, 1); }
+.door:hover .dz, .door:focus-visible .dz { transform: translateY(20px); }
+.door:hover .arr, .door:focus-visible .arr { transform: translate(1px, -1px); }
+.door:focus-visible { outline: 1px solid #F0E8D8; outline-offset: 0; }
+/* on the board: one link over the stand and its name tag (placed in the labels' box); the tag carries the arrow */
+.door.dboard { display: block; }
+.blab .arr { display: inline-block; width: .62em; height: .62em; margin-left: .3em; vertical-align: .05em; }
+.lbox:has(.dboard:hover, .dboard:focus-visible) .blab.n-stand .arr { transform: translate(1px, -1px); }
+/* the address hash of a door (/#tapz): a mark at the top of its scene, moved by the film to where the light rests */
+.at { position: absolute; left: 0; top: 0; width: 1px; height: 1px; pointer-events: none; }
+/* with the film: a door is there only while its scene is on; the logo shows once the light rests (or on focus) */
+.film .door { visibility: hidden; }
+.film .scene.on .door.dboard, .film .scene.on .door.dlogo.placed { visibility: visible; }
+.film .door.dlogo { opacity: 0; pointer-events: none; transition: opacity .35s ease; }
+.film .door.dlogo.lit, .film .door.dlogo:focus-visible { opacity: 1; }
+.film .door.dlogo.lit { pointer-events: auto; }
+@media (prefers-reduced-motion: reduce) { .door, .door .dz, .door .arr { transition: none !important; } }
+
+/* the hand-over (about 0.44 s): the Z presses, two thin cream rings spread from it, the words, the border and its
+   marks fade; only the picture stays, then it grows into the product's first picture */
+html.door-leaving #top, html.door-leaving #frame, html.door-leaving .bottom-sw, html.door-leaving .scene .words,
+html.door-leaving .scene .cut, html.door-leaving .scene .addr, html.door-leaving .lbox .blab, html.door-leaving .door .arr {
+  opacity: 0 !important; transition: opacity .26s ease !important;
+}
+/* the logo holds while its Z is pressed, then goes */
+html.door-leaving .door.dlogo { opacity: 0 !important; transition: opacity .2s ease .2s !important; }
+html.door-leaving .door { pointer-events: none !important; outline-color: transparent !important; }
+/* the studio's own blend names (its border) step aside: the hand-over blends one picture, nothing else */
+html.door-leaving .homelink, html.door-leaving .clock, html.door-leaving .top-sw, html.door-leaving .bottom-sw { view-transition-name: none !important; }
+/* from the board: the other two traces dim while one pulse runs from the chip to the stand */
+html.door-from-board .board .t-coin, html.door-from-board .board .t-phone { opacity: .15; transition: opacity .25s ease; }
+.door-ring { position: fixed; z-index: 6; left: 0; top: 0; width: var(--d, 200px); height: var(--d, 200px); border: 1px solid #F0E8D8; border-radius: 50%; pointer-events: none; opacity: 0; }
+.door-pulse { fill: none; stroke: #F2D78C; stroke-width: clamp(2.25px, calc(var(--bw) * 3), 4px); stroke-linecap: round; }
+/* coming back: the words return once the picture has settled */
+html.door-return #top, html.door-return #frame, html.door-return .bottom-sw, html.door-return .scene .words, html.door-return .scene .cut,
+html.door-return .scene .addr, html.door-return .lbox .blab, html.door-return .door { transition: opacity .4s ease !important; }
+/* the blend coming back (this page arriving): the product's picture shrinks into the scene's picture, its edges soft */
+@media (prefers-reduced-motion: no-preference) {
+  html.door-back::view-transition-group(product) { animation-duration: .72s; animation-timing-function: cubic-bezier(.22, .8, .24, 1); }
+  html.door-back::view-transition-old(product) {
+    mix-blend-mode: plus-lighter; animation: door-out .72s ease both, door-feather .72s cubic-bezier(.22, .8, .24, 1) both;
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent), linear-gradient(to bottom, transparent, #000 12%, #000 88%, transparent);
+    mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent), linear-gradient(to bottom, transparent, #000 12%, #000 88%, transparent);
+    -webkit-mask-composite: source-in; mask-composite: intersect; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: 50% 50%; mask-position: 50% 50%;
+  }
+  html.door-back::view-transition-new(product) { mix-blend-mode: plus-lighter; animation: door-in .72s ease both; }
+  /* the product's own words leave at once, so they never ghost over the shrinking picture */
+  html.door-back::view-transition-old(root) { animation-duration: .12s; }
+  html.door-back::view-transition-new(root) { animation-duration: .3s; }
+}
+@keyframes door-in { 0%, 15% { opacity: 0; } 70%, to { opacity: 1; } }
+@keyframes door-out { 0%, 40% { opacity: 1; } to { opacity: 0; } }
+@keyframes door-feather { from { -webkit-mask-size: 150% 150%, 150% 150%; mask-size: 150% 150%, 150% 150%; } to { -webkit-mask-size: 100% 100%, 100% 100%; mask-size: 100% 100%, 100% 100%; } }
+/* the box the blend grows from (made at the click around the scene's picture, see src/door.ts) */
+.door-vt { position: absolute; pointer-events: none; }
+.door-in { position: absolute; }

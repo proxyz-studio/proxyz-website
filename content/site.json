@@ -28,6 +28,20 @@
     { "id": "system", "name": "StudioOS", "line": "One brain, built for the studio and every venture in it." },
     { "id": "next", "hollow": true, "line": "The next one." }
   ],
+  "doors": [
+    {
+      "id": "tapz", "venture": "stand", "on": true,
+      "path": "/tapz/", "open": "/tapz/?lang=en", "target": "https://tapz-woad.vercel.app",
+      "label": "Open the TAPZ site", "logo": "src/logos/tapz-logo-ondark.svg", "scenes": [2, 6],
+      "first": {
+        "wideFrom": 768,
+        "wide": { "src": "first-desk.jpg", "size": [1600, 800], "letters": [625, 937, 493] },
+        "narrow": { "src": "first-phone-en.jpg", "size": [645, 1109], "letters": [200, 420, 670] }
+      }
+    },
+    { "id": "pulz", "venture": "coach", "on": false, "path": "/pulz/", "target": "https://pulz-showcase.vercel.app" },
+    { "id": "trophyz", "venture": "race", "on": false, "path": "/trophyz/", "target": null }
+  ],
   "scenes": [
     { "id": "name", "venture": null, "lines": ["VENTURE STUDIO.", "RUN WITH AI."], "phoneLines": ["VENTURE", "STUDIO.", "RUN WITH AI."], "alt": "Drawing of raised letters on a printed plate, in hard side light" },
     { "id": "stand", "venture": "stand", "lines": ["EACH TILE IS", "PROGRAMMABLE."], "small": "An NFC tag in every tile. Tap a phone and it opens a menu, a QR, any link.", "alt": "Drawing of a small printed stand with four tiles; a phone taps one tile and a menu opens on its screen" },
