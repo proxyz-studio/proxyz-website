@@ -265,8 +265,10 @@ a.nm { min-width: 44px; }
 }
 
 /* ---------- scene 6: the board on the floor (build/board.ts; the film draws it in, src/main.ts) ---------- */
-/* in the picture's own box; every line in screen pixels (--bw: screen pixels per picture pixel) */
-.bbox { position: absolute; --bw: 1px; pointer-events: none; }
+/* in the picture's own box; every line in screen pixels (--bw: screen pixels per picture pixel). The labels sit in a
+   box of their own (.lbox, just after the pictures in the layer) with the same size and place: the picture's soft
+   side edges (a mask on .passes) never fade them, and the dark band at the foot still lies over them. */
+.bbox, .lbox { position: absolute; --bw: 1px; pointer-events: none; }
 .board { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 .board path { vector-effect: non-scaling-stroke; }
 .board .w0 { stroke-width: clamp(.6px, calc(var(--bw) * .8), 1px); }
@@ -278,15 +280,21 @@ a.nm { min-width: 44px; }
 .board .wf { stroke-width: clamp(2px, calc(var(--bw) * 2.5), 3.5px); }
 .board .wv { stroke-width: clamp(2.5px, calc(var(--bw) * 3.4), 4.5px); }
 .board .wn { stroke-dasharray: 5 6; }
+/* the labels grow with the picture on a big screen, never below their base size: StudioOS loudest, the three names
+   (each in its trace's colour, set at the end of the file), NEXT quietest */
 .blab { position: absolute; line-height: 1; white-space: nowrap; color: #f3eee4; text-shadow: 0 0 6px #000, 0 0 2px #000; }
-.blab.chip { font-size: 14px; font-weight: 600; letter-spacing: .06em; }
-.blab.next { font-size: 12px; letter-spacing: .08em; color: rgba(243, 238, 228, .72); }
+.blab.chip { font-size: clamp(14px, calc(var(--bw) * 14), 28px); font-weight: 600; letter-spacing: .06em; }
+.blab.name { font-size: clamp(12px, calc(var(--bw) * 12), 24px); font-weight: 500; letter-spacing: .08em; }
+.blab.next { font-size: clamp(12px, calc(var(--bw) * 12), 24px); letter-spacing: .08em; color: rgba(243, 238, 228, .72); }
+/* the film: the labels show only with the scene's pictures (they fade in together) */
+.film .lbox { transition: opacity .3s ease; }
+.film .passes:not(.ready) + .lbox { opacity: 0; }
 /* the film script has not run yet: the board waits with the resting pictures (and loads its matte only if it shows) */
-@media (scripting: enabled) { html:not(.film):not(.nofilm) .bbox { display: none; animation: board-back 0s 4s forwards, board-in .5s 5.2s both; } }
+@media (scripting: enabled) { html:not(.film):not(.nofilm) .bbox, html:not(.film):not(.nofilm) .lbox { display: none; animation: board-back 0s 4s forwards, board-in .5s 5.2s both; } }
 @keyframes board-back { to { display: block; } }
 /* with scripts off, or once the film has given up, the board waits a moment for its matte (a mask that has not
    loaded yet hides nothing), then fades in; with less motion it simply appears */
-@media (scripting: none) { .bbox { animation: board-in .5s 1.2s both; } }
-.nofilm .bbox { animation: board-in .5s 1.2s both; }
-@media (prefers-reduced-motion: reduce) { .bbox { animation-duration: 0s !important; } }
+@media (scripting: none) { .bbox, .lbox { animation: board-in .5s 1.2s both; } }
+.nofilm .bbox, .nofilm .lbox { animation: board-in .5s 1.2s both; }
+@media (prefers-reduced-motion: reduce) { .bbox, .lbox { animation-duration: 0s !important; } .film .lbox { transition: none !important; } }
 @keyframes board-in { from { opacity: 0; } }

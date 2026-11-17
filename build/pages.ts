@@ -6,7 +6,7 @@ import type { Plugin } from 'vite';
 import type { BoardForm, Content, FilmData, Pictures, SceneWords, View, Venture } from '../src/types';
 import { cutMask, frameMask, restingPass } from '../src/film/math';
 import { readFont } from './font';
-import { boardLabels, boardSvg, labelCss } from './board';
+import { boardLabels, boardSvg, labelCss, nameCss } from './board';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const readJson = <T>(rel: string): T => JSON.parse(readFileSync(root + rel, 'utf8')) as T;
@@ -218,10 +218,12 @@ function sceneHtml(c: Content, film: FilmData, p: Pictures, n: number): string {
     ? `<div class="foot"><a href="${c.pages.legal.path}">${esc(c.border.legal)}</a>${switchHtml(c, 'people', 'foot-sw')}</div>` : '';
   const mark = s.venture ? c.ventures.findIndex((v) => v.id === s.venture) : -1;
   const view = n === c.scenes.length && s.picture === 'twin' ? ' data-view="twin"' : '';
-  // scene 6: the board on the floor, at rest, in the picture's own box (one drawing per screen shape)
+  // scene 6: the board on the floor, at rest, in the picture's own box (one drawing per screen shape); its labels in a
+  // box of their own just after the pictures, the same size and place, where the picture's soft side edges never reach
   const b = s.board ? load().board : null;
-  const board = s.board && b ? `<div class="bbox">${boardSvg(b.desktop, 'd')}${boardSvg(b.phone, 'p')}${boardLabels(s.board, b.desktop, b.phone)}</div>` : '';
-  return `<section id="s${n}" class="scene" data-mark="${mark}"${view}><div class="layer"><div class="passes ready">${scenePicture(n, film, p, s.alt)}${board}</div><div class="dim"></div><div class="shade"></div>${cut}${words}${addr}</div>${foot}</section>`;
+  const board = s.board && b ? `<div class="bbox">${boardSvg(b.desktop, 'd')}${boardSvg(b.phone, 'p')}</div>` : '';
+  const labels = s.board && b ? boardLabels(s.board, c.ventures, b.desktop, b.phone) : '';
+  return `<section id="s${n}" class="scene" data-mark="${mark}"${view}><div class="layer"><div class="passes ready">${scenePicture(n, film, p, s.alt)}${board}</div>${labels}<div class="dim"></div><div class="shade"></div>${cut}${words}${addr}</div>${foot}</section>`;
 }
 
 function head(c: Content, kind: Kind, entry: string, extra = ''): string {
@@ -434,13 +436,14 @@ export function stillsCss(): string {
       const things = view.things && p[view.things]?.matte ? p[view.things] : null;
       if (things) {
         const f = board[form], k = form === 'desktop' ? 'd' : 'p';
-        out.push(`@media ${media}{#s${n} .bbox{${[...place.vars, `--bw:calc(var(--sw) / ${iw})`, `width:${place.w}`, `height:${place.h}`, `left:${place.left}`, `top:${place.top}`].join(';')}}#s${n} .board:not(.b${k}){display:none}${labelCss(f).replace(/\.blab/g, `#s${n} .blab`)}}`);
+        out.push(`@media ${media}{#s${n} .bbox,#s${n} .lbox{${[...place.vars, `--bw:calc(var(--sw) / ${iw})`, `width:${place.w}`, `height:${place.h}`, `left:${place.left}`, `top:${place.top}`].join(';')}}#s${n} .board:not(.b${k}){display:none}${labelCss(f).replace(/\.blab/g, `#s${n} .blab`)}}`);
         const u = `url("${things.files[0].webp}")`;
         const rule = `#s${n} .board{-webkit-mask:linear-gradient(#000,#000),${u};-webkit-mask-size:100% 100%;-webkit-mask-composite:xor;mask:linear-gradient(#000,#000),${u};mask-size:100% 100%;mask-composite:exclude}`;
         out.push(`@media (scripting: none) and ${media}{${rule}}`, `@media ${media}{.nofilm ${rule}}`, `@media (scripting: enabled) and ${media}{html:not(.film):not(.nofilm) ${rule}}`);
       }
     }
   }
+  out.push(nameCss());
   const last = film.heightPoints.trim().split(/\s+/).pop()!.split(',');
   out.push(`.hl .dot{top:${last[1]}%}`);
   // #film in the selector: it must outweigh the general `.film #film .scene` height

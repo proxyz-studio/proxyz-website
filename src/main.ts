@@ -46,6 +46,9 @@ try { history.scrollRestoration = 'manual'; } catch { /* old browser: it restore
 // so they do not all load at once; each is put back as a light pass when the visitor nears its scene.
 const sections = $$('#film .scene');
 let boardBox: HTMLElement | null = null;
+/** scene 6: the board's five labels, in a box of their own beside the pictures (the picture's soft side edges, a mask
+ *  on .passes, never reach them); it follows the board's box in and out and takes the same place */
+let labelBox: HTMLElement | null = null;
 const stills = new Map<number, HTMLElement>();
 // Each scene's description stays on its stage from the start (a screen reader hears it before the pictures load);
 // the light passes themselves are decoration.
@@ -56,6 +59,8 @@ sections.forEach((s, i) => {
   // the board waits for its scene too (it goes back in with the scene's pictures)
   const bb = $('.bbox', s);
   if (bb) { boardBox = bb; bb.remove(); }
+  const lb = $('.lbox', s);
+  if (lb) { labelBox = lb; lb.remove(); }
   const box = $('.passes', s)!;
   box.setAttribute('role', 'img');
   box.setAttribute('aria-label', alts[i]);
@@ -71,6 +76,10 @@ addEventListener('error', () => {
     for (const e of [boardBox, ...boardBox.querySelectorAll<HTMLElement>('[style]')]) e.removeAttribute('style');
     restD.forEach((d, e) => e.setAttribute('d', d));
     if (!boardBox.isConnected) $('.passes', sections[BRAIN - 1])?.append(boardBox);
+  }
+  if (labelBox) {
+    for (const e of [labelBox, ...labelBox.querySelectorAll<HTMLElement>('[style]')]) e.removeAttribute('style');
+    if (!labelBox.isConnected) $('.passes', sections[BRAIN - 1])?.after(labelBox);
   }
   // the plain page's own cut (style.css) takes over from the film's
   $$('.cut').forEach((c) => c.removeAttribute('style'));
@@ -304,6 +313,11 @@ function build(n: number): void {
   const firstReady = !!keepFirst && keepFirst.complete && keepFirst.naturalWidth > 0 && !s.matte;
   s.box.classList.toggle('ready', firstReady);
   s.box.replaceChildren(...s.passes.map((p) => p.node), ...(s.things && boardBox ? [boardBox] : []));
+  // the labels go in with the board, just after the pictures (as the page holds them)
+  if (n === BRAIN && labelBox) {
+    if (!(s.things && boardBox)) labelBox.remove();
+    else if (labelBox.previousElementSibling !== s.box) s.box.after(labelBox);
+  }
   if (n === BRAIN) boardForm();
   place(s, view);
   const mine = s.built;
@@ -343,7 +357,7 @@ function release(n: number): void {
   s.passes = [];
   s.matte = null;
   s.things = null;
-  if (n === BRAIN) boardGone();
+  if (n === BRAIN) { boardGone(); labelBox?.remove(); }
   s.cut?.removeAttribute('style');
   s.box.replaceChildren();
   s.box.classList.remove('ready');
@@ -385,7 +399,9 @@ function light(n: number, prog: number): void {
 // live traces. With less motion: the rest state, no pulses.
 type Pt = number[];
 interface Line { pts: Pt[]; at: number[]; d: string }
-interface Trace { co: SVGPathElement; gl: SVGPathElement; sd: SVGPathElement[]; pd: SVGPathElement; pu: SVGPathElement; fl: SVGPathElement; line: Line; side: Line[]; f: number }
+interface Trace { co: SVGPathElement; gl: SVGPathElement; sd: SVGPathElement[]; pd: SVGPathElement; pu: SVGPathElement; fl: SVGPathElement; line: Line; side: Line[]; f: number;
+  /** its thing's name tag (none when the venture has no name) */
+  nm: HTMLElement | null }
 interface BoardView { svg: SVGSVGElement; b1: SVGElement; b4: SVGElement[]; dm: SVGElement; arrive: number[]; tr: Trace[]; dr: SVGPathElement; dp: SVGPathElement; route: Line }
 /** every path's resting d, so the plain page gets the board back whole if the film gives up */
 const restD = new Map<SVGPathElement, string>();
@@ -446,7 +462,7 @@ const ramp = (v: number, a: number, b: number) => clamp((v - a) / (b - a));
 
 let BV: BoardView | null = null;
 // how a label stands off its point (as build/board.ts LABEL_SHIFT)
-const SHIFT: Record<string, string> = { r: 'translate(8px,-50%)', l: 'translate(calc(-100% - 8px),-50%)', b: 'translate(-50%,4px)', a: 'translate(-50%,calc(-100% - 4px))' };
+const SHIFT: Record<string, string> = { r: 'translate(8px,-50%)', l: 'translate(calc(-100% - 8px),-50%)', b: 'translate(-50%,4px)', a: 'translate(-50%,calc(-100% - 4px))', d: 'translate(0,4px)' };
 function boardForm(): void {
   if (!boardBox) return;
   const k = form === 'desktop' ? 'bd' : 'bp';
@@ -459,22 +475,25 @@ function boardForm(): void {
     const g = q<SVGGElement>('.t-' + t), sd = [...g.querySelectorAll<SVGPathElement>('.sd')];
     const co = q<SVGPathElement>('.co', g);
     const line = lineOf(restD.get(co)!), side = sd.map((e) => lineOf(restD.get(e)!));
-    return { co, gl: q('.gl', g), sd, pd: q('.pd', g), pu: q('.pu', g), fl: q('.fl', g), line, side, f: -1 };
+    return { co, gl: q('.gl', g), sd, pd: q('.pd', g), pu: q('.pu', g), fl: q('.fl', g), line, side, f: -1, nm: labelBox ? $('.blab.n-' + t, labelBox) : null };
   });
   const dr = q<SVGPathElement>('.dr');
   BV = { svg, b1: q('.b1'), dm: q('.dm'), arrive: (svg.dataset.arrive ?? '0.7,0.7').split(',').map(Number), b4: [...svg.querySelectorAll<SVGElement>('g.b4:not(.nx)')], tr, dr, dp: q('.dp'), route: lineOf(restD.get(dr)!) };
   // the labels sit by share of the picture box, for this screen shape
-  for (const e of $$('.blab', boardBox)) {
+  if (labelBox) for (const e of $$('.blab', labelBox)) {
     const [x, y, side] = (e.dataset[form === 'desktop' ? 'd' : 'p'] ?? '0,0,r').split(',');
     e.style.left = x + '%'; e.style.top = y + '%'; e.style.transform = SHIFT[side] ?? '';
   }
   schedule();
 }
 function placeBoard(view: View, g: Box): void {
-  if (!boardBox) return;
-  const st = boardBox.style;
-  Object.assign(st, { left: g.left + 'px', top: g.top + 'px', width: g.w + 'px', height: g.h + 'px' });
-  st.setProperty('--bw', (g.w / pictures[view.passes[0]].size[0]).toFixed(4) + 'px');
+  const bw = (g.w / pictures[view.passes[0]].size[0]).toFixed(4) + 'px';
+  for (const b of [boardBox, labelBox]) {
+    if (!b) continue;
+    const st = b.style;
+    Object.assign(st, { left: g.left + 'px', top: g.top + 'px', width: g.w + 'px', height: g.h + 'px' });
+    st.setProperty('--bw', bw);
+  }
 }
 /** the board hidden inside the three things */
 function boardMask(url: string): void {
@@ -511,8 +530,13 @@ function pulseFrame(now: number): void {
 
 function boardAt(y: number): void {
   const s = S[BRAIN - 1];
-  if (!BV || !boardBox || !s.things?.ready || !tops.length) { if (boardBox) boardBox.style.visibility = 'hidden'; return; }
+  if (!BV || !boardBox || !s.things?.ready || !tops.length) {
+    if (boardBox) boardBox.style.visibility = 'hidden';
+    if (labelBox) labelBox.style.visibility = 'hidden';
+    return;
+  }
   boardBox.style.visibility = '';
+  if (labelBox) labelBox.style.visibility = '';
   const i = BRAIN - 1, view = viewOf(BRAIN), rest = reduced();
   const pre = clamp((y - tops[i] + VH / 2) / (VH / 2)), u = (y - tops[i]) / Math.max(1, heights[i] - VH);
   const q = lightAt(view, clamp(u / LIGHT_SHARE), false);
@@ -528,7 +552,7 @@ function boardAt(y: number): void {
     ramp(u, 0.92, 0.98),                         // its ring and NEXT
   ];
   setO(BV.b1, step[0]);
-  const chip = $('.blab.chip', boardBox), next = $('.blab.next', boardBox);
+  const chip = labelBox && $('.blab.chip', labelBox), next = labelBox && $('.blab.next', labelBox);
   if (chip) setO(chip, step[0]);
   BV.tr.forEach((t, k) => {
     const f = step[1 + k];
@@ -538,7 +562,10 @@ function boardAt(y: number): void {
     setD(t.co, d); setD(t.gl, d);
     // the side lines never run ahead of the head
     t.sd.forEach((e, j) => setD(e, sideD(t.side[j], t.line, f * L)));
-    setO(t.pd, ramp(f, 0.96, 1));
+    // a name shows with its pad's outline, never before it
+    const pad = ramp(f, 0.96, 1);
+    setO(t.pd, pad);
+    if (t.nm) setO(t.nm, pad);
     // the head of a trace being drawn is brighter
     if (!pulsing) setD(t.pu, f > 0 && f < 1 ? partD(t.line, f * L - 30, f * L) : '');
   });

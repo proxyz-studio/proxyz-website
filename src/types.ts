@@ -47,7 +47,13 @@ export interface BoardForm {
   chip: { top: string; inner: string; sides: string[]; pins: string; dot: number[]; glow: number[]; leader: number[][] };
   live: Record<'stand' | 'coin' | 'phone', { pts: number[][]; side: number[][][]; pad: string }>;
   empty: { pts: number[][]; pad: string };
-  labels: { studio: number[]; studioSide: 'l' | 'r'; next: number[]; nextSide: 'a' | 'b' };
+  labels: {
+    studio: number[]; studioSide: 'l' | 'r' | 'd'; next: number[]; nextSide: 'a' | 'b';
+    /** the three name tags by their things: the point, the side the word stands off it, the venture whose name it is */
+    names: Record<'stand' | 'coin' | 'phone', { at: number[]; side: 'r' | 'l' | 'b' | 'a' | 'd'; venture: string }>;
+  };
+  /** the picture pixel boxes the net keeps clear for the five labels */
+  labelKeeps: number[][];
   footprints: Record<string, string>;
   /** the pass strengths [at 40%, at 70%] at which the light covers the race piece and the coach phone */
   arrive: Record<'coin' | 'phone', [number, number]>;
