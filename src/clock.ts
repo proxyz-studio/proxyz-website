@@ -1,5 +1,8 @@
 // The clock in the border: real Phuket time (world time plus 7 hours, all year, no summer time), each second.
+let started = false;
 export function startClock(): void {
+  if (started) return;
+  started = true;
   const els = [...document.querySelectorAll<HTMLElement>('.clock .time')];
   if (!els.length) return;
   const p = (n: number) => String(n).padStart(2, '0');
