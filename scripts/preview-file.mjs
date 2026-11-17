@@ -46,7 +46,9 @@ for (const m of [...js.matchAll(/import\{([^}]*)\}from"\.\/([^"]+)";/g)]) {
   const body = chunk.slice(0, exp.index);
   const map = exp[1].split(',').map((x) => x.trim().split(/\s+as\s+/)).map(([local, name]) => `${name ?? local}:${local}`).join(',');
   const binds = m[1].split(',').map((x) => x.trim().split(/\s+as\s+/)).map(([name, local]) => `${local ?? name}=__c.${name}`).join(',');
-  js = js.replace(m[0], `const __c=(()=>{${body};return{${map}}})();const ${binds};`);
+  // every replacement that carries a file's own text is given as a function: as plain text, "$&" and its like are
+  // read as commands, and the film's small script can hold "$&&" (a name "$" followed by "&&")
+  js = js.replace(m[0], () => `const __c=(()=>{${body};return{${map}}})();const ${binds};`);
 }
 
 // pictures: AVIF inside the file; a WebP address becomes a short token (a <picture> never fetches it when the AVIF
@@ -68,9 +70,9 @@ home = home
   .replace(/<img class="pass still" src="(\/pictures\/[^"]+)\.webp"/g, (_, u) => `<img class="pass still" src="#${u.split('/').pop()}"`)
   .replace(/<link rel="preload" as="font"[^>]*>/, '')
   .replace(/<link rel="modulepreload"[^>]*>/g, '')
-  .replace(/<link rel="stylesheet"[^>]*>/, `<style>${css}</style>`)
+  .replace(/<link rel="stylesheet"[^>]*>/, () => `<style>${css}</style>`)
   .replace(/<script type="module"[^>]*><\/script>/, '')
-  .replace(/<link rel="icon"[^>]*>/, `<link rel="icon" href="${dataUri('/favicon.svg')}">`)
+  .replace(/<link rel="icon"[^>]*>/, () => `<link rel="icon" href="${dataUri('/favicon.svg')}">`)
   .replace(/<link rel="apple-touch-icon"[^>]*>/, '')
   .replace(/<link rel="alternate"[^>]*>/, '')
   .replace('<meta name="viewport"', '<meta name="robots" content="noindex">\n<meta name="viewport"')
@@ -94,12 +96,15 @@ const SWITCH = `<script>
   addEventListener('hashchange', show); show();
 })();
 </script>`;
+const inlined = js.replace(/<\/script/g, '<\\/script');
 home = home
-  .replace('</main>', `</main>\n${machines}\n${legal}`)
+  .replace('</main>', () => `</main>\n${machines}\n${legal}`)
   .replace(/href="\/machines\/"/g, 'href="#machines"')
   .replace(/href="\/legal\/"/g, 'href="#legal"')
   .replace(/href="\/"/g, 'href="#"')
-  .replace('</body>', `${SWITCH}\n<script type="module">${js.replace(/<\/script/g, '<\\/script')}</script>\n</body>`);
+  .replace('</body>', () => `${SWITCH}\n<script type="module">${inlined}</script>\n</body>`);
+// the script and the styles must sit in the file exactly as they were built
+if (!home.includes(inlined) || !home.includes(css)) { console.error('preview: the script or the styles changed while being put in'); process.exit(1); }
 
 const leftover = [...home.matchAll(/(?:src|href|srcset)="(\/[^"]*)"/g), ...home.matchAll(/"(\/pictures\/[^"]*)"/g)].map((m) => m[1]);
 if (leftover.length) { console.error('preview: local addresses left: ' + leftover.join(', ')); process.exit(1); }
