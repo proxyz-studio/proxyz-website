@@ -46,35 +46,66 @@ try { history.scrollRestoration = 'manual'; } catch { /* old browser: it restore
 // so they do not all load at once; each is put back as a light pass when the visitor nears its scene.
 const sections = $$('#film .scene');
 let boardBox: HTMLElement | null = null;
+/** scene 6: the board's five labels, in a box of their own beside the pictures (the picture's soft side edges, a mask
+ *  on .passes, never reach them); it follows the board's box in and out and takes the same place */
+let labelBox: HTMLElement | null = null;
 const stills = new Map<number, HTMLElement>();
 // Each scene's description stays on its stage from the start (a screen reader hears it before the pictures load);
 // the light passes themselves are decoration.
 const alts = sections.map((s) => $<HTMLImageElement>('img', s)?.alt ?? '');
+// What the page holds before the film touches it, so that giving up hands back exactly the plain page: every
+// attribute of every element of the film and the border (the film writes styles, classes, roles, a hidden flag and the
+// board's path data on them), and each scene's resting picture.
+let gaveUp = false;
+const pristine = new Map<Element, [string, string][]>();
+for (const e of document.querySelectorAll('#film, #film *, #top, #top *')) pristine.set(e, [...e.attributes].map((a) => [a.name, a.value]));
+const restPics = sections.map((s) => $('picture', s));
 sections.forEach((s, i) => {
   const pic = i > 0 ? $('picture', s) : null;
   if (pic) { stills.set(i + 1, pic); pic.remove(); }
   // the board waits for its scene too (it goes back in with the scene's pictures)
   const bb = $('.bbox', s);
   if (bb) { boardBox = bb; bb.remove(); }
+  const lb = $('.lbox', s);
+  if (lb) { labelBox = lb; lb.remove(); }
   const box = $('.passes', s)!;
   box.setAttribute('role', 'img');
   box.setAttribute('aria-label', alts[i]);
 });
-// If anything below fails, the page goes back to the plain document, pictures and all.
-addEventListener('error', () => {
+// If anything below fails, the page goes back to the plain document, pictures and all, and the film stops for good:
+// every entry point below returns at once once gaveUp is set. The visitor stays on the scene they were looking at.
+function giveUp(): void {
+  if (gaveUp) return;
+  gaveUp = true;
+  let on = 1;
+  try { on = active; } catch { /* the film had not started its scroll work */ }
+  try { stopPulses(); cancelAnimationFrame(pulseRaf); clearTimeout(settle); clearTimeout(saveT); } catch { /* not started */ }
+  try { for (const o of observers) o.disconnect(); } catch { /* not started */ }
   doc.classList.remove('film', 'film-init');
   doc.classList.add('nofilm');
-  sections.forEach((s) => { const box = $('.passes', s)!; box.removeAttribute('role'); box.removeAttribute('aria-label'); });
-  stills.forEach((pic, n) => { if (!pic.isConnected) $('.passes', sections[n - 1])?.append(pic); });
-  if (boardBox) {
-    stopPulses();
-    for (const e of [boardBox, ...boardBox.querySelectorAll<HTMLElement>('[style]')]) e.removeAttribute('style');
-    restD.forEach((d, e) => e.setAttribute('d', d));
-    if (!boardBox.isConnected) $('.passes', sections[BRAIN - 1])?.append(boardBox);
-  }
-  // the plain page's own cut (style.css) takes over from the film's
-  $$('.cut').forEach((c) => c.removeAttribute('style'));
-}, { once: true });
+  // each scene: its resting picture back as the only picture (the film's own pass pictures go), scene 6 its board in
+  // the pictures' box and its labels just after it
+  sections.forEach((s, i) => {
+    const box = $('.passes', s);
+    if (!box) return;
+    const keep: Element[] = [];
+    if (restPics[i]) keep.push(restPics[i]!);
+    if (i === BRAIN - 1 && boardBox) keep.push(boardBox);
+    box.replaceChildren(...keep);
+    if (i === BRAIN - 1 && labelBox) box.after(labelBox);
+  });
+  // every attribute as the page had it (no inline style, class, role or hidden flag of the film's; the board's lines
+  // whole)
+  pristine.forEach((attrs, e) => {
+    for (const x of [...e.attributes]) if (!attrs.some(([n]) => n === x.name)) e.removeAttribute(x.name);
+    for (const [n, v] of attrs) if (e.getAttribute(n) !== v) e.setAttribute(n, v);
+  });
+  for (const e of $$('body > .probe, body > .probe-b, body > .probe-s')) e.remove();
+  // the plain page is much shorter than the film: the scene that was on screen comes back on screen
+  const back = sections[Math.max(0, Math.min(sections.length, on) - 1)];
+  if (back) scrollTo(0, back.offsetTop);
+}
+addEventListener('error', giveUp, { once: true });
 const first = $<HTMLImageElement>('#s1 img.pass');
 let firstKept = true;   // the first paint picture is reused until a full rebuild for the other screen shape
 
@@ -170,6 +201,7 @@ const deskMQ = matchMedia('(min-width: 900px) and (min-height: 501px)');
 const wordsBase = (): number => parseFloat(getComputedStyle(doc).getPropertyValue('--words-base')) || 0;
 /** Called on resize and on scroll: when the bottom safe area grows past the largest seen, place the pictures again. */
 function checkInset(): void {
+  if (gaveUp) return;
   const b = probeB.offsetHeight;
   if (b > insetMax) { insetMax = b; layoutAll(); }
 }
@@ -219,6 +251,7 @@ function geometry(view: View, s: SceneState): Box {
 
 /** The cut in the giant words, placed exactly where the picture sits; or none. */
 function setCut(s: SceneState, view: View, g: Box | null): void {
+  if (gaveUp) return;
   const c = s.cut;
   if (!c) return;
   if (!g || !s.matte?.ready) { c.removeAttribute('style'); return; }
@@ -233,6 +266,7 @@ function setCut(s: SceneState, view: View, g: Box | null): void {
 }
 
 function place(s: SceneState, view: View): void {
+  if (gaveUp) return;
   const g = geometry(view, s);
   const mask = frameMask(view, pictures[view.passes[0]].size);
   for (const p of s.passes) {
@@ -259,6 +293,7 @@ function place(s: SceneState, view: View): void {
 const viewOf = (n: number): View => scenes[sections[n - 1].dataset.view === 'twin' ? `${n}twin` : String(n)][form];
 
 function build(n: number): void {
+  if (gaveUp) return;
   const s = S[n - 1], view = viewOf(n);
   const width = geometry(view, s).w;
   const files = view.passes.map((k) => fileFor(k, width));
@@ -304,11 +339,16 @@ function build(n: number): void {
   const firstReady = !!keepFirst && keepFirst.complete && keepFirst.naturalWidth > 0 && !s.matte;
   s.box.classList.toggle('ready', firstReady);
   s.box.replaceChildren(...s.passes.map((p) => p.node), ...(s.things && boardBox ? [boardBox] : []));
+  // the labels go in with the board, just after the pictures (as the page holds them)
+  if (n === BRAIN && labelBox) {
+    if (!(s.things && boardBox)) labelBox.remove();
+    else if (labelBox.previousElementSibling !== s.box) s.box.after(labelBox);
+  }
   if (n === BRAIN) boardForm();
   place(s, view);
   const mine = s.built;
   const shown = () => {
-    if (s.built !== mine || !s.passes[0].ready || (s.matte && !s.matte.ready)) return;
+    if (gaveUp || s.built !== mine || !s.passes[0].ready || (s.matte && !s.matte.ready)) return;
     s.box.classList.add('ready');
     place(s, view);
   };
@@ -336,6 +376,7 @@ function build(n: number): void {
 
 /** Lets go of a scene's pictures (a phone cannot hold every big picture of the film at once). */
 function release(n: number): void {
+  if (gaveUp) return;
   const s = S[n - 1];
   s.built = '';
   // Firefox picks the fallback file of a picture it is about to drop and fetches it; with no src it fetches nothing
@@ -343,7 +384,7 @@ function release(n: number): void {
   s.passes = [];
   s.matte = null;
   s.things = null;
-  if (n === BRAIN) boardGone();
+  if (n === BRAIN) { boardGone(); labelBox?.remove(); }
   s.cut?.removeAttribute('style');
   s.box.replaceChildren();
   s.box.classList.remove('ready');
@@ -352,6 +393,7 @@ function release(n: number): void {
 
 /* ---------- the light ---------- */
 function light(n: number, prog: number): void {
+  if (gaveUp) return;
   const s = S[n - 1], view = viewOf(n);
   if (!s.passes.length) return;
   const q = lightAt(view, prog, reduced());
@@ -385,7 +427,9 @@ function light(n: number, prog: number): void {
 // live traces. With less motion: the rest state, no pulses.
 type Pt = number[];
 interface Line { pts: Pt[]; at: number[]; d: string }
-interface Trace { co: SVGPathElement; gl: SVGPathElement; sd: SVGPathElement[]; pd: SVGPathElement; pu: SVGPathElement; fl: SVGPathElement; line: Line; side: Line[]; f: number }
+interface Trace { co: SVGPathElement; gl: SVGPathElement; sd: SVGPathElement[]; pd: SVGPathElement; pu: SVGPathElement; fl: SVGPathElement; line: Line; side: Line[]; f: number;
+  /** its thing's name tag (none when the venture has no name) */
+  nm: HTMLElement | null }
 interface BoardView { svg: SVGSVGElement; b1: SVGElement; b4: SVGElement[]; dm: SVGElement; arrive: number[]; tr: Trace[]; dr: SVGPathElement; dp: SVGPathElement; route: Line }
 /** every path's resting d, so the plain page gets the board back whole if the film gives up */
 const restD = new Map<SVGPathElement, string>();
@@ -446,8 +490,9 @@ const ramp = (v: number, a: number, b: number) => clamp((v - a) / (b - a));
 
 let BV: BoardView | null = null;
 // how a label stands off its point (as build/board.ts LABEL_SHIFT)
-const SHIFT: Record<string, string> = { r: 'translate(8px,-50%)', l: 'translate(calc(-100% - 8px),-50%)', b: 'translate(-50%,4px)', a: 'translate(-50%,calc(-100% - 4px))' };
+const SHIFT: Record<string, string> = { r: 'translate(8px,-50%)', l: 'translate(calc(-100% - 8px),-50%)', b: 'translate(-50%,4px)', a: 'translate(-50%,calc(-100% - 4px))', d: 'translate(0,4px)' };
 function boardForm(): void {
+  if (gaveUp) return;
   if (!boardBox) return;
   const k = form === 'desktop' ? 'bd' : 'bp';
   for (const svg of boardBox.querySelectorAll<SVGSVGElement>('svg.board')) svg.style.display = svg.classList.contains(k) ? '' : 'none';
@@ -459,25 +504,30 @@ function boardForm(): void {
     const g = q<SVGGElement>('.t-' + t), sd = [...g.querySelectorAll<SVGPathElement>('.sd')];
     const co = q<SVGPathElement>('.co', g);
     const line = lineOf(restD.get(co)!), side = sd.map((e) => lineOf(restD.get(e)!));
-    return { co, gl: q('.gl', g), sd, pd: q('.pd', g), pu: q('.pu', g), fl: q('.fl', g), line, side, f: -1 };
+    return { co, gl: q('.gl', g), sd, pd: q('.pd', g), pu: q('.pu', g), fl: q('.fl', g), line, side, f: -1, nm: labelBox ? $('.blab.n-' + t, labelBox) : null };
   });
   const dr = q<SVGPathElement>('.dr');
   BV = { svg, b1: q('.b1'), dm: q('.dm'), arrive: (svg.dataset.arrive ?? '0.7,0.7').split(',').map(Number), b4: [...svg.querySelectorAll<SVGElement>('g.b4:not(.nx)')], tr, dr, dp: q('.dp'), route: lineOf(restD.get(dr)!) };
   // the labels sit by share of the picture box, for this screen shape
-  for (const e of $$('.blab', boardBox)) {
+  if (labelBox) for (const e of $$('.blab', labelBox)) {
     const [x, y, side] = (e.dataset[form === 'desktop' ? 'd' : 'p'] ?? '0,0,r').split(',');
     e.style.left = x + '%'; e.style.top = y + '%'; e.style.transform = SHIFT[side] ?? '';
   }
   schedule();
 }
 function placeBoard(view: View, g: Box): void {
-  if (!boardBox) return;
-  const st = boardBox.style;
-  Object.assign(st, { left: g.left + 'px', top: g.top + 'px', width: g.w + 'px', height: g.h + 'px' });
-  st.setProperty('--bw', (g.w / pictures[view.passes[0]].size[0]).toFixed(4) + 'px');
+  if (gaveUp) return;
+  const bw = (g.w / pictures[view.passes[0]].size[0]).toFixed(4) + 'px';
+  for (const b of [boardBox, labelBox]) {
+    if (!b) continue;
+    const st = b.style;
+    Object.assign(st, { left: g.left + 'px', top: g.top + 'px', width: g.w + 'px', height: g.h + 'px' });
+    st.setProperty('--bw', bw);
+  }
 }
 /** the board hidden inside the three things */
 function boardMask(url: string): void {
+  if (gaveUp) return;
   if (!boardBox) return;
   for (const svg of boardBox.querySelectorAll<SVGSVGElement>('svg.board')) {
     const st = svg.style, img = `linear-gradient(#000, #000), url("${url}")`;
@@ -498,6 +548,7 @@ function stopPulses(): void {
 }
 // a loop of 3.6 s: each pulse runs its trace in 1.5 s, the three 0.4 s apart; the pad flashes as it arrives
 function pulseFrame(now: number): void {
+  if (gaveUp) return;
   pulseRaf = requestAnimationFrame(pulseFrame);
   if (!BV) return;
   const sec = now / 1000;
@@ -510,9 +561,15 @@ function pulseFrame(now: number): void {
 }
 
 function boardAt(y: number): void {
+  if (gaveUp) return;
   const s = S[BRAIN - 1];
-  if (!BV || !boardBox || !s.things?.ready || !tops.length) { if (boardBox) boardBox.style.visibility = 'hidden'; return; }
+  if (!BV || !boardBox || !s.things?.ready || !tops.length) {
+    if (boardBox) boardBox.style.visibility = 'hidden';
+    if (labelBox) labelBox.style.visibility = 'hidden';
+    return;
+  }
   boardBox.style.visibility = '';
+  if (labelBox) labelBox.style.visibility = '';
   const i = BRAIN - 1, view = viewOf(BRAIN), rest = reduced();
   const pre = clamp((y - tops[i] + VH / 2) / (VH / 2)), u = (y - tops[i]) / Math.max(1, heights[i] - VH);
   const q = lightAt(view, clamp(u / LIGHT_SHARE), false);
@@ -528,7 +585,7 @@ function boardAt(y: number): void {
     ramp(u, 0.92, 0.98),                         // its ring and NEXT
   ];
   setO(BV.b1, step[0]);
-  const chip = $('.blab.chip', boardBox), next = $('.blab.next', boardBox);
+  const chip = labelBox && $('.blab.chip', labelBox), next = labelBox && $('.blab.next', labelBox);
   if (chip) setO(chip, step[0]);
   BV.tr.forEach((t, k) => {
     const f = step[1 + k];
@@ -538,7 +595,10 @@ function boardAt(y: number): void {
     setD(t.co, d); setD(t.gl, d);
     // the side lines never run ahead of the head
     t.sd.forEach((e, j) => setD(e, sideD(t.side[j], t.line, f * L)));
-    setO(t.pd, ramp(f, 0.96, 1));
+    // a name shows with its pad's outline, never before it
+    const pad = ramp(f, 0.96, 1);
+    setO(t.pd, pad);
+    if (t.nm) setO(t.nm, pad);
     // the head of a trace being drawn is brighter
     if (!pulsing) setD(t.pu, f > 0 && f < 1 ? partD(t.line, f * L - 30, f * L) : '');
   });
@@ -569,6 +629,7 @@ function near(i: number, y: number): boolean {
   return i + 1 === active || (tops[i] - (y + VH) < VH && y - (tops[i] + heights[i]) < VH);
 }
 function update(): void {
+  if (gaveUp) return;
   ticking = false;
   if (!tops.length) return;
   checkInset();
@@ -590,6 +651,7 @@ function update(): void {
 
 /* ---------- coming back after a reload: the same scene, the same light ---------- */
 function remember(): void {
+  if (gaveUp) return;
   if (!tops.length) return;
   const i = active - 1;
   try { history.replaceState({ ...(history.state ?? {}), film: { i, f: (scrollY - tops[i]) / heights[i] } }, ''); } catch { /* not allowed now */ }
@@ -600,7 +662,7 @@ function returnTo(): void {
   scrollTo(0, Math.round(tops[at.i] + clamp(at.f) * heights[at.i]));
 }
 let ticking = false;
-function schedule(): void { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
+function schedule(): void { if (gaveUp) return; if (!ticking) { ticking = true; requestAnimationFrame(update); } }
 
 /* ---------- the five marks, and a name beside its own mark ---------- */
 const markEls = $$('.marks i');
@@ -614,6 +676,7 @@ function brainLit(): number[] {
   return [0, ...(lit(1) >= 0.5 ? [1] : []), ...(lit(2) >= 0.5 ? [2] : [])];
 }
 function marks(): void {
+  if (gaveUp) return;
   const m = S[active - 1].mark;
   const lit = new Set([m, ...(active === BRAIN ? brainLit() : [])]);
   markEls.forEach((d, k) => d.classList.toggle('on', lit.has(k)));
@@ -621,16 +684,18 @@ function marks(): void {
 }
 
 /* ---------- size and shape changes ---------- */
-function layoutAll(): void { for (let n = 1; n <= S.length; n++) if (S[n - 1].passes.length) place(S[n - 1], viewOf(n)); }
+function layoutAll(): void { if (gaveUp) return; for (let n = 1; n <= S.length; n++) if (S[n - 1].passes.length) place(S[n - 1], viewOf(n)); }
 /** Some engines report the old steady height during a resize; look again once the layout has settled. */
 let settle = 0;
 function onResizeSoon(): void {
+  if (gaveUp) return;
   onResize();
   requestAnimationFrame(onResize);
   clearTimeout(settle);
   settle = setTimeout(() => { layoutAll(); onResize(); }, 150);
 }
 function onResize(): void {
+  if (gaveUp) return;
   const w = vwNow(), h = probe.offsetHeight || innerHeight, hs = Math.min(h, probeS.offsetHeight || h), f = formNow();
   // re-place only when the width, the steady heights or the screen shape change, never when a phone's bar slides
   if (f !== form) {
@@ -657,6 +722,8 @@ if (target && +target[1] <= S.length) scrollTo(0, tops[+target[1] - 1]);
 else returnTo();
 update();
 let saveT = 0;
+// the observers of the steady screen sizes (let go when the film gives up)
+const observers: ResizeObserver[] = [];
 addEventListener('scroll', () => { schedule(); clearTimeout(saveT); saveT = setTimeout(remember, 200); }, { passive: true });
 addEventListener('resize', onResizeSoon);
 addEventListener('pagehide', remember);
@@ -664,8 +731,8 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 reducedMQ.addEventListener('change', schedule);
 portrait.addEventListener('change', onResizeSoon);
 if (typeof ResizeObserver === 'function') {
-  new ResizeObserver(() => onResize()).observe(probe);
-  new ResizeObserver(() => onResize()).observe(probeS);
-  new ResizeObserver(() => checkInset()).observe(probeB);
+  const a = new ResizeObserver(() => onResize()), b = new ResizeObserver(() => checkInset());
+  a.observe(probe); a.observe(probeS); b.observe(probeB);
+  observers.push(a, b);
 }
 if (document.fonts) document.fonts.ready.then(() => { layoutAll(); measure(); update(); });

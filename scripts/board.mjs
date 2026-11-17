@@ -12,6 +12,10 @@ import { fileURLToPath } from 'node:url';
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const layout = JSON.parse(readFileSync(ROOT + 'src/film/board.json', 'utf8'));
 const film = JSON.parse(readFileSync(ROOT + 'src/film/scenes.json', 'utf8'));
+// the words of the five labels, for the room the net leaves them (never copied: read from the content file)
+const content = JSON.parse(readFileSync(ROOT + 'content/site.json', 'utf8'));
+const WORDS = content.scenes.find((s) => s.board)?.board ?? { chip: '', next: '' };
+const nameOf = (t) => content.ventures.find((v) => v.id === layout.ventures[t])?.name ?? '';
 const DEG = Math.PI / 180;
 const G = layout.grid;
 const r1 = (v) => Math.round(v * 10) / 10;
@@ -125,6 +129,35 @@ function arrival(view, k, outline) {
   return [+t40.toFixed(3), +t70.toFixed(3)];
 }
 
+/* ---------- the room each label takes ---------- */
+// As style.css draws them: IBM Plex Mono (each letter 0.6 em wide) plus the letter spacing, line height 1 (the letters
+// reach about 0.15 em above and below the line box); the size grows with the picture above scale 1, up to twice the
+// base (clamp(base, scale * base, 2 * base)); the word stands off its point by LABEL_SHIFT in build/board.ts, in
+// screen pixels.
+const LABEL_TYPE = { chip: [14, 0.06], name: [12, 0.08], next: [12, 0.08] };
+/** a label's box in screen pixels around its point, at font size s: [x0, y0, x1, y1] */
+function labelRect(side, chars, s, track) {
+  const w = chars * (0.6 + track) * s, t = -0.2 * s, b = 1.2 * s;   // the letters, from the element's top
+  switch (side) {
+    case 'r': return [8, t - s / 2, 8 + w, b - s / 2];
+    case 'l': return [-8 - w, t - s / 2, -8, b - s / 2];
+    case 'b': return [-w / 2, 4 + t, w / 2, 4 + b];
+    case 'a': return [-w / 2, -4 - s + t, w / 2, -4 - s + b];
+    case 'd': return [0, 4 + t, w, 4 + b];
+    default: throw new Error(`board: no label side ${side}`);
+  }
+}
+/** The picture pixel box a label may take at any scale from minScale up, with pad screen pixels round it. */
+function labelKeep([x, y], side, word, kind, minScale, pad) {
+  const [base, track] = LABEL_TYPE[kind], out = [Infinity, Infinity, -Infinity, -Infinity];
+  for (const k of [minScale, (minScale + 1) / 2, 1, 1.25, 1.5, 2, 3, 6]) {
+    const s = Math.min(2 * base, Math.max(base, k * base)), r = labelRect(side, word.length, s, track);
+    const q = [x + (r[0] - pad) / k, y + (r[1] - pad) / k, x + (r[2] + pad) / k, y + (r[3] + pad) / k];
+    out[0] = Math.min(out[0], q[0]); out[1] = Math.min(out[1], q[1]); out[2] = Math.max(out[2], q[2]); out[3] = Math.max(out[3], q[3]);
+  }
+  return out;
+}
+
 /* ---------- one form ---------- */
 function form(F, key) {
   const P = camera(F.camera, F.size);
@@ -140,9 +173,28 @@ function form(F, key) {
   const routes = Object.fromEntries(Object.entries(F.routes).map(([k, r]) => [k, clipRoute(r, pads[k])]));
   for (const [k, r] of Object.entries(routes)) if (r.length < 2 || dist(r[r.length - 1], F.routes[k][F.routes[k].length - 1]) < 1e-6) throw new Error(`board: the ${k} route of a form never meets its pad`);
 
+  // the label's leader: from one corner of the chip's top, out at 45 degrees, then a short run to the word (none when
+  // the word hangs below the leader's end)
+  const H = 4;
+  const { corner: [kx, kz], leader: [ldx, ldy, run], next: nextSide, side: studioSideSet } = F.label;
+  const corner = P(cx + kx * CH, cz + kz * CH, H);
+  const bend = [corner[0] + ldx, corner[1] + ldy], end = [bend[0] + run, bend[1]];
+  const studioSide = studioSideSet ?? (run < 0 ? 'l' : 'r');
+  const nextAt = pt([ex, nextSide === 'above' ? ez - ER - 4 : ez + ER + 4]);
+  const names = Object.fromEntries(Object.entries(F.names).map(([t, [x, y, side]]) => [t, { at: [x, y], side, venture: layout.ventures[t] }]));
   // the picture boxes kept clear (the giant words), and the floor kept clear around the things, the chip, the routes
   const keep = (q) => { const [x, y] = P(q[0], q[1]); return F.keep.some(([x0, y0, x1, y1]) => x >= x0 && x <= x1 && y >= y0 && y <= y1); };
+  // the five labels: no net line, dot or part within 6 screen pixels of a label's letters (3 more for a dot's radius
+  // and the soft edge of a line), at every scale the form is shown at
+  const PAD = 9;
+  const labelKeeps = [
+    labelKeep(end, studioSide, WORDS.chip, 'chip', F.minScale, PAD),
+    labelKeep(nextAt, nextSide === 'above' ? 'a' : 'b', WORDS.next, 'next', F.minScale, PAD),
+    ...Object.entries(names).map(([t, n]) => labelKeep(n.at, n.side, nameOf(t), 'name', F.minScale, PAD)),
+  ];
+  const nearLabel = (q) => { const [x, y] = P(q[0], q[1]); return labelKeeps.some(([x0, y0, x1, y1]) => x >= x0 && x <= x1 && y >= y0 && y <= y1); };
   const excluded = (p) => {
+    if (nearLabel(p)) return true;
     if (inPoly(p, rect(T.stand[0], T.stand[1], T.stand[3] + 40, T.stand[4] + 40, T.stand[2]))) return true;
     if (inPoly(p, rect(T.phone[0], T.phone[1], T.phone[3] + 36, T.phone[4] + 36, T.phone[2]))) return true;
     if (dist(p, T.coin) < T.coin[2] + 20) return true;
@@ -180,6 +232,8 @@ function form(F, key) {
   for (const [[x, z], [dx, dz], n] of F.vias) for (let k = 0; k < n; k++) { const q = [x + dx * G * k, z + dz * G * k]; if (!excluded(q)) vias.push(q); }
   for (const [x, z, ax] of F.parts) {
     if (excluded([x, z])) continue;
+    // a part reaches 11 mm from its middle: all of it stays clear of the labels
+    if ([[x - 11, z - 3], [x + 11, z - 3], [x + 11, z + 3], [x - 11, z + 3], [x - 3, z - 11], [x + 3, z - 11], [x + 3, z + 11], [x - 3, z + 11]].some(nearLabel)) continue;
     const body = ax === 0 ? [[x - 6, z - 3], [x + 6, z - 3], [x + 6, z + 3], [x - 6, z + 3]] : [[x - 3, z - 6], [x + 3, z - 6], [x + 3, z + 6], [x - 3, z + 6]];
     const ends = ax === 0 ? [[x - 9, z], [x + 9, z]] : [[x, z - 9], [x, z + 9]];
     net.push(poly(body));
@@ -187,7 +241,7 @@ function form(F, key) {
   }
 
   // the chip: its top 4 mm up, the two sides the camera sees, an inner square, the pins, a dot in the middle
-  const H = 4, sq = (o) => [[cx - CH + o, cz - CH + o], [cx + CH - o, cz - CH + o], [cx + CH - o, cz + CH - o], [cx - CH + o, cz + CH - o]];
+  const sq = (o) => [[cx - CH + o, cz - CH + o], [cx + CH - o, cz - CH + o], [cx + CH - o, cz + CH - o], [cx - CH + o, cz + CH - o]];
   const top = sq(0), pins = [];
   for (let i = 0; i < 8; i++) {
     const o = -CH + 6 + (i * (2 * CH - 12)) / 7;
@@ -203,10 +257,6 @@ function form(F, key) {
   }
   const cc = pt([cx, cz], H);
   const ex1 = P(cx + 110, cz), ez1 = P(cx, cz + 110), ez2 = P(cx, cz - 110), c0 = P(cx, cz);
-  // the label's leader: from one corner of the chip's top, out at 45 degrees, then a short run to the word
-  const { corner: [kx, kz], leader: [ldx, ldy, run], next: nextSide } = F.label;
-  const corner = P(cx + kx * CH, cz + kz * CH, H);
-  const bend = [corner[0] + ldx, corner[1] + ldy], end = [bend[0] + run, bend[1]];
 
   const live = {};
   for (const k of ['stand', 'coin', 'phone']) {
@@ -217,7 +267,6 @@ function form(F, key) {
       pad: poly(pads[k]),
     };
   }
-  const nextAt = pt([ex, nextSide === 'above' ? ez - ER - 4 : ez + ER + 4]);
   return {
     size: F.size,
     pool: F.pool,
@@ -226,12 +275,15 @@ function form(F, key) {
     chip: {
       top: poly(top, true, H), inner: poly(sq(9), true, H), sides, pins: pins.join(''), dot: cc,
       glow: [r1(c0[0]), r1(c0[1]), r1(Math.abs(ex1[0] - c0[0])), r1(Math.abs(ez1[1] - ez2[1]) / 2)],
-      leader: [corner, bend, end].map((q) => q.map(r1)),
+      leader: (run ? [corner, bend, end] : [corner, bend]).map((q) => q.map(r1)),
     },
     live,
     empty: { pts: routes.empty.map((q) => pt(q)), pad: poly(pads.empty) },
-    // where the words sit: the chip's word to the right (r) or left (l) of its leader, NEXT below (b) or above (a)
-    labels: { studio: end.map(r1), studioSide: run < 0 ? 'l' : 'r', next: nextAt, nextSide: nextSide === 'above' ? 'a' : 'b' },
+    // where the words sit: the chip's word to the right (r) or left (l) of its leader or hanging below its end (d),
+    // NEXT below (b) or above (a); the three names by their things
+    labels: { studio: end.map(r1), studioSide, next: nextAt, nextSide: nextSide === 'above' ? 'a' : 'b', names },
+    // the boxes the net keeps clear for the labels (picture pixels; for the proof sheet and the check)
+    labelKeeps: labelKeeps.map((b) => b.map(r1)),
     // the pass strengths at which the light covers 40% and 70% of the race piece (second pass) and the coach phone
     // (third pass): each trace's head reaches its pad at the 70% mark
     arrive: (() => {
@@ -256,7 +308,8 @@ if (proof > 0) {
   const f = out[process.argv[proof + 1]];
   const [W, H] = f.size;
   console.log(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" fill="none" stroke-width="1">` +
-    Object.values(f.footprints).map((d) => `<path d="${d}" stroke="#00ff66"/>`).join('') + '</svg>');
+    Object.values(f.footprints).map((d) => `<path d="${d}" stroke="#00ff66"/>`).join('')
+    + f.labelKeeps.map(([x0, y0, x1, y1]) => `<rect x="${x0}" y="${y0}" width="${r1(x1 - x0)}" height="${r1(y1 - y0)}" stroke="#ff00ff"/>`).join('') + '</svg>');
 } else {
   writeFileSync(ROOT + 'src/generated/board.json', JSON.stringify(out) + '\n');
   console.log(`board: wrote src/generated/board.json (${['desktop', 'phone'].map((k) => `${k} ${JSON.stringify(out[k]).length} bytes`).join(', ')})`);

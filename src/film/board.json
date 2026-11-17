@@ -1,6 +1,7 @@
 {
-  "_note": "Scene 6, the board: a circuit board drawn on the floor of the drawing, in millimetres on the floor (x to the right, z toward the camera), one layout per screen shape. scripts/board.mjs projects it through the drawing's own camera into picture pixels and writes src/generated/board.json; run it by hand (npm run board) after a change here. things: where the drawing puts the stand [x, z, turn, width, depth], the race piece [x, z, radius] and the coach phone [x, z, turn, width, length]. chip [x, z, half side]. empty [x, z, radius]: the place for the next one. routes: the live traces from the chip, in order of the film (each ends where it meets its pad). buses: [centre line, count] groups of parallel traces 6 mm apart. vias [start, step, count]. parts [x, z, 0 along x or 1 along z]. pool: the pool of light of the last pass [cx, cy, rx, ry] in picture pixels. keep: picture pixel boxes [x0, y0, x1, y1] where the board never draws (the giant words). label: the StudioOS label's leader: from the chip corner [x sign, z sign], [dx, dy, run] in picture pixels (a negative run puts the word to the left), and NEXT below or above the empty place.",
+  "_note": "Scene 6, the board: a circuit board drawn on the floor of the drawing, in millimetres on the floor (x to the right, z toward the camera), one layout per screen shape. scripts/board.mjs projects it through the drawing's own camera into picture pixels and writes src/generated/board.json; run it by hand (npm run board) after a change here. things: where the drawing puts the stand [x, z, turn, width, depth], the race piece [x, z, radius] and the coach phone [x, z, turn, width, length]. chip [x, z, half side]. empty [x, z, radius]: the place for the next one. routes: the live traces from the chip, in order of the film (each ends where it meets its pad). buses: [centre line, count] groups of parallel traces 6 mm apart. vias [start, step, count]. parts [x, z, 0 along x or 1 along z]. pool: the pool of light of the last pass [cx, cy, rx, ry] in picture pixels. keep: picture pixel boxes [x0, y0, x1, y1] where the board never draws (the giant words). label: the StudioOS label's leader: from the chip corner [x sign, z sign], [dx, dy, run] in picture pixels (a negative run puts the word to the left; side, when given, says how the word stands off the leader's end instead: d hangs below it with its left edge on it), and NEXT below or above the empty place. ventures: which venture of content/site.json each thing is. names: the three name tags (the words come from content/site.json ventures[].name), each [x, y, side] in picture pixels, side as in build/board.ts LABEL_SHIFT (r right of the point, l left, b below and centred). minScale: the smallest scale (screen pixels per picture pixel) the form is shown at; the net keeps clear of every label (all five) at every scale from there up, the labels growing above scale 1.",
   "grid": 6,
+  "ventures": {"stand": "stand", "coin": "race", "phone": "coach"},
   "padGap": 9,
   "forms": {
     "desktop": {
@@ -42,7 +43,9 @@
         "corner": [1, -1],
         "leader": [34, -34, 40],
         "next": "below"
-      }
+      },
+      "names": {"stand": [1090, 290, "r"], "coin": [518, 392, "l"], "phone": [1086, 530, "r"]},
+      "minScale": 0.55
     },
     "phone": {
       "size": [786, 1704],
@@ -73,10 +76,13 @@
       "pool": [392, 674, 392, 434],
       "keep": [[0, 0, 786, 300]],
       "label": {
-        "corner": [-1, 1],
-        "leader": [-30, 30, -14],
+        "corner": [1, 1],
+        "leader": [-31, 31, 0],
+        "side": "d",
         "next": "above"
-      }
+      },
+      "names": {"stand": [530, 492, "b"], "coin": [256, 717, "b"], "phone": [322, 815, "l"]},
+      "minScale": 0.35
     }
   }
 }
