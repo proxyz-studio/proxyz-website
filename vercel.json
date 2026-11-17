@@ -1,5 +1,15 @@
 {
   "trailingSlash": true,
+  "rewrites": [
+    {
+      "source": "/tapz/",
+      "destination": "https://tapz-woad.vercel.app/"
+    },
+    {
+      "source": "/tapz/:path*",
+      "destination": "https://tapz-woad.vercel.app/:path*"
+    }
+  ],
   "redirects": [
     {
       "source": "/privacy",
@@ -24,7 +34,7 @@
   ],
   "headers": [
     {
-      "source": "/:path((?!(?:proxyz-lockup-e-horizontal-light-tight\\.png|icon-whatsapp-dark\\.png|icon-line-dark\\.png|proxyz-lockup-e-horizontal-light\\.png)$).*)",
+      "source": "/:path((?!(?:proxyz-lockup-e-horizontal-light-tight\\.png|icon-whatsapp-dark\\.png|icon-line-dark\\.png|proxyz-lockup-e-horizontal-light\\.png)$|tapz(?:/|$)).*)",
       "headers": [
         {
           "key": "Content-Security-Policy",
@@ -45,6 +55,24 @@
         {
           "key": "Cross-Origin-Opener-Policy",
           "value": "same-origin"
+        }
+      ]
+    },
+    {
+      "source": "/",
+      "headers": [
+        {
+          "key": "Speculation-Rules",
+          "value": "\"/doors.json\""
+        }
+      ]
+    },
+    {
+      "source": "/doors.json",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/speculationrules+json"
         }
       ]
     },
