@@ -431,15 +431,16 @@ export function stillsCss(): string {
         out.push(`@media (scripting: none) and ${media}{${rule}}`, `@media ${media}{.nofilm ${rule}}`);
       }
       // the board: in the picture's box, its lines in screen pixels (--bw: screen pixels per picture pixel), hidden
-      // inside the three things (their matte), with scripts off, once the film has given up, and when the film
-      // script never arrives (then it shows with the resting pictures, a few seconds in; the matte loads only then)
+      // inside the three things (their matte), with scripts off and once the film has given up. While the film script
+      // has not run (and for good when it never arrives) the board and its labels are not shown at all (style.css),
+      // so no matte rule applies then and the matte is never fetched.
       const things = view.things && p[view.things]?.matte ? p[view.things] : null;
       if (things) {
         const f = board[form], k = form === 'desktop' ? 'd' : 'p';
         out.push(`@media ${media}{#s${n} .bbox,#s${n} .lbox{${[...place.vars, `--bw:calc(var(--sw) / ${iw})`, `width:${place.w}`, `height:${place.h}`, `left:${place.left}`, `top:${place.top}`].join(';')}}#s${n} .board:not(.b${k}){display:none}${labelCss(f).replace(/\.blab/g, `#s${n} .blab`)}}`);
         const u = `url("${things.files[0].webp}")`;
         const rule = `#s${n} .board{-webkit-mask:linear-gradient(#000,#000),${u};-webkit-mask-size:100% 100%;-webkit-mask-composite:xor;mask:linear-gradient(#000,#000),${u};mask-size:100% 100%;mask-composite:exclude}`;
-        out.push(`@media (scripting: none) and ${media}{${rule}}`, `@media ${media}{.nofilm ${rule}}`, `@media (scripting: enabled) and ${media}{html:not(.film):not(.nofilm) ${rule}}`);
+        out.push(`@media (scripting: none) and ${media}{${rule}}`, `@media ${media}{.nofilm ${rule}}`);
       }
     }
   }

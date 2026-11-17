@@ -289,9 +289,10 @@ a.nm { min-width: 44px; }
 /* the film: the labels show only with the scene's pictures (they fade in together) */
 .film .lbox { transition: opacity .3s ease; }
 .film .passes:not(.ready) + .lbox { opacity: 0; }
-/* the film script has not run yet: the board waits with the resting pictures (and loads its matte only if it shows) */
-@media (scripting: enabled) { html:not(.film):not(.nofilm) .bbox, html:not(.film):not(.nofilm) .lbox { display: none; animation: board-back 0s 4s forwards, board-in .5s 5.2s both; } }
-@keyframes board-back { to { display: block; } }
+/* scripts on but the film script not running (not yet, or never: blocked, failed to load): the board and its labels
+   stay away (they need the film, or the matte rule of the scripts off page). If the script never arrives they stay
+   away for good, while the resting pictures and the words come back (above); the things matte is never fetched. */
+@media (scripting: enabled) { html:not(.film):not(.nofilm) .bbox, html:not(.film):not(.nofilm) .lbox { display: none; } }
 /* with scripts off, or once the film has given up, the board waits a moment for its matte (a mask that has not
    loaded yet hides nothing), then fades in; with less motion it simply appears */
 @media (scripting: none) { .bbox, .lbox { animation: board-in .5s 1.2s both; } }
