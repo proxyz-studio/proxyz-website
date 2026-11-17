@@ -1092,6 +1092,9 @@ async function main() {
         const off = await ctx(engine, { viewport: { width: 1512, height: 860 }, javaScriptEnabled: false });
         const po = await off.newPage();
         await po.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+        // with scripts off the page can be ready before its stylesheet is in (seen in Firefox): look only once the
+        // styles apply, which is also the first moment a browser paints anything
+        await po.waitForFunction(() => getComputedStyle(document.documentElement).getPropertyValue('--ink').trim() !== '', null, { timeout: 5000 }).catch(() => {});
         const r = await po.evaluate(() => { const b = document.querySelector('.bbox'); return { t: document.timeline.currentTime, o: b ? getComputedStyle(b).opacity : 'none', anim: b ? b.getAnimations().map((a) => a.animationName).join(',') : '' }; });
         if (r.t < 1100 && r.o !== '0') early.push(`${engine}: board opacity ${r.o} at ${Math.round(r.t)} ms`);
         if (!/board-in/.test(r.anim)) early.push(`${engine}: no fade-in on the board (${r.anim || 'none'})`);

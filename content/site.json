@@ -22,9 +22,9 @@
     "legal": "LEGAL"
   },
   "ventures": [
-    { "id": "stand", "line": "A small 3D printed stand for a shop counter. An NFC tag in every tile: tap a phone and it opens a menu, a QR, any link." },
-    { "id": "race", "line": "A race trophy, 3D printed: the ground and the route of your race, made from your own GPS file. Every hill is real." },
-    { "id": "coach", "line": "An AI coach that plans your training, your food and your sleep. You tell it things in plain words. The screen shown is a sample day, not a real person's data." },
+    { "id": "stand", "name": "TAPZ", "line": "A small 3D printed stand for a shop counter. An NFC tag in every tile: tap a phone and it opens a menu, a QR, any link." },
+    { "id": "race", "name": "TROPHYZ", "line": "A race trophy, 3D printed: the ground and the route of your race, made from your own GPS file. Every hill is real." },
+    { "id": "coach", "name": "PULZ", "line": "An AI coach that plans your training, your food and your sleep. You tell it things in plain words. The screen shown is a sample day, not a real person's data." },
     { "id": "system", "name": "StudioOS", "line": "One brain, built for the studio and every venture in it." },
     { "id": "next", "hollow": true, "line": "The next one." }
   ],
