@@ -61,8 +61,11 @@ const pictureOf = (d: Door) => d.pictures?.find((p) => matchMedia(`(min-width: $
 // every door, taken as the page holds them, before the film runs: it lifts the board's labels box (which holds the
 // board's door) out of the page until scene 6 is near
 const LINKS = [...document.querySelectorAll<HTMLAnchorElement>('a.door')];
-/** a logo tile on each kind of screen: the largest that fits (never under 16, the logo's own floor) */
-const TILES = { desk: [24], ride: [20, 18, 16] };
+/** the door's size unit on each kind of screen, largest first: a pressing logo's tile (TAPZ, never under 16 px, its
+ *  own floor), a route logo's height (TROPHYZ: 24 px and more, its primary cut) */
+const TILES = { press: { desk: [24], ride: [20, 18, 16] }, route: { desk: [26], ride: [24] } };
+/** each venture's trace on the board */
+const TRACE: Record<string, string> = { stand: 'stand', race: 'coin', coach: 'phone' };
 
 interface Wrap { layer: HTMLElement; box: HTMLElement; moved: Element[] }
 interface Leaving { d: Door; n: number; wrap: Wrap | null; timers: number[]; rings: HTMLElement[]; pulse: SVGPathElement | null }
@@ -103,28 +106,32 @@ export function startDoors(film: FilmHooks): Doors {
     const inside = (b: R, bottom = lo) => b[0] >= (frame ? frame.left + 8 : 4) && b[2] <= (frame ? frame.right - 8 : innerWidth - 4) && b[1] >= 4 && b[3] <= (frame ? Math.min(bottom, frame.bottom - 8) : bottom);
     // the link's own padding is the logo's clear space (half a tile), so the link may come within 2 px of each
     const clear = (b: R, smallRs: R[]) => !things.some((t) => hit(b, t, 2)) && !big.some((t) => hit(b, t, 2)) && !smallRs.some((t) => hit(b, t, 2)) && !(sw && sw.width && hit(b, [sw.left, sw.top, sw.right, sw.bottom], 8));
-    const tiles = deskMQ.matches ? TILES.desk : TILES.ride;
-    // the link's size for a tile t (style.css): padding half a tile (at least what makes it 44 px tall), the logo
-    // 4.36 tiles wide, a gap of 0.3 and the arrow 0.45
-    const size = (t: number) => [6.11 * t, Math.max(44, 2.1 * t)];
+    const kind = TILES[d.move ?? 'press'], tiles = deskMQ.matches ? kind.desk : kind.ride;
+    // the link's size and clear space for a size unit t, as style.css draws it
+    const sizes = new Map<number, [number, number, number]>();
+    const was = a.style.getPropertyValue('--t');
+    for (const t of tiles) { a.style.setProperty('--t', t + 'px'); sizes.set(t, [a.offsetWidth, a.offsetHeight, parseFloat(getComputedStyle(a).paddingLeft) || t / 2]); }
+    a.style.setProperty('--t', was);
+    const size = (t: number) => sizes.get(t)!;
+    const padOf = (t: number) => sizes.get(t)![2];
     type Spot = { name: string; t: number; box: R; rides: boolean };
     const spots: Spot[] = [];
     for (const t of tiles) {
       const [w, h] = size(t);
       const st = pic(dv.thing);
       // 1. just under the stand, the logo's left edge on the stand's left edge (it stays with the picture)
-      spots.push({ name: 'under-thing', t, box: [st[0] - t / 2, st[3] + 2, st[0] - t / 2 + w, st[3] + 2 + h], rides: false });
+      spots.push({ name: 'under-thing', t, box: [st[0] - padOf(t), st[3] + 2, st[0] - padOf(t) + w, st[3] + 2 + h], rides: false });
       if (last && wr) {
         const mid = (last.top + last.bottom) / 2;
         // 2. on the line of the small words' last line: at the right margin on an upright screen, else just after it
-        const x = upright ? wr.right + t / 2 - w : Math.max(...small.map((r) => r[2])) + 2;
+        const x = upright ? wr.right + padOf(t) - w : small[small.length - 1][2] + 2;
         spots.push({ name: upright ? 'beside-words-margin' : 'beside-words', t, box: [x, mid - h / 2, x + w, mid + h / 2], rides: ride });
       }
     }
     if (wr && small.length) {
       // 3. just under the small words (narrow phones), on their left edge
       const t = tiles[0], [w, h] = size(t), b = Math.max(...small.map((r) => r[3]));
-      spots.push({ name: 'under-words', t, box: [wr.left - t / 2, b + 2, wr.left - t / 2 + w, b + 2 + h], rides: ride });
+      spots.push({ name: 'under-words', t, box: [wr.left - padOf(t), b + 2, wr.left - padOf(t) + w, b + 2 + h], rides: ride });
     }
     const ok = (sp: Spot) => sp.rides
       // riding with the words: clear of the things wherever the bar puts the words, inside the screen where it is now
@@ -136,7 +143,7 @@ export function startDoors(film: FilmHooks): Doors {
     if (at.rides) {
       // fixed like the words, its foot a set distance from theirs, so it rides the bar (and the home bar) with them
       const dy = (wr ? wr.bottom : IH) - at.box[3];
-      Object.assign(st, { position: 'fixed', left: at.box[0].toFixed(1) + 'px', top: '', right: 'auto', bottom: `calc(var(--words-base) + var(--safe-b) + ${dy.toFixed(1)}px)` });
+      Object.assign(st, { position: 'fixed', left: at.box[0].toFixed(1) + 'px', top: 'auto', right: 'auto', bottom: `calc(var(--words-base) + var(--safe-b) + ${dy.toFixed(1)}px)` });
     } else {
       Object.assign(st, { position: '', left: (at.box[0] - L.left).toFixed(1) + 'px', top: (at.box[1] - L.top).toFixed(1) + 'px', right: 'auto', bottom: 'auto' });
     }
@@ -197,10 +204,21 @@ export function startDoors(film: FilmHooks): Doors {
     const b = z.getBoundingClientRect();
     return [b.left + b.width / 2, b.top + b.height / 2];
   }
-  /** on the board: one pulse from the chip along the stand's trace */
+  /** TROPHYZ: the red route draws itself, from its start ring to its finish dot (the route as drawn, revealed through a
+   *  mask along the Z; the mask goes once it is whole) */
+  function routeDraw(a: HTMLAnchorElement): void {
+    const z = a.querySelector<SVGGElement>('.dz'), id = z?.dataset.mask, m = id ? document.getElementById(id)?.querySelector<SVGPathElement>('.dzm') : null;
+    if (!z || !id || !m) return;
+    m.style.strokeDasharray = '1 1';
+    z.setAttribute('mask', `url(#${id})`);
+    const an = m.animate([{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { duration: 280, easing: 'cubic-bezier(.45,0,.35,1)', fill: 'forwards' });
+    const done = () => { z.removeAttribute('mask'); m.style.strokeDasharray = ''; an.cancel(); };
+    an.finished.then(done, done);
+  }
+  /** on the board: one pulse from the chip along the product's trace */
   function boardPulse(n: number, d: Door): SVGPathElement | null {
     const svg = [...film.scene(n).el.querySelectorAll<SVGSVGElement>('svg.board')].find((e) => getComputedStyle(e).display !== 'none');
-    const t = d.venture === 'stand' ? 'stand' : d.venture === 'race' ? 'coin' : 'phone';
+    const t = TRACE[d.venture] ?? 'stand';
     const co = svg?.querySelector<SVGPathElement>(`.t-${t} .co`), dd = co?.getAttribute('d');
     if (!co || !dd) return null;
     const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -269,8 +287,10 @@ export function startDoors(film: FilmHooks): Doors {
     leaving = l;
     film.freeze(true);
     bigScript(d);
-    doc.classList.add('door-leaving', a.classList.contains('dboard') ? 'door-from-board' : 'door-from-scene');
-    if (a.classList.contains('dlogo')) {
+    const route = a.classList.contains('dlogo') && d.move === 'route';
+    doc.classList.add('door-leaving', a.classList.contains('dboard') ? `door-via-${TRACE[d.venture] ?? 'stand'}` : 'door-from-scene', ...(route ? ['door-route'] : []));
+    if (route) routeDraw(a);
+    else if (a.classList.contains('dlogo')) {
       const z = press(a);
       if (z) {
         const big = Math.min(Math.max(innerWidth, innerHeight) * 0.55, 520);
@@ -295,7 +315,7 @@ export function startDoors(film: FilmHooks): Doors {
     for (const r of l.rings) r.remove();
     l.pulse?.remove();
     unwrap(l.wrap);
-    doc.classList.remove('door-leaving', 'door-from-board', 'door-from-scene', 'door-back');
+    doc.classList.remove('door-leaving', 'door-via-stand', 'door-via-coin', 'door-via-phone', 'door-from-scene', 'door-route', 'door-back');
     if (fade && !film.reduced()) { doc.classList.add('door-return'); window.setTimeout(() => doc.classList.remove('door-return'), 600); }
     film.hold(null);
     film.freeze(false);

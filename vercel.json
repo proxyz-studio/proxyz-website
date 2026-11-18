@@ -8,6 +8,14 @@
     {
       "source": "/tapz/:path*",
       "destination": "https://tapz-woad.vercel.app/:path*"
+    },
+    {
+      "source": "/trophyz/",
+      "destination": "https://trophyz.vercel.app/"
+    },
+    {
+      "source": "/trophyz/:path*",
+      "destination": "https://trophyz.vercel.app/:path*"
     }
   ],
   "redirects": [
@@ -34,7 +42,7 @@
   ],
   "headers": [
     {
-      "source": "/:path((?!(?:proxyz-lockup-e-horizontal-light-tight\\.png|icon-whatsapp-dark\\.png|icon-line-dark\\.png|proxyz-lockup-e-horizontal-light\\.png)$|tapz(?:/|$)).*)",
+      "source": "/:path((?!(?:proxyz-lockup-e-horizontal-light-tight\\.png|icon-whatsapp-dark\\.png|icon-line-dark\\.png|proxyz-lockup-e-horizontal-light\\.png)$|tapz(?:/|$)|trophyz(?:/|$)).*)",
       "headers": [
         {
           "key": "Content-Security-Policy",

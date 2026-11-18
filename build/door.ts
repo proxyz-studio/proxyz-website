@@ -10,8 +10,6 @@ import type { Content, Door, View } from '../src/types';
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const PORTRAIT = '(max-aspect-ratio: 1/1)';
 const LANDSCAPE = '(min-aspect-ratio: 1001/1000)';
-/** The orange of the lit tile: the one fill the logo's Z tile carries (the logo's own rule: nothing else is orange). */
-const LIT = '#FF5A1F';
 /** The small arrow after a door, in the logo's cream. */
 export const DOOR_ARROW = '<svg class="arr" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 8 8 2M3.5 2H8V6.5" fill="none" stroke="#F0E8D8" stroke-width="1.2"/></svg>';
 
@@ -31,24 +29,34 @@ export function hashScene(c: Content, d: Door): number {
   return c.scenes.findIndex((s) => s.venture === d.venture) + 1;
 }
 
-/** The logo, inline (its own shapes, byte for byte), with the lit Z tile and its letter in a group of their own so the
- *  Z can press like a key. The file must be plain shapes: no style, script, image, link or font. */
+/** The logo, inline (its own shapes, byte for byte), with its one moving part (the shape in the door's lit colour, and
+ *  any shapes after it: TAPZ's lit tile and its letter, TROPHYZ's red route) in a group of their own. The file must be
+ *  plain shapes: no style, script, image, link or font. A route gets a mask (used only while it draws itself as the
+ *  door opens): a wide line along the Z, from its first corner to its last, over the route's own bounds. */
 export function logoSvg(root: string, d: Door): string {
-  if (!d.logo) throw new Error(`door ${d.id}: no logo`);
+  if (!d.logo || !d.lit) throw new Error(`door ${d.id}: no logo or no lit colour`);
   const src = readFileSync(root + d.logo, 'utf8');
   if (/<(style|script|image|use|foreignObject|text)\b|\sstyle=|href=/i.test(src)) throw new Error(`door ${d.id}: the logo ${d.logo} is not plain shapes`);
   const box = /viewBox="([^"]+)"/.exec(src)?.[1];
   const paths = [...src.matchAll(/<path\b[^>]*\/>/g)].map((m) => m[0]);
-  const lit = paths.findIndex((p) => p.includes(`fill="${LIT}"`));
-  if (!box || lit < 0 || paths.filter((p) => p.includes(`fill="${LIT}"`)).length !== 1 || lit !== paths.length - 2) {
-    throw new Error(`door ${d.id}: the logo ${d.logo} must end with the one lit tile (${LIT}) and its letter`);
+  const isLit = (p: string) => p.toUpperCase().includes(`FILL="${d.lit!.toUpperCase()}"`);
+  const lit = paths.findIndex(isLit);
+  if (!box || lit < 0 || paths.filter(isLit).length !== 1) throw new Error(`door ${d.id}: the logo ${d.logo} must hold exactly one shape in ${d.lit}`);
+  let mask = '', use = '';
+  if (d.move === 'route') {
+    const nums = [...(/\sd="([^"]+)"/.exec(paths[lit])?.[1] ?? '').matchAll(/-?\d+(?:\.\d+)?/g)].map((m) => +m[0]);
+    const xs = nums.filter((_, i) => i % 2 === 0), ys = nums.filter((_, i) => i % 2 === 1);
+    const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)], w = x1 - x0, r = w * 0.12;
+    const z = `M${(x0 + r).toFixed(0)} ${(y0 + r).toFixed(0)}H${(x1 - r).toFixed(0)}L${(x0 + r).toFixed(0)} ${(y1 - r).toFixed(0)}H${(x1 - r).toFixed(0)}`;
+    mask = `<defs><mask id="dz-${d.id}" maskUnits="userSpaceOnUse" x="${x0 - w}" y="${y0 - w}" width="${3 * w}" height="${y1 - y0 + 2 * w}"><path class="dzm" d="${z}" fill="none" stroke="#fff" stroke-width="${(w * 0.62).toFixed(0)}" stroke-linecap="round" stroke-linejoin="round" pathLength="1"/></mask></defs>`;
+    use = ` data-mask="dz-${d.id}"`;
   }
-  return `<svg class="tlogo" viewBox="${box}" aria-hidden="true" focusable="false">${paths.slice(0, lit).join('')}<g class="dz">${paths.slice(lit).join('')}</g></svg>`;
+  return `<svg class="tlogo" viewBox="${box}" aria-hidden="true" focusable="false">${mask}${paths.slice(0, lit).join('')}<g class="dz"${use}>${paths.slice(lit).join('')}</g></svg>`;
 }
 
 /** The door in the product's own scene: the logo and the arrow, one link. */
 export function sceneDoor(root: string, d: Door, n: number): string {
-  return `<a class="door dlogo" href="${esc(d.open ?? d.path)}" aria-label="${esc(d.label ?? '')}" data-door="${esc(d.id)}" data-scene="${n}">${logoSvg(root, d)}${DOOR_ARROW}</a>`;
+  return `<a class="door dlogo" href="${esc(d.open ?? d.path)}" aria-label="${esc(d.label ?? '')}" data-door="${esc(d.id)}" data-move="${esc(d.move ?? 'press')}" data-scene="${n}">${logoSvg(root, d)}${DOOR_ARROW}</a>`;
 }
 
 /** The board scene's door: one link over the stand and its name tag (no logo on the board; the tag gets the arrow). */
@@ -69,9 +77,9 @@ export function speculationRules(c: Content): string {
   return JSON.stringify(urls.length ? { prefetch: [{ source: 'list', urls, eagerness: 'conservative' }] } : {}) + '\n';
 }
 
-/** The door's size: a tile of the logo (px) on each kind of screen, the link's height (the touch area) and the gap
- *  between its last line of small words and the link's middle. The film picks the size by the room it has. */
-export const DOOR_TILE = { desk: 24, phone: 20, small: 18 };
+/** The door's size unit on each kind of screen (style.css --t): a pressing logo's tile (TAPZ), or a route logo's
+ *  height (TROPHYZ: never under 24 px, where its primary cut ends). The film picks the size by the room it has. */
+export const DOOR_TILE = { press: { phone: 20, small: 18 }, route: { phone: 24, small: 24 } };
 
 /** The door's place without the film (scripts off, or once the film has given up), as CSS:
  *  - wide screens: just under the product's thing, its logo's left edge on the thing's left edge;
@@ -84,7 +92,7 @@ export function doorCss(d: Door, n: number, form: 'desktop' | 'phone', media: st
   const sel = `#s${n} .door.dlogo[data-door="${d.id}"]`;
   const r6 = (v: number) => +v.toFixed(6);
   if (form === 'desktop') {
-    const left = `calc(${place.left} + ${r6(dv.thing[0] / iw)} * var(--sw) - var(--t) / 2)`;
+    const left = `calc(${place.left} + ${r6(dv.thing[0] / iw)} * var(--sw) - var(--pad))`;
     const top = `calc(${place.top} + ${r6(dv.thing[3] / iw)} * var(--sw) + 2px)`;
     return `@media ${media}{${sel}{${[...place.vars, `left:${left}`, `top:${top}`].join(';')}}}`;
   }
@@ -92,11 +100,15 @@ export function doorCss(d: Door, n: number, form: 'desktop' | 'phone', media: st
   // at 1.45 on phones, and the link (44 px) is centred on it
   const foot = 'calc(var(--H) - var(--S) + var(--words-base) + var(--safe-b))';
   const line = 15 * 1.45, link = 44;
-  const beside = `${sel}{--t:${DOOR_TILE.phone}px;left:auto;right:calc(var(--side) - var(--t) / 2);bottom:calc(${foot} - ${r6((link - line) / 2)}px)}`;
-  const under = `${sel}{--t:${DOOR_TILE.small}px;right:auto;left:calc(var(--side) - var(--t) / 2);bottom:calc(${foot} - ${link + 4}px)}`;
-  // beside the small words when they surely leave room (430 px and up; from 380 px where the browser balances their
-  // lines, which keeps them short), else under them
-  return `@media ${media}{${beside}}@media ${PORTRAIT} and (max-width: 429.98px){${under}}@supports (text-wrap: balance){@media ${PORTRAIT} and (min-width: 380px){${beside}}}`;
+  const T = DOOR_TILE[d.move ?? 'press'];
+  const beside = `${sel}{--t:${T.phone}px;left:auto;right:calc(var(--side) - var(--pad));bottom:calc(${foot} - ${r6((link - line) / 2)}px)}`;
+  const under = `${sel}{--t:${T.small}px;right:auto;left:calc(var(--side) - var(--pad));bottom:calc(${foot} - ${link + 4}px)}`;
+  // beside the small words when they surely leave room (their box is 30 characters, 270 px; where the browser balances
+  // their lines they stay near 225 px), else under them. The link: TAPZ about 6.11 tiles wide, TROPHYZ its logo 4.25
+  // heights and 32 px of arrow and clear space
+  const w = d.move === 'route' ? 4.252 * T.phone + 32 : 6.11 * T.phone;
+  const sure = Math.ceil((32 + 270 + w) / 4) * 4, balanced = Math.ceil((32 + 225 + w) / 4) * 4;
+  return `@media ${media}{${beside}}@media ${PORTRAIT} and (max-width: ${sure - 0.02}px){${under}}@supports (text-wrap: balance){@media ${PORTRAIT} and (min-width: ${balanced}px){${beside}}}`;
 }
 
 /** The board scene's link: the stand and its name tag, in shares of the picture's box (its labels' box). */
@@ -104,12 +116,18 @@ export function boardDoorCss(d: Door, n: number, media: string, view: View, iw: 
   const h = view.doors?.[d.venture]?.hit;
   if (!h) throw new Error(`door ${d.id}: the board scene ${n} has no link area ("hit") in src/film/scenes.json`);
   const pc = (v: number, s: number) => +((v / s) * 100).toFixed(3) + '%';
-  return `@media ${media}{#s${n} .door.dboard[data-door="${d.id}"]{left:${pc(h[0], iw)};top:${pc(h[1], ih)};width:${pc(h[2] - h[0], iw)};height:${pc(h[3] - h[1], ih)}}}`;
+  const t = TRACE_OF[d.venture] ?? 'stand';
+  // hover or focus: the name tag's arrow nudges
+  return `@media ${media}{#s${n} .door.dboard[data-door="${d.id}"]{left:${pc(h[0], iw)};top:${pc(h[1], ih)};width:${pc(h[2] - h[0], iw)};height:${pc(h[3] - h[1], ih)}}}`
+    + `.lbox:has(.dboard[data-door="${d.id}"]:hover,.dboard[data-door="${d.id}"]:focus-visible) .blab.n-${t} .arr{transform:translate(1px,-1px)}`;
 }
 
 /** With the film, a hash mark sits at the top of the scene's resting light (lightShare of the scene's run). */
 export function hashMarkCss(n: number, share: number): string {
   return `.film #film #s${n} > .at{top:calc((100% - var(--H)) * ${share})}`;
 }
+
+/** each venture's trace on the board (the board's name tags, build/board.ts) */
+const TRACE_OF: Record<string, string> = { stand: 'stand', race: 'coin', coach: 'phone' };
 
 export { LANDSCAPE as DOOR_LANDSCAPE, PORTRAIT as DOOR_PORTRAIT };

@@ -33,6 +33,10 @@ export interface Door {
   label?: string;
   /** the product's logo for dark grounds (a file in this repo, plain shapes only) */
   logo?: string;
+  /** the colour of the logo's one moving part (TAPZ: its lit tile; TROPHYZ: its red route) */
+  lit?: string;
+  /** the logo's own move as the door opens: the lit Z presses like a key, or the red route draws itself */
+  move?: 'press' | 'route';
   /** the scenes that hold the door: the product's own scene (its logo) and, optionally, the board (its name tag) */
   scenes?: number[];
   /** the product's first pictures, widest screens first (the first whose `from` the window reaches is shown) */

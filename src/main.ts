@@ -59,7 +59,7 @@ const alts = sections.map((s) => $<HTMLImageElement>('img', s)?.alt ?? '');
 // data, a door's place) on every element of the film and the border, and each scene's resting picture. Attributes the
 // film never writes are left as they are when it gives up (a translator or a reader's extension may have added some).
 let gaveUp = false;
-const FILM_ATTRS = ['style', 'class', 'role', 'aria-label', 'aria-hidden', 'alt', 'loading', 'hidden', 'd', 'src', 'data-spot'];
+const FILM_ATTRS = ['style', 'class', 'role', 'aria-label', 'aria-hidden', 'alt', 'loading', 'hidden', 'd', 'src', 'data-spot', 'mask'];
 const pristine = new Map<Element, [string, string][]>();
 for (const e of document.querySelectorAll('#film, #film *, #top, #top *')) pristine.set(e, FILM_ATTRS.filter((n) => e.hasAttribute(n)).map((n) => [n, e.getAttribute(n) ?? '']));
 const restPics = sections.map((s) => $('picture', s));

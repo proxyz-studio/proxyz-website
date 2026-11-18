@@ -184,7 +184,8 @@
      "vx": 0.5,
      "vy": 0.5
     },
-    "matte": "s3-desk-matte"
+    "matte": "s3-desk-matte",
+    "doors": { "race": { "anchor": [797, 1126, 482], "thing": [715, 352, 1215, 731] } }
    },
    "phone": {
     "passes": [
@@ -207,7 +208,8 @@
      "tuck": 0.15,
      "sides": true
     },
-    "matte": "s3-phone-matte"
+    "matte": "s3-phone-matte",
+    "doors": { "race": { "anchor": [178, 597, 855], "thing": [73, 684, 713, 1172] } }
    }
   },
   "4": {
@@ -368,7 +370,7 @@
      ]
     ],
     "matte": "s6-desk-matte",
-    "doors": { "stand": { "anchor": [874, 1040, 182], "thing": [846, 112, 1071, 310], "hit": [846, 112, 1185, 316] } },
+    "doors": { "stand": { "anchor": [874, 1040, 182], "thing": [846, 112, 1071, 310], "hit": [846, 112, 1185, 316] }, "race": { "anchor": [550, 756, 378], "thing": [540, 344, 769, 433], "hit": [380, 336, 775, 440] } },
   "things": "s6-desk-things-matte"
    },
    "phone": {
@@ -429,7 +431,7 @@
      ]
     ],
     "matte": "s6-phone-matte",
-    "doors": { "stand": { "anchor": [398, 594, 332], "thing": [365, 247, 632, 490], "hit": [365, 247, 632, 548] } },
+    "doors": { "stand": { "anchor": [398, 594, 332], "thing": [365, 247, 632, 490], "hit": [365, 247, 632, 548] }, "race": { "anchor": [138, 372, 626], "thing": [130, 572, 383, 707], "hit": [130, 566, 388, 772] } },
   "things": "s6-phone-things-matte"
    }
   },

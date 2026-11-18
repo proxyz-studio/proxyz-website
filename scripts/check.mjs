@@ -2197,9 +2197,11 @@ async function main() {
     const html = readFileSync(join(DIST, 'index.html'), 'utf8');
     for (const d of DOORS_ON) {
       const src = readFileSync(join(ROOT, d.logo), 'utf8'), shapes = (s) => [...s.matchAll(/<path\b[^>]*\/>/g)].map((m) => m[0]);
-      const inline = /<a class="door dlogo"[^>]*data-door="(\w+)"[^>]*>(<svg class="tlogo"[\s\S]*?<\/svg>)/.exec(html);
-      if (!inline || inline[1] !== d.id || JSON.stringify(shapes(inline[2])) !== JSON.stringify(shapes(src))) bad.push(`${d.id}: the logo in the page is not the shapes of ${d.logo}`);
-      if ((inline?.[2].match(/#FF5A1F/gi) ?? []).length !== 1) bad.push(`${d.id}: the logo has more or less than one orange shape`);
+      const inline = new RegExp(`<a class="door dlogo"[^>]*data-door="${d.id}"[^>]*>(<svg class="tlogo"[\\s\\S]*?<\\/svg>)`).exec(html);
+      // its shapes byte for byte (the route's mask, used only while the route draws itself, is no shape of the logo)
+      const drawn = inline ? inline[1].replace(/<defs>[\s\S]*?<\/defs>/, '') : '';
+      if (!inline || JSON.stringify(shapes(drawn)) !== JSON.stringify(shapes(src))) bad.push(`${d.id}: the logo in the page is not the shapes of ${d.logo}`);
+      if (drawn.toUpperCase().split(d.lit.toUpperCase()).length - 1 !== 1) bad.push(`${d.id}: the logo has more or less than one shape in ${d.lit}`);
     }
     ok(!bad.length, 26, `The doors on the host: vercel.json forwards exactly the open doors (${DOORS_ON.map((d) => d.path).join(', ') || 'none'}) to their public addresses; the address without its slash answers 308 to it, query kept; a door's page and picture carry exactly one opener policy (same-origin) and none of the studio's own headers, while every studio page keeps its policy; the home page names /doors.json, served as application/speculationrules+json and listing the open doors; the logo in the page is the kit's file shape for shape, one orange tile (local stand-in, never the live site)`, 'as specified', bad.slice(0, 8).join('; '));
     warn(26, 'Not testable here', "the host's own handling of a rewrite's headers (one opener policy, none of the studio's) needs one curl on the test address");
@@ -2298,11 +2300,11 @@ async function main() {
         const p = await open(c, '/', `board door ${tag}`);
         await toBoard(p, { u: 1 });
         const t = BOARD_NAMES.find(([, name]) => name === content.ventures.find((v) => v.id === d.venture)?.name)?.[0];
-        const r = await p.evaluate(([n, t]) => {
-          const a = document.querySelector(`#s${n} a.door.dboard`), tagEl = document.querySelector(`#s${n} .blab.n-${t}`);
+        const r = await p.evaluate(([n, t, id]) => {
+          const a = document.querySelector(`#s${n} a.door.dboard[data-door="${id}"]`), tagEl = document.querySelector(`#s${n} .blab.n-${t}`);
           const R = (e) => { const b = e.getBoundingClientRect(); return [b.left, b.top, b.right, b.bottom]; };
           return { name: a?.getAttribute('aria-label'), box: a ? R(a) : null, tag: tagEl ? R(tagEl) : null, arrow: !!tagEl?.querySelector('svg.arr'), vis: a ? getComputedStyle(a).visibility : '', vw: innerWidth, vh: innerHeight };
-        }, [n, t]);
+        }, [n, t, d.id]);
         if (r.name !== d.label || r.vis !== 'visible' || !r.box || !r.tag || !r.arrow) bad.push(`${tag}: ${JSON.stringify(r)}`);
         else if (r.tag[0] < r.box[0] - 1 || r.tag[1] < r.box[1] - 1 || r.tag[2] > r.box[2] + 1 || r.tag[3] > r.box[3] + 1) bad.push(`${tag}: the name tag ${r.tag.map(Math.round)} is not inside the link ${r.box.map(Math.round)}`);
         await c.close();
@@ -2339,7 +2341,7 @@ async function main() {
         const p = await doorPage(c, BASE, '/', tag);
         if (board) await toBoard(p, { u: 1 }); else await toScene(p, n, 1);
         await settle(p, 500);
-        const sel = `#s${n} a.door`;
+        const sel = `#s${n} a.door[data-door="${d.id}"]`;
         // the studio's letters now (from its picture and the film data), and where the product's sit at this size
         const letters = await p.evaluate(([n, L, iw]) => { const i = document.querySelector(`#s${n} .passes img`).getBoundingClientRect(), k = i.width / iw; return [i.left + ((L[0] + L[1]) / 2) * k, i.top + L[2] * k]; }, [n, dv.anchor, pictureSizes[viewOf(n, form).passes[0]].size[0]]);
         const fp = d.pictures.find((q) => run.w >= q.from), kt = Math.max(run.w / fp.size[0], run.h / fp.size[1]);
@@ -2354,10 +2356,13 @@ async function main() {
           await p.waitForTimeout(180);
           const ex = await p.evaluate((sel) => {
             const z = document.querySelector(`${sel} .dz`)?.getBoundingClientRect(), rings = [...document.querySelectorAll('.door-ring')];
-            return { cls: document.documentElement.className, rings: rings.map((r) => { const cs = getComputedStyle(r); return { round: cs.borderRadius === '50%', colour: cs.borderTopColor, w: cs.borderTopWidth, x: parseFloat(cs.left), y: parseFloat(cs.top) }; }), z: z ? [z.left + z.width / 2, z.top + z.height / 2] : null };
+            const m = document.querySelector(`${sel} .dz`)?.getAttribute('mask');
+            return { mask: m, cls: document.documentElement.className, rings: rings.map((r) => { const cs = getComputedStyle(r); return { round: cs.borderRadius === '50%', colour: cs.borderTopColor, w: cs.borderTopWidth, x: parseFloat(cs.left), y: parseFloat(cs.top) }; }), z: z ? [z.left + z.width / 2, z.top + z.height / 2] : null };
           }, sel).catch(() => null);
           if (!ex || !/door-leaving/.test(ex.cls)) bad.push(`${tag}: no exit (${ex?.cls})`);
-          else if (!board && (ex.rings.length !== 2 || ex.rings.some((r) => !r.round || r.colour !== 'rgb(240, 232, 216)' || r.w !== '1px' || Math.hypot(r.x - ex.z[0], r.y - ex.z[1]) > 3))) bad.push(`${tag}: rings ${JSON.stringify(ex.rings)} from ${ex.z}`);
+          // a route logo: its route draws itself through its mask (no rings)
+          else if (!board && d.move === 'route' && (!ex.mask || ex.rings.length)) bad.push(`${tag}: the route is not drawing itself (mask ${ex.mask}, ${ex.rings.length} rings)`);
+          else if (!board && d.move === 'press' && (ex.rings.length !== 2 || ex.rings.some((r) => !r.round || r.colour !== 'rgb(240, 232, 216)' || r.w !== '1px' || Math.hypot(r.x - ex.z[0], r.y - ex.z[1]) > 3))) bad.push(`${tag}: rings ${JSON.stringify(ex.rings)} from ${ex.z}`);
           await p.waitForTimeout(220);
           const fade = await p.evaluate(() => [...document.querySelectorAll('#film .scene.on .cut, #film .scene.on .words, #top')].map((e) => +getComputedStyle(e).opacity)).catch(() => [0]);
           if (fade.some((o) => o > 0.05)) bad.push(`${tag}: the words and border still at ${fade.map((o) => o.toFixed(2))} 400 ms after the click`);
@@ -2396,6 +2401,7 @@ async function main() {
         const r = await restState(p, n);
         bad.push(...restBad(r, n, `${tag}, Back`));
         if (!board && r.url !== '/#' + d.id) bad.push(`${tag}, Back: the address is ${r.url}, want /#${d.id}`);
+        if (!board) { const dn = await p.evaluate((sel) => +getComputedStyle(document.querySelector(sel)).opacity, sel); if (dn < 0.99) bad.push(`${tag}, Back: the door at ${dn}`); }
         L = await doorLog(p);
         const shows = L.filter((x) => x[0] === 'show' && !onDoor(x[2]));
         const back = shows[shows.length - 1], rev = L.filter((x) => x[0] === 'reveal' && !onDoor(x[2])).pop();
@@ -2408,7 +2414,7 @@ async function main() {
       }
     }
     if (bf) await bf.close();
-    ok(!bad.length, 28, `The hand-over, against a local copy of the product's site with the rulebook's asks: a click (a tap on a phone, Enter from the keyboard) plays the exit (two 1 px cream rings, full circles from the Z; words and border gone by 400 ms), leaves about 0.44 s after it, names the picture for the blend, and the product's page blends its first picture in from a box of the window's shape that carries the studio's PROXYZ letters onto the product's (within 3 px); Back lands on the scene at rest (scene 2 at /#${DOORS_ON[0]?.id}), words and border back, nothing left over, kept by the back/forward cache with the blend in reverse where the cache is on, and without the cache too; less motion: a plain link, no blend; Chromium 1512x860 and 430x739 (scene 2, the board), WebKit (the blend) and Firefox (the exit, then a cut) at 1512x860; the studio's page asks no other host`, seen.join('; '), [...new Set(bad)].slice(0, 8).join('; '));
+    ok(!bad.length, 28, `The hand-over, against a local copy of the product's site with the rulebook's asks: a click (a tap on a phone, Enter from the keyboard) plays the exit (TAPZ: two 1 px cream rings, full circles from the Z; TROPHYZ: the red route draws itself; words and border gone by 400 ms), leaves about 0.44 s after it, names the picture for the blend, and the product's page blends its first picture in from a box of the window's shape that carries the studio's anchor onto the product's (TAPZ: the PROXYZ letters; TROPHYZ: the disc; within 3 px); Back lands on the scene at rest (at /#${DOORS_ON.map((d) => d.id).join(', /#')}), words and border back, nothing left over, kept by the back/forward cache with the blend in reverse where the cache is on, and without the cache too; less motion: a plain link, no blend; Chromium 1512x860 and 430x739 (scene 2, the board), WebKit (the blend) and Firefox (the exit, then a cut) at 1512x860; the studio's page asks no other host`, seen.join('; '), [...new Set(bad)].slice(0, 8).join('; '));
   }
 
   /* 29. against a copy of the product's site WITHOUT the asks: the exit, then a clean cut, and Back */
@@ -2419,7 +2425,8 @@ async function main() {
       const bad = [];
       const s2 = await startServer({ dir: DIST, port: PORT + 1, standins: plain });
       for (const [d, n, board] of doorScenes) {
-        if (board) continue;
+        // only the doors with such a copy
+        if (board || !plain[new URL(d.target).origin]) continue;
         const c = await doorCtx(browsers.chromium, 'chromium', { viewport: { width: 1512, height: 860 } });
         const p = await doorPage(c, BASE2, '/', 'clean cut');
         await toScene(p, n, 1);
