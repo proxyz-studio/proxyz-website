@@ -69,10 +69,15 @@ let stepName = 'starting the browsers', stepAt = Date.now();
 const step = (name) => { stepName = name; stepAt = Date.now(); };
 setInterval(() => {
   if (Date.now() - stepAt < STALL) return;
-  console.log(`FAIL   0. The check stalled: no progress for ${STALL / 1000} s, last step: ${stepName}`);
+  const was = stepName;
+  step('recovering from a stall');
+  if (onStall) { onStall(new Error(`no progress for ${STALL / 1000} s at: ${was}`)); return; }
+  console.log(`FAIL   0. The check stalled: no progress for ${STALL / 1000} s, last step: ${was}`);
   console.log(`\ncheck: ${results.filter((r) => r === 'PASS').length} passed, ${results.filter((r) => r === 'FAIL').length + 1} failed, ${results.filter((r) => r === 'WARN').length} warnings`);
   process.exit(1);
 }, 5000).unref();
+/** set while a test runs: a stall ends that test, not the run */
+let onStall = null;
 const line = (status, n, name, detail = '') => {
   results.push(status);
   step(`after test ${n}`);
@@ -246,6 +251,30 @@ async function main() {
     await settle(p);
   }
 
+  /** One test that cannot finish (a page a hidden browser will not load, a browser that stops answering) ends alone,
+   *  with a line saying where; its contexts are closed, WebKit and Firefox start afresh and the run goes on. */
+  const quick = (x) => Promise.race([Promise.resolve(x).catch(() => {}), new Promise((r) => setTimeout(r, 5000))]);
+  async function guarded(n, fn, again = true) {
+    const stalled = new Promise((_, no) => { onStall = no; });
+    const run = fn();
+    run.catch(() => {});
+    try { await Promise.race([run, stalled]); }
+    catch (e) {
+      const at = stepName, why = `${String(e.message ?? e).split('\n')[0].slice(0, 170)}; last step: ${at}`;
+      const firefox = /firefox/i.test(why);
+      for (const c of [...contexts]) { contexts.splice(contexts.indexOf(c), 1); await quick(c.close()); }
+      for (const e2 of ['webkit', 'firefox']) { await quick(browsers[e2].close()); browsers[e2] = await lib[e2].launch({ headless: true }); }
+      born.firefox = Date.now();
+      onStall = null;
+      // the hidden Firefox stops answering now and then, on the site before the doors too (origin/main 9105ba8, 18 Nov
+      // 2026): one more try with a fresh browser, then a warning, since it says nothing about the site
+      if (firefox && again) return guarded(n, fn, false);
+      if (firefox) warn(n, 'Not finished: the hidden Firefox stopped answering twice, as it also does on the site before the doors', why);
+      else fail(n, 'This test could not finish', why);
+    }
+    onStall = null;
+  }
+
   /* reading screenshots: a blank page in a hidden browser decodes them (it holds no site and no policy) */
   const labPage = await (await browsers.chromium.newContext()).newPage();
   const decode = `async (b64) => { const i = new Image(); i.src = 'data:image/png;base64,' + b64; await i.decode();
@@ -342,7 +371,7 @@ async function main() {
   }
 
   /* 1. words */
-  if (want(1)) {
+  if (want(1)) await guarded(1, async () => {
     const c = await ctx('chromium', { javaScriptEnabled: false });
     const bad = [];
     for (const [path, want] of Object.entries(EXPECT)) {
@@ -396,20 +425,20 @@ async function main() {
       `- [${B.legal}](${U}${P.legal.path}): ${M.pageNotes.legal}`];
     if (JSON.stringify(llms) !== JSON.stringify(wantLlms)) bad.push('llms.txt differs from the machine face');
     ok(!bad.length, 1, 'Words on /, /machines/, /llms.txt, /legal/ and the not found page equal content/site.json, in order (scene 6\'s board labels: StudioOS, the three venture names, NEXT); one h1 on the film; the giant lines as the content file breaks them, wide and upright', 'all equal', bad.join('; '));
-  }
+  });
 
   /* 1. with the film running: each scene's description is on its stage from the start */
-  if (want(1)) {
+  if (want(1)) await guarded(1, async () => {
     const c = await ctx('chromium', { viewport: { width: 1440, height: 900 } });
     const p = await open(c, '/', 'descriptions');
     const got = await p.evaluate(() => [...document.querySelectorAll('#film .passes')].map((b) => (b.getAttribute('role') === 'img' ? b.getAttribute('aria-label') : '')));
     const d = sameSeq(got, content.scenes.map((s) => s.alt));
     ok(d.equal, 1, 'Film running: all seven picture descriptions are there before any scroll', 'all seven', d.at);
     await c.close();
-  }
+  });
 
   /* 2. blocked words (and no local paths, no other email addresses) */
-  if (want(2)) {
+  if (want(2)) await guarded(2, async () => {
     const tracked = execFileSync('git', ['ls-files', '-co', '--exclude-standard'], { cwd: ROOT, encoding: 'utf8' }).split('\n').filter(Boolean).map((f) => join(ROOT, f));
     const walk = (d) => readdirSync(d).flatMap((f) => { const p = join(d, f); return statSync(p).isDirectory() ? walk(p) : [p]; });
     const files = [...new Set([...tracked.filter((f) => existsSync(f)), ...walk(DIST)])];
@@ -441,10 +470,10 @@ async function main() {
       for (const m of t.matchAll(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g)) if (m[0] !== 'hello@proxyz.studio' && !/^[\w.-]+@\d/.test(m[0])) leaks.push(`address ${m[0]} in ${f}`);
     }
     ok(!leaks.length, 2, 'No local path and no email address but hello@proxyz.studio in any tracked or built file', 'none found', [...new Set(leaks)].join('; '));
-  }
+  });
 
   /* 3. dashes and the system's name */
-  if (want(3)) {
+  if (want(3)) await guarded(3, async () => {
     const c = await ctx('chromium');
     const bad = [];
     for (const path of ['/', '/machines/', '/legal/', '/nope-nope/']) {
@@ -457,10 +486,10 @@ async function main() {
     const llms = readFileSync(join(DIST, 'llms.txt'), 'utf8');
     if (/[–—]/.test(llms) || /Studio OS/i.test(llms) || llms.includes('STUDIOOS')) bad.push('llms.txt');
     ok(!bad.length, 3, 'No em dash or en dash in visible words; no "Studio OS", no "STUDIOOS"', 'clean', bad.join('; '));
-  }
+  });
 
   /* 6. faults at every screen size (and console errors, collected throughout) */
-  if (want(6)) {
+  if (want(6)) await guarded(6, async () => {
     const bad = [];
     for (const [w, h] of VIEWPORTS) {
       const c = await ctx('chromium', { viewport: { width: w, height: h } });
@@ -512,10 +541,10 @@ async function main() {
       }
     }
     ok(!bad.length, 6, `No sideways scroll, no text under 12 px, no touch area under 44 px, one switch shown, scenes as tall as the film data, first Tab on the wordmark, at ${VIEWPORTS.map((v) => v.join('x')).join(', ')} (Chromium) and 430x739, 1512x860 (WebKit, Firefox)`, 'none', [...new Set(bad)].slice(0, 20).join('; '));
-  }
+  });
 
   /* 6. old privacy and terms links land with their heading in view, below the border */
-  if (want(6)) {
+  if (want(6)) await guarded(6, async () => {
     const bad = [];
     for (const [engine, w, h] of [['chromium', 393, 852], ['chromium', 1512, 860], ['webkit', 430, 739], ['firefox', 2428, 1300]]) {
       const c = await ctx(engine, { viewport: { width: w, height: h } });
@@ -529,10 +558,10 @@ async function main() {
       await c.close();
     }
     ok(!bad.length, 6, 'Old /privacy and /terms links land on LEGAL with the heading in view, below the border (Chromium, WebKit, Firefox)', 'heading in view', bad.join('; '));
-  }
+  });
 
   /* 7. scripts off */
-  if (want(7)) {
+  if (want(7)) await guarded(7, async () => {
     const c = await ctx('chromium', { javaScriptEnabled: false, viewport: { width: 393, height: 852 }, isMobile: true });
     const p = await open(c, '/', 'scripts off');
     await p.waitForFunction(() => [...document.images].every((i) => i.complete), null, { timeout: 15000 }).catch(() => {});
@@ -553,10 +582,10 @@ async function main() {
       `${r.sections} sections, ${r.pics} pictures, ${r.links.length} links all answer 200`,
       `${r.sections} sections, ${r.pics} pictures, dead links [${dead.join(', ')}]`);
     await c.close();
-  }
+  });
 
   /* 8. less motion */
-  if (want(8)) {
+  if (want(8)) await guarded(8, async () => {
     const bad = [];
     for (const [engine, w, h] of [['chromium', 393, 852], ['chromium', 1440, 900], ['webkit', 430, 739], ['firefox', 1512, 860]]) {
       const c = await ctx(engine, { viewport: { width: w, height: h }, reducedMotion: 'reduce' });
@@ -584,10 +613,10 @@ async function main() {
       await c.close();
     }
     ok(!bad.length, 8, 'Less motion: every scene in its resting light, at any scroll point, with no fades (Chromium, WebKit, Firefox)', 'all scenes', bad.slice(0, 8).join('; '));
-  }
+  });
 
   /* 9. turning the screen: every picture sits where a fresh load at that size puts it */
-  if (want(9)) {
+  if (want(9)) await guarded(9, async () => {
     const bad = [];
     const SHAPES = [[393, 852], [852, 393], [393, 852], [1440, 900], [801, 800], [799, 800], [801, 800], [393, 852], [1512, 860]];
     const rects = async (p) => {
@@ -625,12 +654,12 @@ async function main() {
       await c.close();
     }
     ok(!bad.length, 9, 'Turning the screen back and forth and resizing a window (near square too): every picture is the right one and sits where a fresh load puts it, within 2 px (Chromium, WebKit, Firefox)', 'same as a fresh load every time', bad.slice(0, 6).join('; '));
-  }
+  });
 
   /* 9. fast turning in the Safari engine: twelve size changes in a row, three runs for each scene whose picture is
      sized to leave room for its words (3, 6 and the last). The engine used to leave such a picture the wrong size now
      and then, and nothing placed it again. A fresh load at each size is the answer to compare with. */
-  if (want(9)) {
+  if (want(9)) await guarded(9, async () => {
     const bad = [];
     const SEQ = [[430, 739], [739, 430], [430, 739], [1512, 860], [393, 852], [852, 393], [320, 568], [1512, 860], [430, 739], [600, 600], [1000, 1001], [430, 739]];
     const snap = (p, n) => p.evaluate((n) => [...document.querySelectorAll(`#s${n} .passes img`)].map((i) => { const r = i.getBoundingClientRect(); return [r.left, r.top, r.width, r.height].map(Math.round); }), n);
@@ -664,10 +693,10 @@ async function main() {
       }
     }
     ok(!bad.length, 9, `Fast turning, Safari engine: ${SEQ.length} size changes in a row, ${RUNS} runs each for scenes ${SCENES.join(', ')}: every picture where a fresh load puts it, within 2 px`, `${steps} of ${steps} steps`, bad.slice(0, 4).join('; '));
-  }
+  });
 
   /* 9. a reload in the middle of the film comes back to the same scene */
-  if (want(9)) {
+  if (want(9)) await guarded(9, async () => {
     // Firefox under this test tool starts a reload with an empty history entry (history.state is null afterwards),
     // so the film cannot know where the visitor was; reported, not failed
     const bad = [], soft = [];
@@ -686,10 +715,10 @@ async function main() {
     }
     ok(!bad.length, 9, 'Reload in the middle of the film: back in the same scene at the same light (Chromium, WebKit)', 'same place every time', bad.join('; '));
     if (soft.length) warn(9, 'Reload in Firefox (this test tool keeps no history entry over a reload)', soft.join('; '));
-  }
+  });
 
   /* 7. the film script blocked, late or failed: the later pictures wait for it, and without it they all show */
-  if (want(7)) {
+  if (want(7)) await guarded(7, async () => {
     const bad = [];
     const sceneOf = (u) => (/\/pictures\/s(\d)/.exec(u) || [])[1];
     for (const engine of ['chromium', 'webkit', 'firefox']) {
@@ -714,17 +743,21 @@ async function main() {
         await p.waitForTimeout(4500);
         const total = await p.evaluate(() => document.documentElement.scrollHeight);
         for (let y = 0; y < total; y += 400) { await p.evaluate((y) => scrollTo(0, y), y); await p.waitForTimeout(60); }
-        await p.waitForFunction(() => [...document.querySelectorAll('#film img')].every((i) => i.complete), null, { timeout: 15000 }).catch(() => {});
+        // each scene brought into view until its picture has really arrived (a lazy picture not yet asked for counts as complete)
+        for (let n = 1; n <= content.scenes.length; n++) {
+          await p.evaluate((n) => document.getElementById('s' + n).scrollIntoView(), n);
+          await p.waitForFunction((n) => { const i = document.querySelector(`#s${n} img`); return i && i.complete && i.naturalWidth > 0; }, n, { timeout: 8000 }).catch(() => {});
+        }
         const r = await p.evaluate(() => ({ film: document.documentElement.classList.contains('film'), pics: [...document.querySelectorAll('#film section img')].filter((i) => i.complete && i.naturalWidth > 0 && i.getBoundingClientRect().height > 0 && getComputedStyle(i).display !== 'none').length }));
         if (r.film || r.pics !== content.scenes.length) bad.push(`${engine} blocked: film ${r.film}, ${r.pics} pictures shown`);
         await c.close();
       }
     }
     ok(!bad.length, 7, 'Film script late: no picture of scenes 2 to 7 loads before the film runs; film script blocked: after about 4 s the plain page shows all seven pictures (Chromium, WebKit, Firefox)', 'held back, then seven pictures', bad.join('; '));
-  }
+  });
 
   /* 12. phones, with the browser's bar showing and with it slid away */
-  if (want(12)) {
+  if (want(12)) await guarded(12, async () => {
     // Contexts that take screenshots skip the security policy: the Safari engine's test tool adds a style of its own
     // for each screenshot, which the policy refuses (a tool quirk, not the site).
     // A hidden browser has no sliding bar, so each state is copied with test styles (allowed past the security
@@ -885,11 +918,11 @@ async function main() {
       }
       ok(!bad.length, 12, 'Phone: when the bottom safe area grows (0 to 34 px, forced in the test) scenes 6 and 7 are placed again once, as a fresh load at 34 px places them; back to 0 changes nothing; on the laptop no picture moves (Chromium, WebKit)', seen.join(', '), bad.join('; '));
     }
-  }
+  });
 
   /* 13. the page colour: the film page is in the film's black from the first paint (Safari paints the strip under its
      bar with the page's own colour), the text pages keep their own; checked with scripts off, so it is in the HTML */
-  if (want(13)) {
+  if (want(13)) await guarded(13, async () => {
     const bad = [];
     const WANT = { '/': ['rgb(1, 1, 1)', '#010101'], '/machines/': ['rgb(10, 10, 10)', '#0a0a0a'], '/legal/': ['rgb(10, 10, 10)', '#0a0a0a'], '/nope-nope/': ['rgb(10, 10, 10)', '#0a0a0a'] };
     for (const engine of ['chromium', 'webkit', 'firefox']) {
@@ -905,12 +938,12 @@ async function main() {
       }
     }
     ok(!bad.length, 13, 'Page colour: the film page root, body and theme colour are the film\'s black #010101; MACHINES, LEGAL and the not found page keep #0a0a0a; same with scripts off (Chromium, WebKit, Firefox)', 'as built', bad.join('; '));
-  }
+  });
 
   /* 14. the giant lines: set in Anton (the display face, loaded from this site), every line the size the rules give:
      upright, each line as wide as the screen between its side margins, unless it would be taller than its share of
      the height; wide, the widest line its share of the width, unless the block would be taller than its share */
-  if (want(14)) {
+  if (want(14)) await guarded(14, async () => {
     const bad = [], seen = new Set();
     const T = film.type;
     const runs = [...VIEWPORTS.map(([w, h]) => ['chromium', w, h]), ['chromium', 430, 873], ['chromium', 834, 1194],
@@ -963,11 +996,11 @@ async function main() {
       await c.close();
     }
     ok(!bad.length, 14, `The giant lines are set in the display face, loaded from this site, and sized by the rules (upright: each line the width between its margins, at most ${T.lineMax * 100}% of the height; wide: the widest line ${T.shareDefault * 100}% of the width, 60% on scenes ${Object.keys(T.share).join(' and ')}, the block at most ${T.blockMax * 100}% of the height), within 1 px; none clipped, none under the border`, `${seen.size} screens in three engines`, bad.slice(0, 8).join('; '));
-  }
+  });
 
   /* 15. contrast at every listed size: the giant words, the small line and its note, the grey tool line (4.5 to 1) and
      the height line (3 to 1), against what lies behind their own letters, all seven scenes at rest */
-  if (want(15)) {
+  if (want(15)) await guarded(15, async () => {
     const bad = [], low = [];
     for (const [w, h] of VIEWPORTS) {
       const c = await ctx('chromium', { viewport: { width: w, height: h }, bypassCSP: true });
@@ -987,12 +1020,12 @@ async function main() {
     }
     low.sort((a, b) => a[0] - b[0]);
     ok(!bad.length, 15, `Contrast at ${VIEWPORTS.map((v) => v.join('x')).join(', ')} (Chromium): every text at least 4.5 to 1 (the height line 3 to 1) against what lies behind its letters`, `lowest: ${low.slice(0, 3).map((x) => x[1]).join(', ')}`, bad.slice(0, 8).join('; '));
-  }
+  });
 
   /* 16. things that appear after the first pass never overlap the giant words, never touch the words at the foot
      (the small line, its note, the tool line, the height line) and stay fully on screen, at every listed size and in
      every bar state */
-  if (want(16)) {
+  if (want(16)) await guarded(16, async () => {
     const bad = [], foot = [], seen = [], seenFoot = [];
     const views = [];
     for (let n = 1; n <= content.scenes.length; n++) for (const form of ['desktop', 'phone']) if (viewOf(n, form).later?.length) views.push([n, form]);
@@ -1061,11 +1094,11 @@ async function main() {
       ok(!bad.length, 16, `Things that first appear in a later pass (scene ${[...new Set(views.map((v) => v[0]))].join(', ')}) never overlap the giant words, ${what}`, `closest: ${seen.sort((a, b) => a[0] - b[0])[0]?.[1]}`, [...new Set(bad)].slice(0, 6).join('; '));
       ok(!foot.length, 16, `Those things never touch the words at the foot (the small line, its note, the tool and height lines) and stay fully on the visible screen, ${what}`, `closest to the words at the foot: ${seenFoot.sort((a, b) => a[0] - b[0])[0]?.[1] ?? 'none'}`, [...new Set(foot)].slice(0, 6).join('; '));
     }
-  }
+  });
 
   /* 18. scripts off: every scene's picture sits where the film puts it at rest (same size, place and tuck), and every
      giant line keeps at least 85% of its ink (the thing in front may hide only a little of it) */
-  if (want(18)) {
+  if (want(18)) await guarded(18, async () => {
     const place = [], inkBad = [], seenPlace = [], seenInk = [];
     const runs = [...[[430, 873], [393, 852], [320, 568], [852, 393], [806, 516], [1512, 860], [2428, 1300]].map(([w, h]) => ({ w, h, css: '', label: `${w}x${h}` })),
       ...[BARS[1], BARS[3]].map((bar) => ({ ...barState(bar, 'showing'), label: barLabel(bar, 'showing') }))];
@@ -1203,12 +1236,12 @@ async function main() {
     }
     ok(!place.length, 18, 'Scripts off: every scene\'s picture, and scene 6\'s board at rest (whole, its matte on), sits where the film puts it at rest, within 1.5 px (phones, both Safari bar layouts showing, laptop, monitor; Chromium, and 430x873 and 1512x860 in WebKit and Firefox)', `largest ${seenPlace.sort((a, b) => b[0] - a[0])[0]?.[1]}`, place.slice(0, 6).join('; '));
     ok(!inkBad.length, 18, 'Scripts off: every giant line keeps at least 85% of its ink (the thing in front hides only a little), the same sizes and engines', `least: ${seenInk.sort((a, b) => a[0] - b[0])[0]?.[1] ?? 'no cut'}`, inkBad.slice(0, 6).join('; '));
-  }
+  });
 
   /* 17. the cut-out: where a scene has the matte of the thing lit from its first pass, the letters are hidden inside
      the thing and show outside it, and the mask sits where the picture sits (within 1 px), in both screen shapes, at
      every size, after resizes and turns, in Chromium, WebKit and Firefox */
-  if (want(17)) {
+  if (want(17)) await guarded(17, async () => {
     const pics = JSON.parse(readFileSync(join(ROOT, 'src/generated/pictures.json'), 'utf8'));
     const matted = [];
     for (let n = 1; n <= content.scenes.length; n++) for (const form of ['desktop', 'phone']) { const v = viewOf(n, form); if (v.matte && pics[v.matte]?.matte) matted.push([n, form]); }
@@ -1374,7 +1407,7 @@ async function main() {
       }
       ok(!pixBad.length, 17, `Cut-out pixels (scenes ${scenes.join(', ')}): letters moved onto the thing are hidden inside it and show outside it, at least 99% each (Chromium, WebKit, Firefox; laptop and phone)`, seen.join('; '), pixBad.join('; '));
     }
-  }
+  });
 
   /* 19 to 23. scene 6, the board on the floor: placed as the picture, hidden inside the things, no tell before each
      step, clear of the giant words, its two labels readable and on screen, still with less motion */
@@ -1441,7 +1474,7 @@ async function main() {
   }, [BOARD_N, rest]);
 
   // 19. the board's box is the picture's box, film and scripts off, every listed size and bar state
-  if (want(19) && boardForms.length) {
+  if (want(19) && boardForms.length) await guarded(19, async () => {
     const bad = [], seen = [];
     const runs = [...VIEWPORTS, [1000, 1000], [834, 1194]].map(([w, h]) => ({ engine: 'chromium', w, h, css: '', label: `${w}x${h}` }))
       .concat(BARS.flatMap((bar) => ['away', 'showing'].map((state) => ({ engine: 'chromium', ...barState(bar, state), label: barLabel(bar, state) }))))
@@ -1470,11 +1503,11 @@ async function main() {
       await c.close(); await off.close();
     }
     ok(!bad.length, 19, `Scene ${BOARD_N}: the board's box and its labels' box (just after the pictures, the same --bw) are the picture's box within 0.5 px, with the film and with scripts off, at every listed size, 1000x1000, 834x1194 and every bar state (Chromium; 430x873 and 1512x860 in WebKit and Firefox)`, `largest ${seen.sort((a, b) => b[0] - a[0])[0]?.[1]}`, bad.slice(0, 6).join('; '));
-  }
+  });
 
   // 19. the labels never show before the scene's pictures, and follow the board in and out: a reload in the middle of
   // the scene, every frame of its first 2.5 s; and the scene let go and built again
-  if (want(19) && boardForms.length) {
+  if (want(19) && boardForms.length) await guarded(19, async () => {
     const bad = [], seen = [], noReturn = [];
     const WATCH = (n) => {
       const out = []; window.__lab = out;
@@ -1524,12 +1557,12 @@ async function main() {
       await c.close();
     }
     ok(!bad.length, 19, `Scene ${BOARD_N}: after a reload in the middle of the scene no label shows ahead of the scene's pictures and the label box is shown or hidden exactly with the board, every frame watched (about the first 6 s); then at rest; it leaves and returns with the board (Chromium, WebKit 430x739 and 1512x860; Firefox 1512x860)`, seen.join(', ') + (noReturn.length ? `; no return to the scene after the reload in ${noReturn.join(', ')} (reached by scrolling)` : ''), bad.slice(0, 6).join('; '));
-  }
+  });
 
   // 25. the film gives up (its safety net): an error thrown while it runs hands back the plain page whole and the film
   // stops for good. Given up before any scroll, in scene 2 half way through its light, in scene 6 at pass 2's hold and
   // at rest, and in scene 7; checked at once, 1.5 s on and after a scroll through the whole page and back
-  if (want(25)) {
+  if (want(25)) await guarded(25, async () => {
     const bad = [], seen = [];
     const html = readFileSync(join(DIST, 'index.html'), 'utf8'), restD = {};
     for (const m of html.matchAll(/<svg class="board (b[dp])"[\s\S]*?<\/svg>/g)) restD[m[1]] = [...m[0].matchAll(/<path[^>]*?\sd="([^"]*)"/g)].map((x) => x[1]);
@@ -1646,10 +1679,10 @@ async function main() {
     }
     seen.sort((a, b) => b - a);
     ok(!bad.length, 25, 'The film gives up (an error thrown by the film\'s very first read of the page as it starts, before any scroll, in scene 2 half way, in scene 6 at pass 2\'s hold and at rest, in scene 7): at once, 1.5 s on and after a scroll through the page and back, no scene is empty and each holds only its resting picture, where the scripts off page puts it; scene 6\'s board whole, its matte on, its five labels at rest on the picture\'s box (at full strength once the fade is over); no inline style in the film or the border; the scene that was on screen is on screen; scroll restoration back to auto, the clock running, an attribute an outsider added left alone; the screen still over 1 s (clock hidden); no other error (Chromium, WebKit, Firefox; 430x739 and 1512x860)', `largest picture offset ${(seen[0] ?? 0).toFixed(2)} px`, [...new Set(bad)].slice(0, 8).join('; '));
-  }
+  });
 
   // 20. behind the things: the board forced to one flat colour shows nothing inside the things matte
-  if (want(20) && boardForms.length) {
+  if (want(20) && boardForms.length) await guarded(20, async () => {
     const bad = [], seen = [];
     const FLAT = `#s${BOARD_N} .board *{stroke:#ff00ff !important;fill:#ff00ff !important;stroke-opacity:1 !important;fill-opacity:1 !important;opacity:1 !important}#s${BOARD_N} .blab{visibility:hidden !important}`;
     for (const engine of ['chromium', 'webkit', 'firefox']) {
@@ -1686,12 +1719,12 @@ async function main() {
       }
     }
     ok(!bad.length, 20, `Scene ${BOARD_N}: behind the things: with the board forced to one flat colour, at least 99% of the pixels inside the three things' matte show none of it (Chromium, WebKit, Firefox; 430x739 and 1512x860)`, `least: ${seen.sort((a, b) => a[0] - b[0])[0]?.[1]}`, bad.slice(0, 6).join('; '));
-  }
+  });
 
   // 21. no tell: before step 1 nothing of the board shows; at pass 1's hold nothing of the race piece's and the phone's
   // traces, side lines and pads, nor the net, the dashed trace, the empty place and NEXT; at pass 2's hold nothing of
   // the phone's nor of the last step
-  if (want(21) && boardForms.length) {
+  if (want(21) && boardForms.length) await guarded(21, async () => {
     const bad = [], N = `#s${BOARD_N}`;
     const STEP4 = [`${N} .b4`, `${N} .blab.next`];
     // each name shows with its pad's outline, never before: TAPZ not while the stand's trace is on its way, TROPHYZ
@@ -1742,12 +1775,12 @@ async function main() {
     }
     ok(!sideBad.length, 21, `Scene ${BOARD_N}: no dim side line is drawn ahead of its trace's head (by more than 2 picture px), at 49 points from before the scene through the third pass (Chromium, 1512x860 and 430x739)`, `furthest ahead: ${sideMax.toFixed(1)} px`, sideBad.slice(0, 6).join('; '));
     ok(!bad.length, 21, `Scene ${BOARD_N}: no tell: before its first step nothing of the board and no label shows; while the stand's trace is on its way no pixel of TAPZ or the stand's pad; at pass 1's hold no pixel of the race piece's and the phone's traces, side lines, pads and names, the net, the dashed trace, the empty place or NEXT; at pass 2's hold none of the phone's (its name too) or of the last step (Chromium at 1512x860, 806x516, 430x739, 393x635; WebKit, Firefox)`, 'zero pixels each time', bad.slice(0, 6).join('; '));
-  }
+  });
 
   // 24. the current and the light arrive together: through the change that lights the race piece (second pass) and
   // the coach phone (third pass), the thing's own brightness (its box, board hidden) as a share of the change; the
   // head of its trace must be on its pad once that share is 75% and must not be there while it is at most 40%
-  if (want(24) && boardForms.length) {
+  if (want(24) && boardForms.length) await guarded(24, async () => {
     const bad = [], seen = [], nameRows = [];
     /** a name tag's opacity and its pad outline's, as the browser has them now */
     const nameAndPad = (p, t) => p.evaluate(([n, t]) => {
@@ -1800,13 +1833,13 @@ async function main() {
     const lit = nameRows.filter(([, a]) => a > 0 && a < 1).length;
     ok(!off.length && nameRows.length >= 31 * 3 * 4, 24, `Scene ${BOARD_N}: each name shows with its own pad outline, never ahead: through the race piece's and the coach phone's changes (31 points each) and the stand's trace coming in (31 points), the name's opacity equals its pad outline's (Chromium, WebKit; 1512x860 and 430x739)`, `${nameRows.length} points, ${lit} part way`, off.slice(0, 6).map((r) => `${r[0]}: name ${r[1]}, pad ${r[2]}`).join('; '));
     ok(!bad.length, 24, `Scene ${BOARD_N}: the race piece and the coach phone wake as their current arrives: through each one's change (31 points), its trace is on its pad by the time the thing is 75% lit and never while it is 40% lit or less (Chromium, WebKit; 1512x860 and 430x739)`, seen.join(', '), [...new Set(bad)].slice(0, 6).join('; '));
-  }
+  });
 
   // 22. no board ink within 8 px of the giant words' ink; the five labels (StudioOS, the three names, NEXT) at least
   // 12 px, at least 4.5 to 1 against their own colour, fully on the visible screen, never on the giant words, the small
   // line, a thing or each other (4 px apart at least), never dimmed (no mask above them; on short phones their
   // brightest ink at their colour's brightness), no net ink within 6 px of them; on big screens they grow
-  if (want(22) && boardForms.length) {
+  if (want(22) && boardForms.length) await guarded(22, async () => {
     const bad = [], lbad = [], dbad = [], nbad = [], gbad = [], seen = [], seenC = [], seenGap = [], seenNet = [], seenDim = [], grow = [], N = `#s${BOARD_N}`;
     const runs = [...VIEWPORTS, [1000, 1000], [834, 1194], [360, 640], [402, 874], [1366, 768], [1920, 1080]].map(([w, h]) => ({ w, h, css: '', label: `${w}x${h}` }))
       .concat(BARS.flatMap((bar) => ['away', 'showing'].map((state) => ({ ...barState(bar, state), label: barLabel(bar, state) }))));
@@ -1928,11 +1961,11 @@ async function main() {
     ok(!dbad.length, 22, `Scene ${BOARD_N}: no label is dimmed: no mask on a label or any box above it up to the layer (every size above), and at ${DIM_AT.join(', ')} each label's brightest ink is within 5% of its colour's brightness`, `least: ${seenDim.sort((a, b) => a[0] - b[0]).slice(0, 2).map((x) => x[1]).join(', ')}`, [...new Set(dbad)].slice(0, 8).join('; '));
     ok(!nbad.length, 22, `Scene ${BOARD_N}: no net ink (the faint net, its dots and parts) within 6 px of any label, ${what}`, `closest: ${seenNet.sort((a, b) => a[0] - b[0])[0]?.[1]}`, [...new Set(nbad)].slice(0, 8).join('; '));
     ok(!gbad.length, 22, `Scene ${BOARD_N}: on big screens the labels grow with the picture (2428x1300 and 1920x1080: StudioOS over 14 px, the others over 12 px); at 1440x900 and below, and upright, their base sizes (14 px, 12 px)`, grow.filter((g) => /StudioOS|NEXT/.test(g)).join(', '), [...new Set(gbad)].slice(0, 8).join('; '));
-  }
+  });
 
   // 23. less motion: nothing on the board moves and its rest state is complete; with motion, the pulses run at rest
   // and stop once the scene is off screen
-  if (want(23) && boardForms.length) {
+  if (want(23) && boardForms.length) await guarded(23, async () => {
     const bad = [];
     // every path's d in the page as built (the rest state), per drawing
     const html = readFileSync(join(DIST, 'index.html'), 'utf8'), restOf = {};
@@ -1971,10 +2004,10 @@ async function main() {
       }
     }
     ok(!bad.length, 23, `Scene ${BOARD_N}: with less motion every line of the board whole, every part and all ${2 + BOARD_NAMES.length} labels fully shown, no pulse, nothing changes over 0.8 s; with motion the pulses run at rest and stop once the scene is off screen (Chromium, WebKit, Firefox; 430x739, 1512x860)`, 'as specified', bad.slice(0, 6).join('; '));
-  }
+  });
 
   /* 6. LEGAL: the email address is a mail link, in the text's grey, underlined, at least 44 px tall to tap */
-  if (want(6)) {
+  if (want(6)) await guarded(6, async () => {
     const bad = [];
     for (const [engine, w, h] of [['chromium', 430, 739], ['chromium', 320, 568], ['chromium', 1512, 860], ['webkit', 430, 739], ['firefox', 430, 739]]) {
       const c = await ctx(engine, { viewport: { width: w, height: h } });
@@ -1989,10 +2022,10 @@ async function main() {
       await c.close();
     }
     ok(!bad.length, 6, 'LEGAL: every email address is a mail link in the text\'s own grey, underlined, with a tap area at least 44 x 44 px', 'all', bad.slice(0, 4).join('; '));
-  }
+  });
 
   /* 10. old addresses and unknown addresses (as far as a local server can tell) */
-  if (want(10)) {
+  if (want(10)) await guarded(10, async () => {
     const bad = [];
     const hop = async (path) => {
       const chain = [];
@@ -2026,10 +2059,10 @@ async function main() {
     for (const path of ['/Privacy', '/legal/privacy']) { const r = await hop(path); if (r.status !== 404) bad.push(`${path}: ${r.chain.join(' > ')}`); }
     ok(!bad.length, 10, '/privacy and /terms (with and without the slash) reach LEGAL, matched as strictly as the host does; unknown addresses give 404 with the not found page; no rule touches the email pictures; the only rewrites are the open doors\'', 'as vercel.json says', bad.join('; '));
     warn(10, 'Not testable here', 'the host\'s own 404 status, the # in its redirect and its real headers need one curl on the first test address');
-  }
+  });
 
   /* 11. weights */
-  if (want(11)) {
+  if (want(11)) await guarded(11, async () => {
     const c = await ctx('chromium', { viewport: { width: 393, height: 852 }, deviceScaleFactor: 3, isMobile: true });
     const p = await c.newPage();
     p.on('pageerror', (e) => errors.push('weights: ' + e));
@@ -2055,11 +2088,11 @@ async function main() {
     const face = got.filter((r) => /\/assets\/anton-latin-400-normal-[^/]+\.woff2$/.test(r.url));
     ok(face.length === 1, 11, 'The display face loads once with the first screen, from this site, inside that budget', face.map((r) => kb(r.bytes)).join(', '), `${face.length} requests for it`);
     await c.close();
-  }
+  });
 
   /* 11. each engine asks for one file per picture: where it takes AVIF it never also fetches the WebP (the Safari
      engine used to, for every picture the film script makes); and the phone's first load stays in budget everywhere */
-  if (want(11)) {
+  if (want(11)) await guarded(11, async () => {
     const bad = [], seen = [];
     for (const engine of ['chromium', 'webkit', 'firefox']) {
       for (const [w, h, dpr] of [[430, 739, 3], [1512, 860, 2]]) {
@@ -2092,7 +2125,7 @@ async function main() {
       }
     }
     ok(!bad.length, 11, 'One file per picture: over a full scroll of the film no WebP is fetched where AVIF is taken, every scene shows its pictures; phone (430x739, 3 real pixels per point) first load under 250 KB (Chromium, WebKit, Firefox; also 1512x860 at 2)', `phone first load ${seen.join(', ')}`, bad.join('; '));
-  }
+  });
 
   /* ---------- the doors (build 9): a product's own site under the studio's address, and the hand-over to it ---------- */
   const DOORS_ON = (content.doors ?? []).filter((d) => d.on);
@@ -2164,7 +2197,7 @@ async function main() {
   };
 
   /* 26. the doors on the host: forwarding, headers, the speculation rules, the logo */
-  if (want(26)) {
+  if (want(26)) await guarded(26, async () => {
     const bad = [];
     const cfg = JSON.parse(readFileSync(join(ROOT, 'vercel.json'), 'utf8'));
     // exactly the open doors are forwarded, each to its product's public address
@@ -2216,11 +2249,11 @@ async function main() {
     }
     ok(!bad.length, 26, `The doors on the host: vercel.json forwards exactly the open doors (${DOORS_ON.map((d) => d.path).join(', ') || 'none'}) to their public addresses; the address without its slash answers 308 to it, query kept; a door's page and picture carry exactly one opener policy (same-origin) and none of the studio's own headers, while every studio page keeps its policy; the home page names /doors.json, served as application/speculationrules+json and listing the open doors; the logo in the page is the kit's file shape for shape, one orange tile (local stand-in, never the live site)`, 'as specified', bad.slice(0, 8).join('; '));
     warn(26, 'Not testable here', "the host's own handling of a rewrite's headers (one opener policy, none of the studio's) needs one curl on the test address");
-  }
+  });
 
   /* 27. the door at rest: placed clear of the giant words, the small words and the things, at every listed size and
      bar state; a real link with its name, keyboard reachable, tiles at least 16 px; it shows only once the light rests */
-  if (want(27) && doorScenes.length) {
+  if (want(27) && doorScenes.length) await guarded(27, async () => {
     const bad = [], seen = [];
     /** the door of scene n and what it must stay clear of, on screen now */
     const doorAt = (p, n, stand, later) => p.evaluate(([n, stand, later]) => {
@@ -2323,10 +2356,10 @@ async function main() {
     }
     seen.sort((a, b) => a[0] - b[0]);
     ok(!bad.length, 27, `The door at rest: in its scene the logo and arrow, one link named as content/site.json says, tiles at least 16 px, a touch area at least 44 px, on screen and clear of the giant words, the small words and the things the light leaves, at ${VIEWPORTS.map((v) => v.join('x')).join(', ')}, 834x1194, 375x667 and every bar state (Chromium), 430x739 and 1512x860 (WebKit, Firefox), with scripts off at six sizes; not shown half way through the light, shown at once with less motion; Tab reaches it with a visible ring; on the board one link holds the stand and its name tag (with the arrow), every listed size`, `closest: ${seen[0]?.[1] ?? 'none'}`, [...new Set(bad)].slice(0, 8).join('; '));
-  }
+  });
 
   /* 28. the hand-over, both ways, against a local copy of the product's site WITH the rulebook's asks */
-  if (want(28) && doorScenes.length) {
+  if (want(28) && doorScenes.length) await guarded(28, async () => {
     const bad = [], seen = [];
     // the back/forward cache: Chromium's full browser in its own hidden mode (the test tool turns the cache off by default)
     let bf = null;
@@ -2426,10 +2459,10 @@ async function main() {
     }
     if (bf) await bf.close();
     ok(!bad.length, 28, `The hand-over, against a local copy of the product's site with the rulebook's asks: a click (a tap on a phone, Enter from the keyboard) plays the exit (TAPZ: two 1 px cream rings, full circles from the Z; TROPHYZ: the red route draws itself; words and border gone by 400 ms), leaves about 0.44 s after it, names the picture for the blend, and the product's page blends its first picture in from a box of the window's shape that carries the studio's anchor onto the product's (TAPZ: the PROXYZ letters; TROPHYZ: the disc; within 3 px); Back lands on the scene at rest (at /#${DOORS_ON.map((d) => d.id).join(', /#')}), words and border back, nothing left over, kept by the back/forward cache with the blend in reverse where the cache is on, and without the cache too; less motion: a plain link, no blend; Chromium 1512x860 and 430x739 (scene 2, the board), WebKit (the blend) and Firefox (the exit, then a cut) at 1512x860; the studio's page asks no other host`, seen.join('; '), [...new Set(bad)].slice(0, 8).join('; '));
-  }
+  });
 
   /* 29. against a copy of the product's site WITHOUT the asks: the exit, then a clean cut, and Back */
-  if (want(29) && doorScenes.length) {
+  if (want(29) && doorScenes.length) await guarded(29, async () => {
     const plain = standinsFromEnv(process.env, 'DOOR_PLAIN_');
     if (!Object.keys(plain).length) warn(29, 'Not tested', 'set DOOR_PLAIN_<ID> (and _HEADERS) to a copy of the product\'s site without the rulebook\'s asks');
     else {
@@ -2459,10 +2492,10 @@ async function main() {
       s2.close();
       ok(!bad.length, 29, 'Against a copy of the product\'s site without the rulebook\'s asks (no blend, no opener policy): the exit, then a clean cut to its page (no blend, no error), and Back lands on the scene at rest (Chromium 1512x860)', 'a clean cut', bad.slice(0, 6).join('; '));
     }
-  }
+  });
 
   /* 5. the email pictures */
-  if (want(5)) {
+  if (want(5)) await guarded(5, async () => {
     const bad = [];
     for (const [name, sum] of Object.entries(EMAIL_PICTURES)) {
       for (const dir of ['public', 'dist']) {
@@ -2472,7 +2505,7 @@ async function main() {
       }
     }
     ok(!bad.length, 5, 'The four email pictures: same sha256 as recorded, in public/ and in dist/', 'all eight equal', bad.join('; '));
-  }
+  });
 
   /* 4. requests to other hosts, cookies (collected across every page opened above; always, whatever ran) */
   {
