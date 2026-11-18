@@ -213,14 +213,25 @@ async function main() {
     c.on('request', (r) => { const u = r.url(); if (!u.startsWith(BASE) && !/^(data|blob|about):/.test(u)) outside.push(`${engine} ${u}`); });
     return c;
   }
+  // a page a hidden browser does not finish loading in 30 s gets one more try; each is reported at the end of the run
+  const retried = [];
   async function open(c, path, label) {
     step(`opening ${path} (${label})`);
-    const p = await c.newPage();
-    // the not found page itself answers 404 on purpose; a browser logs that as an error line, which is expected
-    p.on('console', (m) => { if (m.type() === 'error' && !(path.startsWith('/nope') && m.location().url === BASE + path && /404/.test(m.text()))) errors.push(`${label}: ${m.text().slice(0, 200)}`); });
-    p.on('pageerror', (e) => errors.push(`${label}: ${String(e).slice(0, 200)}`));
-    await p.goto(BASE + path, { waitUntil: 'load' });
-    return p;
+    const attempt = async () => {
+      const p = await c.newPage();
+      // the not found page itself answers 404 on purpose; a browser logs that as an error line, which is expected
+      p.on('console', (m) => { if (m.type() === 'error' && !(path.startsWith('/nope') && m.location().url === BASE + path && /404/.test(m.text()))) errors.push(`${label}: ${m.text().slice(0, 200)}`); });
+      p.on('pageerror', (e) => errors.push(`${label}: ${String(e).slice(0, 200)}`));
+      try { await p.goto(BASE + path, { waitUntil: 'load' }); return p; }
+      catch (e) { await Promise.race([p.close().catch(() => {}), new Promise((r) => setTimeout(r, 5000))]); throw e; }
+    };
+    try { return await attempt(); }
+    catch (e) {
+      if (e.name !== 'TimeoutError') throw e;
+      retried.push(`${c.browser()?.browserType().name()} ${path} (${label})`);
+      step(`opening ${path} again (${label})`);
+      return attempt();
+    }
   }
   const settle = (p, ms = 350) => { step(`${stepName.split(' | ')[0]} | waiting ${ms} ms`); return p.waitForTimeout(ms); };
   /** scroll to scene n at light progress at (0 to 1); returns once its pictures are decoded */
@@ -2472,6 +2483,7 @@ async function main() {
     ok(!errors.length, 6, 'Zero console errors and page errors (including content security policy reports) in every run above', 'none', [...new Set(errors)].slice(0, 8).join('; '));
   }
 
+  if (retried.length) warn(4, 'Pages a hidden browser did not load in 30 s, loaded at the second try', retried.join('; '));
   for (const b of Object.values(browsers)) await b.close();
   server.close();
   const failed = results.filter((r) => r === 'FAIL').length;
