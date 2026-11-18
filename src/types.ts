@@ -11,10 +11,11 @@ export interface Venture {
   line: string;
 }
 
-/** The product's first picture as its own page shows it (fixed, full window, object-fit cover, centred), with the
- *  PROXYZ letters on its stand [left, right, middle height] in that picture's own pixels. The studio places its
- *  growing picture so its own letters land there. */
-export interface DoorPicture { src: string; size: [number, number]; letters: [number, number, number] }
+/** One of the product's first pictures as its own page shows it (fixed, full window, object-fit cover, centred) on
+ *  screens at least `from` px wide, with its anchor [left, right, middle height] in that picture's own pixels: the
+ *  part the studio's scene shares with it (TAPZ: the PROXYZ letters on its stand; TROPHYZ: the trophy). The studio
+ *  places its growing picture so its own anchor lands there. */
+export interface DoorPicture { from: number; src: string; size: [number, number]; anchor: [number, number, number] }
 
 /** A door to a product's own site, served under the studio's address (vercel.json forwards `path` to `target`). */
 export interface Door {
@@ -34,17 +35,17 @@ export interface Door {
   logo?: string;
   /** the scenes that hold the door: the product's own scene (its logo) and, optionally, the board (its name tag) */
   scenes?: number[];
-  /** the product's first picture: on screens at least wideFrom px wide, else narrow */
-  first?: { wideFrom: number; wide: DoorPicture; narrow: DoorPicture };
+  /** the product's first pictures, widest screens first (the first whose `from` the window reaches is shown) */
+  pictures?: DoorPicture[];
 }
 
 /** Scene data for a door (src/film/scenes.json, per screen shape), in the scene's picture pixels. */
 export interface DoorView {
-  /** the PROXYZ letters on the stand [left, right, middle height] */
-  letters: [number, number, number];
-  /** the stand [x0, y0, x1, y1] (the bounds of its matte) */
-  stand: [number, number, number, number];
-  /** the board scene only: the area that is the link, the stand and its name tag [x0, y0, x1, y1] */
+  /** what the blend lands on the product's own picture [left, right, middle height] (TAPZ: the PROXYZ letters) */
+  anchor: [number, number, number];
+  /** the product's thing [x0, y0, x1, y1] (the bounds of its matte) */
+  thing: [number, number, number, number];
+  /** the board scene only: the area that is the link, the thing and its name tag [x0, y0, x1, y1] */
   hit?: [number, number, number, number];
 }
 

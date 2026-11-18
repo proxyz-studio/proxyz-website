@@ -56,6 +56,8 @@ const hasVT = 'onpagereveal' in window;
 const rideMQ = matchMedia('(max-width: 899px), (max-height: 500px) and (orientation: landscape)');
 const deskMQ = matchMedia('(min-width: 900px) and (min-height: 501px)');
 const EXIT = 440;
+/** the product's first picture on this screen: the first, widest screens first, whose width the window reaches */
+const pictureOf = (d: Door) => d.pictures?.find((p) => matchMedia(`(min-width: ${p.from}px)`).matches) ?? null;
 // every door, taken as the page holds them, before the film runs: it lifts the board's labels box (which holds the
 // board's door) out of the page until scene 6 is near
 const LINKS = [...document.querySelectorAll<HTMLAnchorElement>('a.door')];
@@ -84,7 +86,7 @@ export function startDoors(film: FilmHooks): Doors {
     const L = s.layer.getBoundingClientRect(), k = g.w / film.size(n)[0];
     const pic = (b: number[]): R => [L.left + g.left + b[0] * k, L.top + g.top + b[1] * k, L.left + g.left + b[2] * k, L.top + g.top + b[3] * k];
     // the things as the light leaves them: the stand, and what the last pass shows
-    const things = [dv.stand, ...(view.later ?? []).filter((l) => l[0] === view.passes.length).map(([, x, y, w, h]) => [x, y, x + w, y + h])].map(pic);
+    const things = [dv.thing, ...(view.later ?? []).filter((l) => l[0] === view.passes.length).map(([, x, y, w, h]) => [x, y, x + w, y + h])].map(pic);
     const upright = innerWidth / Math.max(1, innerHeight) <= 1;
     const big = s.top ? [...s.top.querySelectorAll(upright ? '.pl' : '.ln')].map(ink) : [];
     const words = s.words ? [...s.words.children].filter((e) => !e.classList.contains('door')) : [];
@@ -109,7 +111,7 @@ export function startDoors(film: FilmHooks): Doors {
     const spots: Spot[] = [];
     for (const t of tiles) {
       const [w, h] = size(t);
-      const st = pic(dv.stand);
+      const st = pic(dv.thing);
       // 1. just under the stand, the logo's left edge on the stand's left edge (it stays with the picture)
       spots.push({ name: 'under-thing', t, box: [st[0] - t / 2, st[3] + 2, st[0] - t / 2 + w, st[3] + 2 + h], rides: false });
       if (last && wr) {
@@ -154,9 +156,8 @@ export function startDoors(film: FilmHooks): Doors {
   function early(d: Door): void {
     if (warm.has(d.id)) return;
     const page = new URL(d.open ?? d.path, location.href);
-    const f = d.first;
-    if (f) {
-      const p = matchMedia(`(min-width: ${f.wideFrom}px)`).matches ? f.wide : f.narrow;
+    const p = pictureOf(d);
+    if (p) {
       const im = new Image();
       im.decoding = 'async';
       im.src = new URL(p.src, new URL(d.path, location.href)).href;
@@ -210,18 +211,17 @@ export function startDoors(film: FilmHooks): Doors {
     return p;
   }
 
-  /** The box the blend grows from: the shape of the window, placed so that when it grows to the whole window the
-   *  PROXYZ letters of this scene's stand land on the letters of the product's first picture (fixed, full window,
-   *  object-fit cover, centred). In the scene's layer. */
+  /** The box the blend grows from: the shape of the window, placed so that when it grows to the whole window this
+   *  scene's anchor (TAPZ: the PROXYZ letters on the stand) lands on the product's first picture's anchor (fixed, full
+   *  window, object-fit cover, centred). In the scene's layer. */
   function blendBox(d: Door, n: number): Box | null {
-    const g = film.picture(n), dv = d ? film.view(n).doors?.[d.venture] : null, f = d.first;
-    if (!g || !dv || !f || !g.w) return null;
-    const k = g.w / film.size(n)[0], [l0, l1, ly] = dv.letters;
+    const g = film.picture(n), dv = d ? film.view(n).doors?.[d.venture] : null, p = pictureOf(d);
+    if (!g || !dv || !p || !g.w) return null;
+    const k = g.w / film.size(n)[0], [l0, l1, ly] = dv.anchor;
     const sw = (l1 - l0) * k, sx = g.left + ((l0 + l1) / 2) * k, sy = g.top + ly * k;
-    const p = matchMedia(`(min-width: ${f.wideFrom}px)`).matches ? f.wide : f.narrow;
     const W = innerWidth, H = innerHeight, kt = Math.max(W / p.size[0], H / p.size[1]);
     const ox = (W - p.size[0] * kt) / 2, oy = (H - p.size[1] * kt) / 2;
-    const tw = (p.letters[1] - p.letters[0]) * kt, tx = ox + ((p.letters[0] + p.letters[1]) / 2) * kt, ty = oy + p.letters[2] * kt;
+    const tw = (p.anchor[1] - p.anchor[0]) * kt, tx = ox + ((p.anchor[0] + p.anchor[1]) / 2) * kt, ty = oy + p.anchor[2] * kt;
     const s = sw / tw;
     // the layer starts at the window's top left, so layer and window points agree
     return { left: sx - s * tx, top: sy - s * ty, w: s * W, h: s * H };

@@ -74,7 +74,7 @@ export function speculationRules(c: Content): string {
 export const DOOR_TILE = { desk: 24, phone: 20, small: 18 };
 
 /** The door's place without the film (scripts off, or once the film has given up), as CSS:
- *  - wide screens: just under the stand, its logo's left edge on the stand's left edge;
+ *  - wide screens: just under the product's thing, its logo's left edge on the thing's left edge;
  *  - upright screens: on the line of the small words' last line, at the right margin; on narrow phones (where the
  *    small line leaves no room beside it) just under the small words.
  *  The place uses the same arithmetic as the picture (the placement variables of build/pages.ts). */
@@ -84,8 +84,8 @@ export function doorCss(d: Door, n: number, form: 'desktop' | 'phone', media: st
   const sel = `#s${n} .door.dlogo[data-door="${d.id}"]`;
   const r6 = (v: number) => +v.toFixed(6);
   if (form === 'desktop') {
-    const left = `calc(${place.left} + ${r6(dv.stand[0] / iw)} * var(--sw) - var(--t) / 2)`;
-    const top = `calc(${place.top} + ${r6(dv.stand[3] / iw)} * var(--sw) + 2px)`;
+    const left = `calc(${place.left} + ${r6(dv.thing[0] / iw)} * var(--sw) - var(--t) / 2)`;
+    const top = `calc(${place.top} + ${r6(dv.thing[3] / iw)} * var(--sw) + 2px)`;
     return `@media ${media}{${sel}{${[...place.vars, `left:${left}`, `top:${top}`].join(';')}}}`;
   }
   // the words at the foot stand this far above the layer's foot (as .words in style.css); their last line is 15 px

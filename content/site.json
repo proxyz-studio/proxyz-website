@@ -33,11 +33,10 @@
       "id": "tapz", "venture": "stand", "on": true,
       "path": "/tapz/", "open": "/tapz/?lang=en", "target": "https://tapz-woad.vercel.app",
       "label": "Open the TAPZ site", "logo": "src/logos/tapz-logo-ondark.svg", "scenes": [2, 6],
-      "first": {
-        "wideFrom": 768,
-        "wide": { "src": "first-desk.jpg", "size": [1600, 800], "letters": [625, 937, 493] },
-        "narrow": { "src": "first-phone-en.jpg", "size": [645, 1109], "letters": [200, 420, 670] }
-      }
+      "pictures": [
+        { "from": 768, "src": "first-desk.jpg", "size": [1600, 800], "anchor": [625, 937, 493] },
+        { "from": 0, "src": "first-phone-en.jpg", "size": [645, 1109], "anchor": [200, 420, 670] }
+      ]
     },
     { "id": "pulz", "venture": "coach", "on": false, "path": "/pulz/", "target": "https://pulz-showcase.vercel.app" },
     { "id": "trophyz", "venture": "race", "on": false, "path": "/trophyz/", "target": null }
