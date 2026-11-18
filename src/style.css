@@ -322,7 +322,8 @@ a.nm { min-width: 44px; }
 .door:focus-visible { outline: 1px solid #F0E8D8; outline-offset: 0; }
 /* on the board: one link over the stand and its name tag (placed in the labels' box); the tag carries the arrow */
 .door.dboard { display: block; }
-.blab .arr { display: inline-block; width: .62em; height: .62em; margin-left: .3em; vertical-align: .05em; }
+/* the arrow hangs just past the name, so the name stays exactly where the board keeps room for it */
+.blab .arr { position: absolute; left: 100%; top: 50%; width: .62em; height: .62em; margin: -.36em 0 0 .3em; }
 /* the address hash of a door (/#tapz): a mark at the top of its scene, moved by the film to where the light rests */
 .at { position: absolute; left: 0; top: 0; width: 1px; height: 1px; pointer-events: none; }
 /* with the film: a door is there only while its scene is on; the logo shows once the light rests (or on focus) */

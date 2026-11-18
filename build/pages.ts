@@ -419,7 +419,7 @@ export function stillsCss(): string {
       const f = view.frame;
       const place = placement(film, c, p, Number(n), form, view, iw, ih);
       // the door's place without the film (its own scene; on the board, its link in the labels' box)
-      for (const d of doorsOf(c, Number(n))) out.push(c.scenes[Number(n) - 1].board ? boardDoorCss(d, Number(n), media, view, iw, ih) : doorCss(d, Number(n), form, media, view, place, iw));
+      for (const d of doorsOf(c, Number(n))) out.push(c.scenes[Number(n) - 1].board ? boardDoorCss(d, Number(n), media, view, iw, ih) : doorCss(d, Number(n), form, media, view, place, iw, ih));
       const mask = frameMask(view, [iw, ih]);
       const decl = [...place.vars, `width:${place.w}`, `height:${place.h}`, `left:${place.left}`, `top:${place.top}`];
       if (mask) decl.push(`-webkit-mask-image:${mask}`, `mask-image:${mask}`);

@@ -86,20 +86,23 @@ export const DOOR_TILE = { press: { phone: 20, small: 18 }, route: { phone: 24, 
  *  - upright screens: on the line of the small words' last line, at the right margin; on narrow phones (where the
  *    small line leaves no room beside it) just under the small words.
  *  The place uses the same arithmetic as the picture (the placement variables of build/pages.ts). */
-export function doorCss(d: Door, n: number, form: 'desktop' | 'phone', media: string, view: View, place: { vars: string[]; left: string; top: string }, iw: number): string {
+export function doorCss(d: Door, n: number, form: 'desktop' | 'phone', media: string, view: View, place: { vars: string[]; left: string; top: string }, iw: number, ih: number): string {
   const dv = view.doors?.[d.venture];
   if (!dv) throw new Error(`door ${d.id}: scene ${n} (${form}) has no door data in src/film/scenes.json`);
   const sel = `#s${n} .door.dlogo[data-door="${d.id}"]`;
   const r6 = (v: number) => +v.toFixed(6);
-  if (form === 'desktop') {
-    const left = `calc(${place.left} + ${r6(dv.thing[0] / iw)} * var(--sw) - var(--pad))`;
-    const top = `calc(${place.top} + ${r6(dv.thing[3] / iw)} * var(--sw) + 2px)`;
-    return `@media ${media}{${sel}{${[...place.vars, `left:${left}`, `top:${top}`].join(';')}}}`;
-  }
   // the words at the foot stand this far above the layer's foot (as .words in style.css); their last line is 15 px
   // at 1.45 on phones, and the link (44 px) is centred on it
   const foot = 'calc(var(--H) - var(--S) + var(--words-base) + var(--safe-b))';
   const line = 15 * 1.45, link = 44;
+  if (form === 'desktop') {
+    const left = `calc(${place.left} + ${r6(dv.thing[0] / iw)} * var(--sw) - var(--pad))`;
+    const top = `calc(${place.top} + ${r6(dv.thing[3] / iw)} * var(--sw) + 2px)`;
+    // a phone held sideways, where a tall thing leaves no room under it: on the small words' last line, just past their
+    // box (30 characters, 270 px)
+    const short = dv.thing[3] / ih > 0.78 ? `@media (max-height: 500px) and (orientation: landscape){${sel}{left:calc(var(--side) + 272px);top:auto;bottom:calc(${foot} - ${r6((link - line) / 2)}px)}}` : '';
+    return `@media ${media}{${sel}{${[...place.vars, `left:${left}`, `top:${top}`].join(';')}}}${short}`;
+  }
   const T = DOOR_TILE[d.move ?? 'press'];
   const beside = `${sel}{--t:${T.phone}px;left:auto;right:calc(var(--side) - var(--pad));bottom:calc(${foot} - ${r6((link - line) / 2)}px)}`;
   const under = `${sel}{--t:${T.small}px;right:auto;left:calc(var(--side) - var(--pad));bottom:calc(${foot} - ${link + 4}px)}`;
