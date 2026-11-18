@@ -2369,6 +2369,8 @@ async function main() {
       { engine: 'chromium', browser: bf ?? browsers.chromium, w: 1512, h: 860, scene: 'own', cache: !!bf },
       { engine: 'chromium', browser: bf ?? browsers.chromium, w: 430, h: 739, scene: 'own', cache: !!bf },
       { engine: 'chromium', browser: bf ?? browsers.chromium, w: 1512, h: 860, scene: 'board', cache: !!bf },
+      // Safari brings a page back from the cache at the top of the page, and leaves it there when the page keeps its own place
+      ...(bf ? [{ engine: 'chromium', browser: bf, w: 430, h: 739, scene: 'own', cache: true, atTop: true }] : []),
       { engine: 'chromium', browser: browsers.chromium, w: 1512, h: 860, scene: 'own', cache: false },
       { engine: 'chromium', browser: browsers.chromium, w: 430, h: 739, scene: 'own', cache: false, key: true },
       { engine: 'chromium', browser: browsers.chromium, w: 1512, h: 860, scene: 'own', cache: false, reduced: true },
@@ -2378,7 +2380,7 @@ async function main() {
     for (const run of RUNS) {
       for (const [d, n, board] of doorScenes) {
         if ((run.scene === 'board') !== board) continue;
-        const tag = `${run.engine} ${run.w}x${run.h} scene ${n}${run.cache ? ' (cache on)' : ''}${run.key ? ' (keyboard)' : ''}${run.reduced ? ' (less motion)' : ''}`;
+        const tag = `${run.engine} ${run.w}x${run.h} scene ${n}${run.cache ? ' (cache on)' : ''}${run.key ? ' (keyboard)' : ''}${run.reduced ? ' (less motion)' : ''}${run.atTop ? ' (back at the top, as Safari)' : ''}`;
         const form = run.w / run.h <= 1 ? 'phone' : 'desktop', dv = viewOf(n, form).doors[d.venture];
         step(`hand-over ${tag}`);
         const c = await doorCtx(run.engine === 'chromium' ? run.browser : await useBrowser(run.engine), run.engine, { viewport: { width: run.w, height: run.h }, reducedMotion: run.reduced ? 'reduce' : 'no-preference' });
@@ -2391,6 +2393,7 @@ async function main() {
         const fp = d.pictures.find((q) => run.w >= q.from), kt = Math.max(run.w / fp.size[0], run.h / fp.size[1]);
         const theirs = [(run.w - fp.size[0] * kt) / 2 + ((fp.anchor[0] + fp.anchor[1]) / 2) * kt, (run.h - fp.size[1] * kt) / 2 + fp.anchor[2] * kt];
         const b = await p.evaluate((sel) => { const r = document.querySelector(sel).getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }, sel);
+        if (run.atTop) await p.evaluate(() => addEventListener('pagehide', () => scrollTo(0, 0)));
         const t0 = Date.now();
         if (run.key) { await p.focus(sel); await p.keyboard.press('Enter'); }
         else if (run.w < 600) await p.touchscreen.tap(b[0], b[1]);

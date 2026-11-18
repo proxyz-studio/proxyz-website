@@ -771,6 +771,14 @@ const observers: ResizeObserver[] = [];
 addEventListener('scroll', () => { schedule(); clearTimeout(saveT); saveT = setTimeout(remember, 200); }, { passive: true });
 addEventListener('resize', onResizeSoon);
 addEventListener('pagehide', remember);
+// Back from the back/forward cache: Safari brings the page back at the top, and with the film keeping its own place
+// (scrollRestoration manual) it never scrolls down again. The saved place, before the first picture is drawn.
+addEventListener('pageshow', (e) => {
+  if (!e.persisted || gaveUp) return;
+  const was = frozen;
+  frozen = true; onResize(); frozen = was;   // the screen may have turned while away; nothing moves at the top
+  if (returnTo()) update();
+});
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') remember(); schedule(); });
 reducedMQ.addEventListener('change', schedule);
 portrait.addEventListener('change', onResizeSoon);
