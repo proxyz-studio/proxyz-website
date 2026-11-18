@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const DIST = join(ROOT, 'dist');
+const doors = (JSON.parse(readFileSync(join(ROOT, 'content/site.json'), 'utf8')).doors ?? []).filter((d) => d.on);
 const out = process.argv[2];
 if (!out) { console.error('usage: node scripts/preview-file.mjs <out.html>'); process.exit(2); }
 
@@ -102,6 +103,8 @@ home = home
   .replace(/href="\/machines\/"/g, 'href="#machines"')
   .replace(/href="\/legal\/"/g, 'href="#legal"')
   .replace(/href="\/"/g, 'href="#"')
+  // a door opens the product's own public address (one file has no studio address to forward it)
+  .replace(/href="([^"]+)"/g, (all, to) => { const d = doors.find((x) => (x.open ?? x.path) === to); return d ? `href="${d.target}${to.slice(d.path.length - 1)}"` : all; })
   .replace('</body>', () => `${SWITCH}\n<script type="module">${inlined}</script>\n</body>`);
 // the script and the styles must sit in the file exactly as they were built
 if (!home.includes(inlined) || !home.includes(css)) { console.error('preview: the script or the styles changed while being put in'); process.exit(1); }
