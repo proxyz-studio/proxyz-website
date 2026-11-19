@@ -58,16 +58,17 @@ const shares = (f: BoardForm, k: Kind) => { const [at, side] = spot(f, k); retur
 /** The five labels (real text), in their own box (.lbox) beside the picture's box, so the picture's soft side edges
  *  never fade them: placed by share of the box, per screen shape (see labelCss). The three names come from the
  *  ventures (by id); a venture with no name gets no tag. */
-export function boardLabels(w: BoardWords, ventures: Venture[], d: BoardForm, p: BoardForm): string {
+export function boardLabels(w: BoardWords, ventures: Venture[], d: BoardForm, p: BoardForm, doors: { venture: string; arrow: string; link: string }[] = []): string {
   // the film places them by these shares (desktop, phone), so it never depends on a media query agreeing with it
-  const tag = (cls: string, k: Kind, text: string) => `<p class="blab ${cls}" aria-hidden="true" data-d="${shares(d, k)}" data-p="${shares(p, k)}">${esc(text)}</p>`;
+  const tag = (cls: string, k: Kind, text: string, after = '') => `<p class="blab ${cls}" aria-hidden="true" data-d="${shares(d, k)}" data-p="${shares(p, k)}">${esc(text)}${after}</p>`;
   const names = TRACES.map((t) => {
     const id = d.labels.names[t].venture;
     if (p.labels.names[t].venture !== id) throw new Error(`board: the ${t} name tag is a different venture in the two forms`);
     const name = ventures.find((v) => v.id === id)?.name;
-    return name ? tag(`name n-${t}`, t, name) : '';
+    // a venture whose door is on: its name tag gets the door's small arrow (the tag and its thing are the link)
+    return name ? tag(`name n-${t}`, t, name, doors.find((x) => x.venture === id)?.arrow ?? '') : '';
   }).join('');
-  return `<div class="lbox">${tag('chip', 'studio', w.chip)}${names}${tag('next', 'next', w.next)}</div>`;
+  return `<div class="lbox">${tag('chip', 'studio', w.chip)}${names}${tag('next', 'next', w.next)}${doors.map((x) => x.link).join('')}</div>`;
 }
 
 /** How a label stands off its point: right (r) or left (l) of it, below (b) or above (a) it and centred, or hanging

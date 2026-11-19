@@ -28,6 +28,28 @@
     { "id": "system", "name": "StudioOS", "line": "One brain, built for the studio and every venture in it." },
     { "id": "next", "hollow": true, "line": "The next one." }
   ],
+  "doors": [
+    {
+      "id": "tapz", "venture": "stand", "on": true,
+      "path": "/tapz/", "open": "/tapz/?lang=en", "target": "https://tapz-woad.vercel.app",
+      "label": "Open the TAPZ site", "logo": "src/logos/tapz-logo-ondark.svg", "lit": "#FF5A1F", "move": "press", "scenes": [2, 6],
+      "pictures": [
+        { "from": 768, "src": "first-desk.jpg", "size": [1600, 800], "anchor": [625, 937, 493] },
+        { "from": 0, "src": "first-phone-en.jpg", "size": [645, 1109], "anchor": [200, 420, 670] }
+      ]
+    },
+    { "id": "pulz", "venture": "coach", "on": false, "path": "/pulz/", "target": "https://pulz-showcase.vercel.app" },
+    {
+      "id": "trophyz", "venture": "race", "on": true,
+      "path": "/trophyz/", "open": "/trophyz/?lang=en", "target": "https://trophyz.vercel.app",
+      "label": "Open the TROPHYZ site", "logo": "src/logos/trophyz-wordmark-primary.svg", "lit": "#F72323", "move": "route", "scenes": [3, 6],
+      "pictures": [
+        { "from": 768, "src": "first-desk-en.jpg", "size": [1512, 860], "anchor": [570, 948, 512] },
+        { "from": 412, "src": "first-phone-en.jpg", "size": [860, 1478], "anchor": [140, 658, 586] },
+        { "from": 0, "src": "first-phone-393-en.jpg", "size": [786, 1318], "anchor": [154, 570, 523] }
+      ]
+    }
+  ],
   "scenes": [
     { "id": "name", "venture": null, "lines": ["VENTURE STUDIO.", "RUN WITH AI."], "phoneLines": ["VENTURE", "STUDIO.", "RUN WITH AI."], "alt": "Drawing of raised letters on a printed plate, in hard side light" },
     { "id": "stand", "venture": "stand", "lines": ["EACH TILE IS", "PROGRAMMABLE."], "small": "An NFC tag in every tile. Tap a phone and it opens a menu, a QR, any link.", "alt": "Drawing of a small printed stand with four tiles; a phone taps one tile and a menu opens on its screen" },

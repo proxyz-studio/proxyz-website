@@ -7,6 +7,7 @@ import { startClock } from './clock';
 import { scenes as SCENES, lightShare as LIGHT_SHARE, brainScene as BRAIN } from './film/scenes.json';
 import pictureData from './generated/pictures.json';
 import { clamp, cutMask, frameMask, lightAt, passStrength } from './film/math';
+import { startDoors, type Doors } from './door';
 import type { Pictures, PictureFile, View } from './types';
 
 type Form = 'desktop' | 'phone';
@@ -54,11 +55,13 @@ const stills = new Map<number, HTMLElement>();
 // the light passes themselves are decoration.
 const alts = sections.map((s) => $<HTMLImageElement>('img', s)?.alt ?? '');
 // What the page holds before the film touches it, so that giving up hands back exactly the plain page: every
-// attribute of every element of the film and the border (the film writes styles, classes, roles, a hidden flag and the
-// board's path data on them), and each scene's resting picture.
+// attribute the film writes (styles, classes, roles, labels, a hidden flag, a picture's own flags, the board's path
+// data, a door's place) on every element of the film and the border, and each scene's resting picture. Attributes the
+// film never writes are left as they are when it gives up (a translator or a reader's extension may have added some).
 let gaveUp = false;
+const FILM_ATTRS = ['style', 'class', 'role', 'aria-label', 'aria-hidden', 'alt', 'loading', 'hidden', 'd', 'src', 'data-spot', 'mask'];
 const pristine = new Map<Element, [string, string][]>();
-for (const e of document.querySelectorAll('#film, #film *, #top, #top *')) pristine.set(e, [...e.attributes].map((a) => [a.name, a.value]));
+for (const e of document.querySelectorAll('#film, #film *, #top, #top *')) pristine.set(e, FILM_ATTRS.filter((n) => e.hasAttribute(n)).map((n) => [n, e.getAttribute(n) ?? '']));
 const restPics = sections.map((s) => $('picture', s));
 sections.forEach((s, i) => {
   const pic = i > 0 ? $('picture', s) : null;
@@ -76,6 +79,8 @@ sections.forEach((s, i) => {
 // every entry point below returns at once once gaveUp is set. The visitor stays on the scene they were looking at.
 function giveUp(): void {
   if (gaveUp) return;
+  // the doors first: a hand-over under way puts the scene's picture back where it was
+  try { doors?.giveUp(); } catch { /* not started */ }
   gaveUp = true;
   let on = 1;
   try { on = active; } catch { /* the film had not started its scroll work */ }
@@ -97,16 +102,20 @@ function giveUp(): void {
   // every attribute as the page had it (no inline style, class, role or hidden flag of the film's; the board's lines
   // whole)
   pristine.forEach((attrs, e) => {
-    for (const x of [...e.attributes]) if (!attrs.some(([n]) => n === x.name)) e.removeAttribute(x.name);
+    for (const n of FILM_ATTRS) if (e.hasAttribute(n) && !attrs.some(([a]) => a === n)) e.removeAttribute(n);
     for (const [n, v] of attrs) if (e.getAttribute(n) !== v) e.setAttribute(n, v);
   });
   for (const e of $$('body > .probe, body > .probe-b, body > .probe-s')) e.remove();
+  // the plain page restores its own place on a reload, and its clock runs (even when the film failed before starting it)
+  try { history.scrollRestoration = 'auto'; } catch { /* old browser */ }
+  try { startClock(); } catch { /* no clock on this page */ }
   // the plain page is much shorter than the film: the scene that was on screen comes back on screen
   const back = sections[Math.max(0, Math.min(sections.length, on) - 1)];
   if (back) scrollTo(0, back.offsetTop);
 }
 addEventListener('error', giveUp, { once: true });
 const first = $<HTMLImageElement>('#s1 img.pass');
+let doors: Doors | null = null;
 let firstKept = true;   // the first paint picture is reused until a full rebuild for the other screen shape
 
 const S: SceneState[] = sections.map((el) => ({
@@ -286,6 +295,7 @@ function place(s: SceneState, view: View): void {
   s.box.style.webkitMaskImage = sm;
   s.box.style.maskImage = sm;
   if (S.indexOf(s) === BRAIN - 1) placeBoard(view, g);
+  if (view.doors) doors?.place(S.indexOf(s) + 1, g);
 }
 
 /* ---------- building the light passes of one scene ---------- */
@@ -418,6 +428,8 @@ function light(n: number, prog: number): void {
     p.img.style.maskImage = m;
   });
   $('.dim', s.layer)!.style.opacity = view.end === 'dark' ? (q * 0.75).toFixed(3) : '0';
+  // a door's logo shows once the light rests (the last pass at full strength)
+  if (view.doors) doors?.light(n, s.passes.length > 1 ? s.passes[s.passes.length - 1].lit : 1);
 }
 
 /* ---------- scene 6: the board on the floor ---------- */
@@ -631,7 +643,8 @@ function near(i: number, y: number): boolean {
 function update(): void {
   if (gaveUp) return;
   ticking = false;
-  if (!tops.length) return;
+  // a hand-over is under way: the scroll moves nothing until the scene is back
+  if (!tops.length || frozen) return;
   checkInset();
   const y = scrollY, mid = y + VH / 2;
   let i = 0;
@@ -650,18 +663,29 @@ function update(): void {
 }
 
 /* ---------- coming back after a reload: the same scene, the same light ---------- */
+/** The scroll position of scene n with its light at rest (just past where the light completes). */
+const restY = (n: number): number => tops[n - 1] + LIGHT_SHARE * Math.max(0, heights[n - 1] - VH) + 1;
+/** While the visitor leaves through a door, the place saved is that scene at rest (or further on in it). */
+let holdN: number | null = null;
 function remember(): void {
   if (gaveUp) return;
   if (!tops.length) return;
-  const i = active - 1;
-  try { history.replaceState({ ...(history.state ?? {}), film: { i, f: (scrollY - tops[i]) / heights[i] } }, ''); } catch { /* not allowed now */ }
+  let i = active - 1, f = (scrollY - tops[i]) / heights[i];
+  if (holdN) {
+    const j = holdN - 1, rest = (restY(holdN) - tops[j]) / heights[j];
+    f = j === i ? Math.max(f, rest) : rest;
+    i = j;
+  }
+  try { history.replaceState({ ...(history.state ?? {}), film: { i, f } }, ''); } catch { /* not allowed now */ }
 }
-function returnTo(): void {
+/** Back to the saved place, if there is one. */
+function returnTo(): boolean {
   const at = (history.state as { film?: { i: number; f: number } } | null)?.film;
-  if (!at || !(at.i >= 0 && at.i < S.length) || !Number.isFinite(at.f)) return;
+  if (!at || !(at.i >= 0 && at.i < S.length) || !Number.isFinite(at.f)) return false;
   scrollTo(0, Math.round(tops[at.i] + clamp(at.f) * heights[at.i]));
+  return true;
 }
-let ticking = false;
+let ticking = false, frozen = false;
 function schedule(): void { if (gaveUp) return; if (!ticking) { ticking = true; requestAnimationFrame(update); } }
 
 /* ---------- the five marks, and a name beside its own mark ---------- */
@@ -713,13 +737,33 @@ function onResize(): void {
   update();
 }
 
+/* ---------- the doors to the products' own sites (src/door.ts) ---------- */
+doors = startDoors({
+  scene: (n) => ({ el: S[n - 1].el, layer: S[n - 1].layer, words: S[n - 1].words, top: S[n - 1].top }),
+  view: (n) => viewOf(n),
+  size: (n) => pictures[viewOf(n).passes[0]].size,
+  picture: (n) => (S[n - 1].passes.length ? geometry(viewOf(n), S[n - 1]) : null),
+  vh: () => VH,
+  svh: () => SVH,
+  active: () => active,
+  reduced,
+  gaveUp: () => gaveUp,
+  hold: (n) => { holdN = n; if (n) remember(); },
+  freeze: (on) => { frozen = on; if (!on) { measure(); schedule(); } },
+  relayout: () => { onResize(); layoutAll(); },
+});
+
 /* ---------- go ---------- */
 build(1);
 measure();
-// an address with #s1 to #s7 opens on that scene (the sections grew when the film switched on)
+// an address with #s1 to #s7 opens on that scene (the sections grew when the film switched on); else the place saved
+// for this page (a reload, Back); else a door's hash (/#tapz) opens on its product's scene, its light at rest
 const target = /^#s([1-9])$/.exec(location.hash);
 if (target && +target[1] <= S.length) scrollTo(0, tops[+target[1] - 1]);
-else returnTo();
+else if (!returnTo()) {
+  const n = doors.hashScene(location.hash);
+  if (n) scrollTo(0, Math.round(restY(n)));
+}
 update();
 let saveT = 0;
 // the observers of the steady screen sizes (let go when the film gives up)
@@ -727,6 +771,14 @@ const observers: ResizeObserver[] = [];
 addEventListener('scroll', () => { schedule(); clearTimeout(saveT); saveT = setTimeout(remember, 200); }, { passive: true });
 addEventListener('resize', onResizeSoon);
 addEventListener('pagehide', remember);
+// Back from the back/forward cache: Safari brings the page back at the top, and with the film keeping its own place
+// (scrollRestoration manual) it never scrolls down again. The saved place, before the first picture is drawn.
+addEventListener('pageshow', (e) => {
+  if (!e.persisted || gaveUp) return;
+  const was = frozen;
+  frozen = true; onResize(); frozen = was;   // the screen may have turned while away; nothing moves at the top
+  if (returnTo()) update();
+});
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') remember(); schedule(); });
 reducedMQ.addEventListener('change', schedule);
 portrait.addEventListener('change', onResizeSoon);

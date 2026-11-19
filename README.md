@@ -43,6 +43,34 @@ With a `url` as well, the name in the border links to that address, and the plai
 Adding either is one line, for example `"name": "Example", "url": "https://example.com",`. A venture without a name
 leaves no name anywhere in the built site.
 
+## Doors: a product's own site under the studio's address
+
+A product's site also opens at the studio's address (`/tapz/`), so the browser can blend the scene's picture into the
+product's first picture (cross-document view transitions; the contract with the product sites is the hand-over
+rulebook). Each door is one entry in `content/site.json` under `doors`:
+
+- `on`: off means no door, no link, no forwarding. `path` and `target` (the product's public address, answering
+  without a login); `open` (the address the door opens, for example with `?lang=en`); `label` (the link's name).
+- `logo` (a file in `src/logos/`, copied byte for byte from the product's logo kit, plain shapes only), `lit` (the
+  colour of its one moving part) and `move`: `press` (the lit Z presses like a key, two cream rings) or `route` (the
+  red route draws itself).
+- `scenes`: the product's own scene (its logo and an arrow) and the board (its name tag and its thing, one link).
+- `pictures`: the product's first pictures, widest screens first, each with its `anchor` [left, right, middle height]
+  in its own pixels. The studio's matching anchor per scene is in `src/film/scenes.json` (`doors`, with the thing's
+  bounds and, on the board, the link's area). `python3 scripts/anchors.py <folder> disc <files>` measures them again
+  when a product re-shoots its pictures.
+
+`vercel.json` must agree (the check proves it): a rewrite of `<path>` and `<path>:path*` to the target for every door
+that is on, the door paths left out of the studio's own headers (the product sends its own, one opener policy), and
+the `Speculation-Rules` header on the home page (`/doors.json`, built from the open doors). The address hash of a door
+(`/#tapz`) opens the film on its product's scene at rest; before leaving through a door the film saves that place, so
+Back always lands there, with or without the back/forward cache.
+
+`npm run check` never calls a product's live site: each open door needs a local copy of the product's build,
+`DOOR_STANDIN_<ID>=<folder>` and `DOOR_STANDIN_<ID>_HEADERS=<its vercel.json>` (without it the check stops). Test 29
+also uses a copy without the hand-over's asks, `DOOR_PLAIN_<ID>` and `DOOR_PLAIN_<ID>_HEADERS` (skipped with a warning
+without it). `scripts/serve.mjs` serves the doors the same way.
+
 ## Pictures
 
 Source drawings (large PNG files) are not kept here. To make the web pictures again:

@@ -17,7 +17,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, relative, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { startServer } from './serve.mjs';
+import { standinsFromEnv, startServer } from './serve.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const DIST = join(ROOT, 'dist');
@@ -62,8 +62,25 @@ const want = (n) => !ONLY || ONLY.has(n);
 
 /* ---------- reporting ---------- */
 const results = [];
+// The watchdog: a browser that stops answering must fail the check with a clear line, never leave it waiting for ever.
+// Every page opened, every scroll and every wait counts as progress; CHECK_STALL_S seconds without any fails the run.
+const STALL = Number(process.env.CHECK_STALL_S || 180) * 1000;
+let stepName = 'starting the browsers', stepAt = Date.now();
+const step = (name) => { stepName = name; stepAt = Date.now(); };
+setInterval(() => {
+  if (Date.now() - stepAt < STALL) return;
+  const was = stepName;
+  step('recovering from a stall');
+  if (onStall) { onStall(new Error(`no progress for ${STALL / 1000} s at: ${was}`)); return; }
+  console.log(`FAIL   0. The check stalled: no progress for ${STALL / 1000} s, last step: ${was}`);
+  console.log(`\ncheck: ${results.filter((r) => r === 'PASS').length} passed, ${results.filter((r) => r === 'FAIL').length + 1} failed, ${results.filter((r) => r === 'WARN').length} warnings`);
+  process.exit(1);
+}, 5000).unref();
+/** set while a test runs: a stall ends that test, not the run */
+let onStall = null;
 const line = (status, n, name, detail = '') => {
   results.push(status);
+  step(`after test ${n}`);
   console.log(`${status.padEnd(4)}  ${String(n).padStart(2)}. ${name}${detail ? ': ' + detail : ''}`);
 };
 const pass = (n, name, d) => line('PASS', n, name, d);
@@ -162,6 +179,9 @@ async function main() {
   const pw = findPlaywright();
   if (!pw) { console.error('check: no playwright-core with Chromium, WebKit and Firefox found. Set PLAYWRIGHT_CORE. Nothing is downloaded.'); process.exit(2); }
   const lib = createRequire(import.meta.url)(pw);
+  // the doors that are on are served from local copies of the products' sites, never the live ones
+  const missing = (content.doors ?? []).filter((d) => d.on && d.target && !standinsFromEnv()[new URL(d.target).origin]);
+  if (missing.length) { console.error(`check: no local stand-in for the door${missing.length > 1 ? 's' : ''} ${missing.map((d) => d.path).join(', ')}. Set ${missing.map((d) => `DOOR_STANDIN_${d.id.toUpperCase()}`).join(', ')} to a copy of the product's build (and _HEADERS to its vercel.json). Nothing is fetched from the live site.`); process.exit(2); }
   const server = await startServer({ dir: DIST, port: PORT });
   console.log(`check: serving dist/ at ${BASE}/ (rules from vercel.json), browsers from playwright-core ${JSON.parse(readFileSync(join(pw, 'package.json'), 'utf8')).version}\n`);
 
@@ -169,29 +189,59 @@ async function main() {
   const browsers = {};
   for (const e of ['chromium', 'webkit', 'firefox']) browsers[e] = await lib[e].launch({ headless: true });
   const contexts = [];
+  // A hidden Firefox some minutes old stops answering: the page loads, the next evaluate never returns (seen 18 Nov 2026
+  // on this site with and without the doors, in 7 of 8 runs at 5.5 minutes, none at 100 s; bringing the page to the
+  // front, moving the mouse or switching off its spare processes does not help). So Firefox is started afresh before
+  // use once it is 90 s old, and WebKit after a minute unused, whenever no context of theirs is open.
+  const lastUse = {}, born = { firefox: Date.now() };
+  async function useBrowser(engine) {
+    const old = engine === 'firefox' ? Date.now() - born.firefox > 90000 : engine === 'webkit' && Date.now() - (lastUse.webkit ?? 0) > 60000;
+    if (old && browsers[engine].contexts().length === 0) {
+      step(`restarting ${engine}`);
+      await browsers[engine].close().catch(() => {});
+      browsers[engine] = await lib[engine].launch({ headless: true });
+      if (engine === 'firefox') born.firefox = Date.now();
+    }
+    lastUse[engine] = Date.now();
+    return browsers[engine];
+  }
   async function ctx(engine, opts = {}) {
+    step(`new ${engine} context ${opts.viewport?.width ?? ''}x${opts.viewport?.height ?? ''}`);
     const phone = (opts.viewport?.width ?? 1440) < 600;
     const o = { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, ...opts };
     if (phone && engine !== 'firefox') o.isMobile = o.isMobile ?? true;
     if (phone) o.hasTouch = true;
-    const c = await browsers[engine].newContext(o);
+    const c = await (await useBrowser(engine)).newContext(o);
     contexts.push(c);
     const close = c.close.bind(c);
-    c.close = async () => { cookieJar.push(...(await c.cookies())); contexts.splice(contexts.indexOf(c), 1); return close(); };
+    c.close = async () => { step(`closing a ${engine} context`); lastUse[engine] = Date.now(); cookieJar.push(...(await c.cookies())); contexts.splice(contexts.indexOf(c), 1); return close(); };
     c.on('request', (r) => { const u = r.url(); if (!u.startsWith(BASE) && !/^(data|blob|about):/.test(u)) outside.push(`${engine} ${u}`); });
     return c;
   }
+  // a page a hidden browser does not finish loading in 30 s gets one more try; each is reported at the end of the run
+  const retried = [];
   async function open(c, path, label) {
-    const p = await c.newPage();
-    // the not found page itself answers 404 on purpose; a browser logs that as an error line, which is expected
-    p.on('console', (m) => { if (m.type() === 'error' && !(path.startsWith('/nope') && m.location().url === BASE + path && /404/.test(m.text()))) errors.push(`${label}: ${m.text().slice(0, 200)}`); });
-    p.on('pageerror', (e) => errors.push(`${label}: ${String(e).slice(0, 200)}`));
-    await p.goto(BASE + path, { waitUntil: 'load' });
-    return p;
+    step(`opening ${path} (${label})`);
+    const attempt = async () => {
+      const p = await c.newPage();
+      // the not found page itself answers 404 on purpose; a browser logs that as an error line, which is expected
+      p.on('console', (m) => { if (m.type() === 'error' && !(path.startsWith('/nope') && m.location().url === BASE + path && /404/.test(m.text()))) errors.push(`${label}: ${m.text().slice(0, 200)}`); });
+      p.on('pageerror', (e) => errors.push(`${label}: ${String(e).slice(0, 200)}`));
+      try { await p.goto(BASE + path, { waitUntil: 'load' }); return p; }
+      catch (e) { await Promise.race([p.close().catch(() => {}), new Promise((r) => setTimeout(r, 5000))]); throw e; }
+    };
+    try { return await attempt(); }
+    catch (e) {
+      if (e.name !== 'TimeoutError') throw e;
+      retried.push(`${c.browser()?.browserType().name()} ${path} (${label})`);
+      step(`opening ${path} again (${label})`);
+      return attempt();
+    }
   }
-  const settle = (p, ms = 350) => p.waitForTimeout(ms);
+  const settle = (p, ms = 350) => { step(`${stepName.split(' | ')[0]} | waiting ${ms} ms`); return p.waitForTimeout(ms); };
   /** scroll to scene n at light progress at (0 to 1); returns once its pictures are decoded */
   async function toScene(p, n, at = 1) {
+    step(`${stepName.split(' | ')[0]} | scene ${n} at ${at}`);
     await p.evaluate(([n, at, share]) => {
       const s = document.getElementById('s' + n);
       const vh = document.querySelector('.probe')?.offsetHeight || innerHeight;
@@ -199,6 +249,30 @@ async function main() {
     }, [n, at, film.lightShare]);
     await p.waitForFunction((n) => [...document.querySelectorAll(`#s${n} .passes img`)].every((i) => i.complete && i.naturalWidth > 0), n, { timeout: 8000 }).catch(() => {});
     await settle(p);
+  }
+
+  /** One test that cannot finish (a page a hidden browser will not load, a browser that stops answering) ends alone,
+   *  with a line saying where; its contexts are closed, WebKit and Firefox start afresh and the run goes on. */
+  const quick = (x) => Promise.race([Promise.resolve(x).catch(() => {}), new Promise((r) => setTimeout(r, 5000))]);
+  async function guarded(n, fn, again = true) {
+    const stalled = new Promise((_, no) => { onStall = no; });
+    const run = fn();
+    run.catch(() => {});
+    try { await Promise.race([run, stalled]); }
+    catch (e) {
+      const at = stepName, why = `${String(e.message ?? e).split('\n')[0].slice(0, 170)}; last step: ${at}`;
+      const firefox = /firefox/i.test(why);
+      for (const c of [...contexts]) { contexts.splice(contexts.indexOf(c), 1); await quick(c.close()); }
+      for (const e2 of ['webkit', 'firefox']) { await quick(browsers[e2].close()); browsers[e2] = await lib[e2].launch({ headless: true }); }
+      born.firefox = Date.now();
+      onStall = null;
+      // the hidden Firefox stops answering now and then, on the site before the doors too (origin/main 9105ba8, 18 Nov
+      // 2026): one more try with a fresh browser, then a warning, since it says nothing about the site
+      if (firefox && again) return guarded(n, fn, false);
+      if (firefox) warn(n, 'Not finished: the hidden Firefox stopped answering twice, as it also does on the site before the doors', why);
+      else fail(n, 'This test could not finish', why);
+    }
+    onStall = null;
   }
 
   /* reading screenshots: a blank page in a hidden browser decodes them (it holds no site and no policy) */
@@ -297,7 +371,7 @@ async function main() {
   }
 
   /* 1. words */
-  if (want(1)) {
+  if (want(1)) await guarded(1, async () => {
     const c = await ctx('chromium', { javaScriptEnabled: false });
     const bad = [];
     for (const [path, want] of Object.entries(EXPECT)) {
@@ -351,20 +425,20 @@ async function main() {
       `- [${B.legal}](${U}${P.legal.path}): ${M.pageNotes.legal}`];
     if (JSON.stringify(llms) !== JSON.stringify(wantLlms)) bad.push('llms.txt differs from the machine face');
     ok(!bad.length, 1, 'Words on /, /machines/, /llms.txt, /legal/ and the not found page equal content/site.json, in order (scene 6\'s board labels: StudioOS, the three venture names, NEXT); one h1 on the film; the giant lines as the content file breaks them, wide and upright', 'all equal', bad.join('; '));
-  }
+  });
 
   /* 1. with the film running: each scene's description is on its stage from the start */
-  if (want(1)) {
+  if (want(1)) await guarded(1, async () => {
     const c = await ctx('chromium', { viewport: { width: 1440, height: 900 } });
     const p = await open(c, '/', 'descriptions');
     const got = await p.evaluate(() => [...document.querySelectorAll('#film .passes')].map((b) => (b.getAttribute('role') === 'img' ? b.getAttribute('aria-label') : '')));
     const d = sameSeq(got, content.scenes.map((s) => s.alt));
     ok(d.equal, 1, 'Film running: all seven picture descriptions are there before any scroll', 'all seven', d.at);
     await c.close();
-  }
+  });
 
   /* 2. blocked words (and no local paths, no other email addresses) */
-  if (want(2)) {
+  if (want(2)) await guarded(2, async () => {
     const tracked = execFileSync('git', ['ls-files', '-co', '--exclude-standard'], { cwd: ROOT, encoding: 'utf8' }).split('\n').filter(Boolean).map((f) => join(ROOT, f));
     const walk = (d) => readdirSync(d).flatMap((f) => { const p = join(d, f); return statSync(p).isDirectory() ? walk(p) : [p]; });
     const files = [...new Set([...tracked.filter((f) => existsSync(f)), ...walk(DIST)])];
@@ -396,10 +470,10 @@ async function main() {
       for (const m of t.matchAll(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g)) if (m[0] !== 'hello@proxyz.studio' && !/^[\w.-]+@\d/.test(m[0])) leaks.push(`address ${m[0]} in ${f}`);
     }
     ok(!leaks.length, 2, 'No local path and no email address but hello@proxyz.studio in any tracked or built file', 'none found', [...new Set(leaks)].join('; '));
-  }
+  });
 
   /* 3. dashes and the system's name */
-  if (want(3)) {
+  if (want(3)) await guarded(3, async () => {
     const c = await ctx('chromium');
     const bad = [];
     for (const path of ['/', '/machines/', '/legal/', '/nope-nope/']) {
@@ -412,10 +486,10 @@ async function main() {
     const llms = readFileSync(join(DIST, 'llms.txt'), 'utf8');
     if (/[–—]/.test(llms) || /Studio OS/i.test(llms) || llms.includes('STUDIOOS')) bad.push('llms.txt');
     ok(!bad.length, 3, 'No em dash or en dash in visible words; no "Studio OS", no "STUDIOOS"', 'clean', bad.join('; '));
-  }
+  });
 
   /* 6. faults at every screen size (and console errors, collected throughout) */
-  if (want(6)) {
+  if (want(6)) await guarded(6, async () => {
     const bad = [];
     for (const [w, h] of VIEWPORTS) {
       const c = await ctx('chromium', { viewport: { width: w, height: h } });
@@ -467,10 +541,10 @@ async function main() {
       }
     }
     ok(!bad.length, 6, `No sideways scroll, no text under 12 px, no touch area under 44 px, one switch shown, scenes as tall as the film data, first Tab on the wordmark, at ${VIEWPORTS.map((v) => v.join('x')).join(', ')} (Chromium) and 430x739, 1512x860 (WebKit, Firefox)`, 'none', [...new Set(bad)].slice(0, 20).join('; '));
-  }
+  });
 
   /* 6. old privacy and terms links land with their heading in view, below the border */
-  if (want(6)) {
+  if (want(6)) await guarded(6, async () => {
     const bad = [];
     for (const [engine, w, h] of [['chromium', 393, 852], ['chromium', 1512, 860], ['webkit', 430, 739], ['firefox', 2428, 1300]]) {
       const c = await ctx(engine, { viewport: { width: w, height: h } });
@@ -484,10 +558,10 @@ async function main() {
       await c.close();
     }
     ok(!bad.length, 6, 'Old /privacy and /terms links land on LEGAL with the heading in view, below the border (Chromium, WebKit, Firefox)', 'heading in view', bad.join('; '));
-  }
+  });
 
   /* 7. scripts off */
-  if (want(7)) {
+  if (want(7)) await guarded(7, async () => {
     const c = await ctx('chromium', { javaScriptEnabled: false, viewport: { width: 393, height: 852 }, isMobile: true });
     const p = await open(c, '/', 'scripts off');
     await p.waitForFunction(() => [...document.images].every((i) => i.complete), null, { timeout: 15000 }).catch(() => {});
@@ -508,10 +582,10 @@ async function main() {
       `${r.sections} sections, ${r.pics} pictures, ${r.links.length} links all answer 200`,
       `${r.sections} sections, ${r.pics} pictures, dead links [${dead.join(', ')}]`);
     await c.close();
-  }
+  });
 
   /* 8. less motion */
-  if (want(8)) {
+  if (want(8)) await guarded(8, async () => {
     const bad = [];
     for (const [engine, w, h] of [['chromium', 393, 852], ['chromium', 1440, 900], ['webkit', 430, 739], ['firefox', 1512, 860]]) {
       const c = await ctx(engine, { viewport: { width: w, height: h }, reducedMotion: 'reduce' });
@@ -539,10 +613,10 @@ async function main() {
       await c.close();
     }
     ok(!bad.length, 8, 'Less motion: every scene in its resting light, at any scroll point, with no fades (Chromium, WebKit, Firefox)', 'all scenes', bad.slice(0, 8).join('; '));
-  }
+  });
 
   /* 9. turning the screen: every picture sits where a fresh load at that size puts it */
-  if (want(9)) {
+  if (want(9)) await guarded(9, async () => {
     const bad = [];
     const SHAPES = [[393, 852], [852, 393], [393, 852], [1440, 900], [801, 800], [799, 800], [801, 800], [393, 852], [1512, 860]];
     const rects = async (p) => {
@@ -580,12 +654,12 @@ async function main() {
       await c.close();
     }
     ok(!bad.length, 9, 'Turning the screen back and forth and resizing a window (near square too): every picture is the right one and sits where a fresh load puts it, within 2 px (Chromium, WebKit, Firefox)', 'same as a fresh load every time', bad.slice(0, 6).join('; '));
-  }
+  });
 
   /* 9. fast turning in the Safari engine: twelve size changes in a row, three runs for each scene whose picture is
      sized to leave room for its words (3, 6 and the last). The engine used to leave such a picture the wrong size now
      and then, and nothing placed it again. A fresh load at each size is the answer to compare with. */
-  if (want(9)) {
+  if (want(9)) await guarded(9, async () => {
     const bad = [];
     const SEQ = [[430, 739], [739, 430], [430, 739], [1512, 860], [393, 852], [852, 393], [320, 568], [1512, 860], [430, 739], [600, 600], [1000, 1001], [430, 739]];
     const snap = (p, n) => p.evaluate((n) => [...document.querySelectorAll(`#s${n} .passes img`)].map((i) => { const r = i.getBoundingClientRect(); return [r.left, r.top, r.width, r.height].map(Math.round); }), n);
@@ -619,10 +693,10 @@ async function main() {
       }
     }
     ok(!bad.length, 9, `Fast turning, Safari engine: ${SEQ.length} size changes in a row, ${RUNS} runs each for scenes ${SCENES.join(', ')}: every picture where a fresh load puts it, within 2 px`, `${steps} of ${steps} steps`, bad.slice(0, 4).join('; '));
-  }
+  });
 
   /* 9. a reload in the middle of the film comes back to the same scene */
-  if (want(9)) {
+  if (want(9)) await guarded(9, async () => {
     // Firefox under this test tool starts a reload with an empty history entry (history.state is null afterwards),
     // so the film cannot know where the visitor was; reported, not failed
     const bad = [], soft = [];
@@ -641,10 +715,10 @@ async function main() {
     }
     ok(!bad.length, 9, 'Reload in the middle of the film: back in the same scene at the same light (Chromium, WebKit)', 'same place every time', bad.join('; '));
     if (soft.length) warn(9, 'Reload in Firefox (this test tool keeps no history entry over a reload)', soft.join('; '));
-  }
+  });
 
   /* 7. the film script blocked, late or failed: the later pictures wait for it, and without it they all show */
-  if (want(7)) {
+  if (want(7)) await guarded(7, async () => {
     const bad = [];
     const sceneOf = (u) => (/\/pictures\/s(\d)/.exec(u) || [])[1];
     for (const engine of ['chromium', 'webkit', 'firefox']) {
@@ -669,17 +743,21 @@ async function main() {
         await p.waitForTimeout(4500);
         const total = await p.evaluate(() => document.documentElement.scrollHeight);
         for (let y = 0; y < total; y += 400) { await p.evaluate((y) => scrollTo(0, y), y); await p.waitForTimeout(60); }
-        await p.waitForFunction(() => [...document.querySelectorAll('#film img')].every((i) => i.complete), null, { timeout: 15000 }).catch(() => {});
+        // each scene brought into view until its picture has really arrived (a lazy picture not yet asked for counts as complete)
+        for (let n = 1; n <= content.scenes.length; n++) {
+          await p.evaluate((n) => document.getElementById('s' + n).scrollIntoView(), n);
+          await p.waitForFunction((n) => { const i = document.querySelector(`#s${n} img`); return i && i.complete && i.naturalWidth > 0; }, n, { timeout: 8000 }).catch(() => {});
+        }
         const r = await p.evaluate(() => ({ film: document.documentElement.classList.contains('film'), pics: [...document.querySelectorAll('#film section img')].filter((i) => i.complete && i.naturalWidth > 0 && i.getBoundingClientRect().height > 0 && getComputedStyle(i).display !== 'none').length }));
         if (r.film || r.pics !== content.scenes.length) bad.push(`${engine} blocked: film ${r.film}, ${r.pics} pictures shown`);
         await c.close();
       }
     }
     ok(!bad.length, 7, 'Film script late: no picture of scenes 2 to 7 loads before the film runs; film script blocked: after about 4 s the plain page shows all seven pictures (Chromium, WebKit, Firefox)', 'held back, then seven pictures', bad.join('; '));
-  }
+  });
 
   /* 12. phones, with the browser's bar showing and with it slid away */
-  if (want(12)) {
+  if (want(12)) await guarded(12, async () => {
     // Contexts that take screenshots skip the security policy: the Safari engine's test tool adds a style of its own
     // for each screenshot, which the policy refuses (a tool quirk, not the site).
     // A hidden browser has no sliding bar, so each state is copied with test styles (allowed past the security
@@ -840,11 +918,11 @@ async function main() {
       }
       ok(!bad.length, 12, 'Phone: when the bottom safe area grows (0 to 34 px, forced in the test) scenes 6 and 7 are placed again once, as a fresh load at 34 px places them; back to 0 changes nothing; on the laptop no picture moves (Chromium, WebKit)', seen.join(', '), bad.join('; '));
     }
-  }
+  });
 
   /* 13. the page colour: the film page is in the film's black from the first paint (Safari paints the strip under its
      bar with the page's own colour), the text pages keep their own; checked with scripts off, so it is in the HTML */
-  if (want(13)) {
+  if (want(13)) await guarded(13, async () => {
     const bad = [];
     const WANT = { '/': ['rgb(1, 1, 1)', '#010101'], '/machines/': ['rgb(10, 10, 10)', '#0a0a0a'], '/legal/': ['rgb(10, 10, 10)', '#0a0a0a'], '/nope-nope/': ['rgb(10, 10, 10)', '#0a0a0a'] };
     for (const engine of ['chromium', 'webkit', 'firefox']) {
@@ -860,12 +938,12 @@ async function main() {
       }
     }
     ok(!bad.length, 13, 'Page colour: the film page root, body and theme colour are the film\'s black #010101; MACHINES, LEGAL and the not found page keep #0a0a0a; same with scripts off (Chromium, WebKit, Firefox)', 'as built', bad.join('; '));
-  }
+  });
 
   /* 14. the giant lines: set in Anton (the display face, loaded from this site), every line the size the rules give:
      upright, each line as wide as the screen between its side margins, unless it would be taller than its share of
      the height; wide, the widest line its share of the width, unless the block would be taller than its share */
-  if (want(14)) {
+  if (want(14)) await guarded(14, async () => {
     const bad = [], seen = new Set();
     const T = film.type;
     const runs = [...VIEWPORTS.map(([w, h]) => ['chromium', w, h]), ['chromium', 430, 873], ['chromium', 834, 1194],
@@ -918,11 +996,11 @@ async function main() {
       await c.close();
     }
     ok(!bad.length, 14, `The giant lines are set in the display face, loaded from this site, and sized by the rules (upright: each line the width between its margins, at most ${T.lineMax * 100}% of the height; wide: the widest line ${T.shareDefault * 100}% of the width, 60% on scenes ${Object.keys(T.share).join(' and ')}, the block at most ${T.blockMax * 100}% of the height), within 1 px; none clipped, none under the border`, `${seen.size} screens in three engines`, bad.slice(0, 8).join('; '));
-  }
+  });
 
   /* 15. contrast at every listed size: the giant words, the small line and its note, the grey tool line (4.5 to 1) and
      the height line (3 to 1), against what lies behind their own letters, all seven scenes at rest */
-  if (want(15)) {
+  if (want(15)) await guarded(15, async () => {
     const bad = [], low = [];
     for (const [w, h] of VIEWPORTS) {
       const c = await ctx('chromium', { viewport: { width: w, height: h }, bypassCSP: true });
@@ -942,12 +1020,12 @@ async function main() {
     }
     low.sort((a, b) => a[0] - b[0]);
     ok(!bad.length, 15, `Contrast at ${VIEWPORTS.map((v) => v.join('x')).join(', ')} (Chromium): every text at least 4.5 to 1 (the height line 3 to 1) against what lies behind its letters`, `lowest: ${low.slice(0, 3).map((x) => x[1]).join(', ')}`, bad.slice(0, 8).join('; '));
-  }
+  });
 
   /* 16. things that appear after the first pass never overlap the giant words, never touch the words at the foot
      (the small line, its note, the tool line, the height line) and stay fully on screen, at every listed size and in
      every bar state */
-  if (want(16)) {
+  if (want(16)) await guarded(16, async () => {
     const bad = [], foot = [], seen = [], seenFoot = [];
     const views = [];
     for (let n = 1; n <= content.scenes.length; n++) for (const form of ['desktop', 'phone']) if (viewOf(n, form).later?.length) views.push([n, form]);
@@ -1016,11 +1094,11 @@ async function main() {
       ok(!bad.length, 16, `Things that first appear in a later pass (scene ${[...new Set(views.map((v) => v[0]))].join(', ')}) never overlap the giant words, ${what}`, `closest: ${seen.sort((a, b) => a[0] - b[0])[0]?.[1]}`, [...new Set(bad)].slice(0, 6).join('; '));
       ok(!foot.length, 16, `Those things never touch the words at the foot (the small line, its note, the tool and height lines) and stay fully on the visible screen, ${what}`, `closest to the words at the foot: ${seenFoot.sort((a, b) => a[0] - b[0])[0]?.[1] ?? 'none'}`, [...new Set(foot)].slice(0, 6).join('; '));
     }
-  }
+  });
 
   /* 18. scripts off: every scene's picture sits where the film puts it at rest (same size, place and tuck), and every
      giant line keeps at least 85% of its ink (the thing in front may hide only a little of it) */
-  if (want(18)) {
+  if (want(18)) await guarded(18, async () => {
     const place = [], inkBad = [], seenPlace = [], seenInk = [];
     const runs = [...[[430, 873], [393, 852], [320, 568], [852, 393], [806, 516], [1512, 860], [2428, 1300]].map(([w, h]) => ({ w, h, css: '', label: `${w}x${h}` })),
       ...[BARS[1], BARS[3]].map((bar) => ({ ...barState(bar, 'showing'), label: barLabel(bar, 'showing') }))];
@@ -1158,12 +1236,12 @@ async function main() {
     }
     ok(!place.length, 18, 'Scripts off: every scene\'s picture, and scene 6\'s board at rest (whole, its matte on), sits where the film puts it at rest, within 1.5 px (phones, both Safari bar layouts showing, laptop, monitor; Chromium, and 430x873 and 1512x860 in WebKit and Firefox)', `largest ${seenPlace.sort((a, b) => b[0] - a[0])[0]?.[1]}`, place.slice(0, 6).join('; '));
     ok(!inkBad.length, 18, 'Scripts off: every giant line keeps at least 85% of its ink (the thing in front hides only a little), the same sizes and engines', `least: ${seenInk.sort((a, b) => a[0] - b[0])[0]?.[1] ?? 'no cut'}`, inkBad.slice(0, 6).join('; '));
-  }
+  });
 
   /* 17. the cut-out: where a scene has the matte of the thing lit from its first pass, the letters are hidden inside
      the thing and show outside it, and the mask sits where the picture sits (within 1 px), in both screen shapes, at
      every size, after resizes and turns, in Chromium, WebKit and Firefox */
-  if (want(17)) {
+  if (want(17)) await guarded(17, async () => {
     const pics = JSON.parse(readFileSync(join(ROOT, 'src/generated/pictures.json'), 'utf8'));
     const matted = [];
     for (let n = 1; n <= content.scenes.length; n++) for (const form of ['desktop', 'phone']) { const v = viewOf(n, form); if (v.matte && pics[v.matte]?.matte) matted.push([n, form]); }
@@ -1329,7 +1407,7 @@ async function main() {
       }
       ok(!pixBad.length, 17, `Cut-out pixels (scenes ${scenes.join(', ')}): letters moved onto the thing are hidden inside it and show outside it, at least 99% each (Chromium, WebKit, Firefox; laptop and phone)`, seen.join('; '), pixBad.join('; '));
     }
-  }
+  });
 
   /* 19 to 23. scene 6, the board on the floor: placed as the picture, hidden inside the things, no tell before each
      step, clear of the giant words, its two labels readable and on screen, still with less motion */
@@ -1396,7 +1474,7 @@ async function main() {
   }, [BOARD_N, rest]);
 
   // 19. the board's box is the picture's box, film and scripts off, every listed size and bar state
-  if (want(19) && boardForms.length) {
+  if (want(19) && boardForms.length) await guarded(19, async () => {
     const bad = [], seen = [];
     const runs = [...VIEWPORTS, [1000, 1000], [834, 1194]].map(([w, h]) => ({ engine: 'chromium', w, h, css: '', label: `${w}x${h}` }))
       .concat(BARS.flatMap((bar) => ['away', 'showing'].map((state) => ({ engine: 'chromium', ...barState(bar, state), label: barLabel(bar, state) }))))
@@ -1425,11 +1503,11 @@ async function main() {
       await c.close(); await off.close();
     }
     ok(!bad.length, 19, `Scene ${BOARD_N}: the board's box and its labels' box (just after the pictures, the same --bw) are the picture's box within 0.5 px, with the film and with scripts off, at every listed size, 1000x1000, 834x1194 and every bar state (Chromium; 430x873 and 1512x860 in WebKit and Firefox)`, `largest ${seen.sort((a, b) => b[0] - a[0])[0]?.[1]}`, bad.slice(0, 6).join('; '));
-  }
+  });
 
   // 19. the labels never show before the scene's pictures, and follow the board in and out: a reload in the middle of
   // the scene, every frame of its first 2.5 s; and the scene let go and built again
-  if (want(19) && boardForms.length) {
+  if (want(19) && boardForms.length) await guarded(19, async () => {
     const bad = [], seen = [], noReturn = [];
     const WATCH = (n) => {
       const out = []; window.__lab = out;
@@ -1479,12 +1557,12 @@ async function main() {
       await c.close();
     }
     ok(!bad.length, 19, `Scene ${BOARD_N}: after a reload in the middle of the scene no label shows ahead of the scene's pictures and the label box is shown or hidden exactly with the board, every frame watched (about the first 6 s); then at rest; it leaves and returns with the board (Chromium, WebKit 430x739 and 1512x860; Firefox 1512x860)`, seen.join(', ') + (noReturn.length ? `; no return to the scene after the reload in ${noReturn.join(', ')} (reached by scrolling)` : ''), bad.slice(0, 6).join('; '));
-  }
+  });
 
   // 25. the film gives up (its safety net): an error thrown while it runs hands back the plain page whole and the film
   // stops for good. Given up before any scroll, in scene 2 half way through its light, in scene 6 at pass 2's hold and
   // at rest, and in scene 7; checked at once, 1.5 s on and after a scroll through the whole page and back
-  if (want(25)) {
+  if (want(25)) await guarded(25, async () => {
     const bad = [], seen = [];
     const html = readFileSync(join(DIST, 'index.html'), 'utf8'), restD = {};
     for (const m of html.matchAll(/<svg class="board (b[dp])"[\s\S]*?<\/svg>/g)) restD[m[1]] = [...m[0].matchAll(/<path[^>]*?\sd="([^"]*)"/g)].map((x) => x[1]);
@@ -1530,6 +1608,11 @@ async function main() {
       if (full && (st.labsFull || st.boardFull < 0.999)) bad.push(`${tag} scene ${BN}: after the fade ${st.labsFull} labels and the board at ${st.boardFull.toFixed(2)} not at full strength`);
       if (st.styled.length) bad.push(`${tag}: inline styles left on ${[...new Set(st.styled)].slice(0, 4).join(', ')} (${st.styled.length})`);
       if (st.on !== onScene) bad.push(`${tag}: scene ${st.on} on screen, scene ${onScene} was`);
+      // the plain page restores its own place on a reload, its clock runs, and an attribute an outsider added stays
+      const more = await p.evaluate(() => ({ restore: history.scrollRestoration, clock: document.querySelector('#top .clock .time')?.textContent ?? '', outsider: ['top', 's2'].map((id) => document.getElementById(id)?.getAttribute('data-outsider')) }));
+      if (more.restore !== 'auto') bad.push(`${tag}: scroll restoration is "${more.restore}"`);
+      if (!/^\d\d:\d\d:\d\d$/.test(more.clock)) bad.push(`${tag}: the clock shows "${more.clock}"`);
+      if (more.outsider.some((v) => v !== '1')) bad.push(`${tag}: an outsider's attribute was taken off (#top, #s2: ${more.outsider.join(', ')})`);
     };
     /** (d) nothing still running: two pictures of the screen 1 s apart, the clock hidden */
     const still = async (p, tag) => {
@@ -1541,7 +1624,17 @@ async function main() {
         bad.push(`${tag}: the screen changes over 1 s (${n} pixels)`);
       }
     };
-    const moments = [['before any scroll', 1, null], ['scene 2 half way', 2, (p) => toScene(p, 2, 0.5)], ["scene 6 at pass 2's hold", BN, (p) => toBoard(p, { u: 0.4 })], ['scene 6 at rest', BN, (p) => toBoard(p, { u: 1 })], ['scene 7', NS, (p) => toScene(p, NS, 1)]];
+    // 'early': the error comes from the film's own first read of the page (the bottom safe area probe, as the module
+    // starts), before it has started its clock or its scroll work
+    const moments = [['at the very start', 1, null, true], ['before any scroll', 1, null], ['scene 2 half way', 2, (p) => toScene(p, 2, 0.5)], ["scene 6 at pass 2's hold", BN, (p) => toBoard(p, { u: 0.4 })], ['scene 6 at rest', BN, (p) => toBoard(p, { u: 1 })], ['scene 7', NS, (p) => toScene(p, NS, 1)]];
+    const EARLY = (msg) => {
+      const d = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight');
+      let done = false;
+      Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, get() { if (!done && this.classList && this.classList.contains('probe-b')) { done = true; throw new Error(msg); } return d.get.call(this); } });
+      // an attribute an outsider (a translator, a reader's extension) adds, which the give-up must leave alone
+      const mark = () => { for (const id of ['top', 's2']) document.getElementById(id)?.setAttribute('data-outsider', '1'); };
+      if (document.readyState === 'loading') document.addEventListener('readystatechange', mark, { once: true }); else mark();
+    };
     for (const engine of ['chromium', 'webkit', 'firefox']) {
       for (const [w, h] of [[430, 739], [1512, 860]]) {
         // the scripts off page: where every scene's picture sits
@@ -1550,17 +1643,21 @@ async function main() {
         await settle(po, 300);
         const ref = (await pics(po)).map((x) => x.r);
         await off.close();
-        for (const [name, onScene, go] of moments) {
+        for (const [name, onScene, go, early] of moments) {
           const tag = `${engine} ${w}x${h} ${name}`;
           const c = await ctx(engine, { viewport: { width: w, height: h }, bypassCSP: true });
+          if (early) await c.addInitScript(EARLY, INJECTED);
           const p = await c.newPage(), errs = [];
           p.on('pageerror', (e) => { if (!String(e).includes(INJECTED)) errs.push(String(e).slice(0, 160)); });
           p.on('console', (m) => { if (m.type() === 'error' && !m.text().includes(INJECTED)) errs.push(m.text().slice(0, 160)); });
           await p.goto(BASE + '/', { waitUntil: 'load' });
           await settle(p, 300);
           if (go) await go(p);
-          // a real error, thrown where the film runs
-          await p.evaluate((msg) => setTimeout(() => { throw new Error(msg); }), INJECTED);
+          if (!early) {
+            await p.evaluate(() => { for (const id of ['top', 's2']) document.getElementById(id)?.setAttribute('data-outsider', '1'); });
+            // a real error, thrown where the film runs
+            await p.evaluate((msg) => setTimeout(() => { throw new Error(msg); }), INJECTED);
+          }
           await p.waitForFunction(() => document.documentElement.classList.contains('nofilm'), null, { timeout: 5000 }).catch(() => bad.push(`${tag}: the film never gave up`));
           await judge(p, `${tag}, at once`, ref, onScene, false);
           await settle(p, 1500);
@@ -1581,11 +1678,11 @@ async function main() {
       }
     }
     seen.sort((a, b) => b - a);
-    ok(!bad.length, 25, 'The film gives up (an error thrown before any scroll, in scene 2 half way, in scene 6 at pass 2\'s hold and at rest, in scene 7): at once, 1.5 s on and after a scroll through the page and back, no scene is empty and each holds only its resting picture, where the scripts off page puts it; scene 6\'s board whole, its matte on, its five labels at rest on the picture\'s box (at full strength once the fade is over); no inline style in the film or the border; the scene that was on screen is on screen; the screen still over 1 s (clock hidden); no other error (Chromium, WebKit, Firefox; 430x739 and 1512x860)', `largest picture offset ${(seen[0] ?? 0).toFixed(2)} px`, [...new Set(bad)].slice(0, 8).join('; '));
-  }
+    ok(!bad.length, 25, 'The film gives up (an error thrown by the film\'s very first read of the page as it starts, before any scroll, in scene 2 half way, in scene 6 at pass 2\'s hold and at rest, in scene 7): at once, 1.5 s on and after a scroll through the page and back, no scene is empty and each holds only its resting picture, where the scripts off page puts it; scene 6\'s board whole, its matte on, its five labels at rest on the picture\'s box (at full strength once the fade is over); no inline style in the film or the border; the scene that was on screen is on screen; scroll restoration back to auto, the clock running, an attribute an outsider added left alone; the screen still over 1 s (clock hidden); no other error (Chromium, WebKit, Firefox; 430x739 and 1512x860)', `largest picture offset ${(seen[0] ?? 0).toFixed(2)} px`, [...new Set(bad)].slice(0, 8).join('; '));
+  });
 
   // 20. behind the things: the board forced to one flat colour shows nothing inside the things matte
-  if (want(20) && boardForms.length) {
+  if (want(20) && boardForms.length) await guarded(20, async () => {
     const bad = [], seen = [];
     const FLAT = `#s${BOARD_N} .board *{stroke:#ff00ff !important;fill:#ff00ff !important;stroke-opacity:1 !important;fill-opacity:1 !important;opacity:1 !important}#s${BOARD_N} .blab{visibility:hidden !important}`;
     for (const engine of ['chromium', 'webkit', 'firefox']) {
@@ -1622,12 +1719,12 @@ async function main() {
       }
     }
     ok(!bad.length, 20, `Scene ${BOARD_N}: behind the things: with the board forced to one flat colour, at least 99% of the pixels inside the three things' matte show none of it (Chromium, WebKit, Firefox; 430x739 and 1512x860)`, `least: ${seen.sort((a, b) => a[0] - b[0])[0]?.[1]}`, bad.slice(0, 6).join('; '));
-  }
+  });
 
   // 21. no tell: before step 1 nothing of the board shows; at pass 1's hold nothing of the race piece's and the phone's
   // traces, side lines and pads, nor the net, the dashed trace, the empty place and NEXT; at pass 2's hold nothing of
   // the phone's nor of the last step
-  if (want(21) && boardForms.length) {
+  if (want(21) && boardForms.length) await guarded(21, async () => {
     const bad = [], N = `#s${BOARD_N}`;
     const STEP4 = [`${N} .b4`, `${N} .blab.next`];
     // each name shows with its pad's outline, never before: TAPZ not while the stand's trace is on its way, TROPHYZ
@@ -1678,12 +1775,12 @@ async function main() {
     }
     ok(!sideBad.length, 21, `Scene ${BOARD_N}: no dim side line is drawn ahead of its trace's head (by more than 2 picture px), at 49 points from before the scene through the third pass (Chromium, 1512x860 and 430x739)`, `furthest ahead: ${sideMax.toFixed(1)} px`, sideBad.slice(0, 6).join('; '));
     ok(!bad.length, 21, `Scene ${BOARD_N}: no tell: before its first step nothing of the board and no label shows; while the stand's trace is on its way no pixel of TAPZ or the stand's pad; at pass 1's hold no pixel of the race piece's and the phone's traces, side lines, pads and names, the net, the dashed trace, the empty place or NEXT; at pass 2's hold none of the phone's (its name too) or of the last step (Chromium at 1512x860, 806x516, 430x739, 393x635; WebKit, Firefox)`, 'zero pixels each time', bad.slice(0, 6).join('; '));
-  }
+  });
 
   // 24. the current and the light arrive together: through the change that lights the race piece (second pass) and
   // the coach phone (third pass), the thing's own brightness (its box, board hidden) as a share of the change; the
   // head of its trace must be on its pad once that share is 75% and must not be there while it is at most 40%
-  if (want(24) && boardForms.length) {
+  if (want(24) && boardForms.length) await guarded(24, async () => {
     const bad = [], seen = [], nameRows = [];
     /** a name tag's opacity and its pad outline's, as the browser has them now */
     const nameAndPad = (p, t) => p.evaluate(([n, t]) => {
@@ -1736,13 +1833,13 @@ async function main() {
     const lit = nameRows.filter(([, a]) => a > 0 && a < 1).length;
     ok(!off.length && nameRows.length >= 31 * 3 * 4, 24, `Scene ${BOARD_N}: each name shows with its own pad outline, never ahead: through the race piece's and the coach phone's changes (31 points each) and the stand's trace coming in (31 points), the name's opacity equals its pad outline's (Chromium, WebKit; 1512x860 and 430x739)`, `${nameRows.length} points, ${lit} part way`, off.slice(0, 6).map((r) => `${r[0]}: name ${r[1]}, pad ${r[2]}`).join('; '));
     ok(!bad.length, 24, `Scene ${BOARD_N}: the race piece and the coach phone wake as their current arrives: through each one's change (31 points), its trace is on its pad by the time the thing is 75% lit and never while it is 40% lit or less (Chromium, WebKit; 1512x860 and 430x739)`, seen.join(', '), [...new Set(bad)].slice(0, 6).join('; '));
-  }
+  });
 
   // 22. no board ink within 8 px of the giant words' ink; the five labels (StudioOS, the three names, NEXT) at least
   // 12 px, at least 4.5 to 1 against their own colour, fully on the visible screen, never on the giant words, the small
   // line, a thing or each other (4 px apart at least), never dimmed (no mask above them; on short phones their
   // brightest ink at their colour's brightness), no net ink within 6 px of them; on big screens they grow
-  if (want(22) && boardForms.length) {
+  if (want(22) && boardForms.length) await guarded(22, async () => {
     const bad = [], lbad = [], dbad = [], nbad = [], gbad = [], seen = [], seenC = [], seenGap = [], seenNet = [], seenDim = [], grow = [], N = `#s${BOARD_N}`;
     const runs = [...VIEWPORTS, [1000, 1000], [834, 1194], [360, 640], [402, 874], [1366, 768], [1920, 1080]].map(([w, h]) => ({ w, h, css: '', label: `${w}x${h}` }))
       .concat(BARS.flatMap((bar) => ['away', 'showing'].map((state) => ({ ...barState(bar, state), label: barLabel(bar, state) }))));
@@ -1864,11 +1961,11 @@ async function main() {
     ok(!dbad.length, 22, `Scene ${BOARD_N}: no label is dimmed: no mask on a label or any box above it up to the layer (every size above), and at ${DIM_AT.join(', ')} each label's brightest ink is within 5% of its colour's brightness`, `least: ${seenDim.sort((a, b) => a[0] - b[0]).slice(0, 2).map((x) => x[1]).join(', ')}`, [...new Set(dbad)].slice(0, 8).join('; '));
     ok(!nbad.length, 22, `Scene ${BOARD_N}: no net ink (the faint net, its dots and parts) within 6 px of any label, ${what}`, `closest: ${seenNet.sort((a, b) => a[0] - b[0])[0]?.[1]}`, [...new Set(nbad)].slice(0, 8).join('; '));
     ok(!gbad.length, 22, `Scene ${BOARD_N}: on big screens the labels grow with the picture (2428x1300 and 1920x1080: StudioOS over 14 px, the others over 12 px); at 1440x900 and below, and upright, their base sizes (14 px, 12 px)`, grow.filter((g) => /StudioOS|NEXT/.test(g)).join(', '), [...new Set(gbad)].slice(0, 8).join('; '));
-  }
+  });
 
   // 23. less motion: nothing on the board moves and its rest state is complete; with motion, the pulses run at rest
   // and stop once the scene is off screen
-  if (want(23) && boardForms.length) {
+  if (want(23) && boardForms.length) await guarded(23, async () => {
     const bad = [];
     // every path's d in the page as built (the rest state), per drawing
     const html = readFileSync(join(DIST, 'index.html'), 'utf8'), restOf = {};
@@ -1907,10 +2004,10 @@ async function main() {
       }
     }
     ok(!bad.length, 23, `Scene ${BOARD_N}: with less motion every line of the board whole, every part and all ${2 + BOARD_NAMES.length} labels fully shown, no pulse, nothing changes over 0.8 s; with motion the pulses run at rest and stop once the scene is off screen (Chromium, WebKit, Firefox; 430x739, 1512x860)`, 'as specified', bad.slice(0, 6).join('; '));
-  }
+  });
 
   /* 6. LEGAL: the email address is a mail link, in the text's grey, underlined, at least 44 px tall to tap */
-  if (want(6)) {
+  if (want(6)) await guarded(6, async () => {
     const bad = [];
     for (const [engine, w, h] of [['chromium', 430, 739], ['chromium', 320, 568], ['chromium', 1512, 860], ['webkit', 430, 739], ['firefox', 430, 739]]) {
       const c = await ctx(engine, { viewport: { width: w, height: h } });
@@ -1925,10 +2022,10 @@ async function main() {
       await c.close();
     }
     ok(!bad.length, 6, 'LEGAL: every email address is a mail link in the text\'s own grey, underlined, with a tap area at least 44 x 44 px', 'all', bad.slice(0, 4).join('; '));
-  }
+  });
 
   /* 10. old addresses and unknown addresses (as far as a local server can tell) */
-  if (want(10)) {
+  if (want(10)) await guarded(10, async () => {
     const bad = [];
     const hop = async (path) => {
       const chain = [];
@@ -1955,15 +2052,17 @@ async function main() {
       if (r.status !== 200 || r.headers.get('content-type') !== 'image/png' || touched.length) bad.push(`${name}: ${r.status} ${r.headers.get('content-type')} ${touched.join(',')}`);
     }
     const cfg = readFileSync(join(ROOT, 'vercel.json'), 'utf8');
-    if (/"rewrites"|"routes"/.test(cfg)) bad.push('vercel.json has a rewrite or route');
+    // the only rewrites are the open doors' (test 26 checks them one by one); no routes
+    if (/"routes"/.test(cfg)) bad.push('vercel.json has routes');
+    for (const r of JSON.parse(cfg).rewrites ?? []) if (!(content.doors ?? []).some((d) => d.on && r.source.startsWith(d.path))) bad.push(`vercel.json rewrites ${r.source}, which is no open door`);
     for (const old of ['privacy.html', 'terms.html', 'privacy/index.html', 'terms/index.html']) if (existsSync(join(DIST, old))) bad.push(`dist/${old} exists: a second, older page`);
     for (const path of ['/Privacy', '/legal/privacy']) { const r = await hop(path); if (r.status !== 404) bad.push(`${path}: ${r.chain.join(' > ')}`); }
-    ok(!bad.length, 10, '/privacy and /terms (with and without the slash) reach LEGAL, matched as strictly as the host does; unknown addresses give 404 with the not found page; no rule touches the email pictures', 'as vercel.json says', bad.join('; '));
+    ok(!bad.length, 10, '/privacy and /terms (with and without the slash) reach LEGAL, matched as strictly as the host does; unknown addresses give 404 with the not found page; no rule touches the email pictures; the only rewrites are the open doors\'', 'as vercel.json says', bad.join('; '));
     warn(10, 'Not testable here', 'the host\'s own 404 status, the # in its redirect and its real headers need one curl on the first test address');
-  }
+  });
 
   /* 11. weights */
-  if (want(11)) {
+  if (want(11)) await guarded(11, async () => {
     const c = await ctx('chromium', { viewport: { width: 393, height: 852 }, deviceScaleFactor: 3, isMobile: true });
     const p = await c.newPage();
     p.on('pageerror', (e) => errors.push('weights: ' + e));
@@ -1989,11 +2088,11 @@ async function main() {
     const face = got.filter((r) => /\/assets\/anton-latin-400-normal-[^/]+\.woff2$/.test(r.url));
     ok(face.length === 1, 11, 'The display face loads once with the first screen, from this site, inside that budget', face.map((r) => kb(r.bytes)).join(', '), `${face.length} requests for it`);
     await c.close();
-  }
+  });
 
   /* 11. each engine asks for one file per picture: where it takes AVIF it never also fetches the WebP (the Safari
      engine used to, for every picture the film script makes); and the phone's first load stays in budget everywhere */
-  if (want(11)) {
+  if (want(11)) await guarded(11, async () => {
     const bad = [], seen = [];
     for (const engine of ['chromium', 'webkit', 'firefox']) {
       for (const [w, h, dpr] of [[430, 739, 3], [1512, 860, 2]]) {
@@ -2026,10 +2125,380 @@ async function main() {
       }
     }
     ok(!bad.length, 11, 'One file per picture: over a full scroll of the film no WebP is fetched where AVIF is taken, every scene shows its pictures; phone (430x739, 3 real pixels per point) first load under 250 KB (Chromium, WebKit, Firefox; also 1512x860 at 2)', `phone first load ${seen.join(', ')}`, bad.join('; '));
+  });
+
+  /* ---------- the doors (build 9): a product's own site under the studio's address, and the hand-over to it ---------- */
+  const DOORS_ON = (content.doors ?? []).filter((d) => d.on);
+  const BASE2 = `http://127.0.0.1:${PORT + 1}`;
+  const pictureSizes = JSON.parse(readFileSync(join(ROOT, 'src/generated/pictures.json'), 'utf8'));
+  /** the scenes holding each open door: [door, scene n, board?] */
+  const doorScenes = DOORS_ON.flatMap((d) => (d.scenes ?? []).map((n) => [d, n, !!content.scenes[n - 1]?.board]));
+  const onDoor = (path) => DOORS_ON.some((d) => path.startsWith(d.path));
+  /** A context for the hand-over: every request to another host is stopped (never sent) and noted, as the studio's
+   *  page's or as the product's page's own (the product loads web fonts from another host; that is its own choice).
+   *  The page logs the hand-over's own events in sessionStorage (shared by the two pages of one address). */
+  const DLOG = () => {
+    const log = (k, v) => { try { const a = JSON.parse(sessionStorage.getItem('doorlog') || '[]'); a.push([k, Math.round(performance.timeOrigin + performance.now()), location.pathname + location.hash, v ?? '']); sessionStorage.setItem('doorlog', JSON.stringify(a)); } catch { /* storage off */ } };
+    try { const nav = performance.getEntriesByType('navigation')[0]; log('doc', nav?.type ?? ''); } catch { /* old engine */ }
+    addEventListener('pagereveal', (e) => {
+      const vt = e.viewTransition;
+      log('reveal', vt ? 'vt' : 'novt');
+      if (vt) {
+        vt.ready.then(() => { const g = document.getAnimations().filter((a) => a.effect?.pseudoElement?.includes('group(product)')); log('group', JSON.stringify(g.map((a) => a.effect.getKeyframes().map((k) => [k.transform, k.width, k.height])))); }, () => log('vt-skipped'));
+        vt.finished.then(() => log('vt-finished'));
+      }
+    });
+    addEventListener('pageswap', (e) => { const b = document.querySelector('.door-vt'); const r = b?.getBoundingClientRect(); log('swap', (e.viewTransition ? 'vt' : 'novt') + (r ? ` ${b.style.viewTransitionName} ${[r.left, r.top, r.width, r.height].map((v) => v.toFixed(2)).join(',')}` : '')); });
+    addEventListener('pageshow', (e) => log('show', e.persisted ? 'persisted' : 'fresh'));
+  };
+  async function doorCtx(browser, engine, o = {}) {
+    const phone = (o.viewport?.width ?? 1440) < 600;
+    const opts = { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, ...o };
+    if (phone && engine !== 'firefox') opts.isMobile = true;
+    if (phone) opts.hasTouch = true;
+    const c = await browser.newContext(opts);
+    c.studioOut = []; c.doorOut = []; c.errs = [];
+    await c.route((u) => !u.href.startsWith(BASE) && !u.href.startsWith(BASE2), (r) => {
+      let from = '';
+      try { from = new URL(r.request().frame().url()).pathname; } catch { from = '?'; }
+      (onDoor(from) ? c.doorOut : c.studioOut).push(`${from} -> ${r.request().url().slice(0, 90)}`);
+      return r.abort();
+    });
+    await c.addInitScript(DLOG);
+    const close = c.close.bind(c);
+    c.close = async () => { cookieJar.push(...(await c.cookies())); return close(); };
+    return c;
   }
+  async function doorPage(c, base, path, label) {
+    step(`door page ${label}`);
+    const p = await c.newPage();
+    const own = () => { try { return onDoor(new URL(p.url()).pathname); } catch { return false; } };
+    // the product's page's own messages (its stopped web fonts) are not the studio's
+    p.on('console', (m) => { if (m.type() === 'error' && !own() && !/Transition was skipped/.test(m.text())) c.errs.push(`${label}: ${m.text().slice(0, 160)}`); });
+    p.on('pageerror', (e) => { if (!own() && !/Transition was skipped/.test(String(e))) c.errs.push(`${label}: ${String(e).slice(0, 160)}`); });
+    await p.goto(base + path, { waitUntil: 'load' });
+    return p;
+  }
+  const doorLog = (p) => p.evaluate(() => JSON.parse(sessionStorage.getItem('doorlog') || '[]'));
+  /** where scene n rests: its scroll, the scene on screen, its door's state */
+  const restState = (p, n) => p.evaluate(([n, share]) => {
+    const s = document.getElementById('s' + n), vh = document.querySelector('.probe')?.offsetHeight || innerHeight;
+    const on = document.querySelector('#film .scene.on');
+    const w = on?.querySelector('.cut') ?? on?.querySelector('.words');
+    return { y: scrollY, rest: s.offsetTop + share * Math.max(0, s.offsetHeight - vh), end: s.offsetTop + s.offsetHeight - vh / 2, on: on?.id, url: location.pathname + location.hash, root: document.documentElement.className,
+      words: w ? +getComputedStyle(w).opacity : -1, top: +getComputedStyle(document.getElementById('top')).opacity, rings: document.querySelectorAll('.door-ring').length, boxes: document.querySelectorAll('.door-vt').length };
+  }, [n, film.lightShare]);
+  const restBad = (r, n, tag) => {
+    const out = [];
+    if (r.on !== 's' + n || r.y < r.rest - 3 || r.y > r.end) out.push(`${tag}: scene ${r.on} at ${r.y}, want scene ${n} between ${Math.round(r.rest)} and ${Math.round(r.end)}`);
+    if (/door-/.test(r.root) || r.rings || r.boxes) out.push(`${tag}: left over: classes "${r.root}", ${r.rings} rings, ${r.boxes} blend boxes`);
+    if (r.words < 0.99 || r.top < 0.99) out.push(`${tag}: words at ${r.words}, border at ${r.top}`);
+    return out;
+  };
+
+  /* 26. the doors on the host: forwarding, headers, the speculation rules, the logo */
+  if (want(26)) await guarded(26, async () => {
+    const bad = [];
+    const cfg = JSON.parse(readFileSync(join(ROOT, 'vercel.json'), 'utf8'));
+    // exactly the open doors are forwarded, each to its product's public address
+    const wantRw = DOORS_ON.flatMap((d) => [[d.path, d.target.replace(/\/$/, '') + '/'], [d.path + ':path*', d.target.replace(/\/$/, '') + '/:path*']]);
+    const gotRw = (cfg.rewrites ?? []).map((r) => [r.source, r.destination]);
+    if (JSON.stringify(gotRw) !== JSON.stringify(wantRw)) bad.push(`vercel.json rewrites ${JSON.stringify(gotRw)}, want ${JSON.stringify(wantRw)}`);
+    if (cfg.routes) bad.push('vercel.json has routes');
+    const hdr = (cfg.headers ?? []).find((h) => h.source === '/')?.headers?.find((x) => x.key === 'Speculation-Rules')?.value;
+    if (DOORS_ON.length ? hdr !== '"/doors.json"' : hdr) bad.push(`the home page's Speculation-Rules header is ${hdr}`);
+    const head = async (path, base = BASE) => {
+      const r = await fetch(base + path, { redirect: 'manual' });
+      const raw = r.headers.get('cross-origin-opener-policy');
+      return { status: r.status, loc: r.headers.get('location'), csp: r.headers.get('content-security-policy') ?? '', type: r.headers.get('content-type'), coop: raw, coops: raw ? raw.split(',').length : 0, perm: r.headers.get('permissions-policy'), spec: r.headers.get('speculation-rules'), body: r.status === 200 ? await r.text() : '' };
+    };
+    const studioCsp = (await head('/')).csp;
+    if (!/script-src 'self'/.test(studioCsp)) bad.push(`the home page's policy is "${studioCsp}"`);
+    for (const path of ['/', '/legal/', '/machines/', '/doors.json', '/nope-nope/']) {
+      const r = await head(path);
+      if (r.csp !== studioCsp || r.coops !== 1) bad.push(`${path}: the studio's policy ${r.csp === studioCsp}, opener policies ${r.coops}`);
+    }
+    for (const d of DOORS_ON) {
+      const bare = d.path.replace(/\/$/, '');
+      const q = new URL(d.open ?? d.path, BASE).search;
+      const red = await head(bare + q);
+      if (red.status !== 308 || red.loc !== d.path + q) bad.push(`${bare}${q}: ${red.status} to ${red.loc}, want 308 to ${d.path}${q}`);
+      const page = await head(d.open ?? d.path);
+      const pic = d.pictures?.length ? await head(d.path + d.pictures[0].src) : null;
+      for (const [what, r] of [[d.open ?? d.path, page], ...(pic ? [[d.path + d.pictures[0].src, pic]] : [])]) {
+        if (r.status !== 200) bad.push(`${what}: ${r.status}`);
+        if (r.coops !== 1 || r.coop !== 'same-origin') bad.push(`${what}: Cross-Origin-Opener-Policy "${r.coop}" (${r.coops}), want exactly one same-origin`);
+        if (r.csp.includes("script-src 'self'") || r.perm || r.spec) bad.push(`${what}: the studio's own headers reach the door (policy "${r.csp.slice(0, 40)}", ${r.perm ? 'permissions' : ''} ${r.spec ? 'speculation rules' : ''})`);
+      }
+      if (!/view-transition-name:\s*product/.test(page.body)) bad.push(`${d.path}: the stand-in names no picture "product" (not a copy with the rulebook's asks)`);
+    }
+    const sr = await head('/doors.json');
+    let rules = null;
+    try { rules = JSON.parse(sr.body); } catch { /* none */ }
+    const urls = (rules?.prefetch ?? rules?.prerender ?? []).flatMap((r) => r.urls ?? []);
+    if (sr.type !== 'application/speculationrules+json' || JSON.stringify(urls) !== JSON.stringify(DOORS_ON.map((d) => d.open ?? d.path))) bad.push(`/doors.json: ${sr.type}, ${JSON.stringify(rules)}`);
+    // the logo in the page is the kit's file, shape for shape
+    const html = readFileSync(join(DIST, 'index.html'), 'utf8');
+    for (const d of DOORS_ON) {
+      const src = readFileSync(join(ROOT, d.logo), 'utf8'), shapes = (s) => [...s.matchAll(/<path\b[^>]*\/>/g)].map((m) => m[0]);
+      const inline = new RegExp(`<a class="door dlogo"[^>]*data-door="${d.id}"[^>]*>(<svg class="tlogo"[\\s\\S]*?<\\/svg>)`).exec(html);
+      // its shapes byte for byte (the route's mask, used only while the route draws itself, is no shape of the logo)
+      const drawn = inline ? inline[1].replace(/<defs>[\s\S]*?<\/defs>/, '') : '';
+      if (!inline || JSON.stringify(shapes(drawn)) !== JSON.stringify(shapes(src))) bad.push(`${d.id}: the logo in the page is not the shapes of ${d.logo}`);
+      if (drawn.toUpperCase().split(d.lit.toUpperCase()).length - 1 !== 1) bad.push(`${d.id}: the logo has more or less than one shape in ${d.lit}`);
+    }
+    ok(!bad.length, 26, `The doors on the host: vercel.json forwards exactly the open doors (${DOORS_ON.map((d) => d.path).join(', ') || 'none'}) to their public addresses; the address without its slash answers 308 to it, query kept; a door's page and picture carry exactly one opener policy (same-origin) and none of the studio's own headers, while every studio page keeps its policy; the home page names /doors.json, served as application/speculationrules+json and listing the open doors; the logo in the page is the kit's file shape for shape, one orange tile (local stand-in, never the live site)`, 'as specified', bad.slice(0, 8).join('; '));
+    warn(26, 'Not testable here', "the host's own handling of a rewrite's headers (one opener policy, none of the studio's) needs one curl on the test address");
+  });
+
+  /* 27. the door at rest: placed clear of the giant words, the small words and the things, at every listed size and
+     bar state; a real link with its name, keyboard reachable, tiles at least 16 px; it shows only once the light rests */
+  if (want(27) && doorScenes.length) await guarded(27, async () => {
+    const bad = [], seen = [];
+    /** the door of scene n and what it must stay clear of, on screen now */
+    const doorAt = (p, n, stand, later) => p.evaluate(([n, stand, later]) => {
+      const s = document.getElementById('s' + n), a = s.querySelector('a.door.dlogo'), img = s.querySelector('.passes img');
+      const upright = innerWidth / innerHeight <= 1;
+      const R = (b) => [b.left, b.top, b.right, b.bottom];
+      const ink = (e) => { const g = document.createRange(); g.selectNodeContents(e); return R(g.getBoundingClientRect()); };
+      const i = img.getBoundingClientRect(), k = i.width / (upright ? 786 : 1440);
+      const pic = (b) => [i.left + b[0] * k, i.top + b[1] * k, i.left + b[2] * k, i.top + b[3] * k];
+      const cs = getComputedStyle(a), logo = a.querySelector('.tlogo').getBoundingClientRect();
+      return { name: a.getAttribute('aria-label'), href: a.getAttribute('href'), box: R(a.getBoundingClientRect()), logo: R(logo), tile: logo.height / 1.1,
+        op: +cs.opacity, vis: cs.visibility, spot: a.dataset.spot, vw: document.documentElement.clientWidth, vh: innerHeight,
+        big: [...s.querySelectorAll(upright ? '.cut .big .pl' : '.cut .big .ln')].map(ink), small: [...(s.querySelector('.words')?.children ?? [])].map(ink),
+        things: [stand, ...later].map(pic) };
+    }, [n, stand, later]);
+    const overlap = (a, b) => a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
+    const judgeDoor = (r, tag, d) => {
+      if (r.name !== d.label || r.href !== (d.open ?? d.path)) bad.push(`${tag}: name "${r.name}", href ${r.href}`);
+      if (r.op < 0.99 || r.vis !== 'visible') bad.push(`${tag}: the door is not shown at rest (opacity ${r.op}, ${r.vis})`);
+      if (r.tile < 15.9) bad.push(`${tag}: tiles ${r.tile.toFixed(1)} px tall`);
+      if (r.box[3] - r.box[1] < 43.9 || r.box[2] - r.box[0] < 43.9) bad.push(`${tag}: touch area ${Math.round(r.box[2] - r.box[0])}x${Math.round(r.box[3] - r.box[1])}`);
+      if (r.box[0] < 0 || r.box[1] < 0 || r.box[2] > r.vw || r.box[3] > r.vh) bad.push(`${tag}: off the screen ${r.box.map(Math.round)}`);
+      for (const [what, list] of [['giant words', r.big], ['small words', r.small], ['things', r.things]]) for (const b of list) if (overlap(r.box, b)) bad.push(`${tag}: overlaps the ${what} (${spotOf(r)})`);
+      const gap = Math.min(...[...r.big, ...r.small, ...r.things].map((b) => Math.max(b[0] - r.logo[2], r.logo[0] - b[2], b[1] - r.logo[3], r.logo[1] - b[3])));
+      seen.push([gap, `${tag} ${spotOf(r)} ${gap.toFixed(1)} px`]);
+    };
+    const spotOf = (r) => r.spot ?? 'scripts off';
+    const runs = [...VIEWPORTS.map(([w, h]) => ({ engine: 'chromium', w, h, css: '', label: `${w}x${h}` })), { engine: 'chromium', w: 834, h: 1194, css: '', label: '834x1194' }, { engine: 'chromium', w: 375, h: 667, css: '', label: '375x667' },
+      ...BARS.flatMap((bar) => ['away', 'showing'].map((state) => ({ engine: 'chromium', ...barState(bar, state), label: barLabel(bar, state) }))),
+      ...['webkit', 'firefox'].flatMap((engine) => [[430, 739], [1512, 860]].map(([w, h]) => ({ engine, w, h, css: '', label: `${w}x${h}` }))),
+      { engine: 'webkit', ...barState(BARS[1], 'showing'), label: barLabel(BARS[1], 'showing') }];
+    for (const [d, n, board] of doorScenes) {
+      if (board) continue;
+      for (const run of runs) {
+        const form = run.w / run.h <= 1 ? 'phone' : 'desktop', view = viewOf(n, form), dv = view.doors?.[d.venture];
+        const tag = `${run.engine} ${run.label} scene ${n}`;
+        if (!dv) { bad.push(`${tag}: no door data`); continue; }
+        const later = (view.later ?? []).filter((l) => l[0] === view.passes.length).map(([, x, y, w, h]) => [x, y, x + w, y + h]);
+        const c = await ctx(run.engine, { viewport: { width: run.w, height: run.h }, bypassCSP: !!run.css });
+        if (run.css) await c.addInitScript(INJECT, run.css);
+        const p = await open(c, '/', `door ${tag}`);
+        // no tell: half way through the light the logo is not shown yet
+        await toScene(p, n, 0.5);
+        const early = await p.evaluate((n) => +getComputedStyle(document.querySelector(`#s${n} a.door.dlogo`)).opacity, n);
+        if (early > 0.01) bad.push(`${tag}: the door shows (${early.toFixed(2)}) before the light rests`);
+        await toScene(p, n, 1);
+        await settle(p, 450);
+        judgeDoor(await doorAt(p, n, dv.thing, later), tag, d);
+        await c.close();
+      }
+      // scripts off, a few sizes: the door is a plain link where build/door.ts puts it
+      for (const [w, h] of [[320, 568], [393, 852], [430, 739], [852, 393], [1512, 860], [2428, 1300]]) {
+        const form = w / h <= 1 ? 'phone' : 'desktop', view = viewOf(n, form), dv = view.doors[d.venture];
+        const later = (view.later ?? []).filter((l) => l[0] === view.passes.length).map(([, x, y, ww, hh]) => [x, y, x + ww, y + hh]);
+        const c = await ctx('chromium', { viewport: { width: w, height: h }, javaScriptEnabled: false });
+        const p = await open(c, '/', `door scripts off ${w}x${h}`);
+        await p.evaluate((n) => document.getElementById('s' + n).scrollIntoView(), n);
+        await settle(p, 300);
+        judgeDoor(await doorAt(p, n, dv.thing, later), `scripts off ${w}x${h} scene ${n}`, d);
+        await c.close();
+      }
+      // less motion: shown at any point of its scene; the keyboard reaches it with a visible ring
+      {
+        const c = await ctx('chromium', { viewport: { width: 1512, height: 860 }, reducedMotion: 'reduce' });
+        const p = await open(c, '/', 'door less motion');
+        await toScene(p, n, 0.2);
+        const op = await p.evaluate((n) => +getComputedStyle(document.querySelector(`#s${n} a.door.dlogo`)).opacity, n);
+        if (op < 0.99) bad.push(`less motion: the door at ${op} early in its scene`);
+        await c.close();
+        const k = await ctx('chromium', { viewport: { width: 1512, height: 860 } });
+        const q = await open(k, '/', 'door keyboard');
+        await toScene(q, n, 1);
+        let found = null;
+        for (let i = 0; i < 12 && !found; i++) {
+          await q.keyboard.press('Tab');
+          found = await q.evaluate((n) => { const a = document.activeElement; if (!a?.matches?.(`#s${n} a.door`)) return null; const cs = getComputedStyle(a); return { name: a.getAttribute('aria-label'), ring: cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) >= 1, y: scrollY }; }, n);
+        }
+        if (!found || found.name !== d.label || !found.ring) bad.push(`keyboard: the door ${found ? `has no visible ring (${JSON.stringify(found)})` : 'is not reached by Tab'}`);
+        await k.close();
+      }
+    }
+    // the board: one link over the stand and its name tag (the tag carries the arrow), at rest, every listed size
+    for (const [d, n, board] of doorScenes) {
+      if (!board) continue;
+      for (const [engine, w, h] of [...VIEWPORTS.map(([w, h]) => ['chromium', w, h]), ['webkit', 430, 739], ['firefox', 1512, 860]]) {
+        const tag = `${engine} ${w}x${h} board`;
+        const c = await ctx(engine, { viewport: { width: w, height: h } });
+        const p = await open(c, '/', `board door ${tag}`);
+        await toBoard(p, { u: 1 });
+        const t = BOARD_NAMES.find(([, name]) => name === content.ventures.find((v) => v.id === d.venture)?.name)?.[0];
+        const r = await p.evaluate(([n, t, id]) => {
+          const a = document.querySelector(`#s${n} a.door.dboard[data-door="${id}"]`), tagEl = document.querySelector(`#s${n} .blab.n-${t}`);
+          const R = (e) => { const b = e.getBoundingClientRect(); return [b.left, b.top, b.right, b.bottom]; };
+          return { name: a?.getAttribute('aria-label'), box: a ? R(a) : null, tag: tagEl ? R(tagEl) : null, arrow: !!tagEl?.querySelector('svg.arr'), vis: a ? getComputedStyle(a).visibility : '', vw: innerWidth, vh: innerHeight };
+        }, [n, t, d.id]);
+        if (r.name !== d.label || r.vis !== 'visible' || !r.box || !r.tag || !r.arrow) bad.push(`${tag}: ${JSON.stringify(r)}`);
+        else if (r.tag[0] < r.box[0] - 1 || r.tag[1] < r.box[1] - 1 || r.tag[2] > r.box[2] + 1 || r.tag[3] > r.box[3] + 1) bad.push(`${tag}: the name tag ${r.tag.map(Math.round)} is not inside the link ${r.box.map(Math.round)}`);
+        await c.close();
+      }
+    }
+    seen.sort((a, b) => a[0] - b[0]);
+    ok(!bad.length, 27, `The door at rest: in its scene the logo and arrow, one link named as content/site.json says, tiles at least 16 px, a touch area at least 44 px, on screen and clear of the giant words, the small words and the things the light leaves, at ${VIEWPORTS.map((v) => v.join('x')).join(', ')}, 834x1194, 375x667 and every bar state (Chromium), 430x739 and 1512x860 (WebKit, Firefox), with scripts off at six sizes; not shown half way through the light, shown at once with less motion; Tab reaches it with a visible ring; on the board one link holds the stand and its name tag (with the arrow), every listed size`, `closest: ${seen[0]?.[1] ?? 'none'}`, [...new Set(bad)].slice(0, 8).join('; '));
+  });
+
+  /* 28. the hand-over, both ways, against a local copy of the product's site WITH the rulebook's asks */
+  if (want(28) && doorScenes.length) await guarded(28, async () => {
+    const bad = [], seen = [];
+    // the back/forward cache: Chromium's full browser in its own hidden mode (the test tool turns the cache off by default)
+    let bf = null;
+    try { bf = await lib.chromium.launch({ headless: true, channel: 'chromium', ignoreDefaultArgs: ['--disable-back-forward-cache'] }); } catch { bf = null; }
+    if (!bf) warn(28, 'Back/forward cache not tested', "this playwright-core has no full Chromium build; Back is tested without the cache only");
+    const RUNS = [
+      { engine: 'chromium', browser: bf ?? browsers.chromium, w: 1512, h: 860, scene: 'own', cache: !!bf },
+      { engine: 'chromium', browser: bf ?? browsers.chromium, w: 430, h: 739, scene: 'own', cache: !!bf },
+      { engine: 'chromium', browser: bf ?? browsers.chromium, w: 1512, h: 860, scene: 'board', cache: !!bf },
+      // Safari brings a page back from the cache at the top of the page, and leaves it there when the page keeps its own place
+      ...(bf ? [{ engine: 'chromium', browser: bf, w: 430, h: 739, scene: 'own', cache: true, atTop: true }] : []),
+      { engine: 'chromium', browser: browsers.chromium, w: 1512, h: 860, scene: 'own', cache: false },
+      { engine: 'chromium', browser: browsers.chromium, w: 430, h: 739, scene: 'own', cache: false, key: true },
+      { engine: 'chromium', browser: browsers.chromium, w: 1512, h: 860, scene: 'own', cache: false, reduced: true },
+      { engine: 'webkit', w: 1512, h: 860, scene: 'own', cache: false },
+      { engine: 'firefox', w: 1512, h: 860, scene: 'own', cache: false },
+    ];
+    for (const run of RUNS) {
+      for (const [d, n, board] of doorScenes) {
+        if ((run.scene === 'board') !== board) continue;
+        const tag = `${run.engine} ${run.w}x${run.h} scene ${n}${run.cache ? ' (cache on)' : ''}${run.key ? ' (keyboard)' : ''}${run.reduced ? ' (less motion)' : ''}${run.atTop ? ' (back at the top, as Safari)' : ''}`;
+        const form = run.w / run.h <= 1 ? 'phone' : 'desktop', dv = viewOf(n, form).doors[d.venture];
+        step(`hand-over ${tag}`);
+        const c = await doorCtx(run.engine === 'chromium' ? run.browser : await useBrowser(run.engine), run.engine, { viewport: { width: run.w, height: run.h }, reducedMotion: run.reduced ? 'reduce' : 'no-preference' });
+        const p = await doorPage(c, BASE, '/', tag);
+        if (board) await toBoard(p, { u: 1 }); else await toScene(p, n, 1);
+        await settle(p, 500);
+        const sel = `#s${n} a.door[data-door="${d.id}"]`;
+        // the studio's letters now (from its picture and the film data), and where the product's sit at this size
+        const letters = await p.evaluate(([n, L, iw]) => { const i = document.querySelector(`#s${n} .passes img`).getBoundingClientRect(), k = i.width / iw; return [i.left + ((L[0] + L[1]) / 2) * k, i.top + L[2] * k]; }, [n, dv.anchor, pictureSizes[viewOf(n, form).passes[0]].size[0]]);
+        const fp = d.pictures.find((q) => run.w >= q.from), kt = Math.max(run.w / fp.size[0], run.h / fp.size[1]);
+        const theirs = [(run.w - fp.size[0] * kt) / 2 + ((fp.anchor[0] + fp.anchor[1]) / 2) * kt, (run.h - fp.size[1] * kt) / 2 + fp.anchor[2] * kt];
+        const b = await p.evaluate((sel) => { const r = document.querySelector(sel).getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }, sel);
+        if (run.atTop) await p.evaluate(() => addEventListener('pagehide', () => scrollTo(0, 0)));
+        const t0 = Date.now();
+        if (run.key) { await p.focus(sel); await p.keyboard.press('Enter'); }
+        else if (run.w < 600) await p.touchscreen.tap(b[0], b[1]);
+        else await p.mouse.click(b[0], b[1]);
+        // during the exit: two thin cream rings, full circles, from the Z (its own scene); the words fading
+        if (!run.reduced) {
+          await p.waitForTimeout(180);
+          const ex = await p.evaluate((sel) => {
+            const z = document.querySelector(`${sel} .dz`)?.getBoundingClientRect(), rings = [...document.querySelectorAll('.door-ring')];
+            const m = document.querySelector(`${sel} .dz`)?.getAttribute('mask');
+            return { mask: m, cls: document.documentElement.className, rings: rings.map((r) => { const cs = getComputedStyle(r); return { round: cs.borderRadius === '50%', colour: cs.borderTopColor, w: cs.borderTopWidth, x: parseFloat(cs.left), y: parseFloat(cs.top) }; }), z: z ? [z.left + z.width / 2, z.top + z.height / 2] : null };
+          }, sel).catch(() => null);
+          if (!ex || !/door-leaving/.test(ex.cls)) bad.push(`${tag}: no exit (${ex?.cls})`);
+          // a route logo: its route draws itself through its mask (no rings)
+          else if (!board && d.move === 'route' && (!ex.mask || ex.rings.length)) bad.push(`${tag}: the route is not drawing itself (mask ${ex.mask}, ${ex.rings.length} rings)`);
+          else if (!board && d.move === 'press' && (ex.rings.length !== 2 || ex.rings.some((r) => !r.round || r.colour !== 'rgb(240, 232, 216)' || r.w !== '1px' || Math.hypot(r.x - ex.z[0], r.y - ex.z[1]) > 3))) bad.push(`${tag}: rings ${JSON.stringify(ex.rings)} from ${ex.z}`);
+          await p.waitForTimeout(220);
+          const fade = await p.evaluate(() => [...document.querySelectorAll('#film .scene.on .cut, #film .scene.on .words, #top')].map((e) => +getComputedStyle(e).opacity)).catch(() => [0]);
+          if (fade.some((o) => o > 0.05)) bad.push(`${tag}: the words and border still at ${fade.map((o) => o.toFixed(2))} 400 ms after the click`);
+        }
+        await p.waitForURL((u) => u.pathname.startsWith(d.path), { timeout: 15000 }).catch(() => bad.push(`${tag}: never reached ${d.path}`));
+        await settle(p, 2200);
+        let L = await doorLog(p);
+        const tc = t0, swap = L.find((x) => x[0] === 'swap' && !onDoor(x[2])), reveal = L.find((x) => x[0] === 'reveal' && onDoor(x[2]));
+        const group = L.find((x) => x[0] === 'group' && onDoor(x[2])), fin = L.find((x) => x[0] === 'vt-finished' && onDoor(x[2]));
+        const vtWant = !run.reduced && run.engine !== 'firefox';
+        if (vtWant) {
+          if (!swap || !/vt product/.test(swap[3])) bad.push(`${tag}: the picture was not named for the blend (${swap?.[3]})`);
+          if (!reveal || reveal[3] !== 'vt' || !group) bad.push(`${tag}: no blend on the product's page (${reveal?.[3]})`);
+          else {
+            // the blend's group grows from the box to the whole window, and the box carries the studio's letters onto
+            // the product's letters
+            const kf = JSON.parse(group[3])[0] ?? [];
+            const m = /matrix\(1, 0, 0, 1, (-?[\d.]+), (-?[\d.]+)\)/.exec(kf[0]?.[0] ?? '');
+            const bw = parseFloat(kf[0]?.[1]), bh = parseFloat(kf[0]?.[2]);
+            if (!m || parseFloat(kf[1]?.[1]) !== run.w || parseFloat(kf[1]?.[2]) !== run.h) bad.push(`${tag}: the blend's group ${JSON.stringify(kf)}`);
+            else {
+              const to = [(letters[0] - +m[1]) * (run.w / bw), (letters[1] - +m[2]) * (run.h / bh)];
+              const off = Math.hypot(to[0] - theirs[0], to[1] - theirs[1]);
+              seen.push(`${tag} letters ${off.toFixed(1)} px, swap ${swap[1] - tc} ms, blend ${fin ? fin[1] - reveal[1] : '?'} ms`);
+              if (off > 3) bad.push(`${tag}: the studio's letters land ${off.toFixed(1)} px from the product's (${to.map(Math.round)} vs ${theirs.map(Math.round)})`);
+              if (Math.abs(bw / bh - run.w / run.h) > 0.01) bad.push(`${tag}: the blend's box is not the window's shape (${bw}x${bh})`);
+            }
+            if (swap[1] - tc < 380 || swap[1] - tc > 900) bad.push(`${tag}: the page left ${swap[1] - tc} ms after the click (the exit is about 440 ms)`);
+          }
+        } else if (reveal && reveal[3] === 'vt') bad.push(`${tag}: a blend ran (${run.reduced ? 'less motion' : run.engine})`);
+        if (run.reduced && swap && swap[1] - tc > 250) bad.push(`${tag}: less motion waited ${swap[1] - tc} ms before leaving`);
+        // Back: the studio, on the scene at rest
+        await p.goBack({ waitUntil: 'commit' }).catch(() => bad.push(`${tag}: Back failed`));
+        await settle(p, 1800);
+        await p.waitForFunction(() => document.querySelector('#film .scene.on') && !/door-/.test(document.documentElement.className), null, { timeout: 4000 }).catch(() => {});
+        const r = await restState(p, n);
+        bad.push(...restBad(r, n, `${tag}, Back`));
+        if (!board && r.url !== '/#' + d.id) bad.push(`${tag}, Back: the address is ${r.url}, want /#${d.id}`);
+        if (!board) { const dn = await p.evaluate((sel) => +getComputedStyle(document.querySelector(sel)).opacity, sel); if (dn < 0.99) bad.push(`${tag}, Back: the door at ${dn}`); }
+        L = await doorLog(p);
+        const shows = L.filter((x) => x[0] === 'show' && !onDoor(x[2]));
+        const back = shows[shows.length - 1], rev = L.filter((x) => x[0] === 'reveal' && !onDoor(x[2])).pop();
+        if (run.cache && back?.[3] !== 'persisted') bad.push(`${tag}, Back: the page was not kept by the back/forward cache (${back?.[3]})`);
+        if (run.cache && vtWant && rev?.[3] !== 'vt') bad.push(`${tag}, Back: no blend coming back (${rev?.[3]})`);
+        seen.push(`${tag} back: ${back?.[3]} ${rev?.[3] ?? 'no reveal'}`);
+        if (c.studioOut.length) bad.push(`${tag}: the studio's page asked another host: ${[...new Set(c.studioOut)].slice(0, 2).join(', ')}`);
+        if (c.errs.length) bad.push(...c.errs.slice(0, 2));
+        await c.close();
+      }
+    }
+    if (bf) await bf.close();
+    ok(!bad.length, 28, `The hand-over, against a local copy of the product's site with the rulebook's asks: a click (a tap on a phone, Enter from the keyboard) plays the exit (TAPZ: two 1 px cream rings, full circles from the Z; TROPHYZ: the red route draws itself; words and border gone by 400 ms), leaves about 0.44 s after it, names the picture for the blend, and the product's page blends its first picture in from a box of the window's shape that carries the studio's anchor onto the product's (TAPZ: the PROXYZ letters; TROPHYZ: the disc; within 3 px); Back lands on the scene at rest (at /#${DOORS_ON.map((d) => d.id).join(', /#')}), words and border back, nothing left over, kept by the back/forward cache with the blend in reverse where the cache is on, and without the cache too; less motion: a plain link, no blend; Chromium 1512x860 and 430x739 (scene 2, the board), WebKit (the blend) and Firefox (the exit, then a cut) at 1512x860; the studio's page asks no other host`, seen.join('; '), [...new Set(bad)].slice(0, 8).join('; '));
+  });
+
+  /* 29. against a copy of the product's site WITHOUT the asks: the exit, then a clean cut, and Back */
+  if (want(29) && doorScenes.length) await guarded(29, async () => {
+    const plain = standinsFromEnv(process.env, 'DOOR_PLAIN_');
+    if (!Object.keys(plain).length) warn(29, 'Not tested', 'set DOOR_PLAIN_<ID> (and _HEADERS) to a copy of the product\'s site without the rulebook\'s asks');
+    else {
+      const bad = [];
+      const s2 = await startServer({ dir: DIST, port: PORT + 1, standins: plain });
+      for (const [d, n, board] of doorScenes) {
+        // only the doors with such a copy
+        if (board || !plain[new URL(d.target).origin]) continue;
+        const c = await doorCtx(browsers.chromium, 'chromium', { viewport: { width: 1512, height: 860 } });
+        const p = await doorPage(c, BASE2, '/', 'clean cut');
+        await toScene(p, n, 1);
+        await settle(p, 400);
+        await p.click(`#s${n} a.door`);
+        await p.waitForURL((u) => u.pathname.startsWith(d.path), { timeout: 15000 }).catch(() => bad.push(`never reached ${d.path}`));
+        await settle(p, 2000);
+        const L = await doorLog(p), reveal = L.find((x) => x[0] === 'reveal' && onDoor(x[2]));
+        if (!reveal || reveal[3] !== 'novt') bad.push(`the product's page without the asks: ${reveal?.[3] ?? 'no reveal'}`);
+        const first = await p.evaluate(() => [document.title, !!document.getElementById('root')]);
+        if (!first[1]) bad.push(`the product's page did not load: ${first[0]}`);
+        await p.goBack({ waitUntil: 'commit' });
+        await settle(p, 1800);
+        bad.push(...restBad(await restState(p, n), n, 'clean cut, Back'));
+        if (c.studioOut.length) bad.push(`the studio's page asked another host: ${c.studioOut[0]}`);
+        bad.push(...c.errs.slice(0, 2));
+        await c.close();
+      }
+      s2.close();
+      ok(!bad.length, 29, 'Against a copy of the product\'s site without the rulebook\'s asks (no blend, no opener policy): the exit, then a clean cut to its page (no blend, no error), and Back lands on the scene at rest (Chromium 1512x860)', 'a clean cut', bad.slice(0, 6).join('; '));
+    }
+  });
 
   /* 5. the email pictures */
-  if (want(5)) {
+  if (want(5)) await guarded(5, async () => {
     const bad = [];
     for (const [name, sum] of Object.entries(EMAIL_PICTURES)) {
       for (const dir of ['public', 'dist']) {
@@ -2039,7 +2508,7 @@ async function main() {
       }
     }
     ok(!bad.length, 5, 'The four email pictures: same sha256 as recorded, in public/ and in dist/', 'all eight equal', bad.join('; '));
-  }
+  });
 
   /* 4. requests to other hosts, cookies (collected across every page opened above; always, whatever ran) */
   {
@@ -2050,6 +2519,7 @@ async function main() {
     ok(!errors.length, 6, 'Zero console errors and page errors (including content security policy reports) in every run above', 'none', [...new Set(errors)].slice(0, 8).join('; '));
   }
 
+  if (retried.length) warn(4, 'Pages a hidden browser did not load in 30 s, loaded at the second try', retried.join('; '));
   for (const b of Object.values(browsers)) await b.close();
   server.close();
   const failed = results.filter((r) => r === 'FAIL').length;
