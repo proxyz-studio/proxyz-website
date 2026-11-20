@@ -44,7 +44,7 @@ const DEG = Math.PI / 180;
 const BRAIN = 6;
 /** how each move between two rests is shaped (scene i+1 to i+2) */
 const SHAPES: Shape[] = [
-  { leave: 0.3, settle: 0.5, ease: 0.03 },                               // 1 to 2: the pull back from the letters to the whole stand
+  { leave: 0.3, settle: 0.5, ease: 0.03, via: { frame: 0.85 } },        // 1 to 2: the pull back from the letters to the whole stand (it finds its place early, clear of the words)
   { leave: 0.3, settle: 0.5, ease: 0.03, via: { out: 1.25, lift: 4 } },  // 2 to 3: back a little, across to the race piece
   { leave: 0.3, settle: 0.5, ease: 0.03, via: { out: 1.1, lift: 6 } },   // 3 to 4: over to the coin and down along it
   { leave: 0.3, settle: 0.5, ease: 0.03, via: { out: 1.3, lift: 8 } },   // 4 to 5: up off the coin, over to the phone
@@ -60,6 +60,8 @@ export interface Film3d {
   ready(n: number): boolean;
   /** the transform of scene 6's board (its frame) and labels while live, or null */
   board(n: number): { frame: string; labels: string } | null;
+  /** how far a point on scene n's floor (screen px at rest) has moved with the live camera: [dx, dy] */
+  mapPoint(n: number, x: number, y: number): [number, number] | null;
   /** how far a door's logo moves with the live picture: [dx, dy] px */
   logo(n: number, anchor: [number, number]): [number, number] | null;
   relayout(): void;
@@ -194,6 +196,9 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
     const more = world.pending() > 0;
     if (world.pending() && (!moving || need.length)) world.upload(1, new Set(want));
     for (let n = 1; n <= h.count; n++) if (isReady(n)) ready.add(n); else ready.delete(n);
+    // for the check: the scenes drawn live now, and those ready to be (on the page root, read only)
+    const mark = [...liveNow].sort().join(',') + '|' + [...ready].sort().join(',');
+    if (document.documentElement.dataset.world !== mark) document.documentElement.dataset.world = mark;
 
     // the scenes the page shows (its layers: the words, and the still film where a scene is not live yet)
     const shown: { n: number; W: number }[] = [];
@@ -330,6 +335,12 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
     return homography(a as number[][], b as number[][]);
   }
   let lastY = 0;
+  function mapPoint(n: number, x: number, y: number): [number, number] | null {
+    const H = floorMap(n);
+    if (!H) return null;
+    const w = H[6] * x + H[7] * y + H[8];
+    return [(H[0] * x + H[1] * y + H[2]) / w - x, (H[3] * x + H[4] * y + H[5]) / w - y];
+  }
 
   return {
     frame(y, top, s, now, moving) { lastY = y; return frame(y, top, s, now, moving); },
@@ -346,12 +357,8 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
       const m3 = (A: number[], B: number[]) => [0, 1, 2].flatMap((r) => [0, 1, 2].map((c) => A[r * 3] * B[c] + A[r * 3 + 1] * B[3 + c] + A[r * 3 + 2] * B[6 + c]));
       return { frame: cssHomography(H), labels: cssHomography(m3(T(-g.left, -g.top), m3(H, T(g.left, g.top)))) };
     },
-    logo(n, anchor) {
-      const H = floorMap(n);
-      if (!H) return null;
-      const [x, y] = anchor, w = H[6] * x + H[7] * y + H[8];
-      return [(H[0] * x + H[1] * y + H[2]) / w - x, (H[3] * x + H[4] * y + H[5]) / w - y];
-    },
+    logo(n, anchor) { return mapPoint(n, anchor[0], anchor[1]); },
+    mapPoint,
     relayout() {
       layoutKey = '';
       for (let n = 1; n <= h.count; n++) {

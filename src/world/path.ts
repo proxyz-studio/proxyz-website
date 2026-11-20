@@ -38,7 +38,7 @@ export interface Shape {
   ease: number;
   /** a pulled back view half way, which holds both things (out: how much further than the farther rest, as a factor;
    *  lift: degrees higher) */
-  via?: { out: number; lift: number };
+  via?: { out?: number; lift?: number; frame?: number };
 }
 
 /** The keys of the whole film: rests[i] is scene i+1's rest camera and its playhead; holds lists the rests the camera
@@ -57,15 +57,18 @@ export function keysOf(rests: { y: number; v: number[] }[], shapes: Shape[], vh:
     keys.push({ y: rests[i].y, v: vs[i] });
     if (i === rests.length - 1) break;
     const s = shapes[i], a = vs[i], b = vs[i + 1];
-    const same = a.every((x, j) => Math.abs(x - b[j]) < 1e-9);
+    // one camera (scenes 6 and 7): no keys between (the tenth number, where the camera is, runs straight on)
+    const same = a.every((x, j) => j > 8 || Math.abs(x - b[j]) < 1e-9);
     if (same) continue;
     const y0 = rests[i].y, y1 = rests[i + 1].y;
     const yl = Math.min(y0 + s.leave * vh, (y0 + y1) / 2 - 1), ys = Math.max(y1 - s.settle * vh, yl + 1);
     keys.push({ y: yl, v: lerp(a, b, s.ease) });
     if (s.via) {
-      const m = lerp(a, b, 0.5);
-      m[4] += s.via.lift * (Math.PI / 180);
-      m[5] = Math.max(a[5], b[5]) + Math.log(s.via.out);
+      // half way; the framing (what it looks at, and where on the screen) may lead (frame: its share of the way)
+      const m = lerp(a, b, 0.5), f = s.via.frame ?? 0.5;
+      for (const j of [0, 1, 2, 6, 7, 8]) m[j] = a[j] + (b[j] - a[j]) * f;
+      m[4] += (s.via.lift ?? 0) * (Math.PI / 180);
+      if (s.via.out) m[5] = Math.max(a[5], b[5]) + Math.log(s.via.out);
       keys.push({ y: (yl + ys) / 2, v: m });
     }
     keys.push({ y: ys, v: lerp(a, b, 1 - s.ease) });

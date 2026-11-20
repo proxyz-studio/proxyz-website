@@ -923,9 +923,16 @@ function stage(k: number, y: number, wIn: number, wOut: number, rest: boolean, s
   if (s.frame) move(s.frame, live ? bd?.frame ?? '' : cam(dy, sc));
   if (s.cam) move(s.cam, cam(dy, sc));
   if (k === BRAIN - 1 && labelBox) {
-    const t = live ? bd?.labels ?? '' : cam(dy, sc, labelAt[0], labelAt[1]);
+    // live: each label slides with its own point on the floor (words are never bent by the floor's perspective)
+    const t = live ? '' : cam(dy, sc, labelAt[0], labelAt[1]);
     move(labelBox, t);
-    labelBox.classList.toggle('moving', !!t);
+    const g = live && bd?.frame ? geometry(viewOf(BRAIN), s) : null;
+    for (const e of $$('.blab', labelBox)) {
+      const [x, y, side] = (e.dataset[form === 'desktop' ? 'd' : 'p'] ?? '0,0,r').split(',');
+      const p = g ? live!.mapPoint(BRAIN, labelAt[0] + (+x / 100) * g.w, labelAt[1] + (+y / 100) * g.h) : null;
+      put(e, 'transform', p ? `translate(${p[0].toFixed(2)}px,${p[1].toFixed(2)}px) ${SHIFT[side] ?? ''}` : SHIFT[side] ?? '');
+    }
+    labelBox.classList.toggle('moving', !!t || !!g);
   }
   // the lines of words: the scene leaving takes them away one by one (upwards, the way the page goes), the scene
   // arriving brings them in from below (src/film/motion.ts plans both scenes' lines together)
