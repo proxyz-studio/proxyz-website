@@ -6,8 +6,8 @@
 import {
   BufferAttribute, BufferGeometry, CircleGeometry, Color, CustomToneMapping, DataTexture, Euler,
   ExtrudeGeometry, Group, LinearFilter, LinearMipmapLinearFilter, LinearSRGBColorSpace, Matrix4, Mesh, MeshStandardMaterial, NoColorSpace,
-  PCFShadowMap, PerspectiveCamera, PlaneGeometry, Quaternion, RepeatWrapping, RGBAFormat, Scene,
-  ShaderChunk, Shape, ShapeGeometry, SpotLight, SRGBColorSpace, Texture, UnsignedByteType, Vector2, Vector3, WebGLRenderer,
+  PerspectiveCamera, PlaneGeometry, Quaternion, RepeatWrapping, RGBAFormat, Scene,
+  ShaderChunk, Shape, ShapeGeometry, SpotLight, SRGBColorSpace, Texture, UnsignedByteType, Vector2, Vector3, VSMShadowMap, WebGLRenderer,
 } from 'three';
 import { PATH, shotAt, type Form, type Pose } from './path';
 import standUrl from './stand.bin?url';
@@ -216,7 +216,9 @@ export async function startLive(): Promise<Player> {
   renderer.toneMapping = CustomToneMapping;
   renderer.toneMappingExposure = 1;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = PCFShadowMap;
+  // variance shadows: the depth compare shadows (PCF) came out all black in iOS Safari (the simulator), so every
+  // lit surface went dark
+  renderer.shadowMap.type = VSMShadowMap;
   renderer.shadowMap.autoUpdate = false;
   renderer.setPixelRatio(1);
 
@@ -269,7 +271,11 @@ export async function startLive(): Promise<Player> {
   scene.add(floor);
 
   // the one hard light: a small spot from the left, in one fixed place, aimed at the stand (the stills' key)
-  const key = new SpotLight(lin(1, 0.975, 0.94), 0, 0, 9 * DEG, 0.2, 2);
+  // Its strength without falling off with distance (the stand is about 1100 mm from it, give or take 10%), so the number
+  // stays small: the stills' 11,000,000 over 1100 mm squared. A phone's graphics chip may draw with half precision
+  // numbers (up to 65,504), where the falling off in millimetres overflows and the light goes black.
+  const KEY = 11000000 / (1100 * 1100);
+  const key = new SpotLight(lin(1, 0.975, 0.94), 0, 0, 9 * DEG, 0.2, 0);
   key.position.set(-721.8, 776, 383.8);
   key.castShadow = true;
   key.shadow.mapSize.set(2048, 2048);
@@ -277,7 +283,8 @@ export async function startLive(): Promise<Player> {
   key.shadow.camera.far = 1700;
   key.shadow.bias = -0.0004;
   key.shadow.normalBias = 0.25;
-  key.shadow.radius = 2;
+  key.shadow.radius = 3;
+  key.shadow.blurSamples = 8;
   scene.add(key, key.target);
 
   const camera = new PerspectiveCamera(30, 1.6, 60, 12000);
@@ -309,7 +316,7 @@ export async function startLive(): Promise<Player> {
     const a = PATH[form].aim;
     key.target.position.set(a[0], a[1], a[2]);
     key.target.updateMatrixWorld();
-    key.intensity = 11000000 * sh.key;
+    key.intensity = KEY * sh.key;
     // the phone between its tap and lifted poses (as scripts/s2-frames.mjs phonePose)
     if (sh.lift !== lastLift || form !== lastForm) {
       const P = PATH[form];
