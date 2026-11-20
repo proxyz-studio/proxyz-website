@@ -22,7 +22,8 @@ npm run check      # builds, serves dist/ locally and proves the rules (see belo
 |---|---|
 | `content/site.json` | Every word on the site. The pages, `llms.txt` (with its closing list of page links), the meta tags and the structured data are all made from it at build time. Edit words here, nowhere else. |
 | `src/film/scenes.json` | How the film moves: the light passes of each scene, where each picture sits (`frame`), how far the light travels (`rest`, `hold`, `still`), scene 6's growing light (`opens`), the height line. |
-| `src/main.ts` | The film: scroll position to light, scene changes, the five marks. |
+| `src/main.ts` | The film: from one playhead (the scroll position) to the light, the pictures, the words, the changes between scenes, the five marks. |
+| `src/film/motion.ts` | How the film moves, as pure functions of the playhead: the change between two scenes, the drift of the pictures, the lines of words leaving and arriving. See "How the film moves" below. |
 | `src/film/math.ts` | The light and mask arithmetic, shared by the film and the build. |
 | `src/style.css` | The one style file for every page. |
 | `build/pages.ts` | Writes the pages from the three data files (and the picture placement and the size of every giant line, used before the script runs and with no script at all). |
@@ -144,10 +145,37 @@ trace to an empty place marked NEXT. It is drawn by the page over the drawing, n
 ### The last scene's picture
 
 `content/site.json`, last scene, `"picture"`: `"twin"` (the default: the pool of light of scene 6, now empty, framed
-exactly like scene 6, so at the cut the light stays in place and only the three things leave it) or `"own"` (the
+exactly like scene 6, so through the change the light stays in place and only the three things leave it) or `"own"` (the
 alternative: its own small, faint pool of light). The twin's film data is `"7twin"` in `src/film/scenes.json`; its
 pictures are `s7t-*`. While the twin fades in, scene 6 holds at full strength under it, so the pool does not dim.
 Change the word, build, check.
+
+### How the film moves
+
+Everything the film shows is set on every frame from one number, the playhead: the scroll position, followed at once
+for a script, a key or a scroll bar, within about 40 ms for a finger and within about 90 ms for a mouse wheel (which
+moves the page in steps). Nothing runs on a timer, so scrolling back plays everything in reverse. The numbers live in
+`src/film/motion.ts`:
+
+- The change between two scenes plays over 0.8 screens of scroll, centred where the scene on screen changes. Each
+  scene's stage has its own dark ground; the arriving scene comes in over the one leaving, held at full strength, so
+  the light never dips and no frame is empty. The scene after 6 is the twin: nothing moves, only the three things
+  leave the pool of light.
+- A scene's picture, with its giant words at the top (and the matte cut, and scene 6's board and labels), rests a
+  little below its place as the change into it starts, rises into place as the light comes, and keeps rising at the
+  same pace after it; it grows 3% as it leaves. At each scene's rest (within 3 px) it is exactly in place.
+- The lines of words leave and arrive one by one, moving 22 to 40 px: the giant lines at the top first, the words at
+  the foot later. Words never pass over other words.
+- Each light pass is eased at both ends of its step, resting exactly where the light arithmetic rests it.
+- The door's logo shows as the light comes to rest and leaves first.
+- With less motion: no movement, each scene at its rest, a plain cut between scenes.
+- The scenes next to the one on screen are built and painted (unseen) while the page is still, after the first scroll.
+- On every frame the film writes only transforms and opacity, on boxes that do not carry a mask: the camera moves a
+  box inside the pictures' box (`.frame`, the passes and the board) and a box around the giant words' box (`.cam`);
+  scene 6's growing light is an oval mask drawn once in a box (`.lm`) inside a box the film scales (`.lens`). A
+  browser draws a masked box again whenever its style is touched, so the masked boxes are only touched on a resize.
+- What moves gets a layer of its own only while it moves (a light pass while its light grows, the lines of words
+  through a change, the board's labels while they move), so at rest everything is drawn as the page draws it.
 
 ### Replacing a drawing with a real photo
 
