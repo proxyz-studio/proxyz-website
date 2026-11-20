@@ -328,6 +328,18 @@ export async function startLive(): Promise<Player> {
     return true;
   }
 
+  // compile every shader and send every shape and picture to the graphics chip now, off screen, so the first frame
+  // the scroll asks for does not stop to do it (it took about 0.27 s in Chromium)
+  camera.position.set(0, 300, 800); camera.lookAt(0, 50, 10); camera.updateProjectionMatrix();
+  key.intensity = 1; glow.mesh.visible = true;
+  await renderer.compileAsync(scene, camera);
+  // at the window's size (the drawing buffer is made once, not on the first frame of the scroll)
+  const d0 = Math.min(devicePixelRatio || 1, 2);
+  renderer.setSize(Math.round(innerWidth * d0), Math.round(innerHeight * d0), false);
+  renderer.shadowMap.needsUpdate = true;
+  renderer.render(scene, camera);
+  glow.mesh.visible = false;
+
   return {
     canvas,
     draw,
