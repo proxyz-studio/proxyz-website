@@ -48,7 +48,7 @@ const DEG = Math.PI / 180;
 const BRAIN = 6;
 /** how each move between two rests is shaped (scene i+1 to i+2) */
 const SHAPES: Shape[] = [
-  { leave: 0.3, settle: 0.5, ease: 0.03, via: { frame: 1, out: 1, at: 0.28 } },        // 1 to 2: the pull back from the letters to the whole stand (it finds its place early, clear of the words)
+  { leave: 0.3, settle: 0.5, ease: 0.03, via: { frame: 1, out: 1, at: 0.28 }, blend: [0.05, 0.45] },        // 1 to 2: the pull back from the letters to the whole stand (it finds its place early, clear of the words)
   { leave: 0.3, settle: 0.5, ease: 0.03, via: { out: 1.25, lift: 4 } },  // 2 to 3: back a little, across to the race piece
   { leave: 0.3, settle: 0.5, ease: 0.03, via: { out: 1.1, lift: 6 } },   // 3 to 4: over to the coin and down along it
   { leave: 0.3, settle: 0.5, ease: 0.03, via: { out: 1.3, lift: 8 } },   // 4 to 5: up off the coin, over to the phone
@@ -295,7 +295,9 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
     let pair: { n: number; W: number }[];
     if (a + 1 === BRAIN && a + 2 <= h.count) pair = shown.some((x) => x.n === a + 2) ? shown : [{ n: a + 1, W: 1 }];
     else {
-      const w = e <= 0.3 ? 0 : e >= 0.7 ? 1 : ((e - 0.3) / 0.4) ** 2 * (3 - 2 * (e - 0.3) / 0.4);
+      // (each move's own stretch of the camera's way where the stills change over: 1 to 2 early, as its pull back is)
+      const [b0, b1] = SHAPES[a]?.blend ?? [0.3, 0.7], x = Math.max(0, Math.min(1, (e - b0) / (b1 - b0)));
+      const w = x * x * (3 - 2 * x);
       // while the camera is between two rests both scenes are drawn, each point mostly by the one whose still saw it
       // (the shader's coverage weights): early in a move, what the leaving still never held is the arriving still's,
       // not the leaving scene's live light (a dark frame, test 30)

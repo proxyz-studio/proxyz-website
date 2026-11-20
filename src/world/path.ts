@@ -39,6 +39,8 @@ export interface Shape {
   /** a pulled back view half way, which holds both things (out: how much further than the farther rest, as a factor;
    *  lift: degrees higher) */
   via?: { out?: number; lift?: number; frame?: number; at?: number };
+  /** the stretch of the camera's way (0 to 1) over which the two scenes' stills change over (0.3 to 0.7 if not set) */
+  blend?: [number, number];
 }
 
 /** The keys of the whole film: rests[i] is scene i+1's rest camera and its playhead; holds lists the rests the camera

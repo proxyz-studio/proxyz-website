@@ -234,7 +234,7 @@ ${[0, 1].map((s) => {
     // the still), the live floor farther behind (else a blurred copy of the thing would show on the floor beyond it)
     // past the frame it gives way to the live floor within a short distance (a still that is all thing at its edge, the
     // close up of the coin, would carry that thing's colours out across the floor)
-    float far = u0 == bu ? smoothstep(12.0, 50.0, vC[${p(0)}].w - dz(uD${p(0)}, bu)) : smoothstep(0.0, 0.12, length(u0 - bu));
+    float far = u0 == bu ? smoothstep(12.0, 50.0, vC[${p(0)}].w - dz(uD${p(0)}, bu)) : smoothstep(0.0, 0.3, length(u0 - bu));
     fb = mix(acc / 9.0, fb, far);
   }
   // a thing this scene's stills do not hold, inside its first still's frame: as dark as the still shows that place (the
@@ -285,7 +285,7 @@ void main() {
   if (held) {
     // handed over in the dark: the thing of the scene leaving goes into the dark before the camera is half way, the
     // thing of the scene arriving is lit only after it (never two lit at once: the trophy's coin and scene 4's coin)
-    float k = smoothstep(0.5, 0.8, uHold[0] > 0.5 ? w0 : w1);
+    float k = smoothstep(0.46, 0.54, uHold[0] > 0.5 ? w0 : w1);
     w0 = uHold[0] > 0.5 ? k : 1.0 - k; w1 = 1.0 - w0;
   }
   // between two scenes, each point is drawn mostly by the scene whose still saw it (the other one's live light, where
