@@ -95,10 +95,8 @@ export async function startStrip(form: Form, s0: number): Promise<Player> {
     const sig = [a, b, t.toFixed(3), box.left.toFixed(1), box.top.toFixed(1), box.w.toFixed(1), box.h.toFixed(1), W, H].join('|');
     if (a < 0 || sig === lastKey) return false;
     lastKey = sig;
-    if (canvas.width !== W || canvas.height !== H) {
-      canvas.width = W; canvas.height = H;
-      canvas.style.width = vw + 'px'; canvas.style.height = vh + 'px';
-    }
+    if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H; }
+    if (canvas.style.width !== vw + 'px' || canvas.style.height !== vh + 'px') { canvas.style.width = vw + 'px'; canvas.style.height = vh + 'px'; }
     ctx.imageSmoothingQuality = 'high';
     ctx.fillStyle = '#010101';
     ctx.globalAlpha = 1;

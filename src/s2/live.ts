@@ -218,6 +218,7 @@ export async function startLive(): Promise<Player> {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = PCFShadowMap;
   renderer.shadowMap.autoUpdate = false;
+  renderer.setPixelRatio(1);
 
   const [parts, tex] = await Promise.all([loadStand(), new Promise<Texture>((res, rej) => {
     const img = new Image();
@@ -292,12 +293,9 @@ export async function startLive(): Promise<Player> {
     const sig = [s.toFixed(4), form, box.left.toFixed(1), box.top.toFixed(1), box.w.toFixed(1), box.h.toFixed(1), W, H].join('|');
     if (sig === lastKey) return false;
     lastKey = sig;
-    if (canvas.width !== W || canvas.height !== H) {
-      renderer.setPixelRatio(1);
-      renderer.setSize(W, H, false);
-      canvas.style.width = vw + 'px';
-      canvas.style.height = vh + 'px';
-    }
+    if (canvas.width !== W || canvas.height !== H) renderer.setSize(W, H, false);
+    // the shown size apart from the drawing size (the warm-up made the drawing buffer already)
+    if (canvas.style.width !== vw + 'px' || canvas.style.height !== vh + 'px') { canvas.style.width = vw + 'px'; canvas.style.height = vh + 'px'; }
     // the camera, framed as today's still: the picture's box is the camera's whole frame (30 degrees over its
     // height), the lens shift slides it, and the screen shows the part of it the box puts on screen
     look.set(c.lx, c.ly, c.lz);
