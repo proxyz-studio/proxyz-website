@@ -319,7 +319,8 @@ function setCut(s: SceneState, view: View, g: Box | null): void {
   if (gaveUp) return;
   const c = s.cut;
   if (!c) return;
-  if (!g || !s.matte?.ready) { c.removeAttribute('style'); return; }
+  // scene 2 drawn live (look 11): the cut is the still's own outline, right only at the rest, so the words stay whole
+  if (!g || !s.matte?.ready || (s === S[S2 - 1] && s2At)) { c.removeAttribute('style'); return; }
   const px = (v: number) => v.toFixed(2) + 'px';
   const m = cutMask(s.matte.url, view.opens ? '' : frameMask(view, pictures[view.passes[0]].size), { left: px(g.left), top: px(g.top), w: px(g.w), h: px(g.h) });
   const st = c.style;
@@ -816,11 +817,11 @@ function s2Frame(y: number, now: number): boolean {
   if (!s2 || !s2Box || !s.frame || written.get(s.layer)?.visibility !== 'visible') return false;
   // the frames of version B are made for one screen shape: a turned screen loads its own
   if (form !== s2Form && LOOK === 'b') {
-    s2.dispose(); s2.canvas.remove(); s2 = null; s2Loading = false; put(s.frame, 'visibility', '');
+    s2.dispose(); s2.canvas.remove(); s2 = null; s2Loading = false; s2At = 0; put(s.frame, 'visibility', '');
     s2Load();
     return false;
   }
-  if (s2.draw(s2Place(y), form, s2Box, VW, VH) && !s2At) s2At = now;
+  if (s2.draw(s2Place(y), form, s2Box, VW, VH) && !s2At) { s2At = now; s.cut?.removeAttribute('style'); }
   if (!s2At) return false;
   // in over the still in 0.3 s (at rest the two are the same picture), then the still is hidden under it
   const k = clamp((now - s2At) / 300);
