@@ -269,8 +269,9 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
     if (want.some((k) => k.startsWith('s2-'))) list.push({ key: SCREEN, url: menuScreen });
     world.want(list);
     // one picture into the chip a frame, and only while the page is still or the scene needs it now
-    // while the film moves, only the stills of the scenes on screen and the next (the rest while the page is still)
-    const need = [top + 1, top, top + 2].filter((n) => n >= 1 && n <= h.count && !isReady(n));
+    // while the film moves, only the stills of the scenes on screen (the rest while the page is still: a picture's first
+    // rows cost Safari about 30 ms, its decoding)
+    const need = [top + 1, top].filter((n) => n >= 1 && n <= h.count && !isReady(n));
     const more = world.pending() > 0;
     // never let go of the stills of a scene on screen (or the one before the scene arriving, or after it)
     const keep = new Set(want);
