@@ -38,7 +38,9 @@ export interface CamState {
   fpx: number; cx: number; cy: number;
 }
 export interface PassState { key: string; t: number; oval: [number, number, number, number] | null }
-export interface SlotState { scene: number; W: number; passes: PassState[]; sat: number; fade: [number, number, number, number] | null }
+export interface SlotState { scene: number; W: number; passes: PassState[]; sat: number; fade: [number, number, number, number] | null;
+  /** a phone's soft side edges of the picture: its left and right edge on screen (CSS px) and the width of the fade */
+  sides: [number, number, number] | null }
 export interface FrameState {
   vw: number; vh: number; pr: number;
   cam: CamState;
@@ -545,6 +547,8 @@ export class World {
     gl.uniform1fv(u('uEr[0]'), pe.length ? [0, 1].map((s) => { const e = proj[s * PASSES]?.eye; return e ? Math.min(2, Math.hypot(st.cam.eye[0] - e[0], st.cam.eye[1] - e[1], st.cam.eye[2] - e[2]) / 15) : 0; }) : [0, 0]);
     gl.uniform1fv(u('uSat[0]'), sat);
     gl.uniform4fv(u('uFade[0]'), fade);
+    gl.uniform3fv(u('uSides[0]'), slots.flatMap((sl) => sl.sides ?? [0, 0, 0]).concat(slots.length < 2 ? [0, 0, 0] : []).slice(0, 6));
+    gl.uniform1f(u('uPr'), st.pr);
     gl.uniform3fv(u('uLp[0]'), lp); gl.uniform3fv(u('uLd[0]'), ld); gl.uniform2fv(u('uLc[0]'), lc); gl.uniform1fv(u('uLi[0]'), li); gl.uniform1fv(u('uLk[0]'), lk);
     gl.uniform1f(u('uDepthFar'), 6000);
     gl.uniform1f(u('uDbg'), this.debug);

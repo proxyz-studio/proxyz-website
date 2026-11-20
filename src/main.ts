@@ -900,7 +900,9 @@ function motion(y: number, now: number): boolean {
     const unseen = !shown && !rest && s.readyAt !== 0 && Math.abs(k + 1 - active) <= 1 && s.passes.length > 0
       && (warm.has(k) || (k === top + 1 && y > tops[k] - VH / 2 - (WINDOW / 2 + 0.5) * VH));
     put(s.layer, 'visibility', shown || unseen ? 'visible' : 'hidden');
-    put(s.layer, 'opacity', !shown ? '0' : k === top ? opv(strength) : '');
+    // a still scene under a live one arriving fades out as it comes in (the live picture lies under both)
+    const lf = shown && k === top - 1 ? live3d?.lowerFade(k + 1) ?? null : null;
+    put(s.layer, 'opacity', !shown ? '0' : k === top ? opv(strength) : lf !== null ? opv(lf) : '');
     if (!shown && !unseen) continue;
     light(k + 1, progress(k, y));
     stage(k, y, wIn[k], k < n - 1 ? wIn[k + 1] : 0, rest, k === top ? strength : 1);
@@ -1086,7 +1088,7 @@ doors = startDoors({
   reduced,
   gaveUp: () => gaveUp,
   hold: (n) => { holdN = n; if (n) remember(); },
-  freeze: (on) => { frozen = on; if (!on) { measure(); snap(); schedule(); } },
+  freeze: (on) => { frozen = on; live3d?.pause(on); if (!on) { measure(); snap(); schedule(); } },
   relayout: () => { onResize(); layoutAll(); },
 });
 

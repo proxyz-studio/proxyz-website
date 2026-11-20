@@ -90,6 +90,8 @@ uniform float uW[${SLOTS}];
 uniform float uEr[${SLOTS}];
 uniform float uSat[${SLOTS}];
 uniform vec4 uFade[${SLOTS}];
+uniform vec3 uSides[${SLOTS}];
+uniform float uPr;
 uniform vec3 uLp[${SLOTS}];
 uniform vec3 uLd[${SLOTS}];
 uniform vec2 uLc[${SLOTS}];
@@ -187,7 +189,11 @@ ${[0, 1, 2].map((k) => `  if (uNP[${s}] > ${k}) {
   }`).join('\n')}
   c = sat(c, uSat[${s}]);
   float fm = fadeOf(uFade[${s}], frameY);
-  return mix(FILM, c, mix(1.0, fm, frameW));
+  c = mix(FILM, c, mix(1.0, fm, frameW));
+  // a phone's soft side edges (as the page's mask on the pictures' box: screen px)
+  vec3 sd = uSides[${s}];
+  if (sd.z > 0.0) { float x = gl_FragCoord.x / uPr; c = mix(FILM, c, clamp((x - sd.x) / sd.z, 0.0, 1.0) * clamp((sd.y - x) / sd.z, 0.0, 1.0)); }
+  return c;
 }`;
   }).join('\n')}
 void main() {

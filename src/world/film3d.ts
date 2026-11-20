@@ -56,6 +56,10 @@ export interface Film3d {
   /** one frame: the scenes on screen (top: 0-based index of the scene arriving, s: its strength over the one before) */
   frame(y: number, top: number, s: number, now: number, moving: boolean): boolean;
   live(n: number): boolean;
+  /** the opacity of still scene n under a live scene arriving, or null */
+  lowerFade(n: number): number | null;
+  /** a door hands over: the stills, until it is back */
+  pause(on: boolean): void;
   /** scene n's stills are in the chip: it can be drawn live */
   ready(n: number): boolean;
   /** the transform of scene 6's board (its frame) and labels while live, or null */
@@ -73,14 +77,21 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
   let world: World | null = null;
   let gone = false;
   const events = {
-    lost: () => { lostAt = performance.now(); unlive(); h.schedule(); },
+    lost: () => { if (gone) return; lostAt = performance.now(); why = 'lost'; unlive(); h.schedule(); },
     restored: () => { lostAt = 0; layoutKey = ''; h.schedule(); },
   };
   let lostAt = 0;
-  world = await World.create(events, phoneChip ? 150e6 : 260e6);
+  world = await World.create(events, phoneChip ? 120e6 : 260e6);
   world.warm();
   world.onDecoded = () => h.schedule();
   let canvas = world.canvas;
+  // the live picture: one canvas in a fixed box just before the film, so under every scene's layer, never moved in the
+  // page (moving a WebGL canvas from one layer to another made Safari stop 100 to 230 ms)
+  const under = document.createElement('div');
+  under.className = 'world-under';
+  under.setAttribute('aria-hidden', 'true');
+  under.append(canvas);
+  document.getElementById('film')?.before(under);
   // the copy of the things in front of the giant words
   const fg = document.createElement('canvas');
   fg.className = 'world-fg';
@@ -119,7 +130,10 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
   /* ---------- which scenes are live ---------- */
   const ready = new Set<number>();
   const isReady = (n: number) => !!world && !world.lost && !!L && passesOf(n).every((k) => world!.has(k));
-  let host: number | null = null;
+  /** a still scene under a live one arriving: it fades out by the arriving one's strength (src/main.ts motion) */
+  let fade: { n: number; o: number } | null = null;
+  /** while a door hands over, the scenes show their stills (the browser's blend captures the scene's own box) */
+  let paused = false;
   const liveNow = new Set<number>();
   function setLive(n: number, on: boolean): void {
     const e = h.els(n);
@@ -134,28 +148,31 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
   }
   function unlive(): void {
     for (const n of [...liveNow]) setLive(n, false);
+    under.style.visibility = 'hidden';
+    fade = null;
     ready.clear();
-    document.documentElement.dataset.world = '||' + (benchMs ? benchMs.toFixed(0) : '');
-    canvas.remove();
-    host = null;
+    document.documentElement.dataset.world = '||' + (benchMs ? benchMs.toFixed(0) : '') + '|' + why;
     fg.style.visibility = 'hidden';
   }
 
   /* ---------- the governor: sharpness from the measured frame times ---------- */
   const DPR = Math.max(1, devicePixelRatio || 1);
-  const steps = [Math.min(2, DPR), 1.5, 1.25, 1].filter((v, i, a) => v <= DPR && a.indexOf(v) === i);
-  let step = 0, slow = 0, benched = 0, benchMs = 0, benchAt = 0;
+  // one sharpness while moving and at rest (a drawing buffer made again at every stop churns a phone's memory), at
+  // most twice the page's pixels; lower when the measured frames are slow
+  const steps = [Math.min(2, DPR), 1.5, 1.25, 1].filter((v, i, a) => v <= Math.min(2, DPR) && a.indexOf(v) === i);
+  let step = 0, slow = 0, benched = 0, benchMs = 0, benchAt = 0, why = '';
   const times: number[] = [];
   let lastDraw = 0;
-  function measure(now: number): void {
-    if (lastDraw && now - lastDraw < 200) times.push(now - lastDraw);
-    lastDraw = now;
+  /** now: this frame's time; prev: the previous frame's, when that frame drew too (only frames drawn back to back
+   *  measure the chip) */
+  function measure(now: number, prev: number): void {
+    if (prev && now - prev < 200) times.push(now - prev);
     if (times.length < 24) return;
     const sorted = [...times].sort((a, b) => a - b), p75 = sorted[Math.floor(sorted.length * 0.75)];
     times.length = 0;
     if (p75 > 34) {
       if (step < steps.length - 1) step++;
-      else if (++slow >= 2) giveUp();
+      else if (++slow >= 2) { why = 'slow'; giveUp(); }
     } else slow = 0;
   }
   function giveUp(): void {
@@ -163,6 +180,7 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
     gone = true;
     unlive();
     fg.remove();
+    under.remove();
     world?.dispose();
     world = null;
     onGone();
@@ -170,22 +188,28 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
 
   /* ---------- what to read into the chip next ---------- */
   function wanted(active: number): string[] {
-    const order = [active, active + 1, active - 1, active + 2].filter((n) => n >= 1 && n <= h.count);
+    const order = (phoneChip ? [active, active + 1, active - 1] : [active, active + 1, active - 1, active + 2]).filter((n) => n >= 1 && n <= h.count);
     const out: string[] = [];
-    for (const n of order) for (const k of passesOf(n)) if (!out.includes(k)) out.push(k);
+    for (const n of order) {
+      const ks = passesOf(n);
+      for (const k of phoneChip && n === active - 1 ? ks.slice(-1) : ks) if (!out.includes(k)) out.push(k);
+    }
     return out;
   }
 
   /* ---------- one frame ---------- */
   let drawn = '', settled = 0;
+  let prevFrame = 0, thisFrame = 0;
   function frame(y: number, top: number, s: number, now: number, moving: boolean): boolean {
+    prevFrame = thisFrame; thisFrame = now;
     if (gone || !world) return false;
+    if (paused) return false;
     if (world.lost) {
       // a context lost and not given back within two seconds: a fresh one
       if (lostAt && now - lostAt > 2000 && document.visibilityState === 'visible') {
         lostAt = 0;
         const old = world;
-        World.create(events, old.budget).then((w) => { world = w; w.onDecoded = () => h.schedule(); layoutKey = ''; old.dispose(); swap(w.canvas); h.schedule(); }, giveUp);
+        World.create(events, old.budget).then((w) => { world = w; w.onDecoded = () => h.schedule(); w.warm(); layoutKey = ''; old.dispose(); swap(w.canvas); why = 'renewed'; h.schedule(); }, () => { why = 'lost for good'; giveUp(); });
       }
       return false;
     }
@@ -226,29 +250,25 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
     // a scene arriving over a still one: only its own light, faded in by its page layer
     if (live.length === 1 && shown.length === 2 && live[0].n === top + 1) slots = [slotOf(top + 1, 1, y)];
     else if (live.length === 1 && shown.length === 2) slots = [slotOf(live[0].n, 1, y)];
-    const newHost = live.length ? live[0].n : null;
     for (let n = 1; n <= h.count; n++) setLive(n, live.some((x) => x.n === n));
-    if (newHost !== host) {
-      host = newHost;
-      if (host) { const b = h.els(host).box; if (canvas.parentElement !== b) b.prepend(canvas); }
-      else canvas.remove();
-    }
-    if (!host || !slots.length) { fg.style.visibility = 'hidden'; return more; }
-    // the host's dark band gives way to the one of a live scene arriving over it (each scene's own band, mixed)
+    // a still scene under a live one arriving fades out as that one comes in (the live picture is under both)
+    fade = live.length === 1 && shown.length === 2 && live[0].n === top + 1 ? { n: top, o: 1 - s } : null;
+    if (!live.length || !slots.length) { under.style.visibility = 'hidden'; fg.style.visibility = 'hidden'; return more; }
+    if (under.style.visibility !== 'visible') under.style.visibility = 'visible';
+    // the lower live scene's dark band gives way to the one of a live scene arriving over it (each scene's own band)
     for (const x of shown) {
       const sh = h.els(x.n).shade;
-      if (sh) h.put(sh, 'opacity', x.n === host && live.length === 2 && shown.length === 2 ? (1 - s).toFixed(3) : '');
+      if (sh) h.put(sh, 'opacity', x.n === shown[0].n && live.length === 2 && shown.length === 2 ? (1 - s).toFixed(3) : '');
     }
     const cam = camOf(camV);
     const lift = liftOf(y);
     if (!moving) settled = settled || now; else settled = 0;
-    const pr = settled && now - settled > 120 ? Math.min(DPR, 3) : steps[step];
+    const pr = steps[step];
     const fgBox = fgRect(cam, slots, lift);
     const st: FrameState = { vw: h.vw(), vh: h.vh(), pr, cam, slots, lift, fg: fgBox };
     const sig = JSON.stringify([st, liveNow.size]);
     if (sig === drawn && !(benched === 1 && now >= benchAt)) return more || benched === 1;
     canvas.style.width = st.vw + 'px'; canvas.style.height = st.vh + 'px';
-    const t0 = performance.now();
     const ok = world.draw(st, fgBox ? fgCtx : null);
     if (!ok) return more;
     drawn = sig;
@@ -267,14 +287,15 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
       benchMs = [...b].sort((x, z) => x - z)[1];
       if (benchMs <= 60) benched = 2;
       else if (benched === 1) { benchAt = now + 2500; drawn = ''; }
-      else { giveUp(); return false; }
+      else { why = 'bench'; giveUp(); return false; }
       if (benchMs > 24 && benchMs <= 60) { step = steps.length - 1; drawn = ''; }
-    } else if (moving) measure(t0);
+    } else if (moving) measure(now, lastDraw === prevFrame ? prevFrame : 0);
+    lastDraw = now;
     // the copy of the things in front of the giant words: as strong as the live picture under it
     if (fgBox) {
       if (fg.style.width !== st.vw + 'px' || fg.style.height !== st.vh + 'px') Object.assign(fg.style, { width: st.vw + 'px', height: st.vh + 'px' });
       if (fg.style.visibility) fg.style.visibility = '';
-      { const o = live.length === 1 && shown.length === 2 && live[0].n === top + 1 ? s.toFixed(3) : ''; if (fg.style.opacity !== o) fg.style.opacity = o; }
+      { if (fg.style.opacity) fg.style.opacity = ''; }
     } else if (fg.style.visibility !== 'hidden') fg.style.visibility = 'hidden';
     // frames go on while the chip's second answer is due, or the last sharp frame at rest is not drawn yet
     return more || benched === 1 || !settled || now - settled < 200;
@@ -282,14 +303,16 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
   function swap(c: HTMLCanvasElement): void {
     canvas.remove();
     canvas = c;
-    host = null;
+    under.append(c);
     for (const n of [...liveNow]) setLive(n, false);
   }
 
   function slotOf(n: number, W: number, y: number): SlotState {
-    const v = h.view(n), t = h.strengths(n, y);
+    const v = h.view(n), t = h.strengths(n, y), g = restBox[n - 1];
+    const fe = g ? 0.14 * g.w : 0;
     return {
       scene: n, W,
+      sides: v.frame.sides && g && (g.left > -fe || g.left + g.w < h.vw() + fe) ? [g.left, g.left + g.w, fe] : null,
       sat: /saturate\(([\d.]+)\)/.test(v.filter ?? '') ? Number(/saturate\(([\d.]+)\)/.exec(v.filter!)![1]) : 1,
       fade: v.frame.fade ? (v.frame.fade as [number, number, number, number]) : null,
       passes: v.passes.map((key, k) => {
@@ -366,6 +389,13 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
   return {
     frame(y, top, s, now, moving) { lastY = y; return frame(y, top, s, now, moving); },
     live: (n) => liveNow.has(n),
+    lowerFade: (n) => (fade && fade.n === n ? fade.o : null),
+    pause(on) {
+      paused = on;
+      if (on) unlive();
+      drawn = '';
+      h.schedule();
+    },
     ready: (n) => ready.has(n) && !gone,
     board(n) {
       const H = floorMap(n);

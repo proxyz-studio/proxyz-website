@@ -123,7 +123,9 @@ html.film body::before { content: ""; position: fixed; top: 0; left: 0; right: 0
 .film .frame, .film .cam { position: absolute; inset: 0; transform-origin: 0 0; will-change: transform; }
 .film .cam { pointer-events: none; }
 /* look 11: scene 2's live picture (src/s2), over the still pictures it replaces, never moved by the film's drift */
-.film canvas.world { position: absolute; left: 0; top: 0; display: block; pointer-events: none; }
+/* build 12: the live picture, under every scene's layer (src/world/film3d.ts) */
+.world-under { position: fixed; z-index: 1; left: 0; top: 0; pointer-events: none; visibility: hidden; }
+.world-under canvas { display: block; }
 /* build 12: a live scene's pictures' box holds the live picture (src/world/film3d.ts) and shows at once */
 .film .passes.live { opacity: 1; transition: none; }
 /* the copy of the live things that stand in front of the giant words: above every scene, under the border */
