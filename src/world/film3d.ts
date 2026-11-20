@@ -219,10 +219,18 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
     const want = wanted(active);
     world.want(want.map((k) => ({ key: k, url: h.url(k, Number(/^s(\d)/.exec(k)?.[1] ?? active)) })));
     // one picture into the chip a frame, and only while the page is still or the scene needs it now
+    // while the film moves, only the stills of the scenes on screen and the next (the rest while the page is still)
     const need = [top + 1, top, top + 2].filter((n) => n >= 1 && n <= h.count && !isReady(n));
     const more = world.pending() > 0;
-    if (world.pending() && (!moving || need.length)) world.upload(1, new Set(want));
+    // never let go of the stills of a scene on screen (or the one before the scene arriving, or after it)
+    const keep = new Set(want);
+    for (const n of [top, top + 1, top + 2]) if (n >= 1 && n <= h.count) for (const k of passesOf(n)) keep.add(k);
+    if (world.pending() && (!moving || need.length)) world.upload(1, keep, !moving);
+    else if (!moving) { world.upload(0, keep, true); world.tidy(); }
     for (let n = 1; n <= h.count; n++) if (isReady(n)) ready.add(n); else ready.delete(n);
+    // the depth maps of the scenes next in line, ahead of their first frame (one a frame)
+    const soon = [top + 1, top + 2, top].filter((n) => n >= 1 && n <= h.count && ready.has(n));
+    world.prepare(soon.flatMap((n) => passesOf(n)));
     // for the check: the scenes drawn live now, and those ready to be (on the page root, read only)
     const mark = [...liveNow].sort().join(',') + '|' + [...ready].sort().join(',') + (benchMs ? '|' + benchMs.toFixed(0) : '');
     if (document.documentElement.dataset.world !== mark) document.documentElement.dataset.world = mark;
@@ -267,7 +275,7 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
     const fgBox = fgRect(cam, slots, lift);
     const st: FrameState = { vw: h.vw(), vh: h.vh(), pr, cam, slots, lift, fg: fgBox };
     const sig = JSON.stringify([st, liveNow.size]);
-    if (sig === drawn && !(benched === 1 && now >= benchAt)) return more || benched === 1;
+    if (sig === drawn && !(benched < 2 && now >= benchAt && !moving)) return more || benched < 2;
     canvas.style.width = st.vw + 'px'; canvas.style.height = st.vh + 'px';
     const ok = world.draw(st, fgBox ? fgCtx : null);
     if (!ok) return more;
@@ -277,7 +285,7 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
     // how long the chip takes for one frame at the moving sharpness, drawn three times and waited for. A software
     // chip takes about 100 ms; a page still loading can slow a real one for a moment, so a slow first answer is
     // asked again 2.5 s later, and only two slow answers give the film up (the still film then, for good)
-    if (benched < 2 && now >= benchAt) {
+    if (benched < 2 && now >= benchAt && !moving) {
       benched++;
       const at = { ...st, pr: steps[0] };
       world.finish();
@@ -298,7 +306,7 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
       { if (fg.style.opacity) fg.style.opacity = ''; }
     } else if (fg.style.visibility !== 'hidden') fg.style.visibility = 'hidden';
     // frames go on while the chip's second answer is due, or the last sharp frame at rest is not drawn yet
-    return more || benched === 1 || !settled || now - settled < 200;
+    return more || benched < 2 || !settled || now - settled < 200;
   }
   function swap(c: HTMLCanvasElement): void {
     canvas.remove();

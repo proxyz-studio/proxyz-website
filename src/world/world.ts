@@ -242,13 +242,14 @@ function menuPose(L: Layout, t: number): M4 {
 
 /* ---------- the drawing ---------- */
 interface Mesh { vao: WebGLVertexArrayObject; count: number; type: number; bufs: WebGLBuffer[] }
-interface Tex { key: string; state: 'none' | 'loading' | 'decoded' | 'ready' | 'failed'; url: string; bitmap: ImageBitmap | null; tex: WebGLTexture | null; bytes: number; used: number; row: number }
+interface Tex { key: string; state: 'none' | 'loading' | 'decoded' | 'ready' | 'failed'; url: string; strips: ImageBitmap[]; size: [number, number]; tex: WebGLTexture | null; bytes: number; used: number; row: number }
 interface DepthMap { fb: WebGLFramebuffer; tex: WebGLTexture; rb: WebGLRenderbuffer; w: number; h: number }
 
 export interface WorldEvents { lost(): void; restored(): void }
 
 export class World {
   static EXPOSURE = 0.45;
+  static TOUCH = true;
   readonly canvas: HTMLCanvasElement;
   gl!: WebGL2RenderingContext;
   private parts: Map<string, Part>;
@@ -325,6 +326,8 @@ export class World {
     }
     // every picture and depth map is gone with a lost context: read again when asked
     for (const t of this.texs.values()) { t.tex = null; t.row = 0; if (t.state === 'ready') t.state = 'none'; }
+    this.touchFb = null; this.touchProg = null;
+    this.spare.clear(); this.spareBytes = 0;
     this.held = 0;
     this.depth.clear();
     this.blank = gl.createTexture()!;
@@ -359,7 +362,7 @@ export class World {
     for (const { key, url } of list) {
       let t = this.texs.get(key);
       if (t && t.url !== url && t.state !== 'loading') { this.drop(t); t = undefined; }
-      if (!t) { t = { key, state: 'none', url, bitmap: null, tex: null, bytes: 0, used: now, row: 0 }; this.texs.set(key, t); }
+      if (!t) { t = { key, state: 'none', url, strips: [], size: [0, 0], tex: null, bytes: 0, used: now, row: 0 }; this.texs.set(key, t); }
       t.used = now;
       if (t.state === 'none') this.load(t);
     }
@@ -371,7 +374,9 @@ export class World {
       .then((b) => createImageBitmap(b, { premultiplyAlpha: 'none', colorSpaceConversion: 'default' }))
       .then((bm) => {
         if (this.texs.get(t.key) !== t) { bm.close(); return; }
-        t.bitmap = bm; t.state = 'decoded';
+        // one decoded picture, read into the chip a range of rows at a time (pictures cut out of it first came back
+        // from the chip in Chromium, 60 to 75 ms at a change)
+        t.strips = [bm]; t.size = [bm.width, bm.height]; t.state = 'decoded';
         this.onDecoded?.();
       })
       .catch(() => { t.state = 'failed'; this.onDecoded?.(); });
@@ -384,7 +389,7 @@ export class World {
   pending(): number { let n = 0; for (const t of this.texs.values()) if (t.state === 'decoded') n++; return n; }
   /** Puts up to `max` decoded pictures into the chip (the most wanted first), and lets go of the least used ones over
    *  the budget. Returns how many went in. */
-  upload(max: number, keep: Set<string>): number {
+  upload(max: number, keep: Set<string>, still = true): number {
     if (this.lost) return 0;
     const gl = this.gl;
     // one picture at a time, in strips of rows, one strip a call (a whole 2880 x 1800 picture took 20 to 24 ms of the
@@ -393,11 +398,14 @@ export class World {
     if (!t) t = [...this.texs.values()].filter((x) => x.state === 'decoded').sort((a, b) => b.used - a.used)[0];
     let n = 0;
     for (let k = 0; t && k < max; k++) {
-      const bm = t.bitmap!, W = bm.width, H = bm.height;
+      const [W, H] = t.size;
       if (!t.tex) {
-        t.tex = gl.createTexture()!;
+        // a texture let go of earlier, of the same size, if there is one (no new memory, nothing to wait for)
+        const k = W + 'x' + H, spare = this.spare.get(k)?.pop();
+        t.tex = spare ?? gl.createTexture()!;
         gl.bindTexture(gl.TEXTURE_2D, t.tex);
-        gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, W, H);
+        if (!spare) gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, W, H);
+        else this.spareBytes -= W * H * 4;
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -406,7 +414,7 @@ export class World {
         this.held += t.bytes;
         t.row = 0;
       }
-      const rows = Math.min(H - t.row, Math.ceil(H / 4));
+      const bm = t.strips[0], rows = Math.min(H - t.row, Math.ceil(H / 4));
       gl.bindTexture(gl.TEXTURE_2D, t.tex);
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
       gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
@@ -416,21 +424,34 @@ export class World {
       gl.pixelStorei(gl.UNPACK_SKIP_ROWS, 0);
       t.row += rows;
       n++;
-      if (t.row >= H) { bm.close(); t.bitmap = null; t.state = 'ready'; t.row = 0; break; }
+      if (t.row >= H) {
+        bm.close(); t.strips = [];
+        t.state = 'ready'; t.row = 0;
+        // read once now, by a draw nobody sees, so the chip has it before the first frame that shows it (a browser
+        // may send a picture to the chip only when it is first drawn with: a stop in the middle of a scene change)
+        if (World.TOUCH) this.touch(t.tex);
+        break;
+      }
     }
     // over the budget: let go of the least used, never one still wanted
-    if (this.held > this.budget) {
+    // (while the film moves, only past one and a half times the budget: a long fast scroll must not pile them up)
+    if ((still && this.held > this.budget) || this.held > 1.5 * this.budget) {
       const old = [...this.texs.values()].filter((x) => x.state === 'ready' && !keep.has(x.key)).sort((a, b) => a.used - b.used);
       for (const x of old) { if (this.held <= this.budget) break; this.drop(x); this.texs.delete(x.key); }
     }
     return n;
   }
   private drop(t: Tex): void {
-    if (t.tex && !this.lost) this.gl.deleteTexture(t.tex);
+    // kept as a spare for the next picture of the same size: a texture deleted (or a new one made) while the film moves
+    // made Safari wait 100 to 180 ms for the chip
+    if (t.tex && !this.lost) {
+      const k = t.size[0] + 'x' + t.size[1], list = this.spare.get(k) ?? [];
+      list.push(t.tex); this.spare.set(k, list); this.spareBytes += t.bytes;
+    }
     if (t.tex) this.held -= t.bytes;
     t.row = 0;
-    t.bitmap?.close();
-    t.tex = null; t.bitmap = null; t.state = 'none';
+    for (const x of t.strips) x.close();
+    t.tex = null; t.strips = []; t.state = 'none';
   }
 
   /* ---------- depth maps: what each still's camera saw ---------- */
@@ -477,6 +498,18 @@ export class World {
     d = { fb, tex, rb, w, h };
     this.depth.set(k, d);
     return d;
+  }
+  /** Builds the depth map of the first of these stills that has none yet (one a call: a new one takes new memory).
+   *  Returns true when it built one. */
+  prepare(keys: string[]): boolean {
+    if (this.lost || !this.layout) return false;
+    for (const k of keys) {
+      const p = this.layout.projectors.get(k);
+      if (!p || this.depth.has(this.depthKey(p))) continue;
+      this.depthOf(p);
+      return true;
+    }
+    return false;
   }
   private dropDepth(d: DepthMap): void {
     if (this.lost) return;
@@ -633,6 +666,43 @@ export class World {
     // send the work now: a context left with its work queued stalls the next frame that shows it (look 11's stall)
     gl.flush();
     return true;
+  }
+
+  /** textures let go of, by size, for the next picture of that size */
+  private spare = new Map<string, WebGLTexture[]>();
+  private spareBytes = 0;
+  /** While the page is still: spares beyond two of a size are deleted (never while the film moves). */
+  tidy(): void {
+    if (this.lost) return;
+    for (const [k, list] of this.spare) while (list.length > 2) { const [w, h] = k.split('x').map(Number); this.gl.deleteTexture(list.shift()!); this.spareBytes -= w * h * 4; }
+  }
+  private touchFb: WebGLFramebuffer | null = null;
+  private touchProg: WebGLProgram | null = null;
+  private touch(tex: WebGLTexture): void {
+    const gl = this.gl;
+    if (!this.touchFb) {
+      const t = gl.createTexture()!;
+      gl.bindTexture(gl.TEXTURE_2D, t);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      this.touchFb = gl.createFramebuffer()!;
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.touchFb);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
+      const p = gl.createProgram()!;
+      const sh = (type: number, src: string) => { const x = gl.createShader(type)!; gl.shaderSource(x, src); gl.compileShader(x); gl.attachShader(p, x); };
+      sh(gl.VERTEX_SHADER, '#version 300 es\nvoid main(){ gl_Position = vec4(0.0, 0.0, 0.0, 1.0); gl_PointSize = 1.0; }');
+      sh(gl.FRAGMENT_SHADER, '#version 300 es\nprecision mediump float; uniform sampler2D t; out vec4 o; void main(){ o = texture(t, vec2(0.5)) + texture(t, vec2(0.1, 0.9)); }');
+      gl.linkProgram(p);
+      this.touchProg = p;
+    }
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.touchFb);
+    gl.viewport(0, 0, 1, 1);
+    gl.useProgram(this.touchProg);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.uniform1i(gl.getUniformLocation(this.touchProg!, 't'), 0);
+    gl.drawArrays(gl.POINTS, 0, 1);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.flush();
   }
 
   /** Compiles the shaders and sends the shapes to the chip now (a draw nothing sees), so the first frame the scroll
