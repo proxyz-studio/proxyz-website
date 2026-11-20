@@ -12,8 +12,7 @@ import { clamp, cutMask, frameMask, lightAt, passStrength } from './film/math';
 import { camera, dissolve, eased, lineIn, lineOut, lineTravel, smooth, ramp as rampOf, windowAt, WINDOW, type Lines } from './film/motion';
 import { startDoors, type Doors } from './door';
 import type { Pictures, PictureFile, View } from './types';
-import { S_REST } from './s2/path';
-import type { Player } from './s2/live';
+import type { Film3d, Hooks3 } from './world/film3d';
 
 type Form = 'desktop' | 'phone';
 interface Pass { key: string; img: HTMLImageElement; node: HTMLElement; ready: boolean; lit: number;
@@ -123,7 +122,7 @@ function giveUp(): void {
   let on = 1;
   try { on = active; } catch { /* the film had not started its scroll work */ }
   try { stopPulses(); cancelAnimationFrame(pulseRaf); clearTimeout(settle); clearTimeout(saveT); clearTimeout(aheadT); } catch { /* not started */ }
-  try { s2?.dispose(); s2?.canvas.remove(); } catch { /* not started */ }
+  try { live3d?.dispose(); } catch { /* not started */ }
   try { for (const o of observers) o.disconnect(); } catch { /* not started */ }
   doc.classList.remove('film', 'film-init');
   doc.classList.add('nofilm');
@@ -319,8 +318,8 @@ function setCut(s: SceneState, view: View, g: Box | null): void {
   if (gaveUp) return;
   const c = s.cut;
   if (!c) return;
-  // scene 2 drawn live (look 11): the cut is the still's own outline, right only at the rest, so the words stay whole
-  if (!g || !s.matte?.ready || (s === S[S2 - 1] && s2At)) { c.removeAttribute('style'); return; }
+  // a scene drawn live (build 12): the live things stand in front of the words themselves (src/world/film3d.ts)
+  if (!g || !s.matte?.ready || live3d?.live(S.indexOf(s) + 1)) { c.removeAttribute('style'); return; }
   const px = (v: number) => v.toFixed(2) + 'px';
   const m = cutMask(s.matte.url, view.opens ? '' : frameMask(view, pictures[view.passes[0]].size), { left: px(g.left), top: px(g.top), w: px(g.w), h: px(g.h) });
   const st = c.style;
@@ -369,7 +368,6 @@ function placeAtRest(s: SceneState, view: View): void {
   s.box.style.webkitMaskImage = sm;
   s.box.style.maskImage = sm;
   if (S.indexOf(s) === BRAIN - 1) placeBoard(view, g);
-  if (S.indexOf(s) === S2 - 1) s2Box = g;
   if (view.doors) doors?.place(S.indexOf(s) + 1, g);
 }
 
@@ -440,7 +438,6 @@ function build(n: number): void {
   frame.append(...s.passes.map((p) => p.lens ?? p.node), ...(s.things && boardBox ? [boardBox] : []));
   s.box.replaceChildren(frame);
   s.frame = frame;
-  if (n === S2 && s2) s.box.append(s2.canvas);
   // the labels go in with the board, just after the pictures (as the page holds them)
   if (n === BRAIN && labelBox) {
     if (!(s.things && boardBox)) labelBox.remove();
@@ -781,54 +778,54 @@ function ahead(): void {
   }, 300);
 }
 
-/* ---------- look 11: scene 2 in 3D ---------- */
-// ?look=a: the stand drawn live (src/s2/live.ts); ?look=b: the same move rendered ahead into frames (src/s2/strip.ts).
-// Either loads after the first scroll (or once the page opens further down), while today's still pictures show; it
-// comes in over them once its first frame is drawn, and they are hidden under it. Less motion, no WebGL, or anything
-// failing: today's still pictures stay. Without the address setting the film is exactly as before.
-const LOOK = ((): 'a' | 'b' | null => { const v = new URLSearchParams(location.search).get('look'); return v === 'a' || v === 'b' ? v : null; })();
-const S2 = 2;
-let s2: Player | null = null, s2Loading = false, s2Form: Form = form, s2At = 0, s2Box: Box | null = null, scrolled = false;
-/** where the playhead is in scene 2, in screens from its top, the film's rest mapped onto the path's rest */
-function s2Place(y: number): number {
-  const sr = LIGHT_SHARE * Math.max(0, heights[S2 - 1] / VH - 1);
-  if (Math.abs(y - tops[S2 - 1] - sr * VH) < 3) return S_REST;
-  return ((y - tops[S2 - 1]) / VH) * (sr > 0 ? S_REST / sr : 1);
+/* ---------- build 12: the whole film as one live 3D world (src/world/) ---------- */
+// It loads at the visitor's first sign of intent (a touch, the wheel, a key, the pointer moving), never with the first
+// screen, and only with motion allowed. Until a scene is live, and whenever the live film cannot run, the still film
+// shows it; at rest the two are the same picture.
+let live3d: Film3d | null = null, live3dTried = false, shownTop = 0, shownS = 1, lastScroll = -1e9;
+let avif: boolean | null = null;
+const pictureUrl = (key: string, n: number): string => {
+  const f = fileFor(key, geometry(viewOf(n), S[n - 1]).w);
+  if (avif === null) { const u = first?.currentSrc ?? ''; avif = u ? u.endsWith('.avif') : !!f.avif && document.createElement('canvas').toDataURL('image/avif').startsWith('data:image/avif'); }
+  return avif && f.avif ? f.avif : f.webp;
+};
+/** the middle of the foot of a scene's door thing, at rest (screen px) */
+function logoAnchor(n: number): [number, number] {
+  const v = viewOf(n), d = v.doors ? Object.values(v.doors)[0] : null, g = S[n - 1].passes.length ? geometry(v, S[n - 1]) : null;
+  if (!d || !g) return [0, 0];
+  const k = g.w / pictures[v.passes[0]].size[0];
+  return [g.left + ((d.thing[0] + d.thing[2]) / 2) * k, g.top + d.thing[3] * k];
 }
-function s2Load(): void {
-  if (!LOOK || s2Loading || gaveUp || reduced() || !tops.length) return;
-  s2Loading = true;
-  s2Form = form;
-  const go = LOOK === 'a' ? import('./s2/live').then((m) => m.startLive()) : import('./s2/strip').then((m) => m.startStrip(form, s2Place(scrollY)));
-  go.then((p) => {
-    if (gaveUp) { p.dispose(); return; }
-    s2 = p;
-    (p as Player & { onLate?: () => void }).onLate = schedule;
-    p.canvas.style.opacity = '0';
-    const s = S[S2 - 1];
-    if (s.frame) s.box.append(p.canvas);
-    s2At = 0;
+function start3d(): void {
+  if (live3dTried || gaveUp || reduced() || !tops.length) return;
+  live3dTried = true;
+  const hooks: Hooks3 = {
+    form: () => form, vw: () => VW, vh: () => VH,
+    tops: () => tops, heights: () => heights,
+    lightShare: LIGHT_SHARE, count: S.length,
+    view: (n) => viewOf(n),
+    box: (n) => geometry(viewOf(n), S[n - 1]),
+    strengths: (n, y) => {
+      const v = viewOf(n), q = lightAt(v, progress(n - 1, y), false);
+      return v.passes.map((_, k) => (k === 0 ? 1 : shownStrength3(v, q, k)));
+    },
+    els: (n) => ({ layer: S[n - 1].layer, box: S[n - 1].box, passes: S[n - 1].passes.map((p) => p.lens ?? p.node), shade: $('.shade', S[n - 1].layer), top: S[n - 1].top }),
+    url: pictureUrl,
+    active: () => active,
+    schedule,
+    put,
+    changed: (n) => { if (S[n - 1].passes.length) place(S[n - 1], viewOf(n)); },
+  };
+  import('./world/film3d').then((m) => m.startFilm3d(hooks, () => { live3d = null; layoutAll(); schedule(); })).then((f) => {
+    if (gaveUp) { f.dispose(); return; }
+    live3d = f;
+    still(() => f.relayout());
     schedule();
-  }, () => { /* today's still pictures stay */ });
+  }, () => { /* no WebGL 2 or no shapes: the still film */ });
 }
-/** Scene 2's live picture at the playhead y; true while it is still coming in over the still. */
-function s2Frame(y: number, now: number): boolean {
-  const s = S[S2 - 1];
-  if (!s2 || !s2Box || !s.frame || written.get(s.layer)?.visibility !== 'visible') return false;
-  // the frames of version B are made for one screen shape: a turned screen loads its own
-  if (form !== s2Form && LOOK === 'b') {
-    s2.dispose(); s2.canvas.remove(); s2 = null; s2Loading = false; s2At = 0; put(s.frame, 'visibility', '');
-    s2Load();
-    return false;
-  }
-  if (s2.draw(s2Place(y), form, s2Box, VW, VH) && !s2At) { s2At = now; s.cut?.removeAttribute('style'); }
-  if (!s2At) return false;
-  // in over the still in 0.3 s (at rest the two are the same picture), then the still is hidden under it
-  const k = clamp((now - s2At) / 300);
-  put(s2.canvas, 'opacity', opv(k));
-  put(s.frame, 'visibility', k >= 1 ? 'hidden' : '');
-  return k < 1;
-}
+const shownStrength3 = (v: View, q: number, k: number) => shownStrength(v, q, k, false);
+for (const t of ['wheel', 'touchstart', 'keydown', 'pointerdown']) addEventListener(t, start3d, { passive: true, once: true });
+addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') start3d(); }, { passive: true });
 
 /* ---------- the playhead ---------- */
 // The scroll position, followed closely: at once for a script, a key or a scroll bar; within about 40 ms for a finger
@@ -889,9 +886,11 @@ function motion(y: number, now: number): boolean {
   let top = 0;
   if (rest) top = active - 1;
   else for (let k = 1; k < n; k++) if (dissolve(wIn[k]) > 0) top = k;
-  const r = top && !rest ? readyK(S[top], now) : 1;
+  // a scene the live film can draw needs no picture of its own to come in
+  const r = top && !rest ? (live3d?.ready(top + 1) ? 1 : readyK(S[top], now)) : 1;
   if (r > 0 && r < 1) more = true;
   const strength = top && !rest ? dissolve(wIn[top]) * r : 1;
+  shownTop = top; shownS = strength;
   for (let k = 0; k < n; k++) {
     const s = S[k];
     const shown = (k === top && strength > 0) || (k === top - 1 && strength < 1);
@@ -919,10 +918,12 @@ function stage(k: number, y: number, wIn: number, wOut: number, rest: boolean, s
   const at = Math.abs(y - tops[k] - sr * VH) < 3 ? sr : (y - tops[k]) / VH;
   const [dyS, sc] = rest ? [0, 1] : camera(at, sr, h, wIn, wOut, { first: k === 0, last: k === n - 1, stillIn: twin, stillOut: twinNext });
   const dy = dyS * VH;
-  if (s.frame) move(s.frame, cam(dy, sc));
+  // a live scene: its picture is the live camera's; scene 6's board and labels follow the floor (src/world/film3d.ts)
+  const live = live3d?.live(k + 1) ? live3d : null, bd = live && k === BRAIN - 1 ? live.board(k + 1) : null;
+  if (s.frame) move(s.frame, live ? bd?.frame ?? '' : cam(dy, sc));
   if (s.cam) move(s.cam, cam(dy, sc));
   if (k === BRAIN - 1 && labelBox) {
-    const t = cam(dy, sc, labelAt[0], labelAt[1]);
+    const t = live ? bd?.labels ?? '' : cam(dy, sc, labelAt[0], labelAt[1]);
     move(labelBox, t);
     labelBox.classList.toggle('moving', !!t);
   }
@@ -947,7 +948,9 @@ function stage(k: number, y: number, wIn: number, wOut: number, rest: boolean, s
     const last = s.passes.length > 1 ? s.passes[s.passes.length - 1].lit : 1;
     const lit = rest ? 1 : smooth(rampOf(last, 0.6, 1));
     const [go, gt] = leaving && P ? lineOut(wOut, 0, { ...P, oTop: 1 }) : [1, 0];
-    doors.motion(k + 1, lit * go, dy, (1 - lit) * 10 + gt * d);
+    // a live scene's logo moves with the thing it stands by (the floor under it), else with the picture
+    const lg = live ? live.logo(k + 1, logoAnchor(k + 1)) : null;
+    doors.motion(k + 1, lit * go, lg ? lg[1] : dy, (1 - lit) * 10 + gt * d, lg ? lg[0] : 0);
   }
 }
 
@@ -969,9 +972,9 @@ function update(now?: number): void {
     if (!S[k].built && near(k, y)) build(k + 1);
     else if (S[k].built && Math.abs(k + 1 - active) > 2 && !near(k, y)) release(k + 1);
   }
-  let more = motion(y, now ?? performance.now());
-  if (LOOK && !s2Loading && (scrolled || active >= S2)) s2Load();
-  if (s2 && s2Frame(y, now ?? performance.now())) more = true;
+  const t = now ?? performance.now();
+  let more = motion(y, t);
+  if (live3d && live3d.frame(y, shownTop, shownS, t, y !== scrollY || t - lastScroll < 150)) more = true;
   boardAt(y);
   marks();
   // the playhead still on its way, or a late picture fading in: the next frame
@@ -1028,7 +1031,11 @@ function marks(): void {
 }
 
 /* ---------- size and shape changes ---------- */
-function layoutAll(): void { if (gaveUp) return; for (let n = 1; n <= S.length; n++) if (S[n - 1].passes.length) place(S[n - 1], viewOf(n)); }
+function layoutAll(): void {
+  if (gaveUp) return;
+  for (let n = 1; n <= S.length; n++) if (S[n - 1].passes.length) place(S[n - 1], viewOf(n));
+  if (live3d) still(() => live3d!.relayout());
+}
 /** Some engines report the old steady height during a resize; look again once the layout has settled. */
 let settle = 0;
 function onResizeSoon(): void {
@@ -1092,7 +1099,7 @@ update();
 let saveT = 0;
 // the observers of the steady screen sizes (let go when the film gives up)
 const observers: ResizeObserver[] = [];
-addEventListener('scroll', () => { scrolled = true; schedule(); clearTimeout(saveT); saveT = setTimeout(remember, 200); ahead(); }, { passive: true });
+addEventListener('scroll', () => { lastScroll = performance.now(); schedule(); clearTimeout(saveT); saveT = setTimeout(remember, 200); ahead(); }, { passive: true });
 addEventListener('resize', onResizeSoon);
 addEventListener('pagehide', remember);
 // Back from the back/forward cache: Safari brings the page back at the top, and with the film keeping its own place
