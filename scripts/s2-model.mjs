@@ -1,9 +1,9 @@
 // Scene 2, version A (look 11): the stand's parts for the live 3D scene, from the TAPZ site's own packed model
-// (/Users/tews/Code/tapz-site at tag v13-delivered, src/three/models/stand-parts.data.ts; read only, never changed).
+// (the TAPZ site's repo at tag v13-delivered, src/three/models/stand-parts.data.ts; read only, never changed).
 // The same parts the stills drew (the stills' stand5: body, foot words, plate, the PROXYZ letters, a tile), with
 // creased normals (30 degrees, as the TAPZ site), into one small binary file the film loads when scene 2 is near.
 //
-//   git -C ~/Code/tapz-site show v13-delivered:src/three/models/stand-parts.data.ts > /tmp/parts.ts
+//   git -C <the TAPZ site's repo> show v13-delivered:src/three/models/stand-parts.data.ts > /tmp/parts.ts
 //   node scripts/s2-model.mjs /tmp/parts.ts            writes src/s2/stand.bin
 //
 // File: 4 bytes (little endian) the length of a JSON header, the header ({ parts: [{ name, v, i, min, max, i32 }] }),

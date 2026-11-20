@@ -1,6 +1,6 @@
 // Scene 2, version A (look 11): the stand and the phone drawn live with three.js, the camera, the light, the phone and
 // the glow set from the film's playhead along src/s2/path.ts. The same scene as today's three still passes (the stills'
-// stand5, /Users/tews/Code/proxyz-site-stills/pt/src/export/ptRound5.ts and ptDark.ts): the TAPZ stand's own parts,
+// stand5, the stills project's pt/src/export/ptRound5.ts and ptDark.ts): the TAPZ stand's own parts,
 // black plastic, the PROXYZ letters, the phone with the menu, a near black floor, one hard spot light from the left.
 // Drawn only when something changed; at rest nothing is drawn.
 import {

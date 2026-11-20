@@ -5,7 +5,7 @@
 // s: where the playhead is in scene 2, in screens from the scene's top (the film's own measure). The change into the
 // scene runs from -0.9 to -0.1, the light rests at 1.12 (the film's rest: 0.8 of the scene's 1.4 screens of light),
 // the change out runs from 1.5 to 2.3. At the rest every number is exactly the still picture's own (pass 3 of
-// /Users/tews/Code/proxyz-site-stills/out5/s2v2-*-p3@2x.json), so the scene at rest is today's composition.
+// the stills project's out5/s2v2-*-p3@2x.json), so the scene at rest is today's composition.
 
 export type Form = 'desktop' | 'phone';
 

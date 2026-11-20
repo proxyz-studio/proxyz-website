@@ -1,6 +1,6 @@
 // Scene 2, version B (look 11): the job list for the frames rendered ahead of time, one per place along the camera
 // move of src/s2/path.ts, for the stills' own picture maker (the path tracer in
-// /Users/tews/Code/proxyz-site-stills/pt, obj=stand5: the same stand, phone, menu, floor and light as today's three
+// the stills project's pt folder, obj=stand5: the same stand, phone, menu, floor and light as today's three
 // passes of scene 2). Each job is the pass 3 still's own settings with the camera, the key's strength, the phone's
 // pose, the glow and the screen of that place.
 //
