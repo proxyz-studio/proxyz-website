@@ -234,17 +234,20 @@ ${[0, 1].map((s) => {
     // the still), the live floor farther behind (else a blurred copy of the thing would show on the floor beyond it)
     // past the frame it gives way to the live floor within a short distance (a still that is all thing at its edge, the
     // close up of the coin, would carry that thing's colours out across the floor)
-    float far = u0 == bu ? smoothstep(12.0, 50.0, vC[${p(0)}].w - dz(uD${p(0)}, bu)) : smoothstep(0.0, 0.3, length(u0 - bu));
+    float far = u0 == bu ? smoothstep(12.0, 50.0, vC[${p(0)}].w - dz(uD${p(0)}, bu)) : smoothstep(0.0, 0.12, length(u0 - bu));
     fb = mix(acc / 9.0, fb, far);
   }
   // a thing this scene's stills do not hold, inside its first still's frame: as dark as the still shows that place (the
   // still is the scene's light: where it shows dark floor the thing stands in that dark, never lit brighter than it)
   if (uIsFloor < 0.5 && uSolid > 0.5 && uHold[${s}] < 0.5 && uNP[${s}] > 0 && vC[${p(0)}].w > 0.0) {
     vec2 su = vC[${p(0)}].xy / vC[${p(0)}].w * 0.5 + 0.5;
-    if (su == clamp(su, 0.0, 1.0)) {
-      float L = dot(texture(uB${s}, vec2(su.x, 1.0 - su.y)).rgb, vec3(0.2126, 0.7152, 0.0722));
+    vec2 se = min(su, 1.0 - su);
+    float inside = smoothstep(0.0, 0.07, min(se.x, se.y));
+    if (inside > 0.0) {
+      vec2 cu = clamp(su, 0.0, 1.0);
+      float L = dot(texture(uB${s}, vec2(cu.x, 1.0 - cu.y)).rgb, vec3(0.2126, 0.7152, 0.0722));
       float F = dot(display(shade(vec3(0.0, 1.0, 0.0), normalize(uEye - vW), vec3(vW.x, 0.0, vW.z), vec3(0.006, 0.006, 0.0058), 0.95, 0.0, uLp[${s}], uLd[${s}], uLc[${s}], uLi[${s}], uLk[${s}])), vec3(0.2126, 0.7152, 0.0722));
-      fb *= clamp(L / max(F, 0.004), 0.0, 1.0);
+      fb *= mix(1.0, clamp(L / max(F, 0.004), 0.0, 1.0), inside);
     }
   }
   if (uDbg > 0.5 && uDbg < 1.5) fb = vec3(0.6, 0.0, 0.0) + fb;
