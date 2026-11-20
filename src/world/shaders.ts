@@ -111,6 +111,8 @@ uniform sampler2D uScreen;
 uniform float uScreenGain;
 uniform vec3 uEye;
 uniform float uFg;
+uniform vec4 uShade[2];
+uniform float uFgH;
 uniform float uDepthFar;
 uniform float uDbg;
 out vec4 o;
@@ -242,6 +244,16 @@ void main() {
   }
   vec3 c = w0 * a.rgb + w1 * b.rgb;
   if (uLiveK > 0.0) c = mix(c, phoneLive(n, v, uLp[0], uLd[0], uLc[0], uLi[0], uLk[0]), uLiveK);
+  if (uFg > 0.5) {
+    // the copy above the words: the scenes' dark band at the foot, which the page lays over the live picture under it
+    float y = gl_FragCoord.y / uFgH, keep = 1.0;
+    for (int i = 0; i < 2; i++) {
+      vec4 sh = uShade[i];
+      float a = y < sh.y ? mix(0.88, sh.w, y / sh.y) : mix(sh.w, 0.0, clamp((y - sh.y) / (sh.z - sh.y), 0.0, 1.0));
+      keep *= 1.0 - sh.x * a;
+    }
+    c = mix(FILM, c, keep);
+  }
   o = vec4(c, 1.0);
 }`;
 

@@ -68,6 +68,8 @@ export interface Film3d {
   revive(): void;
   /** scene n's stills are in the chip: it can be drawn live */
   ready(n: number): boolean;
+  /** how far the live camera has come from the rest before scene n to scene n's (0 to 1), or null */
+  arrival(n: number, y: number): number | null;
   /** the transform of scene 6's board (its frame) and labels while live, or null */
   board(n: number): { frame: string; labels: string } | null;
   /** how far a point on scene n's floor (screen px at rest) has moved with the live camera: [dx, dy] */
@@ -95,6 +97,7 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
   }
   world = await World.create(events, phoneChip ? 120e6 : 260e6);
   world.depthLong = phoneChip ? 1024 : 1536;
+  world.stripBytes = 1.1e6;
   world.onDecoded = () => h.schedule();
   let canvas = world.canvas;
   // the live picture: one canvas in a fixed box just before the film, so under every scene's layer, never moved in the
@@ -228,7 +231,7 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
       if (lostAt && now - lostAt > 2000 && document.visibilityState === 'visible') {
         lostAt = 0; renewing = true;
         const old = world;
-        World.create(events, old.budget).then((w) => { renewing = false; world = w; w.depthLong = old.depthLong; w.onDecoded = () => h.schedule(); layoutKey = ''; old.dispose(); swap(w.canvas); why = 'renewed'; h.schedule(); }, () => { why = 'lost for good'; giveUp(); });
+        World.create(events, old.budget).then((w) => { renewing = false; world = w; w.depthLong = old.depthLong; w.stripBytes = old.stripBytes; w.onDecoded = () => h.schedule(); layoutKey = ''; old.dispose(); swap(w.canvas); why = 'renewed'; h.schedule(); }, () => { why = 'lost for good'; giveUp(); });
       }
       if (lostAt) renewSoon();
       return false;
@@ -302,7 +305,13 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
     // scene 2's phone, lifted live: drawn from the stills on the tile and at the top, by the live light between
     const menuLive = Math.min(1, Math.min(lift, 1 - lift) / 0.12);
     const hold = !(a + 1 === BRAIN && a + 2 <= h.count);
-    const st: FrameState = { vw: h.vw(), vh: h.vh(), pr, cam, slots, lift, fg: fgBox, menuLive: menuLive > 0 ? menuLive * menuLive * (3 - 2 * menuLive) : 0, screen: SCREEN, hold };
+    // the dark band at the foot of the scenes shown (the copy above the words is above it too): its strength by height
+    const shade: [number, number, number][] = [];
+    for (const x of shown) {
+      const tight = x.n === 4 || x.n === BRAIN || (x.n === 7 && h.view(7).placeAs === BRAIN);
+      shade.push([x.W, tight ? 0.09 : 0.22, tight ? 0.2 : 0.46]);
+    }
+    const st: FrameState = { vw: h.vw(), vh: h.vh(), pr, cam, slots, lift, fg: fgBox, shade, menuLive: menuLive > 0 ? menuLive * menuLive * (3 - 2 * menuLive) : 0, screen: SCREEN, hold };
     const sig = JSON.stringify([st, liveNow.size]);
     if (sig === drawn && !(benched < 2 && now >= benchAt && !moving)) return more || benched < 2;
     canvas.style.width = st.vw + 'px'; canvas.style.height = st.vh + 'px';
@@ -377,6 +386,8 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
     const vw = h.vw(), vh = h.vh();
     let wx0 = Infinity, wy0 = Infinity, wx1 = -Infinity, wy1 = -Infinity;
     for (const sl of slots) {
+      // scene 6: its board lies on the floor under the things, so the things stand over it wherever they are
+      if (sl.scene === BRAIN) { wx0 = -1e4; wy0 = -1e4; wx1 = 1e4; wy1 = 1e4; continue; }
       const t = h.els(sl.scene).top;
       if (!t || !h.view(sl.scene).matte) continue;
       const r = wordsBox.get(sl.scene);
@@ -454,6 +465,7 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
       return { frame: cssHomography(H), labels: cssHomography(m3(T(-g.left, -g.top), m3(H, T(g.left, g.top)))) };
     },
     logo(n, anchor) { return mapPoint(n, anchor[0], anchor[1]); },
+    arrival(n, y) { return keys.length ? Math.max(0, Math.min(1, at(keys, y)[9] - (n - 2))) : null; },
     mapPoint,
     relayout() {
       layoutKey = '';

@@ -53,6 +53,9 @@ export interface FrameState {
   menuLive: number; screen: string | null;
   /** a thing held by one scene's stills only is drawn by that scene (not between scenes 6 and 7: one camera) */
   hold: boolean;
+  /** the dark band at the foot of each scene shown: its weight, and where (share of the screen's height from the foot)
+   *  it is at 0.45 or 0.6 and where it ends */
+  shade: [number, number, number][];
 }
 
 /* ---------- shapes ---------- */
@@ -301,6 +304,9 @@ export class World {
   static TOUCH = true;
   /** the screen's light of scene 2's phone drawn live, against the stills' (matched on the lifted phone at its rest) */
   static SCREEN = 0.6;
+  /** the bytes of a picture read into the chip in one call (smaller on a phone) */
+  stripBytes = 1.1e6;
+  private lastUpload = 0;
   /** the depth maps' long side: finer on a laptop (the moves' edges), smaller on a phone (its memory) */
   depthLong = 1024;
   readonly canvas: HTMLCanvasElement;
@@ -382,7 +388,7 @@ export class World {
     }
     // every picture and depth map is gone with a lost context: read again when asked
     for (const t of this.texs.values()) { t.tex = null; t.row = 0; if (t.state === 'ready') t.state = 'none'; }
-    this.touchFb = null; this.touchProg = null;
+    this.touchFb = null; this.touchProg = null; this.touchVao = null; this.clearFb = null;
     this.spare.clear(); this.spareBytes = 0;
     this.held = 0;
     this.depth.clear();
@@ -494,6 +500,8 @@ export class World {
     if (!t) t = [...this.texs.values()].filter((x) => x.state === 'decoded').sort((a, b) => b.used - a.used)[0];
     let n = 0;
     const t0 = performance.now();
+    // never two calls within one frame's time (Safari ran several in one long frame), and never more than about 4 ms
+    if (t && t0 - this.lastUpload < 12) t = undefined;
     for (let k = 0; t && k < max && (k === 0 || performance.now() - t0 < 4); k++) {
       const [W, H] = t.size;
       if (!t.tex) {
@@ -501,7 +509,17 @@ export class World {
         const k = W + 'x' + H, spare = this.spare.get(k)?.pop();
         t.tex = spare ?? gl.createTexture()!;
         gl.bindTexture(gl.TEXTURE_2D, t.tex);
-        if (!spare) gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, W, H);
+        if (!spare) {
+          gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, W, H);
+          // cleared once by the chip (Firefox otherwise clears it itself before the first rows go in, and warns)
+          if (!this.clearFb) this.clearFb = gl.createFramebuffer();
+          gl.bindFramebuffer(gl.FRAMEBUFFER, this.clearFb);
+          gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t.tex, 0);
+          gl.clearColor(0, 0, 0, 1); gl.disable(gl.SCISSOR_TEST);
+          gl.clear(gl.COLOR_BUFFER_BIT);
+          gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
+          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        }
         else this.spareBytes -= W * H * 4;
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
@@ -510,10 +528,12 @@ export class World {
         t.bytes = W * H * 4;
         this.held += t.bytes;
         t.row = 0;
+        // the new memory alone this frame (a phone's chip took 25 ms to make it), the rows from the next
+        if (!spare) { n++; this.lastUpload = performance.now(); break; }
       }
       // about a megabyte a call (a quarter of a 2880 x 1800 picture took 20 ms of the page's time at a fourth of a
       // laptop's speed)
-      const bm = t.strips[0], rows = Math.min(H - t.row, Math.max(32, Math.floor(1.1e6 / (W * 4))));
+      const bm = t.strips[0], rows = Math.min(H - t.row, Math.max(32, Math.floor(this.stripBytes / (W * 4))));
       gl.bindTexture(gl.TEXTURE_2D, t.tex);
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
       gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
@@ -523,6 +543,7 @@ export class World {
       gl.pixelStorei(gl.UNPACK_SKIP_ROWS, 0);
       t.row += rows;
       n++;
+      this.lastUpload = performance.now();
       if (t.row >= H) {
         bm.close(); t.strips = [];
         t.state = 'ready'; t.row = 0;
@@ -775,7 +796,13 @@ export class World {
         gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         const front = new Set(slots.filter((s) => s.W > 0).map((s) => s.scene));
+        // the dark band at the foot, as the page lays it over the live picture (this copy is above it)
+        const band = st.shade.slice(0, 2);
+        gl.uniform4fv(u('uShade[0]'), [0, 1].flatMap((i) => (band[i] ? [band[i][0], band[i][1], band[i][2], band[i][1] < 0.15 ? 0.45 : 0.6] : [0, 0, 1, 0])));
+        gl.uniform1f(u('uFgH'), H);
+        gl.uniform1f(u('uFg'), 1);
         drawThings((t) => t.fg.some((n) => front.has(n)));
+        gl.uniform1f(u('uFg'), 0);
         gl.disable(gl.SCISSOR_TEST);
         // the copy is the size of the live picture, made once (a canvas sized again on every frame stalls the page)
         const c = fgCtx.canvas;
@@ -803,6 +830,8 @@ export class World {
     if (this.lost) return;
     for (const [k, list] of this.spare) while (list.length > 2) { const [w, h] = k.split('x').map(Number); this.gl.deleteTexture(list.shift()!); this.spareBytes -= w * h * 4; }
   }
+  private clearFb: WebGLFramebuffer | null = null;
+  private touchVao: WebGLVertexArrayObject | null = null;
   private touchFb: WebGLFramebuffer | null = null;
   private touchProg: WebGLProgram | null = null;
   private touch(tex: WebGLTexture): void {
@@ -816,10 +845,18 @@ export class World {
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
       const p = gl.createProgram()!;
       const sh = (type: number, src: string) => { const x = gl.createShader(type)!; gl.shaderSource(x, src); gl.compileShader(x); gl.attachShader(p, x); };
-      sh(gl.VERTEX_SHADER, '#version 300 es\nvoid main(){ gl_Position = vec4(0.0, 0.0, 0.0, 1.0); gl_PointSize = 1.0; }');
+      sh(gl.VERTEX_SHADER, '#version 300 es\nin vec4 a;\nvoid main(){ gl_Position = vec4(0.0, 0.0, 0.0, 1.0) + a * 0.0; gl_PointSize = 1.0; }');
       sh(gl.FRAGMENT_SHADER, '#version 300 es\nprecision mediump float; uniform sampler2D t; out vec4 o; void main(){ o = texture(t, vec2(0.5)) + texture(t, vec2(0.1, 0.9)); }');
+      gl.bindAttribLocation(p, 0, 'a');
       gl.linkProgram(p);
       this.touchProg = p;
+      // one point with its own (zero) position: a draw with no array at its first input makes Firefox emulate one
+      this.touchVao = gl.createVertexArray();
+      gl.bindVertexArray(this.touchVao);
+      const vb = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, vb); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(4), gl.STATIC_DRAW);
+      gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 4, gl.FLOAT, false, 0, 0);
+      gl.bindVertexArray(null);
     }
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.touchFb);
     gl.viewport(0, 0, 1, 1);
@@ -827,7 +864,9 @@ export class World {
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.uniform1i(gl.getUniformLocation(this.touchProg!, 't'), 0);
+    gl.bindVertexArray(this.touchVao);
     gl.drawArrays(gl.POINTS, 0, 1);
+    gl.bindVertexArray(null);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.flush();
   }

@@ -705,9 +705,12 @@ function boardAt(y: number): void {
   const i = BRAIN - 1, view = viewOf(BRAIN), rest = reduced();
   const pre = clamp((y - tops[i] + VH / 2) / (VH / 2)), u = (y - tops[i]) / Math.max(1, heights[i] - VH);
   const q = lightAt(view, clamp(u / LIGHT_SHARE), false);
+  // drawn live, the chip and the stand's trace wait for the camera to bring the scene's floor (never over the dark
+  // floor of the scene before)
+  const e = live3d?.live(BRAIN) ? live3d.arrival(BRAIN, y) : null;
   const step = rest ? [1, 1, 1, 1, 1, 1, 1] : [
-    ramp(pre, 0.05, 0.25),                       // the chip and its label
-    ramp(pre, 0.2, 0.7),                         // the stand's trace
+    Math.min(ramp(pre, 0.05, 0.25), e == null ? 1 : ramp(e, 0.8, 0.94)),   // the chip and its label
+    Math.min(ramp(pre, 0.2, 0.7), e == null ? 1 : ramp(e, 0.86, 1)),     // the stand's trace
     // the race piece's with the second pass, the phone's with the third: each head lands on its pad where the light
     // has covered 70% of its thing (the strengths come from the build, which runs the film's own light arithmetic;
     // the shown strength, as the light passes show it)

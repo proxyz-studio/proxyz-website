@@ -192,10 +192,16 @@ cannot run.
   the tile) is there in scene 2 only.
 - **Drawn from the stills.** Every surface is drawn from the very pictures the still film shows (the same files, so
   the browser's cache serves them), each cast back onto the shapes from the camera that drew it. At each scene's rest
-  the camera is exactly that camera, framed where the page puts the picture, so the live frame is the still. While
-  the camera moves, the shapes give the pictures their depth; what no picture saw is lit live by that scene's key
-  light (the same light, colours and camera curve as the picture maker). The light passes mix as the page mixes the
-  pictures; scene 6's later passes grow inside the same oval.
+  the camera is exactly that camera, framed where the page puts the picture, so the live frame is the still (no
+  visibility test there at all). While the camera moves, the shapes give the pictures their depth: a point takes a
+  still's colour where that still's camera saw it (a soft test over five texels of its depth map, so no edge turns
+  into a staircase or a dark crack, and a thing hidden only by its own relief, a hill of the coin, takes the colour
+  all the same); what no picture saw is lit live by that scene's key light (the same light, colours and camera curve
+  as the picture maker). Between two scenes each point is drawn mostly by the scene whose still saw it, and a thing
+  only one scene holds is drawn by that scene until it has nearly gone. A far room behind everything takes what the
+  stills show past the floor's edge. The light passes mix as the page mixes the pictures; scene 6's later passes grow
+  inside the same oval. Scene 2's phone lifts live (drawn by the live light, its screen look 11's menu picture,
+  `src/world/menu.webp`) between its two stills; scene 5's screen is lit as soon as the phone shows.
 - **The camera** (`src/world/path.ts`, the moves in `SHAPES` in `src/world/film3d.ts`): at each rest exactly the
   still's camera; between rests it travels slowly out, does most of its move while the light changes, and settles
   slowly in, never stopping and never swinging past. Scene 1 holds still until its light rests; scenes 6 and 7 share
@@ -207,10 +213,13 @@ cannot run.
 - **Loading.** Nothing of it loads with the first screen (test 11 counts the first load). The script (about 17 KB
   compressed) and the shapes (`src/world/world.bin`, about 500 KB) load at the first sign of intent, or at once when
   the visitor comes back through Back or a door's address. The stills go into the graphics chip in the order the film
-  needs them, a strip at a time.
+  needs them: one picture decoded at a time, a frame between two, about a megabyte of rows a frame, a new texture's
+  memory made and cleared alone. The shapes are read in slices between frames and the shaders compile aside
+  (`KHR_parallel_shader_compile` where the browser has it), so the visitor's first gesture never waits for any of it.
 - **When it does not run:** less motion (never started), no WebGL 2, a chip too slow for it (two slow first frames, a
   software chip for example), a lost context (the stills at once; live again when the context comes back, or with a
-  new one after 2 s). It draws only when something changes, never while the tab is hidden, and sends its work to the
+  new one after 2 s, scroll or not). Back from the back/forward cache draws again at once (`pageshow`), with a fresh
+  context if it came back lost. It draws only when something changes, never while the tab is hidden, and sends its work to the
   chip on every frame (a context left with its work queued stalled look 11 for up to 360 ms).
 - **The shapes.** `node scripts/world-pack.mjs <the stills project's pt/tools/pt/coin-lines folder>` rebuilds
   `src/world/world.bin` (the stand's parts from `src/world/stand.bin`, made by `scripts/stand-model.mjs`; the coin's
