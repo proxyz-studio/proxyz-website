@@ -78,6 +78,7 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
   };
   let lostAt = 0;
   world = await World.create(events, phoneChip ? 150e6 : 260e6);
+  world.warm();
   world.onDecoded = () => h.schedule();
   let canvas = world.canvas;
   // the copy of the things in front of the giant words
@@ -133,6 +134,8 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
   }
   function unlive(): void {
     for (const n of [...liveNow]) setLive(n, false);
+    ready.clear();
+    document.documentElement.dataset.world = '|';
     canvas.remove();
     host = null;
     fg.style.visibility = 'hidden';
@@ -141,7 +144,8 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
   /* ---------- the governor: sharpness from the measured frame times ---------- */
   const DPR = Math.max(1, devicePixelRatio || 1);
   const steps = [Math.min(2, DPR), 1.5, 1.25, 1].filter((v, i, a) => v <= DPR && a.indexOf(v) === i);
-  let step = 0, slow = 0;
+  let step = 0, slow = 0, benched = 0, benchMs = 0;
+  const bench: number[] = [];
   const times: number[] = [];
   let lastDraw = 0;
   function measure(now: number): void {
@@ -197,7 +201,7 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
     if (world.pending() && (!moving || need.length)) world.upload(1, new Set(want));
     for (let n = 1; n <= h.count; n++) if (isReady(n)) ready.add(n); else ready.delete(n);
     // for the check: the scenes drawn live now, and those ready to be (on the page root, read only)
-    const mark = [...liveNow].sort().join(',') + '|' + [...ready].sort().join(',');
+    const mark = [...liveNow].sort().join(',') + '|' + [...ready].sort().join(',') + (benchMs ? '|' + benchMs.toFixed(0) : '');
     if (document.documentElement.dataset.world !== mark) document.documentElement.dataset.world = mark;
 
     // the scenes the page shows (its layers: the words, and the still film where a scene is not live yet)
@@ -249,13 +253,23 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
     const ok = world.draw(st, fgBox ? fgCtx : null);
     if (!ok) return more;
     drawn = sig;
-    if (moving) measure(t0);
+    // the first frame: how long the chip takes for one, drawn three times more and waited for (a software chip, or a
+    // weak one, takes 100 ms and more: the still film then, for good; a slow one draws at the lowest sharpness)
+    if (!benched) {
+      benched = 1;
+      world.finish();
+      for (let i = 0; i < 3; i++) { const t1 = performance.now(); world.draw(st, null); bench.push(performance.now() - t1 + world.finish()); }
+      const m = [...bench].sort((x, z) => x - z)[1];
+      benchMs = m;
+      if (m > 70) { giveUp(); return false; }
+      if (m > 24) { step = steps.length - 1; drawn = ''; }
+    } else if (moving) measure(t0);
     // the copy of the things in front of the giant words: as strong as the live picture under it
     if (fgBox) {
-      const sx = Math.max(0, Math.floor(fgBox[0] * pr)) / pr, sy = Math.max(0, Math.floor(fgBox[1] * pr)) / pr;
-      Object.assign(fg.style, { left: sx + 'px', top: sy + 'px', width: fg.width / pr + 'px', height: fg.height / pr + 'px', visibility: '' });
-      fg.style.opacity = live.length === 1 && shown.length === 2 && live[0].n === top + 1 ? s.toFixed(3) : '';
-    } else fg.style.visibility = 'hidden';
+      if (fg.style.width !== st.vw + 'px' || fg.style.height !== st.vh + 'px') Object.assign(fg.style, { width: st.vw + 'px', height: st.vh + 'px' });
+      if (fg.style.visibility) fg.style.visibility = '';
+      { const o = live.length === 1 && shown.length === 2 && live[0].n === top + 1 ? s.toFixed(3) : ''; if (fg.style.opacity !== o) fg.style.opacity = o; }
+    } else if (fg.style.visibility !== 'hidden') fg.style.visibility = 'hidden';
     return more || !settled || now - settled < 200;
   }
   function swap(c: HTMLCanvasElement): void {

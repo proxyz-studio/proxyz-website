@@ -240,7 +240,7 @@ function menuPose(L: Layout, t: number): M4 {
 
 /* ---------- the drawing ---------- */
 interface Mesh { vao: WebGLVertexArrayObject; count: number; type: number; bufs: WebGLBuffer[] }
-interface Tex { key: string; state: 'none' | 'loading' | 'decoded' | 'ready' | 'failed'; url: string; bitmap: ImageBitmap | null; tex: WebGLTexture | null; bytes: number; used: number }
+interface Tex { key: string; state: 'none' | 'loading' | 'decoded' | 'ready' | 'failed'; url: string; bitmap: ImageBitmap | null; tex: WebGLTexture | null; bytes: number; used: number; row: number }
 interface DepthMap { fb: WebGLFramebuffer; tex: WebGLTexture; rb: WebGLRenderbuffer; w: number; h: number }
 
 export interface WorldEvents { lost(): void; restored(): void }
@@ -322,7 +322,7 @@ export class World {
       this.meshes.set(name, { vao, count: p.I.length, type: p.I instanceof Uint32Array ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT, bufs: [b0, b1, b2] });
     }
     // every picture and depth map is gone with a lost context: read again when asked
-    for (const t of this.texs.values()) { t.tex = null; if (t.state === 'ready') t.state = 'none'; }
+    for (const t of this.texs.values()) { t.tex = null; t.row = 0; if (t.state === 'ready') t.state = 'none'; }
     this.held = 0;
     this.depth.clear();
     this.blank = gl.createTexture()!;
@@ -357,7 +357,7 @@ export class World {
     for (const { key, url } of list) {
       let t = this.texs.get(key);
       if (t && t.url !== url && t.state !== 'loading') { this.drop(t); t = undefined; }
-      if (!t) { t = { key, state: 'none', url, bitmap: null, tex: null, bytes: 0, used: now }; this.texs.set(key, t); }
+      if (!t) { t = { key, state: 'none', url, bitmap: null, tex: null, bytes: 0, used: now, row: 0 }; this.texs.set(key, t); }
       t.used = now;
       if (t.state === 'none') this.load(t);
     }
@@ -385,35 +385,48 @@ export class World {
   upload(max: number, keep: Set<string>): number {
     if (this.lost) return 0;
     const gl = this.gl;
-    const ready = [...this.texs.values()].filter((t) => t.state === 'decoded').sort((a, b) => b.used - a.used);
+    // one picture at a time, in strips of rows, one strip a call (a whole 2880 x 1800 picture took 20 to 24 ms of the
+    // page's time at a fourth of a laptop's speed; a strip takes a quarter of that)
+    let t = [...this.texs.values()].find((x) => x.state === 'decoded' && x.row > 0);
+    if (!t) t = [...this.texs.values()].filter((x) => x.state === 'decoded').sort((a, b) => b.used - a.used)[0];
     let n = 0;
-    for (const t of ready.slice(0, max)) {
-      const tex = gl.createTexture()!;
-      gl.bindTexture(gl.TEXTURE_2D, tex);
+    for (let k = 0; t && k < max; k++) {
+      const bm = t.bitmap!, W = bm.width, H = bm.height;
+      if (!t.tex) {
+        t.tex = gl.createTexture()!;
+        gl.bindTexture(gl.TEXTURE_2D, t.tex);
+        gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, W, H);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        t.bytes = W * H * 4;
+        this.held += t.bytes;
+        t.row = 0;
+      }
+      const rows = Math.min(H - t.row, Math.ceil(H / 4));
+      gl.bindTexture(gl.TEXTURE_2D, t.tex);
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
       gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
       gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.BROWSER_DEFAULT_WEBGL);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, t.bitmap!);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      t.bytes = t.bitmap!.width * t.bitmap!.height * 4;
-      t.bitmap!.close(); t.bitmap = null;
-      t.tex = tex; t.state = 'ready';
-      this.held += t.bytes;
+      gl.pixelStorei(gl.UNPACK_SKIP_ROWS, t.row);
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, t.row, W, rows, gl.RGBA, gl.UNSIGNED_BYTE, bm);
+      gl.pixelStorei(gl.UNPACK_SKIP_ROWS, 0);
+      t.row += rows;
       n++;
+      if (t.row >= H) { bm.close(); t.bitmap = null; t.state = 'ready'; t.row = 0; break; }
     }
     // over the budget: let go of the least used, never one still wanted
     if (this.held > this.budget) {
-      const old = [...this.texs.values()].filter((t) => t.state === 'ready' && !keep.has(t.key)).sort((a, b) => a.used - b.used);
-      for (const t of old) { if (this.held <= this.budget) break; this.drop(t); this.texs.delete(t.key); }
+      const old = [...this.texs.values()].filter((x) => x.state === 'ready' && !keep.has(x.key)).sort((a, b) => a.used - b.used);
+      for (const x of old) { if (this.held <= this.budget) break; this.drop(x); this.texs.delete(x.key); }
     }
     return n;
   }
   private drop(t: Tex): void {
     if (t.tex && !this.lost) this.gl.deleteTexture(t.tex);
     if (t.tex) this.held -= t.bytes;
+    t.row = 0;
     t.bitmap?.close();
     t.tex = null; t.bitmap = null; t.state = 'none';
   }
@@ -600,9 +613,12 @@ export class World {
         const front = new Set(slots.filter((s) => s.W > 0).map((s) => s.scene));
         drawThings((t) => t.fg.some((n) => front.has(n)));
         gl.disable(gl.SCISSOR_TEST);
+        // the copy is the size of the live picture, made once (a canvas sized again on every frame stalls the page)
         const c = fgCtx.canvas;
-        if (c.width !== sw || c.height !== sh) { c.width = sw; c.height = sh; } else fgCtx.clearRect(0, 0, sw, sh);
-        fgCtx.drawImage(this.canvas, sx, sy, sw, sh, 0, 0, sw, sh);
+        if (c.width !== W || c.height !== H) { c.width = W; c.height = H; this.fgAt = null; }
+        if (this.fgAt) fgCtx.clearRect(...this.fgAt);
+        fgCtx.drawImage(this.canvas, sx, sy, sw, sh, sx, sy, sw, sh);
+        this.fgAt = [sx, sy, sw, sh];
       }
     }
     // 2. the whole world
@@ -614,6 +630,36 @@ export class World {
     gl.flush();
     return true;
   }
+
+  /** Compiles the shaders and sends the shapes to the chip now (a draw nothing sees), so the first frame the scroll
+   *  asks for does not stop for it. */
+  warm(): void {
+    if (this.lost) return;
+    const gl = this.gl;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, 1, 1);
+    gl.useProgram(this.progW);
+    for (let i = 0; i < 2 * UNITS + 1; i++) { gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, this.blank); }
+    for (const [name, m] of this.meshes) {
+      if (name === 'floor') continue;
+      gl.bindVertexArray(m.vao);
+      gl.drawElements(gl.TRIANGLES, Math.min(m.count, 3), m.type, 0);
+    }
+    gl.useProgram(this.progD);
+    gl.bindVertexArray(this.meshes.get('tile')!.vao);
+    gl.drawElements(gl.TRIANGLES, 3, this.meshes.get('tile')!.type, 0);
+    gl.bindVertexArray(null);
+    gl.finish();
+  }
+  /** how long the chip takes to finish what was asked of it (ms) */
+  finish(): number {
+    // a pixel read back waits for every drawing before it (a browser may answer finish() at once)
+    const t = performance.now();
+    if (!this.lost) this.gl.readPixels(0, 0, 1, 1, this.gl.RGBA, this.gl.UNSIGNED_BYTE, this.px);
+    return performance.now() - t;
+  }
+  private px = new Uint8Array(4);
+  private fgAt: [number, number, number, number] | null = null;
 
   dispose(): void {
     for (const t of this.texs.values()) this.drop(t);
