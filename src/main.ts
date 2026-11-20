@@ -1126,6 +1126,8 @@ addEventListener('pagehide', remember);
 // (scrollRestoration manual) it never scrolls down again. The saved place, before the first picture is drawn.
 addEventListener('pageshow', (e) => {
   if (!e.persisted || gaveUp) return;
+  // the live film draws again at once (not at the next scroll)
+  live3d?.revive();
   const was = frozen;
   frozen = true; onResize(); frozen = was;   // the screen may have turned while away; nothing moves at the top
   if (returnTo()) update();

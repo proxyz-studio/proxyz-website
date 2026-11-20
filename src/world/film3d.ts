@@ -17,6 +17,10 @@ import type { View } from '../types';
 import { World, layoutOf, type CamState, type Form, type FrameState, type Layout, type SlotState } from './world';
 import { at, camOf, keyOf, keysOf, type Key, type Shape } from './path';
 import { cssHomography, homography, type V3 } from './mat';
+import menuScreen from './menu.webp?url';
+
+/** the picture on scene 2's phone screen, for the phone drawn live while it lifts (look 11's menu) */
+const SCREEN = 'menu-screen';
 
 export interface Box { left: number; top: number; w: number; h: number }
 export interface SceneEls { layer: HTMLElement; box: HTMLElement; passes: HTMLElement[]; shade: HTMLElement | null; top: HTMLElement | null }
@@ -44,7 +48,7 @@ const DEG = Math.PI / 180;
 const BRAIN = 6;
 /** how each move between two rests is shaped (scene i+1 to i+2) */
 const SHAPES: Shape[] = [
-  { leave: 0.3, settle: 0.5, ease: 0.03, via: { frame: 0.85 } },        // 1 to 2: the pull back from the letters to the whole stand (it finds its place early, clear of the words)
+  { leave: 0.3, settle: 0.5, ease: 0.03, via: { frame: 1, out: 1, at: 0.28 } },        // 1 to 2: the pull back from the letters to the whole stand (it finds its place early, clear of the words)
   { leave: 0.3, settle: 0.5, ease: 0.03, via: { out: 1.25, lift: 4 } },  // 2 to 3: back a little, across to the race piece
   { leave: 0.3, settle: 0.5, ease: 0.03, via: { out: 1.1, lift: 6 } },   // 3 to 4: over to the coin and down along it
   { leave: 0.3, settle: 0.5, ease: 0.03, via: { out: 1.3, lift: 8 } },   // 4 to 5: up off the coin, over to the phone
@@ -60,6 +64,8 @@ export interface Film3d {
   lowerFade(n: number): number | null;
   /** a door hands over: the stills, until it is back */
   pause(on: boolean): void;
+  /** the page came back from the back/forward cache: draw again now (a fresh context if it came back lost) */
+  revive(): void;
   /** scene n's stills are in the chip: it can be drawn live */
   ready(n: number): boolean;
   /** the transform of scene 6's board (its frame) and labels while live, or null */
@@ -77,12 +83,18 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
   let world: World | null = null;
   let gone = false;
   const events = {
-    lost: () => { if (gone) return; lostAt = performance.now(); why = 'lost'; unlive(); h.schedule(); },
+    lost: () => { if (gone) return; lostAt = performance.now(); why = 'lost'; unlive(); h.schedule(); renewSoon(); },
     restored: () => { lostAt = 0; layoutKey = ''; h.schedule(); },
   };
-  let lostAt = 0;
+  let lostAt = 0, renewT = 0, renewing = false;
+  /** a context lost and not given back within two seconds is made anew, scroll or not (Back from the back/forward
+   *  cache may bring the page back with its context gone) */
+  function renewSoon(): void {
+    clearTimeout(renewT);
+    renewT = window.setTimeout(() => { if (world?.lost && !gone) h.schedule(); }, 2100);
+  }
   world = await World.create(events, phoneChip ? 120e6 : 260e6);
-  world.warm();
+  world.depthLong = phoneChip ? 1024 : 1536;
   world.onDecoded = () => h.schedule();
   let canvas = world.canvas;
   // the live picture: one canvas in a fixed box just before the film, so under every scene's layer, never moved in the
@@ -155,6 +167,12 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
     fg.style.visibility = 'hidden';
   }
 
+  /** for the check: the scenes drawn live now, and those ready to be (on the page root, read only) */
+  function mark(): void {
+    const m = [...liveNow].sort().join(',') + '|' + [...ready].sort().join(',') + (benchMs ? '|' + benchMs.toFixed(0) : '');
+    if (document.documentElement.dataset.world !== m) document.documentElement.dataset.world = m;
+  }
+
   /* ---------- the governor: sharpness from the measured frame times ---------- */
   const DPR = Math.max(1, devicePixelRatio || 1);
   // one sharpness while moving and at rest (a drawing buffer made again at every stop churns a phone's memory), at
@@ -206,18 +224,23 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
     if (paused) return false;
     if (world.lost) {
       // a context lost and not given back within two seconds: a fresh one
+      if (!lostAt && !renewing) lostAt = now;
       if (lostAt && now - lostAt > 2000 && document.visibilityState === 'visible') {
-        lostAt = 0;
+        lostAt = 0; renewing = true;
         const old = world;
-        World.create(events, old.budget).then((w) => { world = w; w.onDecoded = () => h.schedule(); w.warm(); layoutKey = ''; old.dispose(); swap(w.canvas); why = 'renewed'; h.schedule(); }, () => { why = 'lost for good'; giveUp(); });
+        World.create(events, old.budget).then((w) => { renewing = false; world = w; w.depthLong = old.depthLong; w.onDecoded = () => h.schedule(); layoutKey = ''; old.dispose(); swap(w.canvas); why = 'renewed'; h.schedule(); }, () => { why = 'lost for good'; giveUp(); });
       }
+      if (lostAt) renewSoon();
       return false;
     }
+    if (world.broken) { why = 'shaders'; giveUp(); return false; }
     relayout();
     if (!L) return false;
     const active = h.active();
     const want = wanted(active);
-    world.want(want.map((k) => ({ key: k, url: h.url(k, Number(/^s(\d)/.exec(k)?.[1] ?? active)) })));
+    const list = want.map((k) => ({ key: k, url: h.url(k, Number(/^s(\d)/.exec(k)?.[1] ?? active)) }));
+    if (want.some((k) => k.startsWith('s2-'))) list.push({ key: SCREEN, url: menuScreen });
+    world.want(list);
     // one picture into the chip a frame, and only while the page is still or the scene needs it now
     // while the film moves, only the stills of the scenes on screen and the next (the rest while the page is still)
     const need = [top + 1, top, top + 2].filter((n) => n >= 1 && n <= h.count && !isReady(n));
@@ -225,15 +248,14 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
     // never let go of the stills of a scene on screen (or the one before the scene arriving, or after it)
     const keep = new Set(want);
     for (const n of [top, top + 1, top + 2]) if (n >= 1 && n <= h.count) for (const k of passesOf(n)) keep.add(k);
-    if (world.pending() && (!moving || need.length)) world.upload(1, keep, !moving);
+    if ([top, top + 1, top + 2].includes(2)) keep.add(SCREEN);
+    if (world.pending() && (!moving || need.length)) world.upload(moving ? 1 : 4, keep, !moving);
     else if (!moving) { world.upload(0, keep, true); world.tidy(); }
     for (let n = 1; n <= h.count; n++) if (isReady(n)) ready.add(n); else ready.delete(n);
     // the depth maps of the scenes next in line, ahead of their first frame (one a frame)
     const soon = [top + 1, top + 2, top].filter((n) => n >= 1 && n <= h.count && ready.has(n));
     world.prepare(soon.flatMap((n) => passesOf(n)));
-    // for the check: the scenes drawn live now, and those ready to be (on the page root, read only)
-    const mark = [...liveNow].sort().join(',') + '|' + [...ready].sort().join(',') + (benchMs ? '|' + benchMs.toFixed(0) : '');
-    if (document.documentElement.dataset.world !== mark) document.documentElement.dataset.world = mark;
+    mark();
 
     // the scenes the page shows (its layers: the words, and the still film where a scene is not live yet)
     const shown: { n: number; W: number }[] = [];
@@ -261,6 +283,7 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
     // a chip whose first frames were slow shows nothing live until its second answer (the still film meanwhile)
     const doubt = benched === 1 && benchMs > 60;
     for (let n = 1; n <= h.count; n++) setLive(n, !doubt && live.some((x) => x.n === n));
+    mark();
     // a still scene under a live one arriving fades out as that one comes in (the live picture is under both)
     fade = !doubt && live.length === 1 && shown.length === 2 && live[0].n === top + 1 ? { n: top, o: 1 - s } : null;
     if (!live.length || !slots.length) { under.style.visibility = 'hidden'; fg.style.visibility = 'hidden'; return more; }
@@ -276,7 +299,10 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
     if (!moving) settled = settled || now; else settled = 0;
     const pr = steps[step];
     const fgBox = fgRect(cam, slots, lift);
-    const st: FrameState = { vw: h.vw(), vh: h.vh(), pr, cam, slots, lift, fg: fgBox };
+    // scene 2's phone, lifted live: drawn from the stills on the tile and at the top, by the live light between
+    const menuLive = Math.min(1, Math.min(lift, 1 - lift) / 0.12);
+    const hold = !(a + 1 === BRAIN && a + 2 <= h.count);
+    const st: FrameState = { vw: h.vw(), vh: h.vh(), pr, cam, slots, lift, fg: fgBox, menuLive: menuLive > 0 ? menuLive * menuLive * (3 - 2 * menuLive) : 0, screen: SCREEN, hold };
     const sig = JSON.stringify([st, liveNow.size]);
     if (sig === drawn && !(benched < 2 && now >= benchAt && !moving)) return more || benched < 2;
     canvas.style.width = st.vw + 'px'; canvas.style.height = st.vh + 'px';
@@ -327,7 +353,9 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
       sat: /saturate\(([\d.]+)\)/.test(v.filter ?? '') ? Number(/saturate\(([\d.]+)\)/.exec(v.filter!)![1]) : 1,
       fade: v.frame.fade ? (v.frame.fade as [number, number, number, number]) : null,
       passes: v.passes.map((key, k) => {
-        const tk = k === 0 ? 1 : t[k] ?? 0;
+        // scene 5's phone: its screen is lit from the moment it shows (its first pass is the screen still dark: a
+        // black slab while the camera comes to it)
+        const tk = k === 0 ? 1 : n === 5 && k === 1 ? 1 : t[k] ?? 0;
         if (!v.opens || k === 0) return { key, t: tk, oval: null };
         // scene 6: the later pass shows inside an oval growing from the old pool of light (as src/main.ts light)
         if (tk <= 0 || tk >= 1) return { key, t: tk >= 1 ? 1 : 0, oval: null };
@@ -405,6 +433,12 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
       paused = on;
       if (on) unlive();
       drawn = '';
+      h.schedule();
+    },
+    revive() {
+      drawn = '';
+      if (world && !world.lost && world.gl.isContextLost()) { world.lost = true; unlive(); }
+      if (world?.lost && !renewing) lostAt = 1;
       h.schedule();
     },
     ready: (n) => ready.has(n) && !gone && !(benched === 1 && benchMs > 60),

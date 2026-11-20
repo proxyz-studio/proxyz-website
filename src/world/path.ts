@@ -38,7 +38,7 @@ export interface Shape {
   ease: number;
   /** a pulled back view half way, which holds both things (out: how much further than the farther rest, as a factor;
    *  lift: degrees higher) */
-  via?: { out?: number; lift?: number; frame?: number };
+  via?: { out?: number; lift?: number; frame?: number; at?: number };
 }
 
 /** The keys of the whole film: rests[i] is scene i+1's rest camera and its playhead; holds lists the rests the camera
@@ -69,7 +69,7 @@ export function keysOf(rests: { y: number; v: number[] }[], shapes: Shape[], vh:
       for (const j of [0, 1, 2, 6, 7, 8]) m[j] = a[j] + (b[j] - a[j]) * f;
       m[4] += (s.via.lift ?? 0) * (Math.PI / 180);
       if (s.via.out) m[5] = Math.max(a[5], b[5]) + Math.log(s.via.out);
-      keys.push({ y: (yl + ys) / 2, v: m });
+      keys.push({ y: yl + (ys - yl) * (s.via.at ?? 0.5), v: m });
     }
     keys.push({ y: ys, v: lerp(a, b, 1 - s.ease) });
   }

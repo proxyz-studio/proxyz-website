@@ -49,14 +49,30 @@ export interface FrameState {
   lift: number;
   /** the box (CSS px) of the copy of the things in front of the giant words, or null */
   fg: [number, number, number, number] | null;
+  /** scene 2's phone drawn by the live light (0: from the stills, 1: live), and its screen's picture */
+  menuLive: number; screen: string | null;
+  /** a thing held by one scene's stills only is drawn by that scene (not between scenes 6 and 7: one camera) */
+  hold: boolean;
 }
 
 /* ---------- shapes ---------- */
 interface Part { name: string; P: Float32Array; N: Float32Array; I: Uint32Array | Uint16Array }
+/** Gives the page back for a moment once a few ms of work have run (the shapes are read in slices between frames: in
+ *  one piece they took 130 ms at a fourth of a laptop's speed, a stop at the visitor's first gesture). */
+function slicer(ms = 5): () => Promise<void> | null {
+  let t = performance.now();
+  return () => {
+    if (performance.now() - t < ms) return null;
+    // the next slice right after the next frame is drawn (a message or a timer alone ran slice after slice before the
+    // page drew: one frame of 85 ms)
+    return new Promise<void>((r) => requestAnimationFrame(() => setTimeout(() => { t = performance.now(); r(); }, 0)));
+  };
+}
 async function loadParts(): Promise<{ parts: Map<string, Part>; coinMap: { n: number; rgba: Uint8Array } }> {
   const res = await fetch(worldUrl);
   if (!res.ok || !res.body) throw new Error('world');
   const buf = await new Response(res.body.pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+  const breathe = slicer();
   const n = new DataView(buf).getUint32(0, true);
   const head = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 4, n))) as {
     parts: { name: string; v: number; i: number; min: number[]; max: number[]; i32: boolean }[]; coin: { n: number; r: number; hmax: number };
@@ -64,20 +80,28 @@ async function loadParts(): Promise<{ parts: Map<string, Part>; coinMap: { n: nu
   let o = 4 + n;
   o += (4 - (o % 4)) % 4;
   const out = new Map<string, Part>();
+  const STEP = 30000;
   for (const p of head.parts) {
     const q = new Uint16Array(buf, o, p.v * 3); o += p.v * 6;
     const nb = new Int8Array(buf, o, p.v * 3); o += p.v * 3; o += (4 - (o % 4)) % 4;
     const ib = p.i32 ? new Uint32Array(buf, o, p.i) : new Uint16Array(buf, o, p.i);
     o += ib.byteLength; o += (4 - (o % 4)) % 4;
     const P = new Float32Array(p.v * 3), N = new Float32Array(p.v * 3), last = [0, 0, 0];
-    for (let i = 0; i < P.length; i++) {
-      const k = i % 3, v = (last[k] + q[i]) & 0xffff;
-      last[k] = v;
-      P[i] = p.min[k] + (v / 65535) * (p.max[k] - p.min[k]);
-      N[i] = nb[i] / 127;
+    for (let i0 = 0; i0 < P.length; i0 += STEP) {
+      for (let i = i0; i < Math.min(P.length, i0 + STEP); i++) {
+        const k = i % 3, v = (last[k] + q[i]) & 0xffff;
+        last[k] = v;
+        P[i] = p.min[k] + (v / 65535) * (p.max[k] - p.min[k]);
+        N[i] = nb[i] / 127;
+      }
+      await breathe();
     }
     const I = p.v > 65535 ? new Uint32Array(p.i) : new Uint16Array(p.i);
-    for (let k = 0, prev = 0; k < p.i; k++) { const z = ib[k], d = z & 1 ? -(z + 1) / 2 : z / 2; prev += d; I[k] = prev; }
+    let prev = 0;
+    for (let k0 = 0; k0 < p.i; k0 += STEP) {
+      for (let k = k0; k < Math.min(p.i, k0 + STEP); k++) { const z = ib[k], d = z & 1 ? -(z + 1) / 2 : z / 2; prev += d; I[k] = prev; }
+      await breathe();
+    }
     out.set(p.name, { name: p.name, P, N, I });
   }
   // the coin: its height field as a disc of rings (exact round rim), and its outer wall
@@ -86,37 +110,59 @@ async function loadParts(): Promise<{ parts: Map<string, Part>; coinMap: { n: nu
   // the coin's own colours where no still saw it: the spools of the print (ptDark.ts LINES_MAT), linear
   const part = new Uint8Array(buf, o + G * G * 2, G * G), COL = [[2, 2, 2], [66, 69, 62], [5, 20, 190], [237, 4, 4]];
   const rgba = new Uint8Array(G * G * 4);
-  for (let k = 0; k < part.length; k++) rgba.set([...COL[part[k]], 255], k * 4);
+  for (let k = 0; k < part.length; k++) { const c = COL[part[k]]; rgba[k * 4] = c[0]; rgba[k * 4 + 1] = c[1]; rgba[k * 4 + 2] = c[2]; rgba[k * 4 + 3] = 255; }
+  await breathe();
   const hAt = (x: number, z: number) => {
     const fx = ((x + R) / (2 * R)) * (G - 1), fz = ((z + R) / (2 * R)) * (G - 1);
     const i = Math.max(0, Math.min(G - 2, Math.floor(fx))), j = Math.max(0, Math.min(G - 2, Math.floor(fz))), u = fx - i, v = fz - j;
     return H[j * G + i] * (1 - u) * (1 - v) + H[j * G + i + 1] * u * (1 - v) + H[(j + 1) * G + i] * (1 - u) * v + H[(j + 1) * G + i + 1] * u * v;
   };
-  const RINGS = 150, SEG = 560, pos: number[] = [], idx: number[] = [];
-  pos.push(0, hAt(0, 0), 0);
+  const RINGS = 150, SEG = 560, top0 = 1 + RINGS * SEG, NV = top0 + 2 * SEG;
+  const P = new Float32Array(NV * 3), Nn = new Float32Array(NV * 3);
+  const I = new Uint32Array(SEG * 3 + (RINGS - 1) * SEG * 6 + SEG * 6);
+  P[1] = hAt(0, 0);
+  const COS = new Float32Array(SEG), SIN = new Float32Array(SEG);
+  for (let s = 0; s < SEG; s++) { COS[s] = Math.cos((s / SEG) * Math.PI * 2); SIN[s] = Math.sin((s / SEG) * Math.PI * 2); }
   for (let r = 1; r <= RINGS; r++) {
     const rr = (R * r) / RINGS;
-    for (let s = 0; s < SEG; s++) { const a = (s / SEG) * Math.PI * 2, x = rr * Math.cos(a), z = rr * Math.sin(a); pos.push(x, hAt(x * 0.999, z * 0.999), z); }
+    for (let s = 0; s < SEG; s++) { const k = (1 + (r - 1) * SEG + s) * 3, x = rr * COS[s], z = rr * SIN[s]; P[k] = x; P[k + 1] = hAt(x * 0.999, z * 0.999); P[k + 2] = z; }
+    if (r % 10 === 0) await breathe();
   }
   const ring = (r: number, s: number) => (r === 0 ? 0 : 1 + (r - 1) * SEG + (s % SEG));
-  for (let s = 0; s < SEG; s++) idx.push(0, ring(1, s + 1), ring(1, s));
-  for (let r = 1; r < RINGS; r++) for (let s = 0; s < SEG; s++) idx.push(ring(r, s), ring(r, s + 1), ring(r + 1, s), ring(r, s + 1), ring(r + 1, s + 1), ring(r + 1, s));
+  let ii = 0;
+  for (let s = 0; s < SEG; s++) { I[ii++] = 0; I[ii++] = ring(1, s + 1); I[ii++] = ring(1, s); }
+  for (let r = 1; r < RINGS; r++) {
+    for (let s = 0; s < SEG; s++) { I[ii++] = ring(r, s); I[ii++] = ring(r, s + 1); I[ii++] = ring(r + 1, s); I[ii++] = ring(r, s + 1); I[ii++] = ring(r + 1, s + 1); I[ii++] = ring(r + 1, s); }
+    if (r % 30 === 0) await breathe();
+  }
   // the wall: the rim ring again with its own (outward) normals, down to the floor
-  const top0 = pos.length / 3;
-  for (let s = 0; s < SEG; s++) { const a = (s / SEG) * Math.PI * 2, x = R * Math.cos(a), z = R * Math.sin(a); pos.push(x, pos[ring(RINGS, s) * 3 + 1], z, x, 0, z); }
-  for (let s = 0; s < SEG; s++) { const a = top0 + 2 * s, b = top0 + 2 * ((s + 1) % SEG); idx.push(a, a + 1, b, b, a + 1, b + 1); }
-  const P = Float32Array.from(pos), Nn = new Float32Array(P.length);
+  for (let s = 0; s < SEG; s++) {
+    const x = R * COS[s], z = R * SIN[s], k = (top0 + 2 * s) * 3;
+    P[k] = x; P[k + 1] = P[ring(RINGS, s) * 3 + 1]; P[k + 2] = z; P[k + 3] = x; P[k + 4] = 0; P[k + 5] = z;
+  }
+  for (let s = 0; s < SEG; s++) { const a = top0 + 2 * s, b = top0 + 2 * ((s + 1) % SEG); I[ii++] = a; I[ii++] = a + 1; I[ii++] = b; I[ii++] = b; I[ii++] = a + 1; I[ii++] = b + 1; }
   // normals: the top from the height field's slopes, the wall radial
   for (let k = 0; k < top0; k++) {
     const x = P[k * 3], z = P[k * 3 + 2], e = 0.35;
     const dx = (hAt(x + e, z) - hAt(x - e, z)) / (2 * e), dz = (hAt(x, z + e) - hAt(x, z - e)) / (2 * e), l = Math.hypot(dx, 1, dz);
-    Nn.set([-dx / l, 1 / l, -dz / l], k * 3);
+    Nn[k * 3] = -dx / l; Nn[k * 3 + 1] = 1 / l; Nn[k * 3 + 2] = -dz / l;
+    if (k % 8000 === 0) await breathe();
   }
-  for (let k = top0; k < P.length / 3; k++) { const x = P[k * 3], z = P[k * 3 + 2], l = Math.hypot(x, z) || 1; Nn.set([x / l, 0, z / l], k * 3); }
-  out.set('coin', { name: 'coin', P, N: Nn, I: Uint32Array.from(idx) });
+  for (let k = top0; k < NV; k++) { const x = P[k * 3], z = P[k * 3 + 2], l = Math.hypot(x, z) || 1; Nn[k * 3] = x / l; Nn[k * 3 + 2] = z / l; }
+  out.set('coin', { name: 'coin', P, N: Nn, I });
   // the floor: one big square
   const F = 4000;
   out.set('floor', { name: 'floor', P: Float32Array.of(-F, -0.02, -F, F, -0.02, -F, F, -0.02, F, -F, -0.02, F), N: Float32Array.of(0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0), I: Uint16Array.of(0, 2, 1, 0, 3, 2) });
+  // the room round it all, far off: what the stills show past the floor's edge and above it (the soft glow of a thing
+  // near the camera reaches there), so no part of the screen is empty while the film is live
+  const B = 5200, rp: number[] = [], rn: number[] = [], ri: number[] = [];
+  const quad = (c: number[][], n: number[]) => { const o = rp.length / 3; for (const q of c) { rp.push(...q); rn.push(...n); } ri.push(o, o + 1, o + 2, o, o + 2, o + 3); };
+  quad([[-B, -B, -B], [B, -B, -B], [B, B, -B], [-B, B, -B]], [0, 0, 1]);
+  quad([[B, -B, B], [-B, -B, B], [-B, B, B], [B, B, B]], [0, 0, -1]);
+  quad([[-B, -B, B], [-B, -B, -B], [-B, B, -B], [-B, B, B]], [1, 0, 0]);
+  quad([[B, -B, -B], [B, -B, B], [B, B, B], [B, B, -B]], [-1, 0, 0]);
+  quad([[-B, B, -B], [B, B, -B], [B, B, B], [-B, B, B]], [0, -1, 0]);
+  out.set('room', { name: 'room', P: Float32Array.from(rp), N: Float32Array.from(rn), I: Uint16Array.from(ri) });
   return { parts: out, coinMap: { n: G, rgba } };
 }
 
@@ -136,11 +182,14 @@ const MATS: Record<string, Mat> = {
   base: { alb: [0.04, 0.034, 0.03], rough: 0.86, metal: 0 },
   // the stills' floor: 0.012 under a texture that averages a half
   floor: { alb: [0.006, 0.006, 0.0058], rough: 0.95, metal: 0 },
+  room: { alb: [0, 0, 0], rough: 1, metal: 0 },
 };
 const STAND_PARTS = ['tall_body_lod1', 'tall_accent', 'tall_web', 'plate', 'let_pro', 'let_x', 'let_y', 'let_z'];
 const TILE_AT: V3[] = [[-51.9, 13.6684, 5.2229], [-17.3, 13.6684, 5.2229], [17.3, 13.6684, 5.2229], [51.9, 13.6684, 5.2229]];
 
 type ThingName = 'stand' | 'menu' | 'trophy' | 'coin' | 'coach' | 'floor';
+/** how far (mm) a thing may be hidden behind itself in a still and still take the still's colour (its own relief) */
+const TOL: Record<ThingName, number> = { stand: 4, menu: 2, trophy: 12, coin: 22, coach: 2, floor: 0 };
 interface Draw { part: string; local: M4; mat: Mat }
 interface Thing { name: ThingName; draws: Draw[]; /** the scenes whose stills hold it */ scenes: number[]; fg: number[] }
 
@@ -154,7 +203,7 @@ function things(): Thing[] {
     { name: 'trophy', draws: [{ part: 'base', local: ident(), mat: MATS.base }, { part: 'coin', local: COIN_ON_BASE, mat: MATS.coin }], scenes: [3], fg: [3] },
     { name: 'coin', draws: [{ part: 'coin', local: ident(), mat: MATS.coin }], scenes: [4, 6], fg: [6] },
     { name: 'coach', draws: phone(), scenes: [5, 6], fg: [5, 6] },
-    { name: 'floor', draws: [{ part: 'floor', local: ident(), mat: MATS.floor }], scenes: [1, 2, 3, 4, 5, 6, 7], fg: [] },
+    { name: 'floor', draws: [{ part: 'floor', local: ident(), mat: MATS.floor }, { part: 'room', local: ident(), mat: MATS.room }], scenes: [1, 2, 3, 4, 5, 6, 7], fg: [] },
   ];
 }
 
@@ -242,14 +291,18 @@ function menuPose(L: Layout, t: number): M4 {
 
 /* ---------- the drawing ---------- */
 interface Mesh { vao: WebGLVertexArrayObject; count: number; type: number; bufs: WebGLBuffer[] }
-interface Tex { key: string; state: 'none' | 'loading' | 'decoded' | 'ready' | 'failed'; url: string; strips: ImageBitmap[]; size: [number, number]; tex: WebGLTexture | null; bytes: number; used: number; row: number }
-interface DepthMap { fb: WebGLFramebuffer; tex: WebGLTexture; rb: WebGLRenderbuffer; w: number; h: number }
+interface Tex { key: string; state: 'none' | 'loading' | 'decoded' | 'ready' | 'failed'; url: string; strips: ImageBitmap[]; size: [number, number]; tex: WebGLTexture | null; bytes: number; used: number; row: number; rank: number; want: boolean }
+interface DepthMap { fb: WebGLFramebuffer; tex: WebGLTexture; w: number; h: number }
 
 export interface WorldEvents { lost(): void; restored(): void }
 
 export class World {
   static EXPOSURE = 0.45;
   static TOUCH = true;
+  /** the screen's light of scene 2's phone drawn live, against the stills' (matched on the lifted phone at its rest) */
+  static SCREEN = 0.6;
+  /** the depth maps' long side: finer on a laptop (the moves' edges), smaller on a phone (its memory) */
+  depthLong = 1024;
   readonly canvas: HTMLCanvasElement;
   gl!: WebGL2RenderingContext;
   private parts: Map<string, Part>;
@@ -295,22 +348,25 @@ export class World {
     const gl = this.canvas.getContext('webgl2', { alpha: true, antialias: true, premultipliedAlpha: true, preserveDrawingBuffer: false, powerPreference: 'high-performance', depth: true, stencil: false });
     if (!gl) throw new Error('no webgl2');
     this.gl = gl;
+    // the shaders compile while the page goes on (the browser's own threads where it can): their state is asked only
+    // once they are done (asking at once waited for the compiler on the page's thread, a stop at the first gesture)
+    this.parallel = gl.getExtension('KHR_parallel_shader_compile');
+    this.linkedOk = false;
     const compile = (vs: string, fs: string) => {
       const p = gl.createProgram()!;
       for (const [type, src] of [[gl.VERTEX_SHADER, vs], [gl.FRAGMENT_SHADER, fs]] as const) {
         const s = gl.createShader(type)!;
         gl.shaderSource(s, src); gl.compileShader(s);
-        if (!gl.getShaderParameter(s, gl.COMPILE_STATUS) && !gl.isContextLost()) throw new Error('shader: ' + gl.getShaderInfoLog(s));
         gl.attachShader(p, s);
       }
       gl.bindAttribLocation(p, 0, 'aPos'); gl.bindAttribLocation(p, 1, 'aNor');
       gl.linkProgram(p);
-      if (!gl.getProgramParameter(p, gl.LINK_STATUS) && !gl.isContextLost()) throw new Error('link: ' + gl.getProgramInfoLog(p));
       return p;
     };
     this.progW = compile(WORLD_VS, WORLD_FS(World.EXPOSURE));
     this.progD = compile(DEPTH_VS, DEPTH_FS);
     this.uW.clear(); this.uD.clear();
+    this.warmed = false;
     this.meshes.clear();
     for (const [name, p] of this.parts) {
       const vao = gl.createVertexArray()!;
@@ -330,6 +386,7 @@ export class World {
     this.spare.clear(); this.spareBytes = 0;
     this.held = 0;
     this.depth.clear();
+    this.depthRb.clear();
     this.blank = gl.createTexture()!;
     gl.bindTexture(gl.TEXTURE_2D, this.blank);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
@@ -337,6 +394,28 @@ export class World {
     gl.bindTexture(gl.TEXTURE_2D, this.coinTex);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.coinMap.n, this.coinMap.n, 0, gl.RGBA, gl.UNSIGNED_BYTE, this.coinMap.rgba);
     for (const [a, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, a, v);
+  }
+
+  private parallel: { COMPLETION_STATUS_KHR: number } | null = null;
+  private linkedOk = false;
+  private warmed = false;
+  /** why the shaders could not be built, if they could not */
+  broken = '';
+  /** the shaders are compiled and linked (never waits for them where the browser compiles on its own threads) */
+  ready(): boolean {
+    if (this.linkedOk) return true;
+    if (this.lost) return false;
+    const gl = this.gl;
+    if (this.parallel && !(gl.getProgramParameter(this.progW, this.parallel.COMPLETION_STATUS_KHR) && gl.getProgramParameter(this.progD, this.parallel.COMPLETION_STATUS_KHR))) return false;
+    for (const p of [this.progW, this.progD]) {
+      if (!gl.getProgramParameter(p, gl.LINK_STATUS) && !gl.isContextLost()) {
+        // a chip that cannot build them: the still film (src/world/film3d.ts gives up)
+        this.broken = 'link: ' + gl.getProgramInfoLog(p) + ' ' + (gl.getAttachedShaders(p)?.map((x) => gl.getShaderInfoLog(x)).join(' ') ?? '');
+        return false;
+      }
+    }
+    this.linkedOk = true;
+    return true;
   }
 
   private uni(prog: WebGLProgram, map: Map<string, WebGLUniformLocation | null>, name: string): WebGLUniformLocation | null {
@@ -351,6 +430,8 @@ export class World {
       this.texs.clear();
       for (const d of this.depth.values()) this.dropDepth(d);
       this.depth.clear();
+      if (!this.lost) for (const rb of this.depthRb.values()) this.gl.deleteRenderbuffer(rb);
+      this.depthRb.clear();
     }
     this.layout = L;
   }
@@ -362,24 +443,39 @@ export class World {
     for (const { key, url } of list) {
       let t = this.texs.get(key);
       if (t && t.url !== url && t.state !== 'loading') { this.drop(t); t = undefined; }
-      if (!t) { t = { key, state: 'none', url, strips: [], size: [0, 0], tex: null, bytes: 0, used: now, row: 0 }; this.texs.set(key, t); }
+      if (!t) { t = { key, state: 'none', url, strips: [], size: [0, 0], tex: null, bytes: 0, used: now, row: 0, rank: 0, want: true }; this.texs.set(key, t); }
       t.used = now;
-      if (t.state === 'none') this.load(t);
     }
+    // the order of this list is the order of reading (a picture no longer asked for is not read)
+    const order = new Map(list.map((x, i) => [x.key, i]));
+    for (const t of this.texs.values()) { t.want = order.has(t.key); t.rank = order.get(t.key) ?? 1e9; }
+    this.pump();
+  }
+  /** One picture decoded at a time, the most wanted first, a frame between two (each decoded picture handed back to
+   *  the page costs it about 10 ms at a fourth of a laptop's speed: seven at once were one frame of 75 ms) */
+  private decoding = false;
+  private pump(): void {
+    if (this.decoding) return;
+    const t = [...this.texs.values()].filter((x) => x.state === 'none' && x.want).sort((a, b) => a.rank - b.rank)[0];
+    if (t) this.load(t);
   }
   private load(t: Tex): void {
     t.state = 'loading';
+    this.decoding = true;
+    const next = () => { this.decoding = false; requestAnimationFrame(() => this.pump()); };
     fetch(t.url, { credentials: 'same-origin' })
       .then((r) => { if (!r.ok) throw new Error('picture'); return r.blob(); })
-      .then((b) => createImageBitmap(b, { premultiplyAlpha: 'none', colorSpaceConversion: 'default' }))
+      // the pictures are sRGB already: no colour conversion on the way (Firefox warned of a slow upload for each)
+      .then((b) => createImageBitmap(b, { premultiplyAlpha: 'none', colorSpaceConversion: 'none' }))
       .then((bm) => {
+        next();
         if (this.texs.get(t.key) !== t) { bm.close(); return; }
         // one decoded picture, read into the chip a range of rows at a time (pictures cut out of it first came back
         // from the chip in Chromium, 60 to 75 ms at a change)
         t.strips = [bm]; t.size = [bm.width, bm.height]; t.state = 'decoded';
         this.onDecoded?.();
       })
-      .catch(() => { t.state = 'failed'; this.onDecoded?.(); });
+      .catch(() => { next(); t.state = 'failed'; this.onDecoded?.(); });
   }
   onDecoded: (() => void) | null = null;
   /** true once a picture is in the chip */
@@ -397,7 +493,8 @@ export class World {
     let t = [...this.texs.values()].find((x) => x.state === 'decoded' && x.row > 0);
     if (!t) t = [...this.texs.values()].filter((x) => x.state === 'decoded').sort((a, b) => b.used - a.used)[0];
     let n = 0;
-    for (let k = 0; t && k < max; k++) {
+    const t0 = performance.now();
+    for (let k = 0; t && k < max && (k === 0 || performance.now() - t0 < 4); k++) {
       const [W, H] = t.size;
       if (!t.tex) {
         // a texture let go of earlier, of the same size, if there is one (no new memory, nothing to wait for)
@@ -414,11 +511,13 @@ export class World {
         this.held += t.bytes;
         t.row = 0;
       }
-      const bm = t.strips[0], rows = Math.min(H - t.row, Math.ceil(H / 4));
+      // about a megabyte a call (a quarter of a 2880 x 1800 picture took 20 ms of the page's time at a fourth of a
+      // laptop's speed)
+      const bm = t.strips[0], rows = Math.min(H - t.row, Math.max(32, Math.floor(1.1e6 / (W * 4))));
       gl.bindTexture(gl.TEXTURE_2D, t.tex);
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
       gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
-      gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.BROWSER_DEFAULT_WEBGL);
+      gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
       gl.pixelStorei(gl.UNPACK_SKIP_ROWS, t.row);
       gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, t.row, W, rows, gl.RGBA, gl.UNSIGNED_BYTE, bm);
       gl.pixelStorei(gl.UNPACK_SKIP_ROWS, 0);
@@ -463,14 +562,19 @@ export class World {
     const k = this.depthKey(p);
     let d = this.depth.get(k);
     if (d) return d;
-    const gl = this.gl, long = 1024, w = p.w >= p.h ? long : Math.round((long * p.w) / p.h), h = p.w >= p.h ? Math.round((long * p.h) / p.w) : long;
+    const gl = this.gl, long = this.depthLong, w = p.w >= p.h ? long : Math.round((long * p.w) / p.h), h = p.w >= p.h ? Math.round((long * p.h) / p.w) : long;
     const tex = gl.createTexture()!;
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
     for (const [a, v] of [[gl.TEXTURE_MIN_FILTER, gl.NEAREST], [gl.TEXTURE_MAG_FILTER, gl.NEAREST], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, a, v);
-    const rb = gl.createRenderbuffer()!;
-    gl.bindRenderbuffer(gl.RENDERBUFFER, rb);
-    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, w, h);
+    // one depth buffer for every map of a size (it is needed only while a map is drawn)
+    let rb = this.depthRb.get(w + 'x' + h);
+    if (!rb) {
+      rb = gl.createRenderbuffer()!;
+      gl.bindRenderbuffer(gl.RENDERBUFFER, rb);
+      gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, w, h);
+      this.depthRb.set(w + 'x' + h, rb);
+    }
     const fb = gl.createFramebuffer()!;
     gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
@@ -495,14 +599,14 @@ export class World {
     }
     gl.bindVertexArray(null);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    d = { fb, tex, rb, w, h };
+    d = { fb, tex, w, h };
     this.depth.set(k, d);
     return d;
   }
   /** Builds the depth map of the first of these stills that has none yet (one a call: a new one takes new memory).
    *  Returns true when it built one. */
   prepare(keys: string[]): boolean {
-    if (this.lost || !this.layout) return false;
+    if (this.lost || !this.layout || !this.ready()) return false;
     for (const k of keys) {
       const p = this.layout.projectors.get(k);
       if (!p || this.depth.has(this.depthKey(p))) continue;
@@ -513,8 +617,9 @@ export class World {
   }
   private dropDepth(d: DepthMap): void {
     if (this.lost) return;
-    this.gl.deleteFramebuffer(d.fb); this.gl.deleteTexture(d.tex); this.gl.deleteRenderbuffer(d.rb);
+    this.gl.deleteFramebuffer(d.fb); this.gl.deleteTexture(d.tex);
   }
+  private depthRb = new Map<string, WebGLRenderbuffer>();
 
   /** where a world point lands on screen with this camera (CSS px), or null behind it */
   project(state: { vw: number; vh: number; cam: CamState }, p: V3): [number, number] | null {
@@ -525,7 +630,7 @@ export class World {
     return [((c[0] / c[3]) * 0.5 + 0.5) * state.vw, (1 - ((c[1] / c[3]) * 0.5 + 0.5)) * state.vh];
   }
   camVP(state: { vw: number; vh: number; cam: CamState }): M4 {
-    const { cam, vw, vh } = state, n = 20, f = 8000;
+    const { cam, vw, vh } = state, n = 20, f = 20000;
     const P = frustum((-cam.cx / cam.fpx) * n, ((vw - cam.cx) / cam.fpx) * n, (-(vh - cam.cy) / cam.fpx) * n, (cam.cy / cam.fpx) * n, n, f);
     return mul(P, lookAt(cam.eye, cam.target));
   }
@@ -538,7 +643,8 @@ export class World {
 
   /** Draws one frame. Returns false when it could not (no context, a picture missing). */
   draw(st: FrameState, fgCtx: CanvasRenderingContext2D | null): boolean {
-    if (this.lost || !this.layout) return false;
+    if (this.lost || !this.layout || !this.ready()) return false;
+    if (!this.warmed) { this.warmed = true; this.warm(); }
     const gl = this.gl, L = this.layout;
     const W = Math.max(1, Math.round(st.vw * st.pr)), H = Math.max(1, Math.round(st.vh * st.pr));
     if (this.canvas.width !== W || this.canvas.height !== H) { this.canvas.width = W; this.canvas.height = H; }
@@ -576,8 +682,17 @@ export class World {
     gl.uniform3fv(u('uPE[0]'), pe);
     gl.uniform1iv(u('uNP[0]'), np);
     gl.uniform1fv(u('uW[0]'), w);
-    // the visibility test erodes edges as the camera leaves each still's camera (none at a rest)
-    gl.uniform1fv(u('uEr[0]'), pe.length ? [0, 1].map((s) => { const e = proj[s * PASSES]?.eye; return e ? Math.min(2, Math.hypot(st.cam.eye[0] - e[0], st.cam.eye[1] - e[1], st.cam.eye[2] - e[2]) / 15) : 0; }) : [0, 0]);
+    // at a still's own camera (a rest) the frame is the still, with no visibility test; it comes in over the first
+    // few mm the camera moves away
+    // (not for a still whose phone stood elsewhere than it stands now: scene 2's phone while it lifts)
+    gl.uniform1fv(u('uNear[0]'), proj.map((p, i) => {
+      if (!p) return 0;
+      const m = p.poses.get('menu');
+      if (m && Math.abs((p === L.projectors.get(slots[Math.floor(i / PASSES)]?.passes[2]?.key ?? '') ? 1 : 0) - st.lift) > 1e-4) return 0;
+      const e = p.eye, d = Math.hypot(st.cam.eye[0] - e[0], st.cam.eye[1] - e[1], st.cam.eye[2] - e[2]), x = Math.min(1, Math.max(0, (d - 1) / 24));
+      return 1 - x * x * (3 - 2 * x);
+    }));
+    gl.uniform1f(u('uHoldOn'), st.hold ? 1 : 0);
     gl.uniform1fv(u('uSat[0]'), sat);
     gl.uniform4fv(u('uFade[0]'), fade);
     gl.uniform3fv(u('uSides[0]'), slots.flatMap((sl) => sl.sides ?? [0, 0, 0]).concat(slots.length < 2 ? [0, 0, 0] : []).slice(0, 6));
@@ -602,6 +717,13 @@ export class World {
     gl.activeTexture(gl.TEXTURE0 + 2 * UNITS);
     gl.bindTexture(gl.TEXTURE_2D, this.coinTex);
     gl.uniform1i(u('uCoinMap'), 2 * UNITS);
+    // scene 2's phone while it lifts: drawn live (only with its screen's picture in the chip)
+    const screen = st.screen && st.menuLive > 0 && this.has(st.screen) ? this.texs.get(st.screen)!.tex : null;
+    gl.activeTexture(gl.TEXTURE0 + 2 * UNITS + 1);
+    gl.bindTexture(gl.TEXTURE_2D, screen ?? this.blank);
+    gl.uniform1i(u('uScreen'), 2 * UNITS + 1);
+    gl.uniform1f(u('uScreenGain'), World.SCREEN);
+    const menuK = screen ? st.menuLive : 0;
     gl.uniform1fv(u('uT[0]'), T);
     gl.uniform4fv(u('uOv[0]'), ov);
     gl.uniform2fv(u('uDT[0]'), dt);
@@ -631,6 +753,11 @@ export class World {
           gl.uniformMatrix4fv(u('uPM[0]'), false, pm);
           gl.uniformMatrix4fv(u('uMP[0]'), false, mp);
           gl.uniform1fv(u('uPres[0]'), pres);
+          // does each slot's scene hold this thing (any of its stills)
+          gl.uniform1fv(u('uHold[0]'), [0, 1].map((s) => (proj.slice(s * PASSES, s * PASSES + PASSES).some((p) => p?.poses.get(th.name)) || th.name === 'floor' ? 1 : 0)));
+          gl.uniform1f(u('uLiveK'), th.name === 'menu' && slots[0]?.scene === 2 ? menuK : 0);
+          gl.uniform1f(u('uTol'), TOL[th.name]);
+          gl.uniform1i(u('uPart'), dr.part === 'phone_display' ? 2 : dr.part === 'phone_glass' ? 1 : 0);
           gl.uniform3fv(u('uAlb'), dr.mat.alb); gl.uniform1f(u('uRough'), dr.mat.rough); gl.uniform1f(u('uMetal'), dr.mat.metal); gl.uniform1f(u('uMap'), dr.mat.map ? 1 : 0);
           gl.bindVertexArray(mesh.vao);
           gl.drawElements(gl.TRIANGLES, mesh.count, mesh.type, 0);
@@ -708,14 +835,14 @@ export class World {
   /** Compiles the shaders and sends the shapes to the chip now (a draw nothing sees), so the first frame the scroll
    *  asks for does not stop for it. */
   warm(): void {
-    if (this.lost) return;
+    if (this.lost || !this.ready()) return;
     const gl = this.gl;
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, 1, 1);
     gl.useProgram(this.progW);
-    for (let i = 0; i < 2 * UNITS + 1; i++) { gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, this.blank); }
+    for (let i = 0; i < 2 * UNITS + 2; i++) { gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, this.blank); }
     for (const [name, m] of this.meshes) {
-      if (name === 'floor') continue;
+      if (name === 'floor' || name === 'room') continue;
       gl.bindVertexArray(m.vao);
       gl.drawElements(gl.TRIANGLES, Math.min(m.count, 3), m.type, 0);
     }
@@ -723,7 +850,7 @@ export class World {
     gl.bindVertexArray(this.meshes.get('tile')!.vao);
     gl.drawElements(gl.TRIANGLES, 3, this.meshes.get('tile')!.type, 0);
     gl.bindVertexArray(null);
-    gl.finish();
+    gl.flush();
   }
   /** how long the chip takes to finish what was asked of it (ms) */
   finish(): number {

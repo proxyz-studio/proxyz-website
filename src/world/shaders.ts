@@ -87,7 +87,9 @@ uniform vec4 uOv[${N}];
 uniform vec2 uDT[${N}];
 uniform int uNP[${SLOTS}];
 uniform float uW[${SLOTS}];
-uniform float uEr[${SLOTS}];
+uniform float uNear[${N}];
+uniform float uHold[${SLOTS}];
+uniform float uHoldOn;
 uniform float uSat[${SLOTS}];
 uniform vec4 uFade[${SLOTS}];
 uniform vec3 uSides[${SLOTS}];
@@ -102,7 +104,11 @@ uniform float uMap;
 uniform sampler2D uCoinMap;
 uniform float uRough;
 uniform float uMetal;
-uniform float uFloor;
+uniform float uLiveK;
+uniform float uTol;
+uniform int uPart;
+uniform sampler2D uScreen;
+uniform float uScreenGain;
 uniform vec3 uEye;
 uniform float uFg;
 uniform float uDepthFar;
@@ -114,18 +120,21 @@ const vec3 FILM = vec3(1.0 / 255.0);
 #define LIVE_EXPOSURE ${expo.toFixed(4)}
 float unpack(vec4 c) { return dot(c, vec4(1.0, 1.0 / 255.0, 1.0 / 65025.0, 1.0 / 16581375.0)); }
 float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
-// in sight of the projector: its depth map, four taps half a texel apart (the depth of the nearest surface it saw,
-// along its axis, in mm over uDepthFar)
-float seen(sampler2D d, vec2 uv, float w, vec2 texel, float erode) {
-  // in sight where the still's camera saw this surface first. Away from that camera, every tap of a small cross must
-  // see it, so no edge of a thing is cast on what lay behind it; at the camera itself (erode 0) the point alone.
-  float tol = 0.8 + 0.006 * w + 2.0 * fwidth(w), s = 1.0;
-  for (int k = 0; k < 5; k++) {
-    vec2 off = k == 0 ? vec2(0.0) : vec2(k == 1 ? 1.0 : k == 2 ? -1.0 : 0.0, k == 3 ? 1.0 : k == 4 ? -1.0 : 0.0) * erode * texel;
-    float z = unpack(texture(d, uv + off)) * uDepthFar;
-    s = min(s, step(w, z + tol));
-  }
-  return s;
+// in sight of the projector: its depth map (the depth of the nearest surface it saw, along its axis, in mm over
+// uDepthFar), read at the point's own texel and its four neighbours. The depth map is coarser than the still, so a
+// point next to a sharp step (the route's edge on the coin) may read the step's texel: a neighbour that saw the point
+// counts too, and the test is soft over one tolerance, so no edge is drawn as a hard staircase or a dark crack.
+float dz(sampler2D d, vec2 uv) { return unpack(texture(d, uv)) * uDepthFar; }
+float seen(sampler2D d, vec2 uv, float w, vec2 texel) {
+  // (uTol: a thing hidden only by itself, a hill of the coin behind another, takes the still's colour there all the
+  // same, stretched like a rubber sheet, where a hole lit live would show as a dark crack)
+  float tol = 0.8 + 0.006 * w + 2.0 * fwidth(w) + uTol;
+  float z0 = dz(d, uv);
+  float zn = max(max(dz(d, uv + vec2(texel.x, 0.0)), dz(d, uv - vec2(texel.x, 0.0))), max(dz(d, uv + vec2(0.0, texel.y)), dz(d, uv - vec2(0.0, texel.y))));
+  // (nothing there in the still's camera: the map's clear value, past its far end)
+  float z = max(z0, zn);
+  if (z > uDepthFar * 0.999) return 1.0;
+  return clamp((z + 2.0 * tol - w) / tol, 0.0, 1.0);
 }
 float inFrame(vec2 uv, float w) {
   vec2 e = min(uv, 1.0 - uv);
@@ -151,8 +160,8 @@ float fadeOf(vec4 f, float y) {
   return min(a, b);
 }
 // the live light where no still saw the surface: the scene's key light on this surface (no shadows)
-vec3 live(vec3 n, vec3 v, vec3 lp, vec3 ld, vec2 lc, float li, float lk) {
-  vec3 L = lp - vW;
+vec3 shade(vec3 n, vec3 v, vec3 P, vec3 alb, float rough, float metal, vec3 lp, vec3 ld, vec2 lc, float li, float lk) {
+  vec3 L = lp - P;
   float d = length(L);
   vec3 l = L / d;
   float E;
@@ -160,32 +169,48 @@ vec3 live(vec3 n, vec3 v, vec3 lp, vec3 ld, vec2 lc, float li, float lk) {
   else E = li * 1.9;
   float nl = max(dot(n, l), 0.0);
   vec3 h = normalize(l + v);
-  float a = uRough * uRough, a2 = a * a, nh = max(dot(n, h), 0.0), dd = nh * nh * (a2 - 1.0) + 1.0;
+  float a = rough * rough, a2 = a * a, nh = max(dot(n, h), 0.0), dd = nh * nh * (a2 - 1.0) + 1.0;
   float D = a2 / (3.14159 * dd * dd);
-  // the coin: its own colours by part (its spools), where no still saw it
-  vec3 alb = uMap > 0.5 ? texture(uCoinMap, vL.xz / 130.0 + 0.5).rgb : uAlb;
-  vec3 F0 = mix(vec3(0.04), alb, uMetal);
+  vec3 F0 = mix(vec3(0.04), alb, metal);
   vec3 F = F0 + (1.0 - F0) * pow(1.0 - max(dot(h, v), 0.0), 5.0);
-  float k = (uRough + 1.0) * (uRough + 1.0) / 8.0, nv = max(dot(n, v), 1e-3);
+  float k = (rough + 1.0) * (rough + 1.0) / 8.0, nv = max(dot(n, v), 1e-3);
   float G = nl / (nl * (1.0 - k) + k) * nv / (nv * (1.0 - k) + k);
   vec3 spec = D * F * G / max(4.0 * nl * nv, 1e-3);
-  vec3 diff = (1.0 - uMetal) * alb / 3.14159;
-  return display((diff + spec) * E * nl * LIVE_EXPOSURE);
+  vec3 diff = (1.0 - metal) * alb / 3.14159;
+  return (diff + spec) * E * nl * LIVE_EXPOSURE;
+}
+vec3 live(vec3 n, vec3 v, vec3 lp, vec3 ld, vec2 lc, float li, float lk, float held) {
+  // a thing this still did not hold: the floor under it (it is not there), never the thing lit
+  if (held < 0.5) return display(shade(vec3(0.0, 1.0, 0.0), v, vec3(vW.x, 0.0, vW.z), vec3(0.006, 0.006, 0.0058), 0.95, 0.0, lp, ld, lc, li, lk));
+  // the coin: its own colours by part (its spools), where no still saw it
+  vec3 alb = uMap > 0.5 ? texture(uCoinMap, vL.xz / 130.0 + 0.5).rgb : uAlb;
+  return display(shade(n, v, vW, alb, uRough, uMetal, lp, ld, lc, li, lk));
+}
+vec3 srgbLin(vec3 c) { return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c)); }
+/** scene 2's phone while it lifts: drawn whole by the live light, its screen the menu (the stills' screen light) */
+vec3 phoneLive(vec3 n, vec3 v, vec3 lp, vec3 ld, vec2 lc, float li, float lk) {
+  vec3 c = shade(n, v, vW, uAlb, uRough, uMetal, lp, ld, lc, li, lk);
+  if (uPart == 2) {
+    vec2 st = vec2((vL.x + 33.4) / 66.8, (vL.z + 72.4) / 144.8);
+    c += srgbLin(texture(uScreen, st).rgb) * uScreenGain;
+  }
+  return display(c);
 }
 ${[0, 1].map((s) => {
     const p = (k: number) => s * PASSES + k;
-    return `vec3 slot${s}(vec3 n, vec3 v) {
-  vec3 fb = live(n, v, uLp[${s}], uLd[${s}], uLc[${s}], uLi[${s}], uLk[${s}]);
+    return `vec4 slot${s}(vec3 n, vec3 v) {
+  vec3 fb = live(n, v, uLp[${s}], uLd[${s}], uLc[${s}], uLi[${s}], uLk[${s}], uHold[${s}]);
   if (uDbg > 0.5 && uDbg < 1.5) fb = vec3(0.6, 0.0, 0.0) + fb;
   vec3 c = fb;
-  float frameY = 0.0, frameW = 0.0;
+  float frameY = 0.0, frameW = 0.0, cover = 0.0;
 ${[0, 1, 2].map((k) => `  if (uNP[${s}] > ${k}) {
     vec4 cl = vC[${p(k)}];
     vec2 uv = cl.xy / cl.w * 0.5 + 0.5;
     float f = uDbg > 1.5 ? 0.0 : inFrame(uv, cl.w);
-    float vis = uPres[${p(k)}] > 0.5 ? seen(uD${p(k)}, uv, cl.w, uDT[${p(k)}], uEr[${s}]) * step(0.0, vF[${p(k)}]) : 1.0;
+    // at the still's own camera every point on screen is the still's (no test); away from it, what the still saw
+    float vis = uPres[${p(k)}] > 0.5 ? mix(seen(uD${p(k)}, uv, cl.w, uDT[${p(k)}]) * max(smoothstep(-0.02, 0.08, vF[${p(k)}]), step(5.0, uTol)), 1.0, uNear[${p(k)}]) : 1.0;
     vec3 pc = texture(uC${p(k)}, vec2(uv.x, 1.0 - uv.y)).rgb;
-    ${k === 0 ? `c = mix(fb, pc, f * vis); frameY = 1.0 - uv.y; frameW = f;` : `c = mix(c, pc, uT[${p(k)}] * oval(uOv[${p(k)}], uv) * f * vis);`}
+    ${k === 0 ? `c = mix(fb, pc, f * vis); frameY = 1.0 - uv.y; frameW = f; cover = f * vis;` : `c = mix(c, pc, uT[${p(k)}] * oval(uOv[${p(k)}], uv) * f * vis);`}
   }`).join('\n')}
   c = sat(c, uSat[${s}]);
   float fm = fadeOf(uFade[${s}], frameY);
@@ -193,16 +218,30 @@ ${[0, 1, 2].map((k) => `  if (uNP[${s}] > ${k}) {
   // a phone's soft side edges (as the page's mask on the pictures' box: screen px)
   vec3 sd = uSides[${s}];
   if (sd.z > 0.0) { float x = gl_FragCoord.x / uPr; c = mix(FILM, c, clamp((x - sd.x) / sd.z, 0.0, 1.0) * clamp((sd.y - x) / sd.z, 0.0, 1.0)); }
-  return c;
+  return vec4(c, cover);
 }`;
   }).join('\n')}
 void main() {
   vec3 n = normalize(vN);
   vec3 v = normalize(uEye - vW);
   if (dot(n, v) < 0.0) n = -n;
-  vec3 c = vec3(0.0);
-  if (uNP[0] > 0) c += uW[0] * slot0(n, v);
-  if (uNP[1] > 0) c += uW[1] * slot1(n, v);
+  // a thing one scene's stills hold and the other's do not is drawn by the scene that holds it, until that scene has
+  // nearly gone (no half there thing while the camera moves from one to the other)
+  float w0 = uW[0], w1 = uW[1];
+  if (uHoldOn > 0.5 && uNP[0] > 0 && uNP[1] > 0 && (uHold[0] > 0.5) != (uHold[1] > 0.5)) {
+    float k = smoothstep(0.0, 0.4, uHold[0] > 0.5 ? w0 : w1);
+    w0 = uHold[0] > 0.5 ? k : 1.0 - k; w1 = 1.0 - w0;
+  }
+  // between two scenes, each point is drawn mostly by the scene whose still saw it (the other one's live light, where
+  // its still did not reach, is only a stand in: a washed grey patch where the old scene's spot lit what its still
+  // never held)
+  vec4 a = uNP[0] > 0 && w0 > 0.0 ? slot0(n, v) : vec4(0.0), b = uNP[1] > 0 && w1 > 0.0 ? slot1(n, v) : vec4(0.0);
+  if (w0 > 0.0 && w1 > 0.0) {
+    float x0 = w0 * mix(0.03, 1.0, a.a), x1 = w1 * mix(0.03, 1.0, b.a);
+    w0 = x0 / (x0 + x1); w1 = 1.0 - w0;
+  }
+  vec3 c = w0 * a.rgb + w1 * b.rgb;
+  if (uLiveK > 0.0) c = mix(c, phoneLive(n, v, uLp[0], uLd[0], uLc[0], uLi[0], uLk[0]), uLiveK);
   o = vec4(c, 1.0);
 }`;
 

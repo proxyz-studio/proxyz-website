@@ -2595,19 +2595,31 @@ async function main() {
   // (a function, never a string: the page's policy allows no evaluated strings)
   const LIVE = (n) => ((document.documentElement.dataset.world ?? '').split('|')[0] ?? '').split(',').includes(String(n));
   const restAt = (p, n) => p.evaluate((n) => { const s = document.getElementById('s' + n), vh = document.querySelector('.probe').offsetHeight; scrollTo(0, Math.round(s.offsetTop + 0.8 * Math.max(0, s.offsetHeight - vh)) + 1); }, n);
-  /** the share of pixels whose largest channel differs by more than lim, and the mean of that difference, in a box */
+  /** the share of pixels whose largest channel differs by more than lim, and the mean of that difference, in a box;
+   *  and dark lines: the share of pixels of b darker by more than lim than the darkest of a's 3x3 around them (a thin
+   *  crack is no more than a few pixels, which the mean and the share never see) */
   async function diff(a, b, box, lim = 24) {
     return labPage.evaluate(async ([a64, b64, box, decode, lim]) => {
       const dec = (0, eval)(decode);
       const [A, B] = await Promise.all([dec(a64), dec(b64)]);
       const [x, y, w, h] = box.map(Math.round);
-      let n = 0, sum = 0, over = 0;
+      let n = 0, sum = 0, over = 0, dark = 0;
+      const L = (D, i) => (D.data[i] + D.data[i + 1] + D.data[i + 2]) / 3;
       for (let yy = y; yy < Math.min(A.height, y + h); yy++) for (let xx = x; xx < Math.min(A.width, x + w); xx++) {
         const i = (yy * A.width + xx) * 4;
         const d = Math.max(Math.abs(A.data[i] - B.data[i]), Math.abs(A.data[i + 1] - B.data[i + 1]), Math.abs(A.data[i + 2] - B.data[i + 2]));
         sum += d; n++; if (d > lim) over++;
+        const lb = L(B, i);
+        if (lb < 200) {
+          let m = 255;
+          for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+            const X = Math.min(A.width - 1, Math.max(0, xx + dx)), Y = Math.min(A.height - 1, Math.max(0, yy + dy));
+            m = Math.min(m, L(A, (Y * A.width + X) * 4));
+          }
+          if (m - lb > lim) dark++;
+        }
       }
-      return { mean: n ? sum / n : 0, over: n ? over / n : 0 };
+      return { mean: n ? sum / n : 0, over: n ? over / n : 0, dark: n ? dark / n : 0 };
     }, [a.toString('base64'), b.toString('base64'), box, decode, lim]);
   }
   const SIZES12 = [[430, 739, 3, 'phone'], [1512, 860, 2, 'laptop']];
@@ -2646,7 +2658,7 @@ async function main() {
       // below the border (its clock ticks)
       const band = await still.evaluate(() => Math.ceil(document.getElementById('top').getBoundingClientRect().bottom) + 4);
       const box = [0, band * dpr, w * dpr, (h - band) * dpr];
-      let worst = { mean: 0, over: 0, n: 0 };
+      let worst = { mean: 0, over: 0, n: 0 }, darkest = { dark: 0, n: 0 };
       for (let n = 1; n <= content.scenes.length; n++) {
         step(`rest ${engine} ${name} | scene ${n}`);
         await restAt(still, n); await restAt(live, n);
@@ -2657,12 +2669,14 @@ async function main() {
         const [a, b] = [await still.screenshot(), await live.screenshot()];
         const d = await diff(a, b, box);
         if (d.mean > worst.mean) worst = { ...d, n };
+        if (d.dark > darkest.dark) darkest = { dark: d.dark, n };
         if (!(d.mean <= 2.5) || !(d.over <= 0.025)) bad.push(`${engine} ${name} scene ${n}: mean difference ${d.mean.toFixed(2)} of 255, ${(100 * d.over).toFixed(2)}% of pixels more than 24 apart`);
+        if (!(d.dark <= 1.5e-4)) bad.push(`${engine} ${name} scene ${n}: dark lines, ${(1e4 * d.dark).toFixed(2)} in 10,000 pixels darker than the still's darkest near them`);
       }
-      seen.push(`${engine} ${name} largest scene ${worst.n} ${worst.mean.toFixed(2)} (${(100 * worst.over).toFixed(2)}%)`);
+      seen.push(`${engine} ${name} largest scene ${worst.n} ${worst.mean.toFixed(2)} (${(100 * worst.over).toFixed(2)}%), dark lines at most ${(1e4 * darkest.dark).toFixed(2)} in 10,000 (scene ${darkest.n || '-'})`);
       await c.close();
     }
-    ok(!bad.length, 33, 'At rest every scene drawn live is its still: below the border a mean difference of at most 2.5 of 255 and at most 2.5% of the pixels more than 24 apart, all seven scenes (Chromium with a graphics chip, phone 430x739 at 3 and laptop 1512x860 at 2; WebKit laptop)', seen.join('; '), bad.slice(0, 8).join('; '));
+    ok(!bad.length, 33, 'At rest every scene drawn live is its still: below the border a mean difference of at most 2.5 of 255, at most 2.5% of the pixels more than 24 apart, and no dark lines (at most 1.5 in 10,000 pixels more than 24 darker than the darkest of the still\'s 3x3 around them), all seven scenes (Chromium with a graphics chip, phone 430x739 at 3 and laptop 1512x860 at 2; WebKit laptop)', seen.join('; '), bad.slice(0, 8).join('; '));
   });
 
   /* 34. every way the live film cannot run shows the still film, never a black or empty frame */
@@ -2739,11 +2753,11 @@ async function main() {
         await c.addInitScript(() => { window.__ft = []; let last = 0; const f = (t) => { if (last) window.__ft.push([t - last, scrollY]); last = t; requestAnimationFrame(f); }; requestAnimationFrame(f); });
         const p = await open(c, '/', `stall ${name}`);
         const cdp = await c.newCDPSession(p);
-        await settle(p, 800);
-        if (w < 600) await p.touchscreen.tap(w / 2, h / 2); else await p.mouse.move(w / 2, h / 2);
-        await p.waitForFunction(LIVE, 1, { timeout: 15000 }).catch(() => {});
-        await settle(p, 1500);
+        await settle(p, 2500);
+        // slowed BEFORE the first gesture, and measured from it: the first wheel step or drag is the visitor's first
+        // sign of intent, so the live film's whole start (its script, shapes, shaders, first pictures) is in the count
         await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+        await settle(p, 300);
         await p.evaluate(() => { window.__ft.length = 0; });
         const H = await p.evaluate(() => document.documentElement.scrollHeight - innerHeight);
         step(`stall ${name} | through the film and back`);
@@ -2762,6 +2776,9 @@ async function main() {
           await settle(p, 800);
         }
         const ft = await p.evaluate(() => window.__ft);
+        // the live film did run (scenes read into the chip, not given up)
+        const ran = await p.evaluate(() => /^[^|]*\|[1-7]/.test(document.documentElement.dataset.world ?? ''));
+        if (!ran) bad.push(`${name}: the live film never ran (${await p.evaluate(() => document.documentElement.dataset.world)})`);
         const d = ft.map((r) => r[0]).sort((a, b) => a - b);
         const r = { frames: d.length, median: d[Math.floor(d.length / 2)], max: d[d.length - 1], at: ft.reduce((a, x) => (x[0] > a[0] ? x : a), [0, 0])[1] };
         if (!best || r.max < best.max) best = r;
@@ -2770,38 +2787,63 @@ async function main() {
       seen.push(`${name}: ${best.frames} frames, median ${best.median.toFixed(1)} ms, worst ${best.max.toFixed(1)} ms`);
       if (!(best.max <= 50)) bad.push(`${name}: a frame of ${best.max.toFixed(1)} ms at ${best.at} px`);
     }
-    ok(!bad.length, 35, 'No stall over 50 ms through the whole live film and back, the processor at a fourth of its speed: a mouse wheel of 100 px every 111 ms (about 900 px a second) at 1512x860, drags of 600 px at about 700 px a second at 430x739 (Chromium with a graphics chip; a second run if the first one shows one)', seen.join('; '), bad.join('; '));
+    ok(!bad.length, 35, 'No stall over 50 ms from the first gesture (the live film\'s start counted) through the whole live film and back, the processor at a fourth of its speed: a mouse wheel of 100 px every 111 ms (about 900 px a second) at 1512x860, drags of 600 px at about 700 px a second at 430x739 (Chromium with a graphics chip; a second run if the first one shows one)', seen.join('; '), bad.join('; '));
   });
 
-  /* 36. the doors with the live film: the hand-over, and Back to the scene at rest, live again */
+  /* 36. the doors with the live film: the hand-over, and Back to the scene at rest, live again at once (no scroll) */
   if (want(36) && gpuOk) await guarded(36, async () => {
     const bad = [], seen = [];
-    for (const d of DOORS_ON) {
-      for (const n of (d.scenes ?? []).filter((x) => !content.scenes[x - 1]?.board)) {
-        const c = await doorCtx(browsers.gpu, 'chromium', { viewport: { width: 1512, height: 860 } });
-        const p = await doorPage(c, BASE, '/', `live door ${d.id}`);
-        await settle(p, 600);
-        await p.mouse.move(700, 400);
-        await restAt(p, n); await toScene(p, n, 1);
-        if (!(await p.waitForFunction(LIVE, n, { timeout: 20000 }).then(() => true, () => false))) { bad.push(`${d.id}: scene ${n} not live`); await c.close(); continue; }
-        await settle(p, 800);
-        const y0 = await p.evaluate(() => scrollY);
-        await p.click(`#s${n} a.dlogo[data-door="${d.id}"]`);
-        const left = await p.waitForURL((u) => u.pathname.startsWith(d.path), { timeout: 8000 }).then(() => true, () => false);
-        if (!left) bad.push(`${d.id}: the door did not open its page`);
-        await settle(p, 1200);
-        await p.goBack();
-        await settle(p, 1500);
-        const back = await p.evaluate(() => ({ hash: location.hash, y: scrollY, active: document.querySelector('#film .scene.on')?.id }));
-        const live = await p.waitForFunction(LIVE, n, { timeout: 15000 }).then(() => true, () => false);
-        if (back.active !== `s${n}` || Math.abs(back.y - y0) > 3) bad.push(`${d.id}: back at ${back.active} ${back.y} px, left from s${n} ${y0} px`);
-        if (!live) bad.push(`${d.id}: not live again after Back`);
-        seen.push(`${d.id} scene ${n}: opened, back at rest${live ? ', live' : ''}`);
-        bad.push(...c.studioOut.map((x) => `${d.id}: the studio asked another host: ${x}`), ...c.errs.map((x) => `${d.id}: ${x}`));
-        await c.close();
+    // the back/forward cache on: Chromium's full build with the test tool's switch that turns it off left out (as test
+    // 28); WebKit's test build never keeps a page in it (every Back there is a fresh page, which the run records)
+    let bf = null;
+    try { bf = await lib.chromium.launch({ headless: true, channel: 'chromium', ignoreDefaultArgs: ['--disable-back-forward-cache'] }); } catch { bf = null; }
+    const RUNS = [
+      ...(bf ? [{ label: 'Chromium, cache on', engine: 'chromium', browser: bf }, { label: 'Chromium, cache on, context lost while away', engine: 'chromium', browser: bf, lose: true }] : []),
+      { label: 'Chromium, cache off', engine: 'chromium', browser: browsers.gpu },
+      { label: 'WebKit', engine: 'webkit' },
+    ];
+    if (!bf) warn(36, 'Back/forward cache not tested with the live film', 'no full Chromium build to run with the cache on');
+    for (const run of RUNS) {
+      for (const d of DOORS_ON) {
+        for (const n of (d.scenes ?? []).filter((x) => !content.scenes[x - 1]?.board)) {
+          if (run.lose && n !== (d.scenes ?? [])[0]) continue;
+          const tag = `${run.label} ${d.id} scene ${n}`;
+          step(`live door | ${tag}`);
+          const c = await doorCtx(run.browser ?? await useBrowser(run.engine), run.engine, { viewport: { width: 1512, height: 860 } });
+          await c.addInitScript(() => addEventListener('pageshow', (e) => { sessionStorage.setItem('shows', (sessionStorage.getItem('shows') || '') + (e.persisted ? 'P' : 'F')); }));
+          const p = await doorPage(c, BASE, '/', `live door ${tag}`);
+          await settle(p, 600);
+          await p.mouse.move(700, 400);
+          await restAt(p, n); await toScene(p, n, 1);
+          if (!(await p.waitForFunction(LIVE, n, { timeout: 20000 }).then(() => true, () => false))) { bad.push(`${tag}: not live`); await c.close(); continue; }
+          await settle(p, 800);
+          const y0 = await p.evaluate(() => scrollY);
+          // the context taken from the page while it waits in the cache (as a phone may do)
+          if (run.lose) await p.evaluate(() => addEventListener('pagehide', () => document.querySelector('canvas.world')?.getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext()));
+          await p.click(`#s${n} a.dlogo[data-door="${d.id}"]`);
+          const left = await p.waitForURL((u) => u.pathname.startsWith(d.path), { timeout: 8000 }).then(() => true, () => false);
+          if (!left) bad.push(`${tag}: the door did not open its page`);
+          await settle(p, 1200);
+          // a page from the cache never fires "load" again: wait for the address only
+          await p.goBack({ waitUntil: 'commit' });
+          const t0 = Date.now();
+          // no scroll, no pointer: the live film must come back on its own
+          const live = await p.waitForFunction(LIVE, n, { timeout: 8000 }).then(() => true, () => false);
+          const ms = Date.now() - t0;
+          await settle(p, 300);
+          const back = await p.evaluate(() => ({ hash: location.hash, y: scrollY, active: document.querySelector('#film .scene.on')?.id, shows: sessionStorage.getItem('shows') || '' }));
+          const cached = back.shows.endsWith('P');
+          if (run.browser === bf && !cached) bad.push(`${tag}: Back did not come from the cache (${back.shows})`);
+          if (back.active !== `s${n}` || Math.abs(back.y - y0) > 3) bad.push(`${tag}: back at ${back.active} ${back.y} px, left from s${n} ${y0} px`);
+          if (!live) bad.push(`${tag}: not live again within 8 s of Back, with no scroll (${await p.evaluate(() => document.documentElement.dataset.world)})`);
+          seen.push(`${tag}: ${cached ? 'from the cache' : 'a fresh page'}, ${live ? `live again ${(ms / 1000).toFixed(1)} s after Back` : 'NOT live'}`);
+          bad.push(...c.studioOut.map((x) => `${tag}: the studio asked another host: ${x}`), ...c.errs.map((x) => `${tag}: ${x}`));
+          await c.close();
+        }
       }
     }
-    ok(!bad.length, 36, 'The doors from a scene drawn live: the click opens the product\'s page, Back lands on the scene at rest and the live film comes back (Chromium with a graphics chip, 1512x860; the blend itself is test 28)', seen.join('; '), bad.join('; '));
+    if (bf) await bf.close();
+    ok(!bad.length, 36, 'The doors from a scene drawn live: the click opens the product\'s page, Back lands on the scene at rest and the live film comes back on its own, no scroll (Chromium with a graphics chip and the back/forward cache on, also with its context taken while away; Chromium with the cache off; WebKit, whose test build has no cache: a fresh page; 1512x860; the blend itself is test 28)', seen.join('; '), bad.join('; '));
   });
 
   /* 5. the email pictures */
