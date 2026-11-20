@@ -122,6 +122,8 @@ html.film body::before { content: ""; position: fixed; top: 0; left: 0; right: 0
 /* the camera moves the box of the light passes and the box around the giant words */
 .film .frame, .film .cam { position: absolute; inset: 0; transform-origin: 0 0; will-change: transform; }
 .film .cam { pointer-events: none; }
+/* look 11: scene 2's live picture (src/s2), over the still pictures it replaces, never moved by the film's drift */
+.film .s2live { position: absolute; left: 0; top: 0; display: block; pointer-events: none; }
 .film .lbox { transform-origin: 0 0; }
 /* the board's labels: on a layer of their own only while they move (at rest their small type is drawn on whole
    pixels, as sharp as the page draws it) */

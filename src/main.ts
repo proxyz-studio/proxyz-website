@@ -12,6 +12,8 @@ import { clamp, cutMask, frameMask, lightAt, passStrength } from './film/math';
 import { camera, dissolve, eased, lineIn, lineOut, lineTravel, smooth, ramp as rampOf, windowAt, WINDOW, type Lines } from './film/motion';
 import { startDoors, type Doors } from './door';
 import type { Pictures, PictureFile, View } from './types';
+import { S_REST } from './s2/path';
+import type { Player } from './s2/live';
 
 type Form = 'desktop' | 'phone';
 interface Pass { key: string; img: HTMLImageElement; node: HTMLElement; ready: boolean; lit: number;
@@ -121,6 +123,7 @@ function giveUp(): void {
   let on = 1;
   try { on = active; } catch { /* the film had not started its scroll work */ }
   try { stopPulses(); cancelAnimationFrame(pulseRaf); clearTimeout(settle); clearTimeout(saveT); clearTimeout(aheadT); } catch { /* not started */ }
+  try { s2?.dispose(); s2?.canvas.remove(); } catch { /* not started */ }
   try { for (const o of observers) o.disconnect(); } catch { /* not started */ }
   doc.classList.remove('film', 'film-init');
   doc.classList.add('nofilm');
@@ -365,6 +368,7 @@ function placeAtRest(s: SceneState, view: View): void {
   s.box.style.webkitMaskImage = sm;
   s.box.style.maskImage = sm;
   if (S.indexOf(s) === BRAIN - 1) placeBoard(view, g);
+  if (S.indexOf(s) === S2 - 1) s2Box = g;
   if (view.doors) doors?.place(S.indexOf(s) + 1, g);
 }
 
@@ -435,6 +439,7 @@ function build(n: number): void {
   frame.append(...s.passes.map((p) => p.lens ?? p.node), ...(s.things && boardBox ? [boardBox] : []));
   s.box.replaceChildren(frame);
   s.frame = frame;
+  if (n === S2 && s2) s.box.append(s2.canvas);
   // the labels go in with the board, just after the pictures (as the page holds them)
   if (n === BRAIN && labelBox) {
     if (!(s.things && boardBox)) labelBox.remove();
@@ -775,6 +780,55 @@ function ahead(): void {
   }, 300);
 }
 
+/* ---------- look 11: scene 2 in 3D ---------- */
+// ?look=a: the stand drawn live (src/s2/live.ts); ?look=b: the same move rendered ahead into frames (src/s2/strip.ts).
+// Either loads after the first scroll (or once the page opens further down), while today's still pictures show; it
+// comes in over them once its first frame is drawn, and they are hidden under it. Less motion, no WebGL, or anything
+// failing: today's still pictures stay. Without the address setting the film is exactly as before.
+const LOOK = ((): 'a' | 'b' | null => { const v = new URLSearchParams(location.search).get('look'); return v === 'a' || v === 'b' ? v : null; })();
+const S2 = 2;
+let s2: Player | null = null, s2Loading = false, s2Form: Form = form, s2At = 0, s2Box: Box | null = null, scrolled = false;
+/** where the playhead is in scene 2, in screens from its top, the film's rest mapped onto the path's rest */
+function s2Place(y: number): number {
+  const sr = LIGHT_SHARE * Math.max(0, heights[S2 - 1] / VH - 1);
+  if (Math.abs(y - tops[S2 - 1] - sr * VH) < 3) return S_REST;
+  return ((y - tops[S2 - 1]) / VH) * (sr > 0 ? S_REST / sr : 1);
+}
+function s2Load(): void {
+  if (!LOOK || s2Loading || gaveUp || reduced() || !tops.length) return;
+  s2Loading = true;
+  s2Form = form;
+  const go = LOOK === 'a' ? import('./s2/live').then((m) => m.startLive()) : import('./s2/strip').then((m) => m.startStrip(form, s2Place(scrollY)));
+  go.then((p) => {
+    if (gaveUp) { p.dispose(); return; }
+    s2 = p;
+    (p as Player & { onLate?: () => void }).onLate = schedule;
+    p.canvas.style.opacity = '0';
+    const s = S[S2 - 1];
+    if (s.frame) s.box.append(p.canvas);
+    s2At = 0;
+    schedule();
+  }, () => { /* today's still pictures stay */ });
+}
+/** Scene 2's live picture at the playhead y; true while it is still coming in over the still. */
+function s2Frame(y: number, now: number): boolean {
+  const s = S[S2 - 1];
+  if (!s2 || !s2Box || !s.frame || written.get(s.layer)?.visibility !== 'visible') return false;
+  // the frames of version B are made for one screen shape: a turned screen loads its own
+  if (form !== s2Form && LOOK === 'b') {
+    s2.dispose(); s2.canvas.remove(); s2 = null; s2Loading = false; put(s.frame, 'visibility', '');
+    s2Load();
+    return false;
+  }
+  if (s2.draw(s2Place(y), form, s2Box, VW, VH) && !s2At) s2At = now;
+  if (!s2At) return false;
+  // in over the still in 0.3 s (at rest the two are the same picture), then the still is hidden under it
+  const k = clamp((now - s2At) / 300);
+  put(s2.canvas, 'opacity', opv(k));
+  put(s.frame, 'visibility', k >= 1 ? 'hidden' : '');
+  return k < 1;
+}
+
 /* ---------- the playhead ---------- */
 // The scroll position, followed closely: at once for a script, a key or a scroll bar; within about 40 ms for a finger
 // (it smooths the uneven steps of a touch screen without letting go of the finger); within about 90 ms for a mouse
@@ -914,7 +968,9 @@ function update(now?: number): void {
     if (!S[k].built && near(k, y)) build(k + 1);
     else if (S[k].built && Math.abs(k + 1 - active) > 2 && !near(k, y)) release(k + 1);
   }
-  const more = motion(y, now ?? performance.now());
+  let more = motion(y, now ?? performance.now());
+  if (LOOK && !s2Loading && (scrolled || active >= S2)) s2Load();
+  if (s2 && s2Frame(y, now ?? performance.now())) more = true;
   boardAt(y);
   marks();
   // the playhead still on its way, or a late picture fading in: the next frame
@@ -1035,7 +1091,7 @@ update();
 let saveT = 0;
 // the observers of the steady screen sizes (let go when the film gives up)
 const observers: ResizeObserver[] = [];
-addEventListener('scroll', () => { schedule(); clearTimeout(saveT); saveT = setTimeout(remember, 200); ahead(); }, { passive: true });
+addEventListener('scroll', () => { scrolled = true; schedule(); clearTimeout(saveT); saveT = setTimeout(remember, 200); ahead(); }, { passive: true });
 addEventListener('resize', onResizeSoon);
 addEventListener('pagehide', remember);
 // Back from the back/forward cache: Safari brings the page back at the top, and with the film keeping its own place
