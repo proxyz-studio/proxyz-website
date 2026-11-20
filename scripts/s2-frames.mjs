@@ -5,7 +5,7 @@
 // pose, the glow and the screen of that place.
 //
 //   node scripts/s2-frames.mjs jobs <out.json> [--n 96] [--spp 128] [--scale 1]   the jobs (desk and phone)
-//   node scripts/s2-frames.mjs pack <folder of rendered PNGs> [--q 78]          WebP frames into public/s2frames/
+//   node scripts/s2-frames.mjs pack <folder of rendered PNGs> [--q 88]          WebP frames into public/s2frames/
 //                                                                                and src/generated/s2-frames.json
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
@@ -80,7 +80,7 @@ function jobs() {
 
 // Frames: WebP (Pillow), the file name carries a content hash so a frame can be cached for a year.
 function pack() {
-  const dir = process.argv[3], q = arg('q', 78);
+  const dir = process.argv[3], q = arg('q', 88);
   const outDir = path.join(root, 'public/s2frames');
   rmSync(outDir, { recursive: true, force: true });
   mkdirSync(outDir, { recursive: true });
