@@ -212,7 +212,7 @@ ${[0, 1, 2].map((k) => `  if (uNP[${s}] > ${k}) {
     // at the still's own camera every point on screen is the still's (no test); away from it, what the still saw
     float vis = uPres[${p(k)}] > 0.5 ? mix(seen(uD${p(k)}, uv, cl.w, uDT[${p(k)}]) * max(smoothstep(-0.02, 0.08, vF[${p(k)}]), step(5.0, uTol)), 1.0, uNear[${p(k)}]) : 1.0;
     vec3 pc = texture(uC${p(k)}, vec2(uv.x, 1.0 - uv.y)).rgb;
-    ${k === 0 ? `c = mix(fb, pc, f * vis); frameY = 1.0 - uv.y; frameW = f; cover = f * vis;` : `c = mix(c, pc, uT[${p(k)}] * oval(uOv[${p(k)}], uv) * f * vis);`}
+    ${k === 0 ? `c = mix(fb, pc, f * vis); frameY = 1.0 - uv.y; frameW = f; vec2 ed = min(uv, 1.0 - uv); cover = clamp(min(ed.x, ed.y) * 12.0, 0.0, 1.0) * step(0.0, cl.w) * vis;` : `c = mix(c, pc, uT[${p(k)}] * oval(uOv[${p(k)}], uv) * f * vis);`}
   }`).join('\n')}
   c = sat(c, uSat[${s}]);
   float fm = fadeOf(uFade[${s}], frameY);
@@ -230,7 +230,8 @@ void main() {
   // a thing one scene's stills hold and the other's do not is drawn by the scene that holds it, until that scene has
   // nearly gone (no half there thing while the camera moves from one to the other)
   float w0 = uW[0], w1 = uW[1];
-  if (uHoldOn > 0.5 && uNP[0] > 0 && uNP[1] > 0 && (uHold[0] > 0.5) != (uHold[1] > 0.5)) {
+  bool held = uHoldOn > 0.5 && uNP[0] > 0 && uNP[1] > 0 && (uHold[0] > 0.5) != (uHold[1] > 0.5);
+  if (held) {
     float k = smoothstep(0.0, 0.4, uHold[0] > 0.5 ? w0 : w1);
     w0 = uHold[0] > 0.5 ? k : 1.0 - k; w1 = 1.0 - w0;
   }
@@ -238,8 +239,9 @@ void main() {
   // its still did not reach, is only a stand in: a washed grey patch where the old scene's spot lit what its still
   // never held)
   vec4 a = uNP[0] > 0 && w0 > 0.0 ? slot0(n, v) : vec4(0.0), b = uNP[1] > 0 && w1 > 0.0 ? slot1(n, v) : vec4(0.0);
-  if (w0 > 0.0 && w1 > 0.0) {
-    float x0 = w0 * mix(0.03, 1.0, a.a), x1 = w1 * mix(0.03, 1.0, b.a);
+  // (not for a thing only one of them holds: that one draws it whole, above)
+  if (!held && w0 > 0.0 && w1 > 0.0) {
+    float x0 = w0 * mix(0.001, 1.0, a.a), x1 = w1 * mix(0.001, 1.0, b.a);
     w0 = x0 / (x0 + x1); w1 = 1.0 - w0;
   }
   vec3 c = w0 * a.rgb + w1 * b.rgb;

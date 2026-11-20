@@ -272,7 +272,11 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
     if (a + 1 === BRAIN && a + 2 <= h.count) pair = shown.some((x) => x.n === a + 2) ? shown : [{ n: a + 1, W: 1 }];
     else {
       const w = e <= 0.3 ? 0 : e >= 0.7 ? 1 : ((e - 0.3) / 0.4) ** 2 * (3 - 2 * (e - 0.3) / 0.4);
-      pair = [{ n: a + 1, W: 1 - w }, { n: a + 2, W: w }].filter((x) => x.W > 0.0005 && x.n <= h.count);
+      // while the camera is between two rests both scenes are drawn, each point mostly by the one whose still saw it
+      // (the shader's coverage weights): early in a move, what the leaving still never held is the arriving still's,
+      // not the leaving scene's live light (a dark frame, test 30)
+      const both = e > 0.02 && e < 0.98;
+      pair = [{ n: a + 1, W: 1 - w }, { n: a + 2, W: w }].map((x) => ({ ...x, W: both ? Math.max(x.W, 0.002) : x.W })).filter((x) => x.W > 0.0005 && x.n <= h.count);
     }
     const drawable = pair.filter((x) => ready.has(x.n));
     let slots: SlotState[] = [];
