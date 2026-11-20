@@ -851,15 +851,15 @@ async function main() {
           const p = await open(c, '/', `twin ${engine} ${form}`);
           const last = content.scenes.length;
           await toScene(p, last, 0); await toScene(p, last - 1, 1); await settle(p, 900);
-          const cut = await p.evaluate((n) => { const s = document.getElementById('s' + n); return Math.round(s.offsetTop - (document.querySelector('.probe').offsetHeight || innerHeight) / 2); }, last);
-          await p.evaluate((y) => scrollTo(0, y - 6), cut); await settle(p, 900);
-          const before = await p.screenshot();
-          // the change itself, its transitions paused and stepped every 50 ms
-          await p.evaluate(async (y) => { scrollTo(0, y + 6); await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); window.__an = document.getAnimations(); window.__an.forEach((a) => a.pause()); }, cut);
+          // the change plays with the scroll (src/film/motion.ts): from where the twin starts to come in to where it
+          // has fully come in, stepped in eleven places
+          const g = await p.evaluate((n) => { const s = document.getElementById('s' + n), vh = document.querySelector('.probe').offsetHeight || innerHeight; return { cut: s.offsetTop - vh / 2, span: vh * 0.8 }; }, last);
+          const at = (w) => Math.round(g.cut + (w - 0.5) * g.span);
+          const shot = async (w) => { await p.evaluate((y) => scrollTo(0, y), at(w)); await p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))); await settle(p, 250); return p.screenshot(); };
+          const before = await shot(0.12);
           const frames = [];
-          for (let t = 0; t <= 500; t += 50) { await p.evaluate((t) => window.__an.forEach((a) => { a.currentTime = t; }), t); await settle(p, 60); frames.push(await p.screenshot()); }
-          await p.evaluate(() => window.__an.forEach((a) => a.finish())); await settle(p, 500);
-          const after = await p.screenshot();
+          for (let k = 0; k <= 10; k++) frames.push(await shot(0.12 + (k / 10) * 0.7));
+          const after = await shot(0.82);
           const pct = await pool(before, after, frames);
           seen.push(`${engine} ${form} ${Math.min(...pct).toFixed(1)} to ${Math.max(...pct).toFixed(1)}%`);
           if (Math.min(...pct) < 96 || Math.max(...pct) > Math.max(pct.start, 100) + 1) bad.push(`${engine} ${form}: ${pct.map((v) => v.toFixed(1)).join(' ')}`);
@@ -2495,6 +2495,89 @@ async function main() {
       s2.close();
       ok(!bad.length, 29, 'Against a copy of the product\'s site without the rulebook\'s asks (no blend, no opener policy): the exit, then a clean cut to its page (no blend, no error), and Back lands on the scene at rest (Chromium 1512x860)', 'a clean cut', bad.slice(0, 6).join('; '));
     }
+  });
+
+  /* 30. no empty frame: the change between two scenes plays with the scroll (the arriving scene comes in over the one
+     leaving, the lines of words leave and arrive one by one); sampled in eleven places through every change, a
+     picture and words always show */
+  if (want(30)) await guarded(30, async () => {
+    const bad = [], seen = [];
+    const HIDE = '.big,.small,.note,.tool,.addr{color:transparent !important}.hl,.door{visibility:hidden !important}';
+    for (const [engine, w, h] of [['chromium', 430, 739], ['chromium', 1512, 860], ['webkit', 430, 739]]) {
+      const c = await ctx(engine, { viewport: { width: w, height: h }, bypassCSP: true });
+      const p = await open(c, '/', `changes ${engine} ${w}x${h}`);
+      const geo = await p.evaluate(() => ({ vh: document.querySelector('.probe').offsetHeight, band: document.getElementById('top').getBoundingClientRect().bottom, tops: [...document.querySelectorAll('#film .scene')].map((s) => s.offsetTop) }));
+      // the picture under the border (on a phone the border is a dark band; on a wide screen the band of its words)
+      const box = [0, Math.round(Math.max(geo.band, 90)), w, Math.round(h - Math.max(geo.band, 90))];
+      for (let k = 1; k < geo.tops.length; k++) {
+        await toScene(p, k, 1);
+        const rows = [];
+        for (let i = 0; i <= 10; i++) {
+          step(`changes ${engine} ${w}x${h} | change ${k} at ${i / 10}`);
+          await p.evaluate((y) => scrollTo(0, y), Math.round(geo.tops[k] - geo.vh / 2 + (i / 10 - 0.5) * 0.8 * geo.vh));
+          await p.waitForFunction((k) => [k, k + 1].every((n) => [...document.querySelectorAll(`#s${n} .passes img`)].every((im) => im.complete)), k, { timeout: 4000 }).catch(() => {});
+          await p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+          await settle(p, 200);
+          const shown = await p.screenshot();
+          await p.evaluate((css) => { const s = document.createElement('style'); s.id = 't-hide'; s.textContent = css; document.head.append(s); }, HIDE);
+          await settle(p, 80);
+          const hidden = await p.screenshot();
+          await p.evaluate(() => document.getElementById('t-hide').remove());
+          const [pic] = await lab(hidden, [box]), [ink] = await labInk(shown, hidden, [box]);
+          rows.push({ at: i / 10, pic: pic.mean, ink: ink.ink });
+        }
+        const pic0 = Math.min(rows[0].pic, rows[10].pic), ink0 = Math.min(rows[0].ink, rows[10].ink);
+        const tag = `${engine} ${w}x${h} scene ${k} to ${k + 1}`;
+        if (!(pic0 > 1) || !(ink0 > 200)) bad.push(`${tag}: the ends show no picture or no words (${pic0.toFixed(1)}, ${ink0} ink px)`);
+        const lowPic = rows.reduce((a, r) => (r.pic < a.pic ? r : a)), lowInk = rows.reduce((a, r) => (r.ink < a.ink ? r : a));
+        seen.push([lowInk.ink, `${tag}: picture at least ${((100 * lowPic.pic) / pic0).toFixed(0)}% (at ${lowPic.at}), words at least ${lowInk.ink} ink px (at ${lowInk.at})`]);
+        for (const r of rows) {
+          if (r.pic < 0.5 * pic0) bad.push(`${tag} at ${r.at}: the picture at ${r.pic.toFixed(1)}, its ends ${rows[0].pic.toFixed(1)} and ${rows[10].pic.toFixed(1)}`);
+          // a line of the small words is about 2000 to 3000 ink px; the giant words tens of thousands
+          if (r.ink < 1000) bad.push(`${tag} at ${r.at}: words ${r.ink} ink px, its ends ${rows[0].ink} and ${rows[10].ink}`);
+        }
+      }
+      await c.close();
+    }
+    seen.sort((a, b) => a[0] - b[0]);
+    ok(!bad.length, 30, 'No empty frame: through every change between two scenes, eleven places along the scroll, a picture always shows (at least half the darker end\'s light) and words always show (at least 1000 ink px, about half a line of the small words; the giant lines at the top leave before the next ones arrive, so for a moment the words at the foot carry the screen) (Chromium 430x739 and 1512x860, WebKit 430x739)', seen.slice(0, 3).map((s) => s[1]).join('; '), bad.slice(0, 8).join('; '));
+  });
+
+  /* 31. the rest of every scene is the composition as built: at rest nothing of the film's motion is left on it */
+  if (want(31)) await guarded(31, async () => {
+    const bad = [];
+    for (const [engine, w, h] of [['chromium', 430, 739], ['chromium', 393, 852], ['chromium', 1512, 860], ['chromium', 2428, 1300], ['webkit', 430, 739], ['firefox', 1512, 860]]) {
+      const c = await ctx(engine, { viewport: { width: w, height: h } });
+      const p = await open(c, '/', `rest ${engine} ${w}x${h}`);
+      for (let n = 1; n <= content.scenes.length; n++) {
+        await toScene(p, n, 1);
+        await settle(p, 300);
+        const r = await p.evaluate((n) => {
+          const s = document.getElementById('s' + n), cs = (e) => getComputedStyle(e), out = [];
+          const moved = (e) => { const t = cs(e).transform; return t !== 'none' && t !== 'matrix(1, 0, 0, 1, 0, 0)'; };
+          const lay = s.querySelector('.layer');
+          if (cs(lay).visibility !== 'visible' || +cs(lay).opacity !== 1) out.push(`its stage at ${cs(lay).opacity}, ${cs(lay).visibility}`);
+          for (const e of [...s.querySelectorAll('.passes, .frame, .cam, .cut, .lbox, .lens, .cut .big .ln, .cut .big .pl, .addr, .words > *, .words .big .ln, .words .big .pl, .door.dlogo')]) {
+            if (moved(e)) out.push(`${e.className} moved (${cs(e).transform})`);
+            if (+cs(e).opacity !== 1) out.push(`${e.className} at ${cs(e).opacity}`);
+          }
+          // nothing that moves keeps a layer of its own at rest (a picture or a word on its own layer may be drawn a
+          // little softer than the page draws it)
+          for (const e of [...s.querySelectorAll('.pass, .lbox, .lens, .cut .big .ln, .cut .big .pl, .addr, .words > *, .words .big .ln, .words .big .pl')]) {
+            if (cs(e).willChange !== 'auto') out.push(`${e.className || e.tagName} keeps a layer (${cs(e).willChange})`);
+          }
+          for (const o of document.querySelectorAll('#film .scene')) {
+            if (o === s) continue;
+            const l = o.querySelector('.layer');
+            if (cs(l).visibility === 'visible' && +cs(l).opacity > 0) out.push(`${o.id} also shows (${cs(l).opacity})`);
+          }
+          return out;
+        }, n);
+        for (const x of r) bad.push(`${engine} ${w}x${h} scene ${n}: ${x}`);
+      }
+      await c.close();
+    }
+    ok(!bad.length, 31, 'At rest every scene is the composition as built: its stage alone at full strength, its picture, its giant words, every line of words and its door in place, unmoved and at full strength, none of them on a layer of its own (Chromium 430x739, 393x852, 1512x860, 2428x1300; WebKit 430x739; Firefox 1512x860)', 'all seven, every size', [...new Set(bad)].slice(0, 8).join('; '));
   });
 
   /* 5. the email pictures */
