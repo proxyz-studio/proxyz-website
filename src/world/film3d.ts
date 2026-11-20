@@ -258,15 +258,18 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
     // a scene arriving over a still one: only its own light, faded in by its page layer
     if (live.length === 1 && shown.length === 2 && live[0].n === top + 1) slots = [slotOf(top + 1, 1, y)];
     else if (live.length === 1 && shown.length === 2) slots = [slotOf(live[0].n, 1, y)];
-    for (let n = 1; n <= h.count; n++) setLive(n, live.some((x) => x.n === n));
+    // a chip whose first frames were slow shows nothing live until its second answer (the still film meanwhile)
+    const doubt = benched === 1 && benchMs > 60;
+    for (let n = 1; n <= h.count; n++) setLive(n, !doubt && live.some((x) => x.n === n));
     // a still scene under a live one arriving fades out as that one comes in (the live picture is under both)
-    fade = live.length === 1 && shown.length === 2 && live[0].n === top + 1 ? { n: top, o: 1 - s } : null;
+    fade = !doubt && live.length === 1 && shown.length === 2 && live[0].n === top + 1 ? { n: top, o: 1 - s } : null;
     if (!live.length || !slots.length) { under.style.visibility = 'hidden'; fg.style.visibility = 'hidden'; return more; }
-    if (under.style.visibility !== 'visible') under.style.visibility = 'visible';
+    if (doubt) { if (under.style.visibility !== 'hidden') under.style.visibility = 'hidden'; }
+    else if (under.style.visibility !== 'visible') under.style.visibility = 'visible';
     // the lower live scene's dark band gives way to the one of a live scene arriving over it (each scene's own band)
     for (const x of shown) {
       const sh = h.els(x.n).shade;
-      if (sh) h.put(sh, 'opacity', x.n === shown[0].n && live.length === 2 && shown.length === 2 ? (1 - s).toFixed(3) : '');
+      if (sh) h.put(sh, 'opacity', !doubt && x.n === shown[0].n && live.length === 2 && shown.length === 2 ? (1 - s).toFixed(3) : '');
     }
     const cam = camOf(camV);
     const lift = liftOf(y);
@@ -404,7 +407,7 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
       drawn = '';
       h.schedule();
     },
-    ready: (n) => ready.has(n) && !gone,
+    ready: (n) => ready.has(n) && !gone && !(benched === 1 && benchMs > 60),
     board(n) {
       const H = floorMap(n);
       if (!H) return null;

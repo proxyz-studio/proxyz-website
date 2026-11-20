@@ -2638,7 +2638,7 @@ async function main() {
   if (want(33) && gpuOk) await guarded(33, async () => {
     const bad = [], seen = [];
     for (const [engine, [w, h, dpr, name]] of [...SIZES12.map((s) => ['gpu', s]), ['webkit', [1512, 860, 2, 'laptop']]]) {
-      const c = await ctx(engine, { viewport: { width: w, height: h }, deviceScaleFactor: dpr });
+      const c = await ctx(engine, { viewport: { width: w, height: h }, deviceScaleFactor: dpr, bypassCSP: true });
       const still = await open(c, '/', `rest still ${engine} ${name}`);
       const live = await open(c, '/', `rest live ${engine} ${name}`);
       await settle(live, 600);
@@ -2670,7 +2670,7 @@ async function main() {
     const bad = [], seen = [];
     const pictureLight = async (p) => (await lab(await p.screenshot(), [[0, 120, 1512, 600]]))[0].mean;
     const run = async (engine, label, opts, init, act) => {
-      const c = await ctx(engine, { viewport: { width: 1512, height: 860 }, ...opts });
+      const c = await ctx(engine, { viewport: { width: 1512, height: 860 }, bypassCSP: true, ...opts });
       const asked = [];
       c.on('request', (r) => { if (/\/assets\/(film3d|world)-/.test(r.url())) asked.push(r.url()); });
       if (init) await c.addInitScript(init);
@@ -2714,9 +2714,19 @@ async function main() {
       });
     }
     // a chip too slow for it (the hidden Chromium shell draws WebGL in software): the still film for good
-    const s4 = await run('chromium', 'software chip', {}, null, async () => null);
-    if (s4.canvas || s4.hidden || !/^\|/.test(s4.world || '|')) bad.push(`software chip: ${JSON.stringify(s4)}`);
-    ok(!bad.length, 34, 'Every way the live film cannot run shows the still film, never a black or empty frame: less motion (never loaded), no WebGL 2, a lost context (the stills at once, live again once it comes back), a chip too slow (Chromium in software: given up after its first frame) (laptop 1512x860; the picture\'s light in each)', seen.join(', '), bad.slice(0, 8).join('; '));
+    // (it never shows live: two slow answers, 2.5 s apart, then the still film for good)
+    const s4 = await run('chromium', 'software chip', {}, null, async (p) => {
+      const out = [];
+      for (let i = 0; i < 16; i++) {
+        const st = await p.evaluate(() => ({ world: document.documentElement.dataset.world ?? '', hidden: [...document.querySelectorAll('#s2 .passes picture')].filter((e) => getComputedStyle(e).visibility === 'hidden').length }));
+        if (st.hidden) { out.push(`live while it measured the chip (${st.world})`); break; }
+        if (/^\|\|/.test(st.world)) break;
+        await settle(p, 500);
+      }
+      return out.length ? out : null;
+    });
+    if (s4.canvas || s4.hidden || !/^\|\|/.test(s4.world || '')) bad.push(`software chip: ${JSON.stringify(s4)}`);
+    ok(!bad.length, 34, 'Every way the live film cannot run shows the still film, never a black or empty frame: less motion (never loaded), no WebGL 2, a lost context (the stills at once, live again once it comes back), a chip too slow (Chromium in software: never shown live, given up after two slow answers) (laptop 1512x860; the picture\'s light in each)', seen.join(', '), bad.slice(0, 8).join('; '));
   });
 
   /* 35. no stall over 50 ms anywhere in the film, at a fourth of a laptop's speed */

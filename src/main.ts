@@ -39,6 +39,8 @@ interface SceneState {
    *  the giant words' box. The boxes with a mask (the pictures' soft sides, the matte cut) are never written to while
    *  the film moves: a browser draws a masked box again whenever its style is touched. */
   frame: HTMLElement | null; cam: HTMLElement | null;
+  /** where its picture rests, as last placed (the live film's cut hook uses it without measuring again) */
+  g: Box | null;
 }
 
 /* ---------- writing styles: only when a value changes ---------- */
@@ -173,6 +175,7 @@ const S: SceneState[] = sections.map((el) => ({
   readyAt: 0,
   frame: null,
   cam: null,
+  g: null,
 }));
 // the giant words' box goes into a box of its own that the camera moves (put back as it was if the film gives up)
 for (const s of S) {
@@ -349,6 +352,7 @@ function place(s: SceneState, view: View): void { still(() => placeAtRest(s, vie
 function placeAtRest(s: SceneState, view: View): void {
   if (gaveUp) return;
   const g = geometry(view, s);
+  s.g = g;
   const mask = frameMask(view, pictures[view.passes[0]].size);
   for (const p of s.passes) {
     Object.assign(p.img.style, { width: g.w + 'px', height: g.h + 'px', left: g.left + 'px', top: g.top + 'px', filter: view.filter ?? '' });
@@ -814,7 +818,9 @@ function start3d(): void {
     active: () => active,
     schedule,
     put,
-    changed: (n) => { if (S[n - 1].passes.length) place(S[n - 1], viewOf(n)); },
+    // a scene turned live or back: only its giant words' cut changes (no measuring: placing it all again took tens of
+    // ms at a fourth of a phone's speed, in the middle of a change)
+    changed: (n) => { const s = S[n - 1]; if (s.passes.length) setCut(s, viewOf(n), s.box.classList.contains('ready') ? s.g : null); },
   };
   import('./world/film3d').then((m) => m.startFilm3d(hooks, () => { live3d = null; layoutAll(); schedule(); })).then((f) => {
     if (gaveUp) { f.dispose(); return; }
