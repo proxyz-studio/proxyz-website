@@ -80,6 +80,30 @@ export interface Film3d {
   dispose(): void;
 }
 
+const smooth = (x: number): number => { const t = Math.max(0, Math.min(1, x)); return t * t * (3 - 2 * t); };
+
+interface Relay { lost(): void; restored(): void; on: { lost(): void; restored(): void } | null }
+let prepared: Promise<{ world: World; relay: Relay }> | null = null;
+/** Makes the world ahead of the visitor's first gesture, on idle once the page has settled (src/main.ts): its shapes
+ *  read, its shaders compiled and drawn once each (Safari builds a program's pipeline at its first draw, 78 to 113 ms
+ *  in the simulator, a stop at the first gesture otherwise). No picture is read until the film starts. */
+export function prepareFilm3d(): Promise<{ world: World; relay: Relay }> {
+  if (!prepared) {
+    const phoneChip = matchMedia('(pointer: coarse)').matches;
+    const relay: Relay = { on: null, lost: () => relay.on?.lost(), restored: () => relay.on?.restored() };
+    prepared = World.create(relay, phoneChip ? 120e6 : 260e6).then((w) => {
+      w.depthLong = phoneChip ? 1024 : 1536;
+      w.stripBytes = 1.1e6;
+      // once the shaders are built (they compile aside), each drawn once, a frame apart from anything else
+      const tick = (): void => { if (w.lost || w.broken) return; if (w.ready()) w.warm(); else window.setTimeout(tick, 120); };
+      window.setTimeout(tick, 60);
+      return { world: w, relay };
+    });
+    prepared.catch(() => { prepared = null; });
+  }
+  return prepared;
+}
+
 export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d> {
   const phoneChip = matchMedia('(pointer: coarse)').matches;
   let world: World | null = null;
@@ -95,9 +119,9 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
     clearTimeout(renewT);
     renewT = window.setTimeout(() => { if (world?.lost && !gone) h.schedule(); }, 2100);
   }
-  world = await World.create(events, phoneChip ? 120e6 : 260e6);
-  world.depthLong = phoneChip ? 1024 : 1536;
-  world.stripBytes = 1.1e6;
+  const prep = await prepareFilm3d();
+  prep.relay.on = events;
+  world = prep.world;
   world.onDecoded = () => h.schedule();
   let canvas = world.canvas;
   // the live picture: one canvas in a fixed box just before the film, so under every scene's layer, never moved in the
@@ -368,7 +392,8 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
       passes: v.passes.map((key, k) => {
         // scene 5's phone: its screen is lit from the moment it shows (its first pass is the screen still dark: a
         // black slab while the camera comes to it)
-        const tk = k === 0 ? 1 : n === 5 && k === 1 ? 1 : t[k] ?? 0;
+        // (scene 5's screen: lit dim from the moment the phone shows, then it wakes with the still film's beat)
+        const tk = k === 0 ? 1 : n === 5 && k === 1 ? 0.3 + 0.7 * smooth(Math.min(1, (t[k] ?? 0) / 0.6)) : t[k] ?? 0;
         if (!v.opens || k === 0) return { key, t: tk, oval: null };
         // scene 6: the later pass shows inside an oval growing from the old pool of light (as src/main.ts light)
         if (tk <= 0 || tk >= 1) return { key, t: tk >= 1 ? 1 : 0, oval: null };

@@ -834,6 +834,20 @@ function start3d(): void {
 }
 const shownStrength3 = (v: View, q: number, k: number) => shownStrength(v, q, k, false);
 for (const t of ['wheel', 'touchstart', 'keydown', 'pointerdown']) addEventListener(t, start3d, { passive: true, once: true });
+// On idle once the page has settled (4 s after load, never on Save-Data or a 2G connection, never with less motion):
+// the world is made ahead (its script, shapes and shaders, no picture), so the first gesture does not wait for the
+// browser to build its shaders (Safari: 78 to 113 ms). The first load and its first 2.5 s are untouched.
+function prepare3d(): void {
+  if (live3dTried || gaveUp || reduced()) return;
+  const c = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+  if (c?.saveData || /2g$/.test(c?.effectiveType ?? '')) return;
+  import('./world/film3d').then((m) => m.prepareFilm3d()).catch(() => { /* the still film */ });
+}
+{
+  const idle = (): void => { const ric = (window as Window & { requestIdleCallback?: (f: () => void, o?: { timeout: number }) => void }).requestIdleCallback; if (ric) ric(prepare3d, { timeout: 2000 }); else prepare3d(); };
+  const later = (): void => { window.setTimeout(idle, 4000); };
+  if (document.readyState === 'complete') later(); else addEventListener('load', later, { once: true });
+}
 addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') start3d(); }, { passive: true });
 
 /* ---------- the playhead ---------- */

@@ -294,7 +294,9 @@ function menuPose(L: Layout, t: number): M4 {
 
 /* ---------- the drawing ---------- */
 interface Mesh { vao: WebGLVertexArrayObject; count: number; type: number; bufs: WebGLBuffer[] }
-interface Tex { key: string; state: 'none' | 'loading' | 'decoded' | 'ready' | 'failed'; url: string; strips: ImageBitmap[]; size: [number, number]; tex: WebGLTexture | null; bytes: number; used: number; row: number; rank: number; want: boolean }
+interface Tex { key: string; state: 'none' | 'loading' | 'decoded' | 'ready' | 'failed'; url: string; strips: ImageBitmap[]; size: [number, number]; tex: WebGLTexture | null; bytes: number; used: number; row: number; rank: number; want: boolean;
+  /** the picture, small and soft (about 128 px on its long side): the floor past its frame takes it */
+  small: WebGLTexture | null }
 interface DepthMap { fb: WebGLFramebuffer; tex: WebGLTexture; w: number; h: number }
 
 export interface WorldEvents { lost(): void; restored(): void }
@@ -387,8 +389,8 @@ export class World {
       this.meshes.set(name, { vao, count: p.I.length, type: p.I instanceof Uint32Array ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT, bufs: [b0, b1, b2] });
     }
     // every picture and depth map is gone with a lost context: read again when asked
-    for (const t of this.texs.values()) { t.tex = null; t.row = 0; if (t.state === 'ready') t.state = 'none'; }
-    this.touchFb = null; this.touchProg = null; this.touchVao = null; this.clearFb = null;
+    for (const t of this.texs.values()) { t.tex = null; t.small = null; t.row = 0; if (t.state === 'ready') t.state = 'none'; }
+    this.clearFb = null; this.shrinkProg = null; this.shrinkVao = null; this.shrinkFb = null;
     this.spare.clear(); this.spareBytes = 0;
     this.held = 0;
     this.depth.clear();
@@ -449,7 +451,7 @@ export class World {
     for (const { key, url } of list) {
       let t = this.texs.get(key);
       if (t && t.url !== url && t.state !== 'loading') { this.drop(t); t = undefined; }
-      if (!t) { t = { key, state: 'none', url, strips: [], size: [0, 0], tex: null, bytes: 0, used: now, row: 0, rank: 0, want: true }; this.texs.set(key, t); }
+      if (!t) { t = { key, state: 'none', url, strips: [], size: [0, 0], tex: null, bytes: 0, used: now, row: 0, rank: 0, want: true, small: null }; this.texs.set(key, t); }
       t.used = now;
     }
     // the order of this list is the order of reading (a picture no longer asked for is not read)
@@ -549,7 +551,8 @@ export class World {
         t.state = 'ready'; t.row = 0;
         // read once now, by a draw nobody sees, so the chip has it before the first frame that shows it (a browser
         // may send a picture to the chip only when it is first drawn with: a stop in the middle of a scene change)
-        if (World.TOUCH) this.touch(t.tex);
+        // its small soft copy, made by the chip from it (which also reads it into the chip before its first frame)
+        this.shrink(t);
         break;
       }
     }
@@ -571,7 +574,8 @@ export class World {
     if (t.tex) this.held -= t.bytes;
     t.row = 0;
     for (const x of t.strips) x.close();
-    t.tex = null; t.strips = []; t.state = 'none';
+    if (t.small && !this.lost) this.gl.deleteTexture(t.small);
+    t.tex = null; t.small = null; t.strips = []; t.state = 'none';
   }
 
   /* ---------- depth maps: what each still's camera saw ---------- */
@@ -743,6 +747,13 @@ export class World {
     gl.activeTexture(gl.TEXTURE0 + 2 * UNITS + 1);
     gl.bindTexture(gl.TEXTURE_2D, screen ?? this.blank);
     gl.uniform1i(u('uScreen'), 2 * UNITS + 1);
+    // each slot's first still, small and soft (the floor past its frame)
+    for (let s = 0; s < SLOTS; s++) {
+      const ps = slots[s]?.passes[0], small = ps ? this.texs.get(ps.key)?.small : null;
+      gl.activeTexture(gl.TEXTURE0 + 2 * UNITS + 2 + s);
+      gl.bindTexture(gl.TEXTURE_2D, small ?? this.blank);
+      gl.uniform1i(u('uB' + s), 2 * UNITS + 2 + s);
+    }
     gl.uniform1f(u('uScreenGain'), World.SCREEN);
     const menuK = screen ? st.menuLive : 0;
     gl.uniform1fv(u('uT[0]'), T);
@@ -778,6 +789,9 @@ export class World {
           gl.uniform1fv(u('uHold[0]'), [0, 1].map((s) => (proj.slice(s * PASSES, s * PASSES + PASSES).some((p) => p?.poses.get(th.name)) || th.name === 'floor' ? 1 : 0)));
           gl.uniform1f(u('uLiveK'), th.name === 'menu' && slots[0]?.scene === 2 ? menuK : 0);
           gl.uniform1f(u('uTol'), TOL[th.name]);
+          gl.uniform1f(u('uIsFloor'), th.name === 'floor' ? 1 : 0);
+          // a thing that stands in the world the whole film (scene 2's phone is there in scene 2 only)
+          gl.uniform1f(u('uSolid'), th.name === 'menu' || th.name === 'floor' ? 0 : 1);
           gl.uniform1i(u('uPart'), dr.part === 'phone_display' ? 2 : dr.part === 'phone_glass' ? 1 : 0);
           gl.uniform3fv(u('uAlb'), dr.mat.alb); gl.uniform1f(u('uRough'), dr.mat.rough); gl.uniform1f(u('uMetal'), dr.mat.metal); gl.uniform1f(u('uMap'), dr.mat.map ? 1 : 0);
           gl.bindVertexArray(mesh.vao);
@@ -831,44 +845,63 @@ export class World {
     for (const [k, list] of this.spare) while (list.length > 2) { const [w, h] = k.split('x').map(Number); this.gl.deleteTexture(list.shift()!); this.spareBytes -= w * h * 4; }
   }
   private clearFb: WebGLFramebuffer | null = null;
-  private touchVao: WebGLVertexArrayObject | null = null;
-  private touchFb: WebGLFramebuffer | null = null;
-  private touchProg: WebGLProgram | null = null;
-  private touch(tex: WebGLTexture): void {
+  private shrinkProg: WebGLProgram | null = null;
+  private shrinkVao: WebGLVertexArrayObject | null = null;
+  private shrinkFb: WebGLFramebuffer | null = null;
+  /** The picture's small soft copy: each texel the average of 16 bilinear taps over its cell (a box of about 64 of the
+   *  picture's pixels, a blur once drawn with a linear filter at this size). */
+  private shrink(t: Tex): void {
+    const [W, H] = t.size, L = 128;
+    const sw = W >= H ? L : Math.max(8, Math.round((L * W) / H)), sh = W >= H ? Math.max(8, Math.round((L * H) / W)) : L;
+    t.small = this.shrinkTo(t.tex!, sw, sh, null);
+  }
+  private shrinkInit(): void {
     const gl = this.gl;
-    if (!this.touchFb) {
-      const t = gl.createTexture()!;
-      gl.bindTexture(gl.TEXTURE_2D, t);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-      this.touchFb = gl.createFramebuffer()!;
-      gl.bindFramebuffer(gl.FRAMEBUFFER, this.touchFb);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
+    if (!this.shrinkProg) {
       const p = gl.createProgram()!;
-      const sh = (type: number, src: string) => { const x = gl.createShader(type)!; gl.shaderSource(x, src); gl.compileShader(x); gl.attachShader(p, x); };
-      sh(gl.VERTEX_SHADER, '#version 300 es\nin vec4 a;\nvoid main(){ gl_Position = vec4(0.0, 0.0, 0.0, 1.0) + a * 0.0; gl_PointSize = 1.0; }');
-      sh(gl.FRAGMENT_SHADER, '#version 300 es\nprecision mediump float; uniform sampler2D t; out vec4 o; void main(){ o = texture(t, vec2(0.5)) + texture(t, vec2(0.1, 0.9)); }');
+      const add = (type: number, src: string) => { const x = gl.createShader(type)!; gl.shaderSource(x, src); gl.compileShader(x); gl.attachShader(p, x); };
+      add(gl.VERTEX_SHADER, '#version 300 es\nin vec2 a;\nvoid main(){ gl_Position = vec4(a, 0.0, 1.0); }');
+      add(gl.FRAGMENT_SHADER, '#version 300 es\nprecision highp float; uniform sampler2D t; uniform vec2 n; out vec4 o;\n'
+        + 'void main(){ vec4 c = vec4(0.0); for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) c += texture(t, (gl_FragCoord.xy + (vec2(float(i), float(j)) + 0.5) / 4.0 - 0.5) / n); o = c / 16.0; }');
       gl.bindAttribLocation(p, 0, 'a');
       gl.linkProgram(p);
-      this.touchProg = p;
-      // one point with its own (zero) position: a draw with no array at its first input makes Firefox emulate one
-      this.touchVao = gl.createVertexArray();
-      gl.bindVertexArray(this.touchVao);
+      this.shrinkProg = p;
+      this.shrinkVao = gl.createVertexArray();
+      gl.bindVertexArray(this.shrinkVao);
       const vb = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, vb); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(4), gl.STATIC_DRAW);
-      gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 4, gl.FLOAT, false, 0, 0);
+      gl.bindBuffer(gl.ARRAY_BUFFER, vb); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+      gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
       gl.bindVertexArray(null);
+      this.shrinkFb = gl.createFramebuffer();
     }
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.touchFb);
-    gl.viewport(0, 0, 1, 1);
-    gl.useProgram(this.touchProg);
+  }
+  /** draws a texture small and soft into a new texture of sw x sh (or into the given one) */
+  private shrinkTo(src: WebGLTexture, sw: number, sh: number, into: WebGLTexture | null): WebGLTexture {
+    const gl = this.gl;
+    this.shrinkInit();
+    const small = into ?? gl.createTexture()!;
+    gl.bindTexture(gl.TEXTURE_2D, small);
+    if (!into) {
+      gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, sw, sh);
+      for (const [a, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, a, v);
+    }
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.shrinkFb);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, small, 0);
+    gl.viewport(0, 0, sw, sh);
+    gl.disable(gl.DEPTH_TEST); gl.disable(gl.SCISSOR_TEST); gl.disable(gl.BLEND);
+    gl.useProgram(this.shrinkProg);
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, tex);
-    gl.uniform1i(gl.getUniformLocation(this.touchProg!, 't'), 0);
-    gl.bindVertexArray(this.touchVao);
-    gl.drawArrays(gl.POINTS, 0, 1);
+    gl.bindTexture(gl.TEXTURE_2D, src);
+    gl.uniform1i(gl.getUniformLocation(this.shrinkProg!, 't'), 0);
+    gl.uniform2f(gl.getUniformLocation(this.shrinkProg!, 'n'), sw, sh);
+    gl.bindVertexArray(this.shrinkVao);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.bindVertexArray(null);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.flush();
+    if (src === this.blank) { gl.deleteTexture(small); }
+    return small;
   }
 
   /** Compiles the shaders and sends the shapes to the chip now (a draw nothing sees), so the first frame the scroll
@@ -876,19 +909,37 @@ export class World {
   warm(): void {
     if (this.lost || !this.ready()) return;
     const gl = this.gl;
+    this.warmed = true;
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, 1, 1);
+    // the very state the frames draw with (a browser builds each program's pipeline for its state at its first draw:
+    // Safari took 78 to 113 ms for the world's)
+    gl.enable(gl.DEPTH_TEST); gl.disable(gl.BLEND); gl.disable(gl.CULL_FACE); gl.disable(gl.SCISSOR_TEST);
     gl.useProgram(this.progW);
-    for (let i = 0; i < 2 * UNITS + 2; i++) { gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, this.blank); }
+    for (let i = 0; i < 2 * UNITS + 4; i++) { gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, this.blank); }
     for (const [name, m] of this.meshes) {
       if (name === 'floor' || name === 'room') continue;
       gl.bindVertexArray(m.vao);
       gl.drawElements(gl.TRIANGLES, Math.min(m.count, 3), m.type, 0);
     }
+    // the depth maps' program, into a target of their kind (colour and depth)
+    const tex = gl.createTexture()!, rb = gl.createRenderbuffer()!, fb = gl.createFramebuffer()!;
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, 4, 4, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    gl.bindRenderbuffer(gl.RENDERBUFFER, rb);
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, 4, 4);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, rb);
+    gl.viewport(0, 0, 4, 4);
     gl.useProgram(this.progD);
     gl.bindVertexArray(this.meshes.get('tile')!.vao);
     gl.drawElements(gl.TRIANGLES, 3, this.meshes.get('tile')!.type, 0);
     gl.bindVertexArray(null);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.deleteFramebuffer(fb); gl.deleteRenderbuffer(rb); gl.deleteTexture(tex);
+    // the small soft copies' program
+    this.shrinkTo(this.blank, 1, 1, null);
     gl.flush();
   }
   /** how long the chip takes to finish what was asked of it (ms) */

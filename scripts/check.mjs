@@ -2635,7 +2635,11 @@ async function main() {
       c.on('request', (r) => { if (/\/assets\/(film3d|world)-/.test(r.url())) asked.push(r.url().split('/').pop()); });
       const p = await open(c, '/', `intent ${name}`);
       await settle(p, 3000);
-      if (asked.length) bad.push(`${name}: ${asked.join(', ')} asked for before any sign of intent`);
+      if (asked.length) bad.push(`${name}: ${asked.join(', ')} asked for in the first 3 s`);
+      // on idle once the page has settled (no sooner than 4 s after load): the world made ahead, its script and shapes
+      await settle(p, 4500);
+      const ahead = [...asked];
+      if (!ahead.some((u) => /^film3d-/.test(u)) || !ahead.some((u) => /^world-/.test(u))) bad.push(`${name}: not made ahead on idle (${ahead.join(', ') || 'nothing asked'})`);
       if (w < 600) await p.touchscreen.tap(w / 2, h / 2); else await p.mouse.move(w / 2, h / 2);
       const t0 = Date.now();
       const live = await p.waitForFunction(LIVE, 1, { timeout: 15000 }).then(() => true, () => false);
@@ -2643,7 +2647,7 @@ async function main() {
       seen.push(`${name} live ${((Date.now() - t0) / 1000).toFixed(1)} s after it`);
       await c.close();
     }
-    ok(!bad.length, 32, 'The live film loads at the first sign of intent (a touch, the wheel, a key, the pointer moving), never before: no request for its script or shapes in the first 3 s, then scene 1 live (Chromium with a graphics chip, phone 430x739 and laptop 1512x860)', seen.join(', '), bad.join('; '));
+    ok(!bad.length, 32, 'The live film is made ahead on idle no sooner than 4 s after load (no request for its script or shapes in the first 3 s, both asked for by 7.5 s with no gesture) and starts at the first sign of intent (a touch, the wheel, a key, the pointer moving): scene 1 live (Chromium with a graphics chip, phone 430x739 and laptop 1512x860)', seen.join(', '), bad.join('; '));
   });
 
   /* 33. at rest every scene drawn live is its still */
