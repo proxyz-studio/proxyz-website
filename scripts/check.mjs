@@ -2507,9 +2507,11 @@ async function main() {
   if (want(30)) await guarded(30, async () => {
     const bad = [], seen = [];
     const HIDE = '.big,.small,.note,.tool,.addr{color:transparent !important}.hl,.door{visibility:hidden !important}';
-    for (const [engine, w, h] of [['chromium', 430, 739], ['chromium', 1512, 860], ['webkit', 430, 739]]) {
+    // build 12: the live film too (Chromium with a graphics chip, started by a key press)
+    for (const [engine, w, h] of [['chromium', 430, 739], ['chromium', 1512, 860], ['webkit', 430, 739], ...(browsers.gpu ? [['gpu', 430, 739], ['gpu', 1512, 860]] : [])]) {
       const c = await ctx(engine, { viewport: { width: w, height: h }, bypassCSP: true });
       const p = await open(c, '/', `changes ${engine} ${w}x${h}`);
+      if (engine === 'gpu') { await settle(p, 500); await p.keyboard.press('Shift'); await settle(p, 1500); }
       const geo = await p.evaluate(() => ({ vh: document.querySelector('.probe').offsetHeight, band: document.getElementById('top').getBoundingClientRect().bottom, tops: [...document.querySelectorAll('#film .scene')].map((s) => s.offsetTop) }));
       // the picture under the border (on a phone the border is a dark band; on a wide screen the band of its words)
       const box = [0, Math.round(Math.max(geo.band, 90)), w, Math.round(h - Math.max(geo.band, 90))];
@@ -2544,15 +2546,16 @@ async function main() {
       await c.close();
     }
     seen.sort((a, b) => a[0] - b[0]);
-    ok(!bad.length, 30, 'No empty frame: through every change between two scenes, eleven places along the scroll, a picture always shows (at least half the darker end\'s light) and words always show (at least 1000 ink px, about half a line of the small words; the giant lines at the top leave before the next ones arrive, so for a moment the words at the foot carry the screen) (Chromium 430x739 and 1512x860, WebKit 430x739)', seen.slice(0, 3).map((s) => s[1]).join('; '), bad.slice(0, 8).join('; '));
+    ok(!bad.length, 30, 'No empty frame: through every change between two scenes, eleven places along the scroll, a picture always shows (at least half the darker end\'s light) and words always show (at least 1000 ink px, about half a line of the small words; the giant lines at the top leave before the next ones arrive, so for a moment the words at the foot carry the screen) (Chromium 430x739 and 1512x860, WebKit 430x739; the live film: Chromium with a graphics chip 430x739 and 1512x860)', seen.slice(0, 3).map((s) => s[1]).join('; '), bad.slice(0, 8).join('; '));
   });
 
   /* 31. the rest of every scene is the composition as built: at rest nothing of the film's motion is left on it */
   if (want(31)) await guarded(31, async () => {
     const bad = [];
-    for (const [engine, w, h] of [['chromium', 430, 739], ['chromium', 393, 852], ['chromium', 1512, 860], ['chromium', 2428, 1300], ['webkit', 430, 739], ['firefox', 1512, 860]]) {
+    for (const [engine, w, h] of [['chromium', 430, 739], ['chromium', 393, 852], ['chromium', 1512, 860], ['chromium', 2428, 1300], ['webkit', 430, 739], ['firefox', 1512, 860], ...(browsers.gpu ? [['gpu', 1512, 860]] : [])]) {
       const c = await ctx(engine, { viewport: { width: w, height: h } });
       const p = await open(c, '/', `rest ${engine} ${w}x${h}`);
+      if (engine === 'gpu') { await settle(p, 500); await p.keyboard.press('Shift'); await settle(p, 1500); }
       for (let n = 1; n <= content.scenes.length; n++) {
         await toScene(p, n, 1);
         await settle(p, 300);
@@ -2581,7 +2584,7 @@ async function main() {
       }
       await c.close();
     }
-    ok(!bad.length, 31, 'At rest every scene is the composition as built: its stage alone at full strength, its picture, its giant words, every line of words and its door in place, unmoved and at full strength, none of them on a layer of its own (Chromium 430x739, 393x852, 1512x860, 2428x1300; WebKit 430x739; Firefox 1512x860)', 'all seven, every size', [...new Set(bad)].slice(0, 8).join('; '));
+    ok(!bad.length, 31, 'At rest every scene is the composition as built: its stage alone at full strength, its picture, its giant words, every line of words and its door in place, unmoved and at full strength, none of them on a layer of its own (Chromium 430x739, 393x852, 1512x860, 2428x1300; WebKit 430x739; Firefox 1512x860; the live film: Chromium with a graphics chip 1512x860)', 'all seven, every size', [...new Set(bad)].slice(0, 8).join('; '));
   });
 
   /* ---------- build 12: the whole film as one live 3D world (src/world/) ---------- */
