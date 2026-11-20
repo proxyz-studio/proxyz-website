@@ -34,6 +34,8 @@ npm run check      # builds, serves dist/ locally and proves the rules (see belo
 | `src/film/board.json`, `scripts/board.mjs`, `build/board.ts` | Scene 6's board on the floor: its layout in millimetres and the two drawing cameras; the generator that projects it into picture pixels (`npm run board`, writes `src/generated/board.json`); the drawing of it in the page. See "Scene 6: the board" below. |
 | `scripts/check.mjs`, `scripts/serve.mjs` | The proof (`npm run check`) and the local server that follows `vercel.json`. |
 | `scripts/preview-file.mjs` | One self contained file of the real build, for looking at it without a server. |
+| `src/world/` | The live 3D film (build 12): `film3d.ts` (what to draw from the playhead, the page layers, the fallbacks), `world.ts` (the world and its drawing, WebGL 2), `shaders.ts`, `path.ts` (the camera), `mat.ts`, `shots.json` (every still's camera and light), `world.bin` (the shapes). See "The live 3D film" below. |
+| `scripts/world-pack.mjs`, `scripts/world-shots.mjs`, `scripts/stand-model.mjs` | Make `src/world/world.bin`, `src/world/shots.json` and `src/world/stand.bin`. |
 | `src/fonts/` | IBM Plex Mono, Regular (400) and SemiBold (600): IBM's own split Latin 1 files from its package `@ibm/plex-mono` version 2.5.0 (licence OFL-1.1, source github.com/ibm/plex), byte for byte, with IBM's licence as `OFL.txt`. To prove it, unpack that package and compare: `fonts/split/woff2/IBMPlexMono-Regular-Latin1.woff2` sha256 `e8993d946649b9d01abb1ed06d574b19d8ea3e66b5c3948602db335c44c18e56`, `fonts/split/woff2/IBMPlexMono-SemiBold-Latin1.woff2` sha256 `b7acd05041ab65f3b7039e218ddd893065e11a07e85ea85019473152a51b6b7d`. The giant lines: Anton (400), the Latin file of the package `@fontsource/anton` version 5.3.0 (`files/anton-latin-400-normal.woff2`, Anton 2.116, licence OFL-1.1, copyright The Anton Project Authors, no reserved font name, source github.com/googlefonts/AntonFont), byte for byte, sha256 `d0fa07ff63dd60cbc0e2f58e29c802dca2a5ae0276c999f59c6111ab7bbaec3b`, with the package's licence as `OFL-Anton.txt`. |
 
 ## Names and links of ventures
@@ -177,6 +179,48 @@ moves the page in steps). Nothing runs on a timer, so scrolling back plays every
 - What moves gets a layer of its own only while it moves (a light pass while its light grows, the lines of words
   through a change, the board's labels while they move), so at rest everything is drawn as the page draws it.
 
+### The live 3D film (build 12)
+
+Once the visitor shows intent (a touch, the wheel, a key, the mouse moving), the whole film is also drawn live: one
+WebGL 2 world with one camera that follows the playhead, from the letters of scene 1 to the empty pool of scene 7. The
+still film above stays underneath it all the time: it is the first screen, and it takes over whenever the live film
+cannot run.
+
+- **One world.** The things stand where scene 6's drawing puts them (the stand, the race coin, the coach phone);
+  scenes 1 and 2 are close visits to the stand, scene 4 to the coin, scene 5 to the phone, and scene 6 pulls back to
+  show the three on one floor. Scene 3's race piece on its base has its own spot; scene 2's phone (the one that taps
+  the tile) is there in scene 2 only.
+- **Drawn from the stills.** Every surface is drawn from the very pictures the still film shows (the same files, so
+  the browser's cache serves them), each cast back onto the shapes from the camera that drew it. At each scene's rest
+  the camera is exactly that camera, framed where the page puts the picture, so the live frame is the still. While
+  the camera moves, the shapes give the pictures their depth; what no picture saw is lit live by that scene's key
+  light (the same light, colours and camera curve as the picture maker). The light passes mix as the page mixes the
+  pictures; scene 6's later passes grow inside the same oval.
+- **The camera** (`src/world/path.ts`, the moves in `SHAPES` in `src/world/film3d.ts`): at each rest exactly the
+  still's camera; between rests it travels slowly out, does most of its move while the light changes, and settles
+  slowly in, never stopping and never swinging past. Scene 1 holds still until its light rests; scenes 6 and 7 share
+  one camera. The stills of two scenes are mixed by where the camera is (each strongest near its own camera).
+- **In the page.** The live picture is one canvas inside the pictures' box of the lowest live scene on screen, so the
+  dark band at the foot, scene 6's board and the giant words stay above it as above a still. The things that stand in
+  front of the giant words are copied into a second canvas above the words (`.world-fg`). Scene 6's board and its
+  labels follow the floor while the camera moves.
+- **Loading.** Nothing of it loads with the first screen (test 11 counts the first load). The script (about 17 KB
+  compressed) and the shapes (`src/world/world.bin`, about 500 KB) load at the first sign of intent, or at once when
+  the visitor comes back through Back or a door's address. The stills go into the graphics chip in the order the film
+  needs them, a strip at a time.
+- **When it does not run:** less motion (never started), no WebGL 2, a chip too slow for it (two slow first frames, a
+  software chip for example), a lost context (the stills at once; live again when the context comes back, or with a
+  new one after 2 s). It draws only when something changes, never while the tab is hidden, and sends its work to the
+  chip on every frame (a context left with its work queued stalled look 11 for up to 360 ms).
+- **The shapes.** `node scripts/world-pack.mjs <the stills project's pt/tools/pt/coin-lines folder>` rebuilds
+  `src/world/world.bin` (the stand's parts from `src/world/stand.bin`, made by `scripts/stand-model.mjs`; the coin's
+  height field and its part colours from the coin's real triangles; the phone and the trophy's base as the stills
+  make them). `node scripts/world-shots.mjs <the stills project folder>` rebuilds `src/world/shots.json`, every
+  still's camera, key light and poses, from the settings the picture maker saved beside each drawing. Run both when a
+  drawing is made again, then `npm run check` (tests 32 to 36 prove the live film).
+- The page root carries `data-world` for the check: the scenes drawn live now, those whose stills are in the chip,
+  and the first frame's time in ms.
+
 ### Replacing a drawing with a real photo
 
 1. Shoot or crop the photo to the same shape: 1440 x 900 and 2880 x 1800 for wide screens, 786 x 1704 and
@@ -210,7 +254,8 @@ cache for files with a hash in their name (`/assets/`, `/pictures/`).
 
 ## npm run check
 
-Needs hidden browsers (Chromium, WebKit, Firefox) through `playwright-core`, which is not a dependency of the site:
+Needs hidden browsers (Chromium, WebKit, Firefox, and Chromium's own build with the graphics chip, its `chromium`
+channel, for the live film's tests 32 to 36) through `playwright-core`, which is not a dependency of the site:
 set `PLAYWRIGHT_CORE` to a copy whose browsers are already installed. It never downloads anything. Set
 `BLOCKED_WORDS_FILE` to an optional local file, one word or phrase per line, that must never ship: the check fails if
 any of them appears in a tracked file, a file name or the build. Without it that test is skipped with a warning.
