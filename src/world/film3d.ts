@@ -135,7 +135,7 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
   function unlive(): void {
     for (const n of [...liveNow]) setLive(n, false);
     ready.clear();
-    document.documentElement.dataset.world = '|';
+    document.documentElement.dataset.world = '||' + (benchMs ? benchMs.toFixed(0) : '');
     canvas.remove();
     host = null;
     fg.style.visibility = 'hidden';
@@ -144,8 +144,7 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
   /* ---------- the governor: sharpness from the measured frame times ---------- */
   const DPR = Math.max(1, devicePixelRatio || 1);
   const steps = [Math.min(2, DPR), 1.5, 1.25, 1].filter((v, i, a) => v <= DPR && a.indexOf(v) === i);
-  let step = 0, slow = 0, benched = 0, benchMs = 0;
-  const bench: number[] = [];
+  let step = 0, slow = 0, benched = 0, benchMs = 0, benchAt = 0;
   const times: number[] = [];
   let lastDraw = 0;
   function measure(now: number): void {
@@ -247,7 +246,7 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
     const fgBox = fgRect(cam, slots, lift);
     const st: FrameState = { vw: h.vw(), vh: h.vh(), pr, cam, slots, lift, fg: fgBox };
     const sig = JSON.stringify([st, liveNow.size]);
-    if (sig === drawn) return more;
+    if (sig === drawn && !(benched === 1 && now >= benchAt)) return more || benched === 1;
     canvas.style.width = st.vw + 'px'; canvas.style.height = st.vh + 'px';
     const t0 = performance.now();
     const ok = world.draw(st, fgBox ? fgCtx : null);
@@ -255,14 +254,21 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
     drawn = sig;
     // the first frame: how long the chip takes for one, drawn three times more and waited for (a software chip, or a
     // weak one, takes 100 ms and more: the still film then, for good; a slow one draws at the lowest sharpness)
-    if (!benched) {
-      benched = 1;
+    // how long the chip takes for one frame at the moving sharpness, drawn three times and waited for. A software
+    // chip takes about 100 ms; a page still loading can slow a real one for a moment, so a slow first answer is
+    // asked again 2.5 s later, and only two slow answers give the film up (the still film then, for good)
+    if (benched < 2 && now >= benchAt) {
+      benched++;
+      const at = { ...st, pr: steps[0] };
       world.finish();
-      for (let i = 0; i < 3; i++) { const t1 = performance.now(); world.draw(st, null); bench.push(performance.now() - t1 + world.finish()); }
-      const m = [...bench].sort((x, z) => x - z)[1];
-      benchMs = m;
-      if (m > 70) { giveUp(); return false; }
-      if (m > 24) { step = steps.length - 1; drawn = ''; }
+      const b: number[] = [];
+      for (let i = 0; i < 3; i++) { const t1 = performance.now(); world.draw(at, null); b.push(performance.now() - t1 + world.finish()); }
+      world.draw(st, fgBox ? fgCtx : null);
+      benchMs = [...b].sort((x, z) => x - z)[1];
+      if (benchMs <= 60) benched = 2;
+      else if (benched === 1) { benchAt = now + 2500; drawn = ''; }
+      else { giveUp(); return false; }
+      if (benchMs > 24 && benchMs <= 60) { step = steps.length - 1; drawn = ''; }
     } else if (moving) measure(t0);
     // the copy of the things in front of the giant words: as strong as the live picture under it
     if (fgBox) {
@@ -270,7 +276,8 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
       if (fg.style.visibility) fg.style.visibility = '';
       { const o = live.length === 1 && shown.length === 2 && live[0].n === top + 1 ? s.toFixed(3) : ''; if (fg.style.opacity !== o) fg.style.opacity = o; }
     } else if (fg.style.visibility !== 'hidden') fg.style.visibility = 'hidden';
-    return more || !settled || now - settled < 200;
+    // frames go on while the chip's second answer is due, or the last sharp frame at rest is not drawn yet
+    return more || benched === 1 || !settled || now - settled < 200;
   }
   function swap(c: HTMLCanvasElement): void {
     canvas.remove();

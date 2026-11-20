@@ -188,6 +188,9 @@ async function main() {
   const outside = [], errors = [], cookieJar = [];
   const browsers = {};
   for (const e of ['chromium', 'webkit', 'firefox']) browsers[e] = await lib[e].launch({ headless: true });
+  // build 12: Chromium's own build with the graphics chip (still hidden), for the live film (tests 32 to 36)
+  browsers.gpu = await lib.chromium.launch({ headless: true, channel: 'chromium' }).catch(() => null);
+  if (!browsers.gpu) delete browsers.gpu;
   const contexts = [];
   // A hidden Firefox some minutes old stops answering: the page loads, the next evaluate never returns (seen 18 Nov 2026
   // on this site with and without the doors, in 7 of 8 runs at 5.5 minutes, none at 100 s; bringing the page to the
@@ -195,6 +198,7 @@ async function main() {
   // use once it is 90 s old, and WebKit after a minute unused, whenever no context of theirs is open.
   const lastUse = {}, born = { firefox: Date.now() };
   async function useBrowser(engine) {
+    if (engine === 'gpu') return browsers.gpu;
     const old = engine === 'firefox' ? Date.now() - born.firefox > 90000 : engine === 'webkit' && Date.now() - (lastUse.webkit ?? 0) > 60000;
     if (old && browsers[engine].contexts().length === 0) {
       step(`restarting ${engine}`);
@@ -2578,6 +2582,213 @@ async function main() {
       await c.close();
     }
     ok(!bad.length, 31, 'At rest every scene is the composition as built: its stage alone at full strength, its picture, its giant words, every line of words and its door in place, unmoved and at full strength, none of them on a layer of its own (Chromium 430x739, 393x852, 1512x860, 2428x1300; WebKit 430x739; Firefox 1512x860)', 'all seven, every size', [...new Set(bad)].slice(0, 8).join('; '));
+  });
+
+  /* ---------- build 12: the whole film as one live 3D world (src/world/) ---------- */
+  // The live film needs a real graphics chip: Chromium's own build with the chip (channel "chromium", hidden), and
+  // WebKit. The hidden Chromium shell the other tests use draws WebGL in software; there the film rightly falls back to
+  // the still film (test 34 proves it). The page root carries data-world: the scenes drawn live now, then those whose
+  // stills are in the chip, then the first frame's time in ms.
+  // (a function, never a string: the page's policy allows no evaluated strings)
+  const LIVE = (n) => ((document.documentElement.dataset.world ?? '').split('|')[0] ?? '').split(',').includes(String(n));
+  const restAt = (p, n) => p.evaluate((n) => { const s = document.getElementById('s' + n), vh = document.querySelector('.probe').offsetHeight; scrollTo(0, Math.round(s.offsetTop + 0.8 * Math.max(0, s.offsetHeight - vh)) + 1); }, n);
+  /** the share of pixels whose largest channel differs by more than lim, and the mean of that difference, in a box */
+  async function diff(a, b, box, lim = 24) {
+    return labPage.evaluate(async ([a64, b64, box, decode, lim]) => {
+      const dec = (0, eval)(decode);
+      const [A, B] = await Promise.all([dec(a64), dec(b64)]);
+      const [x, y, w, h] = box.map(Math.round);
+      let n = 0, sum = 0, over = 0;
+      for (let yy = y; yy < Math.min(A.height, y + h); yy++) for (let xx = x; xx < Math.min(A.width, x + w); xx++) {
+        const i = (yy * A.width + xx) * 4;
+        const d = Math.max(Math.abs(A.data[i] - B.data[i]), Math.abs(A.data[i + 1] - B.data[i + 1]), Math.abs(A.data[i + 2] - B.data[i + 2]));
+        sum += d; n++; if (d > lim) over++;
+      }
+      return { mean: n ? sum / n : 0, over: n ? over / n : 0 };
+    }, [a.toString('base64'), b.toString('base64'), box, decode, lim]);
+  }
+  const SIZES12 = [[430, 739, 3, 'phone'], [1512, 860, 2, 'laptop']];
+  const gpuOk = !!browsers.gpu;
+  if (!gpuOk && [32, 33, 34, 35, 36].some(want)) warn(32, 'LIVE FILM NOT TESTED', 'no Chromium with a graphics chip (playwright-core\'s chromium channel) could start');
+
+  /* 32. the live film loads at the first sign of intent, never with the first screen */
+  if (want(32) && gpuOk) await guarded(32, async () => {
+    const bad = [], seen = [];
+    for (const [w, h, dpr, name] of SIZES12) {
+      const c = await ctx('gpu', { viewport: { width: w, height: h }, deviceScaleFactor: dpr });
+      const asked = [];
+      c.on('request', (r) => { if (/\/assets\/(film3d|world)-/.test(r.url())) asked.push(r.url().split('/').pop()); });
+      const p = await open(c, '/', `intent ${name}`);
+      await settle(p, 3000);
+      if (asked.length) bad.push(`${name}: ${asked.join(', ')} asked for before any sign of intent`);
+      if (w < 600) await p.touchscreen.tap(w / 2, h / 2); else await p.mouse.move(w / 2, h / 2);
+      const t0 = Date.now();
+      const live = await p.waitForFunction(LIVE, 1, { timeout: 15000 }).then(() => true, () => false);
+      if (!live) bad.push(`${name}: scene 1 not live 15 s after the first sign of intent (${await p.evaluate(() => document.documentElement.dataset.world)})`);
+      seen.push(`${name} live ${((Date.now() - t0) / 1000).toFixed(1)} s after it`);
+      await c.close();
+    }
+    ok(!bad.length, 32, 'The live film loads at the first sign of intent (a touch, the wheel, a key, the pointer moving), never before: no request for its script or shapes in the first 3 s, then scene 1 live (Chromium with a graphics chip, phone 430x739 and laptop 1512x860)', seen.join(', '), bad.join('; '));
+  });
+
+  /* 33. at rest every scene drawn live is its still */
+  if (want(33) && gpuOk) await guarded(33, async () => {
+    const bad = [], seen = [];
+    for (const [engine, [w, h, dpr, name]] of [...SIZES12.map((s) => ['gpu', s]), ['webkit', [1512, 860, 2, 'laptop']]]) {
+      const c = await ctx(engine, { viewport: { width: w, height: h }, deviceScaleFactor: dpr });
+      const still = await open(c, '/', `rest still ${engine} ${name}`);
+      const live = await open(c, '/', `rest live ${engine} ${name}`);
+      await settle(live, 600);
+      await live.keyboard.press('Shift');
+      // below the border (its clock ticks)
+      const band = await still.evaluate(() => Math.ceil(document.getElementById('top').getBoundingClientRect().bottom) + 4);
+      const box = [0, band * dpr, w * dpr, (h - band) * dpr];
+      let worst = { mean: 0, over: 0, n: 0 };
+      for (let n = 1; n <= content.scenes.length; n++) {
+        step(`rest ${engine} ${name} | scene ${n}`);
+        await restAt(still, n); await restAt(live, n);
+        await toScene(still, n, 1);
+        const ok2 = await live.waitForFunction(LIVE, n, { timeout: 20000 }).then(() => true, () => false);
+        if (!ok2) { bad.push(`${engine} ${name} scene ${n}: not live at rest`); continue; }
+        await settle(live, 700); await settle(still, 300);
+        const [a, b] = [await still.screenshot(), await live.screenshot()];
+        const d = await diff(a, b, box);
+        if (d.mean > worst.mean) worst = { ...d, n };
+        if (!(d.mean <= 2.5) || !(d.over <= 0.025)) bad.push(`${engine} ${name} scene ${n}: mean difference ${d.mean.toFixed(2)} of 255, ${(100 * d.over).toFixed(2)}% of pixels more than 24 apart`);
+      }
+      seen.push(`${engine} ${name} largest scene ${worst.n} ${worst.mean.toFixed(2)} (${(100 * worst.over).toFixed(2)}%)`);
+      await c.close();
+    }
+    ok(!bad.length, 33, 'At rest every scene drawn live is its still: below the border a mean difference of at most 2.5 of 255 and at most 2.5% of the pixels more than 24 apart, all seven scenes (Chromium with a graphics chip, phone 430x739 at 3 and laptop 1512x860 at 2; WebKit laptop)', seen.join('; '), bad.slice(0, 8).join('; '));
+  });
+
+  /* 34. every way the live film cannot run shows the still film, never a black or empty frame */
+  if (want(34)) await guarded(34, async () => {
+    const bad = [], seen = [];
+    const pictureLight = async (p) => (await lab(await p.screenshot(), [[0, 120, 1512, 600]]))[0].mean;
+    const run = async (engine, label, opts, init, act) => {
+      const c = await ctx(engine, { viewport: { width: 1512, height: 860 }, ...opts });
+      const asked = [];
+      c.on('request', (r) => { if (/\/assets\/(film3d|world)-/.test(r.url())) asked.push(r.url()); });
+      if (init) await c.addInitScript(init);
+      const p = await open(c, '/', `fallback ${label}`);
+      await settle(p, 600);
+      await p.mouse.move(700, 400); await p.keyboard.press('Shift');
+      await restAt(p, 2); await toScene(p, 2, 1);
+      await settle(p, 2500);
+      const r = await act(p, asked);
+      const st = await p.evaluate(() => ({ world: document.documentElement.dataset.world ?? '', canvas: !!document.querySelector('canvas.world'), hidden: [...document.querySelectorAll('#s2 .passes picture')].filter((e) => getComputedStyle(e).visibility === 'hidden').length, pics: document.querySelectorAll('#s2 .passes picture').length }));
+      const light = await pictureLight(p);
+      seen.push(`${label} ${light.toFixed(1)}`);
+      if (!(light > 20)) bad.push(`${label}: the picture's light ${light.toFixed(1)}`);
+      if (r) bad.push(...r.map((x) => `${label}: ${x}`));
+      await c.close();
+      return st;
+    };
+    // less motion: never loaded
+    if (gpuOk) {
+      const s = await run('gpu', 'less motion', { reducedMotion: 'reduce' }, null, async (p, asked) => (asked.length ? ['the live film was asked for'] : null));
+      if (s.canvas || s.world) bad.push('less motion: a live canvas');
+      // no WebGL 2
+      const s2 = await run('gpu', 'no WebGL', {}, () => { const g = HTMLCanvasElement.prototype.getContext; HTMLCanvasElement.prototype.getContext = function (k, o) { return k === 'webgl2' ? null : g.call(this, k, o); }; }, async () => null);
+      if (s2.canvas || s2.hidden || s2.pics !== 3) bad.push(`no WebGL: ${JSON.stringify(s2)}`);
+      // a context lost: the still film at once; given back: live again
+      await run('gpu', 'context lost', {}, null, async (p) => {
+        const out = [];
+        if (!(await p.evaluate(LIVE, 2))) return ['not live before the loss'];
+        const before = await pictureLight(p);
+        await p.evaluate(() => { window.__lose = document.querySelector('canvas.world').getContext('webgl2').getExtension('WEBGL_lose_context'); window.__lose.loseContext(); });
+        await settle(p, 120);
+        const during = await p.evaluate(() => [...document.querySelectorAll('#s2 .passes picture')].filter((e) => getComputedStyle(e).visibility === 'hidden').length);
+        const light = await pictureLight(p);
+        if (during) out.push(`${during} still pictures still hidden after the loss`);
+        if (Math.abs(light - before) > 2) out.push(`the light ${before.toFixed(1)} before, ${light.toFixed(1)} after the loss`);
+        await p.evaluate(() => window.__lose.restoreContext());
+        await p.mouse.wheel(0, 30); await settle(p, 600); await p.mouse.wheel(0, -30);
+        const back = await p.waitForFunction(LIVE, 2, { timeout: 10000 }).then(() => true, () => false);
+        if (!back) out.push('not live again once the context came back');
+        return out;
+      });
+    }
+    // a chip too slow for it (the hidden Chromium shell draws WebGL in software): the still film for good
+    const s4 = await run('chromium', 'software chip', {}, null, async () => null);
+    if (s4.canvas || s4.hidden || !/^\|/.test(s4.world || '|')) bad.push(`software chip: ${JSON.stringify(s4)}`);
+    ok(!bad.length, 34, 'Every way the live film cannot run shows the still film, never a black or empty frame: less motion (never loaded), no WebGL 2, a lost context (the stills at once, live again once it comes back), a chip too slow (Chromium in software: given up after its first frame) (laptop 1512x860; the picture\'s light in each)', seen.join(', '), bad.slice(0, 8).join('; '));
+  });
+
+  /* 35. no stall over 50 ms anywhere in the film, at a fourth of a laptop's speed */
+  if (want(35) && gpuOk) await guarded(35, async () => {
+    const bad = [], seen = [];
+    for (const [w, h, dpr, name] of SIZES12) {
+      let best = null;
+      for (let run = 0; run < 2 && !(best && best.max <= 50); run++) {
+        const c = await ctx('gpu', { viewport: { width: w, height: h }, deviceScaleFactor: dpr });
+        await c.addInitScript(() => { window.__ft = []; let last = 0; const f = (t) => { if (last) window.__ft.push([t - last, scrollY]); last = t; requestAnimationFrame(f); }; requestAnimationFrame(f); });
+        const p = await open(c, '/', `stall ${name}`);
+        const cdp = await c.newCDPSession(p);
+        await settle(p, 800);
+        if (w < 600) await p.touchscreen.tap(w / 2, h / 2); else await p.mouse.move(w / 2, h / 2);
+        await p.waitForFunction(LIVE, 1, { timeout: 15000 }).catch(() => {});
+        await settle(p, 1500);
+        await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+        await p.evaluate(() => { window.__ft.length = 0; });
+        const H = await p.evaluate(() => document.documentElement.scrollHeight - innerHeight);
+        step(`stall ${name} | through the film and back`);
+        for (const dir of [1, -1]) {
+          for (let i = 0; i < 500; i++) {
+            if (w < 600) {
+              const y0 = dir > 0 ? 650 : 60;
+              await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: w / 2, y: y0 }] });
+              for (let k = 1; k <= 20; k++) { await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: w / 2, y: y0 - dir * k * 30 }] }); await p.waitForTimeout(40); }
+              await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+              await p.waitForTimeout(250);
+            } else { await p.mouse.wheel(0, 100 * dir); await p.waitForTimeout(111); }
+            const y = await p.evaluate(() => scrollY);
+            if ((dir > 0 && y >= H - 2) || (dir < 0 && y <= 0)) break;
+          }
+          await settle(p, 800);
+        }
+        const ft = await p.evaluate(() => window.__ft);
+        const d = ft.map((r) => r[0]).sort((a, b) => a - b);
+        const r = { frames: d.length, median: d[Math.floor(d.length / 2)], max: d[d.length - 1], at: ft.reduce((a, x) => (x[0] > a[0] ? x : a), [0, 0])[1] };
+        if (!best || r.max < best.max) best = r;
+        await c.close();
+      }
+      seen.push(`${name}: ${best.frames} frames, median ${best.median.toFixed(1)} ms, worst ${best.max.toFixed(1)} ms`);
+      if (!(best.max <= 50)) bad.push(`${name}: a frame of ${best.max.toFixed(1)} ms at ${best.at} px`);
+    }
+    ok(!bad.length, 35, 'No stall over 50 ms through the whole live film and back, the processor at a fourth of its speed: a mouse wheel of 100 px every 111 ms (about 900 px a second) at 1512x860, drags of 600 px at about 700 px a second at 430x739 (Chromium with a graphics chip; a second run if the first one shows one)', seen.join('; '), bad.join('; '));
+  });
+
+  /* 36. the doors with the live film: the hand-over, and Back to the scene at rest, live again */
+  if (want(36) && gpuOk) await guarded(36, async () => {
+    const bad = [], seen = [];
+    for (const d of DOORS_ON) {
+      for (const n of (d.scenes ?? []).filter((x) => !content.scenes[x - 1]?.board)) {
+        const c = await doorCtx(browsers.gpu, 'chromium', { viewport: { width: 1512, height: 860 } });
+        const p = await doorPage(c, BASE, '/', `live door ${d.id}`);
+        await settle(p, 600);
+        await p.mouse.move(700, 400);
+        await restAt(p, n); await toScene(p, n, 1);
+        if (!(await p.waitForFunction(LIVE, n, { timeout: 20000 }).then(() => true, () => false))) { bad.push(`${d.id}: scene ${n} not live`); await c.close(); continue; }
+        await settle(p, 800);
+        const y0 = await p.evaluate(() => scrollY);
+        await p.click(`#s${n} a.dlogo[data-door="${d.id}"]`);
+        const left = await p.waitForURL((u) => u.pathname.startsWith(d.path), { timeout: 8000 }).then(() => true, () => false);
+        if (!left) bad.push(`${d.id}: the door did not open its page`);
+        await settle(p, 1200);
+        await p.goBack();
+        await settle(p, 1500);
+        const back = await p.evaluate(() => ({ hash: location.hash, y: scrollY, active: document.querySelector('#film .scene.on')?.id }));
+        const live = await p.waitForFunction(LIVE, n, { timeout: 15000 }).then(() => true, () => false);
+        if (back.active !== `s${n}` || Math.abs(back.y - y0) > 3) bad.push(`${d.id}: back at ${back.active} ${back.y} px, left from s${n} ${y0} px`);
+        if (!live) bad.push(`${d.id}: not live again after Back`);
+        seen.push(`${d.id} scene ${n}: opened, back at rest${live ? ', live' : ''}`);
+        bad.push(...c.studioOut.map((x) => `${d.id}: the studio asked another host: ${x}`), ...c.errs.map((x) => `${d.id}: ${x}`));
+        await c.close();
+      }
+    }
+    ok(!bad.length, 36, 'The doors from a scene drawn live: the click opens the product\'s page, Back lands on the scene at rest and the live film comes back (Chromium with a graphics chip, 1512x860; the blend itself is test 28)', seen.join('; '), bad.join('; '));
   });
 
   /* 5. the email pictures */
