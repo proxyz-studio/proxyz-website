@@ -87,11 +87,11 @@ let prepared: Promise<{ world: World; relay: Relay }> | null = null;
 /** Makes the world ahead of the visitor's first gesture, on idle once the page has settled (src/main.ts): its shapes
  *  read, its shaders compiled and drawn once each (Safari builds a program's pipeline at its first draw, 78 to 113 ms
  *  in the simulator, a stop at the first gesture otherwise). No picture is read until the film starts. */
-export function prepareFilm3d(): Promise<{ world: World; relay: Relay }> {
+export function prepareFilm3d(idle = false): Promise<{ world: World; relay: Relay }> {
   if (!prepared) {
     const phoneChip = matchMedia('(pointer: coarse)').matches;
     const relay: Relay = { on: null, lost: () => relay.on?.lost(), restored: () => relay.on?.restored() };
-    prepared = World.create(relay, phoneChip ? 120e6 : 260e6).then((w) => {
+    prepared = World.create(relay, phoneChip ? 120e6 : 260e6, idle).then((w) => {
       w.depthLong = phoneChip ? 1024 : 1536;
       w.stripBytes = 1.1e6;
       // once the shaders are built (they compile aside), each drawn once, a frame apart from anything else

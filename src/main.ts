@@ -841,7 +841,7 @@ function prepare3d(): void {
   if (live3dTried || gaveUp || reduced()) return;
   const c = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
   if (c?.saveData || /2g$/.test(c?.effectiveType ?? '')) return;
-  import('./world/film3d').then((m) => m.prepareFilm3d()).catch(() => { /* the still film */ });
+  import('./world/film3d').then((m) => m.prepareFilm3d(true)).catch(() => { /* the still film */ });
 }
 {
   const idle = (): void => { const ric = (window as Window & { requestIdleCallback?: (f: () => void, o?: { timeout: number }) => void }).requestIdleCallback; if (ric) ric(prepare3d, { timeout: 2000 }); else prepare3d(); };

@@ -341,13 +341,20 @@ export class World {
     this.init();
   }
 
-  static async create(events: WorldEvents, budget: number): Promise<World> {
+  static async create(events: WorldEvents, budget: number, idle = false): Promise<World> {
     const canvas = document.createElement('canvas');
     canvas.className = 'world';
     canvas.setAttribute('aria-hidden', 'true');
     // the context first: no WebGL 2, no download
     const probe = canvas.getContext('webgl2', { alpha: true, antialias: true, premultipliedAlpha: true, preserveDrawingBuffer: false, powerPreference: 'high-performance', depth: true, stencil: false });
     if (!probe) throw new Error('no webgl2');
+    // made ahead on idle: not on a chip drawn in software (it would only spend the visitor's processor; at a gesture
+    // the film measures it and gives up as before)
+    if (idle) {
+      const info = probe.getExtension('WEBGL_debug_renderer_info');
+      const name = info ? String(probe.getParameter(info.UNMASKED_RENDERER_WEBGL)) : '';
+      if (/swiftshader|llvmpipe|softpipe|software|basic render/i.test(name)) { probe.getExtension('WEBGL_lose_context')?.loseContext(); throw new Error('software'); }
+    }
     const parts = await loadParts();
     return new World(canvas, parts, events, budget);
   }

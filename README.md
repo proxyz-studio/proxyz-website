@@ -197,8 +197,11 @@ cannot run.
   still's colour where that still's camera saw it (a soft test over five texels of its depth map, so no edge turns
   into a staircase or a dark crack, and a thing hidden only by its own relief, a hill of the coin, takes the colour
   all the same); what no picture saw is lit live by that scene's key light (the same light, colours and camera curve
-  as the picture maker). Between two scenes each point is drawn mostly by the scene whose still saw it, and a thing
-  only one scene holds is drawn by that scene until it has nearly gone. A far room behind everything takes what the
+  as the picture maker). While the camera moves every still's frame is feathered; the floor past a still's frame (and
+  just behind a thing's edge) takes that still's small soft copy, carried out from its edge, so no seam or dark rim
+  shows; the two scenes' floors mix by their weights. An object is drawn by the scene whose still saw it; a thing one
+  scene's stills hold is lit by that scene and handed over in the dark at the half way point (it is solid under the
+  other scene's light, darkened to what that scene's still shows at its place, never see-through). A far room behind everything takes what the
   stills show past the floor's edge. The light passes mix as the page mixes the pictures; scene 6's later passes grow
   inside the same oval. Scene 2's phone lifts live (drawn by the live light, its screen look 11's menu picture,
   `src/world/menu.webp`) between its two stills; scene 5's screen is lit as soon as the phone shows.
@@ -210,9 +213,11 @@ cannot run.
   dark band at the foot, scene 6's board and the giant words stay above it as above a still. The things that stand in
   front of the giant words are copied into a second canvas above the words (`.world-fg`). Scene 6's board and its
   labels follow the floor while the camera moves.
-- **Loading.** Nothing of it loads with the first screen (test 11 counts the first load). The script (about 17 KB
-  compressed) and the shapes (`src/world/world.bin`, about 500 KB) load at the first sign of intent, or at once when
-  the visitor comes back through Back or a door's address. The stills go into the graphics chip in the order the film
+- **Loading.** Nothing of it loads with the first screen (test 11 counts the first load). The script (about 22 KB
+  compressed) and the shapes (`src/world/world.bin`, about 500 KB) load on idle no sooner than 4 s after load (never
+  with Save-Data, a 2G connection or less motion), where the world is made and each program drawn once (Safari builds
+  a program's pipeline at its first draw); else at the first sign of intent, or at once when the visitor comes back
+  through Back or a door's address. The film itself starts at the first sign of intent. The stills go into the graphics chip in the order the film
   needs them: one picture decoded at a time, a frame between two, about a megabyte of rows a frame, a new texture's
   memory made and cleared alone. The shapes are read in slices between frames and the shaders compile aside
   (`KHR_parallel_shader_compile` where the browser has it), so the visitor's first gesture never waits for any of it.
