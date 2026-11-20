@@ -1103,6 +1103,11 @@ else if (!returnTo()) {
 }
 snap();
 update();
+// a visitor coming back (Back, or a product's link to its scene) has already shown intent: the live film starts now
+{
+  const nav = performance.getEntriesByType?.('navigation')[0] as PerformanceNavigationTiming | undefined;
+  if (nav?.type === 'back_forward' || doors.hashScene(location.hash)) start3d();
+}
 let saveT = 0;
 // the observers of the steady screen sizes (let go when the film gives up)
 const observers: ResizeObserver[] = [];
