@@ -1,17 +1,22 @@
 // The film.
-// One fixed stage per scene, each scene a stack of light passes of one fixed camera. The scroll position sets how far
-// the light has come. A cut with a short fade between scenes. The border on top.
+// One fixed stage per scene, each scene a stack of light passes of one fixed camera. One number, the playhead (the
+// scroll position, eased a little for a mouse wheel), sets everything shown: how far the light has come, where each
+// picture sits, the words, the change from one scene to the next (src/film/motion.ts). Nothing runs on a timer, so
+// scrolling back plays it all in reverse. The border on top.
 // Without this script the page stays a plain document (seven sections, each with its resting picture).
 import './style.css';
 import { startClock } from './clock';
 import { scenes as SCENES, lightShare as LIGHT_SHARE, brainScene as BRAIN } from './film/scenes.json';
 import pictureData from './generated/pictures.json';
 import { clamp, cutMask, frameMask, lightAt, passStrength } from './film/math';
+import { camera, dissolve, eased, lineIn, lineOut, lineTravel, smooth, ramp as rampOf, windowAt, WINDOW, type Lines } from './film/motion';
 import { startDoors, type Doors } from './door';
 import type { Pictures, PictureFile, View } from './types';
 
 type Form = 'desktop' | 'phone';
-interface Pass { key: string; img: HTMLImageElement; node: HTMLElement; ready: boolean; lit: number }
+interface Pass { key: string; img: HTMLImageElement; node: HTMLElement; ready: boolean; lit: number;
+  /** scene 6: the box whose oval mask the pass shows through while its light grows (src/main.ts light) */
+  lens: HTMLElement | null }
 interface Matte { url: string; img: HTMLImageElement; ready: boolean }
 interface SceneState {
   el: HTMLElement; layer: HTMLElement; box: HTMLElement;
@@ -24,6 +29,37 @@ interface SceneState {
   matte: Matte | null;
   /** scene 6: the matte of all three things, which the board on the floor is hidden in */
   things: Matte | null;
+  /** the lines of words that leave and arrive one by one: at the top (the giant lines, the letterhead), then at the
+   *  foot (the giant lines of scenes 1 and 7, the small line, its note, the tool and height lines), for one shape */
+  lines: { form: Form; top: HTMLElement[]; foot: HTMLElement[] } | null;
+  /** when its first picture was ready (a change into it never shows its black ground before its picture) */
+  readyAt: number;
+  /** what the camera moves: a box inside the pictures' box holding the light passes and the board, and a box around
+   *  the giant words' box. The boxes with a mask (the pictures' soft sides, the matte cut) are never written to while
+   *  the film moves: a browser draws a masked box again whenever its style is touched. */
+  frame: HTMLElement | null; cam: HTMLElement | null;
+}
+
+/* ---------- writing styles: only when a value changes ---------- */
+const written = new WeakMap<Element, Record<string, string>>();
+function put(e: Element, prop: string, v: string): void {
+  let w = written.get(e);
+  if (!w) { w = {}; written.set(e, w); }
+  if (w[prop] === v) return;
+  w[prop] = v;
+  (e as HTMLElement).style.setProperty(prop, v);
+}
+/** an opacity as written: '' for full (the style sheet's own value) */
+const opv = (v: number): string => (v >= 0.999 ? '' : v <= 0.001 ? '0' : v.toFixed(3));
+/** every element the motion has moved (a picture, the words, a door) */
+const moved = new Set<HTMLElement>();
+function move(e: HTMLElement, v: string): void { if (v) moved.add(e); put(e, 'transform', v); }
+/** Runs fn with nothing moved: whatever it measures (the words, the giant lines, a picture's room) is where it rests.
+ *  The moves are put back before anything is drawn. */
+function still<T>(fn: () => T): T {
+  const back: [HTMLElement, string][] = [];
+  for (const e of moved) if (e.style.transform) { back.push([e, e.style.transform]); e.style.transform = ''; }
+  try { return fn(); } finally { for (const [e, v] of back) e.style.transform = v; }
 }
 
 const pictures = pictureData as unknown as Pictures;
@@ -84,10 +120,11 @@ function giveUp(): void {
   gaveUp = true;
   let on = 1;
   try { on = active; } catch { /* the film had not started its scroll work */ }
-  try { stopPulses(); cancelAnimationFrame(pulseRaf); clearTimeout(settle); clearTimeout(saveT); } catch { /* not started */ }
+  try { stopPulses(); cancelAnimationFrame(pulseRaf); clearTimeout(settle); clearTimeout(saveT); clearTimeout(aheadT); } catch { /* not started */ }
   try { for (const o of observers) o.disconnect(); } catch { /* not started */ }
   doc.classList.remove('film', 'film-init');
   doc.classList.add('nofilm');
+  try { for (const s of S) if (s.cam?.isConnected && s.cut) s.cam.replaceWith(s.cut); } catch { /* not started */ }
   // each scene: its resting picture back as the only picture (the film's own pass pictures go), scene 6 its board in
   // the pictures' box and its labels just after it
   sections.forEach((s, i) => {
@@ -130,7 +167,21 @@ const S: SceneState[] = sections.map((el) => ({
   passes: [],
   matte: null,
   things: null,
+  lines: null,
+  readyAt: 0,
+  frame: null,
+  cam: null,
 }));
+// the giant words' box goes into a box of its own that the camera moves (put back as it was if the film gives up)
+for (const s of S) {
+  if (!s.cut) continue;
+  const c = document.createElement('div');
+  c.className = 'cam';
+  s.cut.replaceWith(c);
+  c.append(s.cut);
+  s.cam = c;
+}
+S[0].readyAt = -1e9;
 S.slice(1).forEach((s) => s.box.classList.remove('ready'));
 doc.classList.add('film', 'film-init');
 sections[0].classList.add('on');
@@ -208,7 +259,8 @@ const deskMQ = matchMedia('(min-width: 900px) and (min-height: 501px)');
 /** How far the words at the foot stand above the visible bottom: the base from style.css (--words-base: 60 on
  *  phones upright, 20 sideways, the desktop value on desktop); on phones the bottom safe area comes on top. */
 const wordsBase = (): number => parseFloat(getComputedStyle(doc).getPropertyValue('--words-base')) || 0;
-/** Called on resize and on scroll: when the bottom safe area grows past the largest seen, place the pictures again. */
+/** Called on resize and when the safe area's probe changes size (or, without an observer, on scroll): when the
+ *  bottom safe area grows past the largest seen, place the pictures again. */
 function checkInset(): void {
   if (gaveUp) return;
   const b = probeB.offsetHeight;
@@ -217,7 +269,8 @@ function checkInset(): void {
 /** The scene's matte, when its view names one and the picture manifest holds it. */
 const matteOf = (view: View): string | null => (view.matte && pictures[view.matte]?.matte ? view.matte : null);
 
-function geometry(view: View, s: SceneState): Box {
+const geometry = (view: View, s: SceneState): Box => still(() => geometryAtRest(view, s));
+function geometryAtRest(view: View, s: SceneState): Box {
   const [iw, ih] = pictures[view.passes[0]].size;
   const f = view.frame, vw = VW, vh = VH, vs = SVH;
   const roomN = view.placeAs ?? S.indexOf(s) + 1;
@@ -274,13 +327,30 @@ function setCut(s: SceneState, view: View, g: Box | null): void {
   st.setProperty('-webkit-mask-composite', m.webkitComposite); st.setProperty('mask-composite', m.composite);
 }
 
-function place(s: SceneState, view: View): void {
+/** scene 6: each lens is the box of its oval at full size (1.6 times the new pool of light), in its layer, its mask
+ *  the oval filling it: [left, top, half width, half height, screen px per picture px, picture left, picture top] */
+const lensAt = new WeakMap<HTMLElement, number[]>();
+const lensOf = (p: Pass) => p.lens!;
+function placeLens(lens: HTMLElement, img: HTMLImageElement, view: View, k: number, g: Box): void {
+  const b = view.opens![k], kk = g.w / pictures[view.passes[0]].size[0];
+  const RX = b[2] * 1.6 * kk, RY = b[3] * 1.6 * kk, lx = g.left + b[0] * kk - RX, ly = g.top + b[1] * kk - RY;
+  lensAt.set(lens, [lx, ly, RX, RY, kk, g.left, g.top]);
+  Object.assign(lens.style, { left: lx.toFixed(2) + 'px', top: ly.toFixed(2) + 'px', width: (2 * RX).toFixed(2) + 'px', height: (2 * RY).toFixed(2) + 'px' });
+  // the picture in it, where it sits in the layer
+  Object.assign(img.style, { left: (g.left - lx).toFixed(2) + 'px', top: (g.top - ly).toFixed(2) + 'px' });
+  // the transforms of the moment were worked out for the old place: written again on the next frame
+  written.delete(lens); written.delete(img);
+  schedule();
+}
+function place(s: SceneState, view: View): void { still(() => placeAtRest(s, view)); }
+function placeAtRest(s: SceneState, view: View): void {
   if (gaveUp) return;
   const g = geometry(view, s);
   const mask = frameMask(view, pictures[view.passes[0]].size);
   for (const p of s.passes) {
     Object.assign(p.img.style, { width: g.w + 'px', height: g.h + 'px', left: g.left + 'px', top: g.top + 'px', filter: view.filter ?? '' });
     if (!view.opens) { p.img.style.webkitMaskImage = mask; p.img.style.maskImage = mask; }
+    if (p.lens) placeLens(p.lens, p.img, view, s.passes.indexOf(p), g);
   }
   // the cut only once the first pass shows: a hole in the letters before the thing is there would give it away
   setCut(s, view, s.box.classList.contains('ready') ? g : null);
@@ -310,6 +380,7 @@ function build(n: number): void {
   const want = form + '|' + files.map((f) => f.webp).join('|');
   if (s.built === want) return;
   s.built = want;
+  warm.delete(n - 1);
   const keepFirst = n === 1 && firstKept && first && keyOf(first) === view.passes[0] ? first : null;
   const still = stills.get(n);
   const stillImg = still ? $<HTMLImageElement>('img', still) : null;
@@ -324,8 +395,17 @@ function build(n: number): void {
     img.classList.remove('still');
     img.alt = '';
     img.setAttribute('aria-hidden', 'true');
+    written.delete(img);
     img.style.opacity = k === 0 ? '1' : '0';
-    return { key, img, node, ready: false, lit: 0 };
+    // scene 6: each later pass grows from the old pool of light inside a lens (an oval mask moved by transforms)
+    let lens: HTMLElement | null = null;
+    if (view.opens && k > 0) {
+      // the lens moves; the box inside it carries the oval (never written to while the light grows)
+      lens = document.createElement('div'); lens.className = 'lens';
+      const lm = document.createElement('div'); lm.className = 'lm';
+      lm.append(node); lens.append(lm);
+    }
+    return { key, img, node, ready: false, lit: 0, lens };
   });
   if (n === 1 && !keepFirst) firstKept = false;
   if (usedStill) stills.delete(n);
@@ -348,7 +428,13 @@ function build(n: number): void {
   }
   const firstReady = !!keepFirst && keepFirst.complete && keepFirst.naturalWidth > 0 && !s.matte;
   s.box.classList.toggle('ready', firstReady);
-  s.box.replaceChildren(...s.passes.map((p) => p.node), ...(s.things && boardBox ? [boardBox] : []));
+  s.readyAt = firstReady ? -1e9 : 0;
+  // the passes and the board in the box the camera moves
+  const frame = document.createElement('div');
+  frame.className = 'frame';
+  frame.append(...s.passes.map((p) => p.lens ?? p.node), ...(s.things && boardBox ? [boardBox] : []));
+  s.box.replaceChildren(frame);
+  s.frame = frame;
   // the labels go in with the board, just after the pictures (as the page holds them)
   if (n === BRAIN && labelBox) {
     if (!(s.things && boardBox)) labelBox.remove();
@@ -359,8 +445,10 @@ function build(n: number): void {
   const mine = s.built;
   const shown = () => {
     if (gaveUp || s.built !== mine || !s.passes[0].ready || (s.matte && !s.matte.ready)) return;
+    if (!s.box.classList.contains('ready')) s.readyAt = performance.now();
     s.box.classList.add('ready');
     place(s, view);
+    schedule();
   };
   for (const p of s.passes) {
     whenReady(p.img).then(() => {
@@ -397,37 +485,59 @@ function release(n: number): void {
   if (n === BRAIN) { boardGone(); labelBox?.remove(); }
   s.cut?.removeAttribute('style');
   s.box.replaceChildren();
+  s.frame = null;
   s.box.classList.remove('ready');
+  s.readyAt = 0;
+  warm.delete(n - 1);
   if (n === 1) firstKept = false;
 }
 
 /* ---------- the light ---------- */
+/** Pass k's shown strength when the light has come q of the way: eased at both ends of its step, resting exactly
+ *  where the light arithmetic rests it; with less motion, the light arithmetic's own value. */
+function shownStrength(view: View, q: number, k: number, rest: boolean): number {
+  const t = passStrength(view, q, k);
+  return rest ? t : eased(t, passStrength(view, lightAt(view, 1, false), k));
+}
 function light(n: number, prog: number): void {
   if (gaveUp) return;
   const s = S[n - 1], view = viewOf(n);
   if (!s.passes.length) return;
-  const q = lightAt(view, prog, reduced());
+  const rest = reduced();
+  const q = lightAt(view, prog, rest);
   s.passes.forEach((p, k) => {
     if (k === 0) return;
-    const t = p.ready ? passStrength(view, q, k) : 0;
+    const t = p.ready ? shownStrength(view, q, k, rest) : 0;
     p.lit = t;
-    if (!view.opens) { p.img.style.opacity = t.toFixed(3); return; }
+    // a layer of its own only while its light grows (at rest, where a scene's light may rest part way, the picture
+    // is drawn exactly as the page draws it)
+    const grows = t > 0 && t < 1 && Math.abs(t - passStrength(view, lightAt(view, 1, rest), k)) > 0.001;
+    put(p.img, 'will-change', grows ? (view.opens ? 'transform, opacity' : 'opacity') : '');
+    if (!view.opens) { put(p.img, 'opacity', t.toFixed(3)); return; }
     // opens: the pass shows at full strength through an oval that grows from the old pool to 1.6 times the new one,
-    // so the edge of the light travels. Off before it starts, no oval once it is done.
-    const [W, H] = pictures[view.passes[0]].size, a = view.opens[k - 1], b = view.opens[k];
-    let m = '';
-    if (t > 0 && t < 1) {
-      const e = t * t * (3 - 2 * t);
+    // so the edge of the light travels. Off before it starts, no oval once it is done. The oval is the lens's mask,
+    // drawn once at its full size (src/main.ts placeLens); the lens is scaled down to the oval of the moment and the
+    // picture in it scaled back up, so it stays exactly in place: only transforms change from frame to frame.
+    const lens = lensOf(p), o = lensAt.get(lens);
+    if (o) {
+      const a = view.opens[k - 1], b = view.opens[k], e = t * t * (3 - 2 * t), [lx, ly, RX, RY, kk, gl, gt] = o;
       const L = (u: number, v: number, g = 1) => u + (v * g - u) * e;
-      const pc = (v: number, d: number) => ((v / d) * 100).toFixed(2) + '%';
-      m = `radial-gradient(ellipse ${pc(L(a[2], b[2], 1.6), W)} ${pc(L(a[3], b[3], 1.6), H)} at ${pc(L(a[0], b[0]), W)} ${pc(L(a[1], b[1]), H)},#000 0,#000 68%,transparent 100%)`;
+      const on = t > 0 && t < 1;
+      // the oval of the moment: its half sizes and its top left corner, in the layer
+      const rx = L(a[2], b[2], 1.6) * kk, ry = L(a[3], b[3], 1.6) * kk;
+      const sx = on ? rx / RX : 1, sy = on ? ry / RY : 1;
+      const tx = on ? gl + L(a[0], b[0]) * kk - rx - lx : 0, ty = on ? gt + L(a[1], b[1]) * kk - ry - ly : 0;
+      // the picture scaled back, so it stays exactly where it is
+      const ox = gl - lx, oy = gt - ly;
+      put(lens, 'transform', on ? `translate(${tx.toFixed(2)}px,${ty.toFixed(2)}px) scale(${sx.toFixed(5)},${sy.toFixed(5)})` : '');
+      put(p.img, 'transform', on ? `translate(${((ox - tx) / sx - ox).toFixed(2)}px,${((oy - ty) / sy - oy).toFixed(2)}px) scale(${(1 / sx).toFixed(5)},${(1 / sy).toFixed(5)})` : '');
+      lens.classList.toggle('oval', on);
+      put(lens, 'will-change', on ? 'transform' : '');
     }
     // the new pass comes in over the first eighth of its step, so the rim of the light does not tick when it starts
-    p.img.style.opacity = t > 0 ? Math.min(1, t / 0.12).toFixed(3) : '0';
-    p.img.style.webkitMaskImage = m;
-    p.img.style.maskImage = m;
+    put(p.img, 'opacity', t > 0 ? Math.min(1, t / 0.12).toFixed(3) : '0');
   });
-  $('.dim', s.layer)!.style.opacity = view.end === 'dark' ? (q * 0.75).toFixed(3) : '0';
+  put($('.dim', s.layer)!, 'opacity', view.end === 'dark' ? (q * 0.75).toFixed(3) : '0');
   // a door's logo shows once the light rests (the last pass at full strength)
   if (view.doors) doors?.light(n, s.passes.length > 1 ? s.passes[s.passes.length - 1].lit : 1);
 }
@@ -527,8 +637,11 @@ function boardForm(): void {
   }
   schedule();
 }
+/** where the labels' box sits in its layer (the camera moves it with the picture) */
+let labelAt: [number, number] = [0, 0];
 function placeBoard(view: View, g: Box): void {
   if (gaveUp) return;
+  labelAt = [g.left, g.top];
   const bw = (g.w / pictures[view.passes[0]].size[0]).toFixed(4) + 'px';
   for (const b of [boardBox, labelBox]) {
     if (!b) continue;
@@ -576,12 +689,12 @@ function boardAt(y: number): void {
   if (gaveUp) return;
   const s = S[BRAIN - 1];
   if (!BV || !boardBox || !s.things?.ready || !tops.length) {
-    if (boardBox) boardBox.style.visibility = 'hidden';
-    if (labelBox) labelBox.style.visibility = 'hidden';
+    if (boardBox) put(boardBox, 'visibility', 'hidden');
+    if (labelBox) put(labelBox, 'visibility', 'hidden');
     return;
   }
-  boardBox.style.visibility = '';
-  if (labelBox) labelBox.style.visibility = '';
+  put(boardBox, 'visibility', '');
+  if (labelBox) put(labelBox, 'visibility', '');
   const i = BRAIN - 1, view = viewOf(BRAIN), rest = reduced();
   const pre = clamp((y - tops[i] + VH / 2) / (VH / 2)), u = (y - tops[i]) / Math.max(1, heights[i] - VH);
   const q = lightAt(view, clamp(u / LIGHT_SHARE), false);
@@ -589,9 +702,10 @@ function boardAt(y: number): void {
     ramp(pre, 0.05, 0.25),                       // the chip and its label
     ramp(pre, 0.2, 0.7),                         // the stand's trace
     // the race piece's with the second pass, the phone's with the third: each head lands on its pad where the light
-    // has covered 70% of its thing (the strengths come from the build, which runs the film's own light arithmetic)
-    ramp(passStrength(view, q, 1), 0, BV.arrive[0]),
-    ramp(passStrength(view, q, 2), 0, BV.arrive[1]),
+    // has covered 70% of its thing (the strengths come from the build, which runs the film's own light arithmetic;
+    // the shown strength, as the light passes show it)
+    ramp(shownStrength(view, q, 1, false), 0, BV.arrive[0]),
+    ramp(shownStrength(view, q, 2, false), 0, BV.arrive[1]),
     ramp(u, 0.7, 0.78),                          // the net and the dimmed floor
     ramp(u, 0.78, 0.92),                         // the dashed trace to the empty place
     ramp(u, 0.92, 0.98),                         // its ring and NEXT
@@ -615,8 +729,9 @@ function boardAt(y: number): void {
     if (!pulsing) setD(t.pu, f > 0 && f < 1 ? partD(t.line, f * L - 30, f * L) : '');
   });
   for (const g of BV.b4) setO(g, step[4]);
-  // the darker floor lifts again over the scene's last stretch, so at the cut to the empty pool the light holds still
-  setO(BV.dm, rest ? 1 : 1 - ramp(u, 1.02, 1.15));
+  // the darker floor lifts again over the scene's last stretch, before the change to the empty pool starts, so
+  // through the change the light holds still
+  setO(BV.dm, rest ? 1 : 1 - ramp(u, 1, 1.07));
   setD(BV.dr, partD(BV.route, 0, step[5] * lenOf(BV.route)));
   setO(BV.dp, step[6]);
   if (next) setO(next, step[6]);
@@ -640,13 +755,155 @@ function progress(i: number, y: number): number {
 function near(i: number, y: number): boolean {
   return i + 1 === active || (tops[i] - (y + VH) < VH && y - (tops[i] + heights[i]) < VH);
 }
-function update(): void {
+/** Once the visitor scrolls, the scenes just before and after the one on screen load while the page is still (about
+ *  0.3 s after the last scroll), so a change never waits for its pictures and the work of building them never lands
+ *  in a scroll. (Not before the first scroll: the first load stays small.) */
+let aheadT = 0;
+/** the scenes next to the one on screen that have been painted unseen while the page was still (their stage stays
+ *  on, at no strength, so a change into them never has to draw them first) */
+const warm = new Set<number>();
+function ahead(): void {
+  clearTimeout(aheadT);
+  aheadT = window.setTimeout(() => {
+    if (gaveUp || frozen || !tops.length) return;
+    for (const k of [active, active - 2]) {
+      if (k < 0 || k >= S.length) continue;
+      if (!S[k].built) { build(k + 1); schedule(); return ahead(); }
+      // painted once its first picture is ready (asked again until it is)
+      if (!warm.has(k)) { if (S[k].readyAt) { warm.add(k); schedule(); } else return ahead(); }
+    }
+  }, 300);
+}
+
+/* ---------- the playhead ---------- */
+// The scroll position, followed closely: at once for a script, a key or a scroll bar; within about 40 ms for a finger
+// (it smooths the uneven steps of a touch screen without letting go of the finger); within about 90 ms for a mouse
+// wheel, which moves the page in steps. A jump of more than a screen and a half is followed at once.
+let Y = scrollY, lastFrame = 0, lastWheel = -1e9, lastTouch = -1e9;
+addEventListener('wheel', () => { lastWheel = performance.now(); }, { passive: true });
+for (const t of ['touchstart', 'touchmove', 'touchend']) addEventListener(t, () => { lastTouch = performance.now(); }, { passive: true });
+function playhead(now: number): number {
+  const to = scrollY, dt = lastFrame ? Math.min(64, Math.max(0, now - lastFrame)) : 16;
+  lastFrame = now;
+  const tau = reduced() ? 0 : now - lastWheel < 450 ? 90 : now - lastTouch < 4000 ? 40 : 0;
+  if (!tau || Math.abs(to - Y) > 1.5 * VH) Y = to;
+  else {
+    Y += (to - Y) * (1 - Math.exp(-dt / tau));
+    if (Math.abs(to - Y) < 0.25) Y = to;
+  }
+  return Y;
+}
+/** The playhead takes the scroll position at once (a jump: a reload, an address, Back, a turned screen). */
+const snap = () => { Y = scrollY; };
+
+/* ---------- the motion: layers, pictures, words, doors (src/film/motion.ts) ---------- */
+const lineGap = () => lineTravel(VH);
+/** the lines of words of a scene that leave and arrive one by one, for the shape of screen now */
+function linesOf(s: SceneState): { form: Form; top: HTMLElement[]; foot: HTMLElement[] } {
+  if (s.lines?.form === form) return s.lines;
+  if (s.lines) for (const e of [...s.lines.top, ...s.lines.foot]) { move(e, ''); put(e, 'opacity', ''); put(e, 'will-change', ''); }
+  // a giant line is a .ln on a wide screen; upright, each .pl stands on its own line
+  const each = (box: Element | null) => (box ? $$(form === 'phone' ? '.pl' : '.ln', box) : []);
+  const top = each(s.top);
+  const addr = $('.addr', s.layer);
+  if (addr) top.push(addr);
+  const foot: HTMLElement[] = [];
+  if (s.words) for (const c of [...s.words.children] as HTMLElement[]) {
+    if (c.classList.contains('door')) continue;
+    if (c.classList.contains('big')) foot.push(...each(c)); else foot.push(c);
+  }
+  return (s.lines = { form, top, foot });
+}
+/** how far a scene's first picture has come in once it is ready (a picture that arrives late fades in over 0.28 s
+ *  rather than appearing; normally it was ready long before) */
+const readyK = (s: SceneState, now: number) => (s.readyAt ? clamp((now - s.readyAt) / 280) : 0);
+/** the camera's move as a transform on an element whose top left corner sits at (x, y) in its layer: the picture's
+ *  box and the giant words' box (both at 0, 0), the board's labels. Origin of the scale: the middle of the screen. */
+const cam = (dy: number, k: number, x = 0, y = 0): string =>
+  Math.abs(dy) < 0.01 && Math.abs(k - 1) < 0.00005 ? ''
+    : `translate(${((k - 1) * (x - VW / 2)).toFixed(2)}px,${((k - 1) * (y - VH / 2) + dy).toFixed(2)}px) scale(${k.toFixed(5)})`;
+
+/** Everything shown, from the playhead y. Returns true while a late picture is still fading in. */
+function motion(y: number, now: number): boolean {
+  const n = S.length, rest = reduced();
+  let more = false;
+  // each scene's strength over the one before it: 0 before the change into it, 1 after
+  const wIn = S.map((_, k) => (k ? windowAt(y, tops[k], VH) : 1));
+  // the scene arriving: the last one whose change has started (with less motion, the scene on screen); it comes in
+  // over the one before it, held at full; every scene before those two is covered
+  let top = 0;
+  if (rest) top = active - 1;
+  else for (let k = 1; k < n; k++) if (dissolve(wIn[k]) > 0) top = k;
+  const r = top && !rest ? readyK(S[top], now) : 1;
+  if (r > 0 && r < 1) more = true;
+  const strength = top && !rest ? dissolve(wIn[top]) * r : 1;
+  for (let k = 0; k < n; k++) {
+    const s = S[k];
+    const shown = (k === top && strength > 0) || (k === top - 1 && strength < 1);
+    // a scene next to it stays laid out and painted, unseen (at no strength): once it was painted while the page was
+    // still, or for half a screen before the change into it starts, so the first frame that shows it does not also
+    // have to draw it
+    const unseen = !shown && !rest && s.readyAt !== 0 && Math.abs(k + 1 - active) <= 1 && s.passes.length > 0
+      && (warm.has(k) || (k === top + 1 && y > tops[k] - VH / 2 - (WINDOW / 2 + 0.5) * VH));
+    put(s.layer, 'visibility', shown || unseen ? 'visible' : 'hidden');
+    put(s.layer, 'opacity', !shown ? '0' : k === top ? opv(strength) : '');
+    if (!shown && !unseen) continue;
+    light(k + 1, progress(k, y));
+    stage(k, y, wIn[k], k < n - 1 ? wIn[k + 1] : 0, rest, k === top ? strength : 1);
+  }
+  return more;
+}
+
+/** One scene on screen: its camera (the picture, its giant words at the top, the board's labels and its door move
+ *  together), its lines of words, its door. */
+function stage(k: number, y: number, wIn: number, wOut: number, rest: boolean, strength: number): void {
+  const s = S[k], n = S.length;
+  const twin = sections[k].dataset.view === 'twin', twinNext = k < n - 1 && sections[k + 1].dataset.view === 'twin';
+  const h = heights[k] / VH, sr = LIGHT_SHARE * Math.max(0, h - 1);
+  // within 3 px of its rest the scene is exactly at rest
+  const at = Math.abs(y - tops[k] - sr * VH) < 3 ? sr : (y - tops[k]) / VH;
+  const [dyS, sc] = rest ? [0, 1] : camera(at, sr, h, wIn, wOut, { first: k === 0, last: k === n - 1, stillIn: twin, stillOut: twinNext });
+  const dy = dyS * VH;
+  if (s.frame) move(s.frame, cam(dy, sc));
+  if (s.cam) move(s.cam, cam(dy, sc));
+  if (k === BRAIN - 1 && labelBox) {
+    const t = cam(dy, sc, labelAt[0], labelAt[1]);
+    move(labelBox, t);
+    labelBox.classList.toggle('moving', !!t);
+  }
+  // the lines of words: the scene leaving takes them away one by one (upwards, the way the page goes), the scene
+  // arriving brings them in from below (src/film/motion.ts plans both scenes' lines together)
+  const L = linesOf(s), all = [...L.top, ...L.foot], d = lineGap();
+  const leaving = !rest && k < n - 1 && wOut > 0, arriving = !rest && k > 0 && wIn < 1;
+  const plan = (o: SceneState, a: SceneState): Lines => {
+    const lo = linesOf(o), la = linesOf(a);
+    return { oTop: lo.top.length, oFoot: lo.foot.length, aTop: la.top.length, aFoot: la.foot.length };
+  };
+  const P = leaving ? plan(s, S[k + 1]) : arriving ? plan(S[k - 1], s) : null;
+  for (let r = 0; r < all.length; r++) {
+    const [o, tr] = !P ? [1, 0] : leaving ? lineOut(wOut, r, P) : lineIn(wIn, r, P, strength);
+    move(all[r], Math.abs(tr * d) < 0.01 ? '' : `translate(0px,${(tr * d).toFixed(2)}px)`);
+    put(all[r], 'opacity', opv(o));
+    // a layer of its own only through a change
+    put(all[r], 'will-change', P ? 'transform, opacity' : '');
+  }
+  // the door: it shows as the light comes to rest (rising the last few pixels), and leaves first, with the first line
+  if (doors && s.passes.length) {
+    const last = s.passes.length > 1 ? s.passes[s.passes.length - 1].lit : 1;
+    const lit = rest ? 1 : smooth(rampOf(last, 0.6, 1));
+    const [go, gt] = leaving && P ? lineOut(wOut, 0, { ...P, oTop: 1 }) : [1, 0];
+    doors.motion(k + 1, lit * go, dy, (1 - lit) * 10 + gt * d);
+  }
+}
+
+function update(now?: number): void {
   if (gaveUp) return;
   ticking = false;
   // a hand-over is under way: the scroll moves nothing until the scene is back
   if (!tops.length || frozen) return;
-  checkInset();
-  const y = scrollY, mid = y + VH / 2;
+  // the bottom safe area: watched by its own observer where there is one, so no frame reads the layout
+  if (typeof ResizeObserver !== 'function') checkInset();
+  const y = playhead(now ?? performance.now()), mid = y + VH / 2;
   let i = 0;
   while (i < sections.length - 1 && mid >= tops[i + 1]) i++;
   if (i + 1 !== active) {
@@ -656,10 +913,12 @@ function update(): void {
   for (let k = 0; k < sections.length; k++) {
     if (!S[k].built && near(k, y)) build(k + 1);
     else if (S[k].built && Math.abs(k + 1 - active) > 2 && !near(k, y)) release(k + 1);
-    light(k + 1, progress(k, y));
   }
+  const more = motion(y, now ?? performance.now());
   boardAt(y);
   marks();
+  // the playhead still on its way, or a late picture fading in: the next frame
+  if (more || y !== scrollY) schedule();
 }
 
 /* ---------- coming back after a reload: the same scene, the same light ---------- */
@@ -670,7 +929,10 @@ let holdN: number | null = null;
 function remember(): void {
   if (gaveUp) return;
   if (!tops.length) return;
-  let i = active - 1, f = (scrollY - tops[i]) / heights[i];
+  // the scene the scroll is in (the playhead may still be on its way to it)
+  let i = 0;
+  while (i < sections.length - 1 && scrollY + VH / 2 >= tops[i + 1]) i++;
+  let f = (scrollY - tops[i]) / heights[i];
   if (holdN) {
     const j = holdN - 1, rest = (restY(holdN) - tops[j]) / heights[j];
     f = j === i ? Math.max(f, rest) : rest;
@@ -683,6 +945,7 @@ function returnTo(): boolean {
   const at = (history.state as { film?: { i: number; f: number } } | null)?.film;
   if (!at || !(at.i >= 0 && at.i < S.length) || !Number.isFinite(at.f)) return false;
   scrollTo(0, Math.round(tops[at.i] + clamp(at.f) * heights[at.i]));
+  snap();
   return true;
 }
 let ticking = false, frozen = false;
@@ -704,7 +967,7 @@ function marks(): void {
   const m = S[active - 1].mark;
   const lit = new Set([m, ...(active === BRAIN ? brainLit() : [])]);
   markEls.forEach((d, k) => d.classList.toggle('on', lit.has(k)));
-  for (const nm of names) nm.hidden = Number(nm.dataset.mark) !== m || m >= markEls.length - 1;
+  for (const nm of names) { const h = Number(nm.dataset.mark) !== m || m >= markEls.length - 1; if (nm.hidden !== h) nm.hidden = h; }
 }
 
 /* ---------- size and shape changes ---------- */
@@ -733,7 +996,10 @@ function onResize(): void {
     for (const s of S) if (s.built) build(S.indexOf(s) + 1);   // a bigger screen may want the bigger file
   }
   checkInset();
+  const was = tops;
   measure();
+  // the playhead jumps with the page only when the page itself changed size (not when a phone's bar slides)
+  if (tops.some((t, i) => t !== was[i])) snap();
   update();
 }
 
@@ -749,7 +1015,7 @@ doors = startDoors({
   reduced,
   gaveUp: () => gaveUp,
   hold: (n) => { holdN = n; if (n) remember(); },
-  freeze: (on) => { frozen = on; if (!on) { measure(); schedule(); } },
+  freeze: (on) => { frozen = on; if (!on) { measure(); snap(); schedule(); } },
   relayout: () => { onResize(); layoutAll(); },
 });
 
@@ -764,11 +1030,12 @@ else if (!returnTo()) {
   const n = doors.hashScene(location.hash);
   if (n) scrollTo(0, Math.round(restY(n)));
 }
+snap();
 update();
 let saveT = 0;
 // the observers of the steady screen sizes (let go when the film gives up)
 const observers: ResizeObserver[] = [];
-addEventListener('scroll', () => { schedule(); clearTimeout(saveT); saveT = setTimeout(remember, 200); }, { passive: true });
+addEventListener('scroll', () => { schedule(); clearTimeout(saveT); saveT = setTimeout(remember, 200); ahead(); }, { passive: true });
 addEventListener('resize', onResizeSoon);
 addEventListener('pagehide', remember);
 // Back from the back/forward cache: Safari brings the page back at the top, and with the film keeping its own place
