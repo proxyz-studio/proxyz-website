@@ -94,11 +94,15 @@ uniform float uSat[${SLOTS}];
 uniform vec4 uFade[${SLOTS}];
 uniform vec3 uSides[${SLOTS}];
 uniform float uPr;
+// the canvas in device px (build 12E: the pool's lens falloff)
+uniform vec2 uRes;
 uniform vec3 uLp[${SLOTS}];
 uniform vec3 uLd[${SLOTS}];
 uniform vec2 uLc[${SLOTS}];
 uniform float uLi[${SLOTS}];
 uniform float uLk[${SLOTS}];
+// build 12E: each slot's key light may have a black card (a flag) in its path: centre, two half sides (zero: none)
+uniform vec3 uLf[${SLOTS * 3}];
 uniform vec3 uAlb;
 uniform float uMap;
 uniform sampler2D uCoinMap;
@@ -190,6 +194,20 @@ float fadeOf(vec4 f, float y) {
   float b = f.w > f.z ? clamp((f.w - y) / (f.w - f.z), 0.0, 1.0) : 1.0;
   return min(a, b);
 }
+// build 12E: how much of a light passes a black card on its way to P (the scene's flag; 1 with no card), softened at
+// the card's edge as a light the size of the stills' spot (20 mm) softens it
+float flagPass(vec3 P, vec3 lp, vec3 fc, vec3 fu, vec3 fv) {
+  float uu = dot(fu, fu), vv = dot(fv, fv);
+  if (uu < 1e-6) return 1.0;
+  vec3 n = normalize(cross(fu, fv)), d = lp - P;
+  float den = dot(d, n);
+  if (abs(den) < 1e-6) return 1.0;
+  float t = dot(fc - P, n) / den;
+  if (t <= 0.0 || t >= 1.0) return 1.0;
+  vec3 X = P + d * t - fc;
+  float e = max(abs(dot(X, fu)) / uu, abs(dot(X, fv)) / vv);
+  return smoothstep(0.88, 1.0, e);
+}
 // the live light where no still saw the surface: the scene's key light on this surface (no shadows)
 vec3 shade(vec3 n, vec3 v, vec3 P, vec3 alb, float rough, float metal, vec3 lp, vec3 ld, vec2 lc, float li, float lk) {
   vec3 L = lp - P;
@@ -210,12 +228,12 @@ vec3 shade(vec3 n, vec3 v, vec3 P, vec3 alb, float rough, float metal, vec3 lp, 
   vec3 diff = (1.0 - metal) * alb / 3.14159;
   return (diff + spec) * E * nl * LIVE_EXPOSURE;
 }
-vec3 live(vec3 n, vec3 v, vec3 lp, vec3 ld, vec2 lc, float li, float lk, float held) {
+vec3 live(vec3 n, vec3 v, vec3 lp, vec3 ld, vec2 lc, float li, float lk, float held, vec3 fc, vec3 fu, vec3 fv) {
   // scene 2's phone outside scene 2: not there (the floor under it)
-  if (held < 0.5 && uSolid < 0.5) return display(shade(vec3(0.0, 1.0, 0.0), v, vec3(vW.x, 0.0, vW.z), vec3(0.006, 0.006, 0.0058), 0.95, 0.0, lp, ld, lc, li, lk));
+  if (held < 0.5 && uSolid < 0.5) { vec3 F = vec3(vW.x, 0.0, vW.z); return display(shade(vec3(0.0, 1.0, 0.0), v, F, vec3(0.006, 0.006, 0.0058), 0.95, 0.0, lp, ld, lc, li * flagPass(F, lp, fc, fu, fv), lk)); }
   // the coin: its own colours by part (its spools), where no still saw it
   vec3 alb = uMap > 0.5 ? texture(uCoinMap, vL.xz / 130.0 + 0.5).rgb : uAlb;
-  return display(shade(n, v, vW, alb, uRough, uMetal, lp, ld, lc, li, lk));
+  return display(shade(n, v, vW, alb, uRough, uMetal, lp, ld, lc, li * flagPass(vW, lp, fc, fu, fv), lk));
 }
 vec3 srgbLin(vec3 c) { return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c)); }
 /** scene 2's phone while it lifts: drawn whole by the live light, its screen the menu (the stills' screen light) */
@@ -250,7 +268,7 @@ vec3 phoneLive(vec3 n, vec3 v, vec3 lp, vec3 ld, vec2 lc, float li, float lk) {
 ${[0, 1].map((s) => {
     const p = (k: number) => s * PASSES + k;
     return `vec4 slot${s}(vec3 n, vec3 v) {
-  vec3 fb = live(n, v, uLp[${s}], uLd[${s}], uLc[${s}], uLi[${s}], uLk[${s}], uHold[${s}]);
+  vec3 fb = live(n, v, uLp[${s}], uLd[${s}], uLc[${s}], uLi[${s}], uLk[${s}], uHold[${s}], uLf[${s * 3}], uLf[${s * 3 + 1}], uLf[${s * 3 + 2}]);
   // the floor (and the room) where this still did not see it, past its frame or hidden behind a thing: the still
   // itself, softened (its small copy), carried out from its nearest edge, so its light and falloff go on with no seam
   // and no dark gap
@@ -320,7 +338,11 @@ void main() {
   // (not for a thing only one of them holds: that one draws it whole, above)
   if (!held && w0 > 0.0 && w1 > 0.0) {
     float x0 = w0 * mix(0.001, 1.0, a.a), x1 = w1 * mix(0.001, 1.0, b.a);
-    w0 = x0 / (x0 + x1); w1 = 1.0 - w0;
+    // build 12E: not on a thing one scene's flag keeps in the dark (the coin in 4 to 5 and 5 to 6): there the two scenes
+    // mix by their strength alone, so the whole thing goes into the dark, or comes out of it, at once (by coverage, the
+    // part outside one still's frame stayed lit while the rest went dark: a diagonal across the coin)
+    float fl = uIsFloor > 0.5 ? 0.0 : max(1.0 - flagPass(vW, uLp[0], uLf[0], uLf[1], uLf[2]), 1.0 - flagPass(vW, uLp[1], uLf[3], uLf[4], uLf[5]));
+    w0 = mix(x0 / (x0 + x1), w0, fl); w1 = 1.0 - w0;
   }
   vec3 c = w0 * a.rgb + w1 * b.rgb;
   if (uMove > 0.0 && uIsFloor > 0.5 && n.y > 0.9) {
@@ -342,7 +364,18 @@ void main() {
     float sc = dot(shade(n, v, uPc, FA, 0.95, 0.0, uMp, uMd, uMw, uMi, 0.0), vec3(0.2126, 0.7152, 0.0722));
     // (a pool, not a wash: it fades out within about 40 cm of its middle)
     float near = 1.0 - smoothstep(120.0, 420.0, length(P.xz - uPc.xz));
-    c = max(c, display(vec3(POOL_LIN * near * clamp(sp / max(sc, 1e-12), 0.0, 1.5))));
+    // build 12E: the same dark floor as the stills', never a flat grey card (a phone close to the floor in 3 to 4 sees
+    // only the pool): the lens falloff, darker toward the frame's edges; the floor's own faint mottle (the stills' floor
+    // texture, a few percent, fixed to the floor); and its grain, fixed to the floor at about a screen pixel
+    vec2 q = (gl_FragCoord.xy - 0.5 * uRes) / (0.5 * length(uRes));
+    float lens = 1.0 - 0.7 * pow(min(length(q), 1.2), 2.0);
+    vec2 m = P.xz / 38.0, mi = floor(m), mf = fract(m);
+    mf = mf * mf * (3.0 - 2.0 * mf);
+    float mot = mix(mix(hash(mi), hash(mi + vec2(1.0, 0.0)), mf.x), mix(hash(mi + vec2(0.0, 1.0)), hash(mi + vec2(1.0, 1.0)), mf.x), mf.y);
+    vec3 pool = display(vec3(POOL_LIN * near * lens * (0.82 + 0.36 * mot) * clamp(sp / max(sc, 1e-12), 0.0, 1.5)));
+    float cell = exp2(ceil(log2(max(max(fwidth(P.x), fwidth(P.z)), 0.05))));
+    float gr = (hash(floor(P.xz / cell)) + hash(floor(P.xz / cell) + 17.31) - 1.0) * 3.2 / 255.0 * smoothstep(0.0, 0.03, pool.g);
+    c = max(c, pool + gr);
   }
   if (uLiveK > 0.0) c = mix(c, phoneLive(n, v, uLp[0], uLd[0], uLc[0], uLi[0], uLk[0]), uLiveK);
   if (uFg > 0.5) {

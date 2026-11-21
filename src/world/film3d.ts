@@ -55,7 +55,8 @@ export const SHAPES: Shape[] = [
   // 3 to 4: over to the coin and down along it, never pulled back, so the race piece has left the screen before the coin
   // comes in (the two are never on screen together); the light changes over in between, over the whole empty stretch,
   // its pool travelling across the floor (never a black frame)
-  { leave: 0.3, settle: 0.5, ease: 0.03, blend: [0.2, 0.9] },
+  // (build 12E: it leaves and settles over a little more scroll, so the travel between, the empty stretch, goes by sooner)
+  { leave: 0.42, settle: 0.62, ease: 0.03, blend: [0.2, 0.9] },
   { leave: 0.3, settle: 0.5, ease: 0.03, via: { out: 1.3, lift: 8 } },   // 4 to 5: up off the coin, over to the phone
   { leave: 0.3, settle: 1.55, ease: 0.025 },                             // 5 to 6: the pull back lands early, the light then opens
   { leave: 0, settle: 0, ease: 0 },                                      // 6 to 7: one camera
@@ -288,7 +289,12 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
     const want = wanted(active);
     const list = want.map((k) => ({ key: k, url: h.url(k, Number(/^s(\d)/.exec(k)?.[1] ?? active)) }));
     if (want.some((k) => k.startsWith('s2-'))) list.push({ key: SCREEN, url: menuScreen });
-    world.want(list);
+    // build 12E (WebKit): while the page has been still for a second, the next scene's pictures are read and decoded ahead
+    // (one a frame, in the order the scroll needs them), so none is first decoded in a scroll
+    const idle = !moving && now - lastInput >= 1000;
+    const nextUp = World.PIXELS ? [active + 1, active + 2, active + 3].filter((n) => n >= 1 && n <= h.count).flatMap((n) => passesOf(n)).filter((k) => !want.includes(k)).slice(0, 3) : [];
+    world.want(list, nextUp.map((k) => ({ key: k, url: h.url(k, Number(/^s(\d)/.exec(k)?.[1] ?? active)) })), idle);
+    const warmed = idle && world.warm();
     // one picture into the chip a frame, and only while the page is still or the scene needs it now
     // while the film moves, only the stills of the scenes on screen (the rest while the page is still: a picture's first
     // rows cost Safari about 30 ms, its decoding)
@@ -376,7 +382,7 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
     }
     const st: FrameState = { vw: h.vw(), vh: h.vh(), pr, cam, slots, lift, fg: fgBox, shade, menuLive: menuLive > 0 ? menuLive * menuLive * (3 - 2 * menuLive) : 0, screen: SCREEN, hold, fgA };
     const sig = JSON.stringify([st, liveNow.size]);
-    if (sig === drawn && !(benched < 2 && now >= benchAt && !moving)) return more || benched < 2;
+    if (sig === drawn && !(benched < 2 && now >= benchAt && !moving)) return more || warmed || (!moving && world.aheadWork()) || benched < 2;
     canvas.style.width = st.vw + 'px'; canvas.style.height = st.vh + 'px';
     const ok = world.draw(st, fgBox ? fgCtx : null);
     if (!ok) return more;
@@ -407,7 +413,7 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
       { if (fg.style.opacity) fg.style.opacity = ''; }
     } else if (fg.style.visibility !== 'hidden') fg.style.visibility = 'hidden';
     // frames go on while the chip's second answer is due, or the last sharp frame at rest is not drawn yet
-    return more || benched < 2 || !settled || now - settled < 200;
+    return more || warmed || (!moving && world.aheadWork()) || benched < 2 || !settled || now - settled < 200;
   }
   function swap(c: HTMLCanvasElement): void {
     canvas.remove();

@@ -18,7 +18,9 @@ import worldUrl from './world.bin?url';
 
 export type Form = 'desktop' | 'phone';
 interface Cam { az: number; el: number; dist: number; look: V3; fov: number; sx: number; sy: number; w: number; h: number }
-interface Light { kind: 'spot' | 'panel'; pos: V3; aim: V3; cone?: number; pen?: number; int: number }
+interface Light { kind: 'spot' | 'panel'; pos: V3; aim: V3; cone?: number; pen?: number; int: number;
+  /** build 12E: a black card in the light's path (centre and two half sides, mm in the still's room) */
+  flag?: { c: V3; u: V3; v: V3 } }
 interface Shot { obj: string; cam: Cam; light: Light; phone?: { pos?: V3; rot?: V3; floor?: V3 } | null; trio?: number[];
   /** the other things of the one room the still holds, where they stand in its own room (build 12D) */
   extra?: { name: 'stand' | 'coin' | 'coach'; x: number; z: number; turn: number }[] }
@@ -225,7 +227,9 @@ export interface Projector {
   w: number; h: number; fpx: number; ppx: number; ppy: number;
   /** each thing's pose when the still was drawn (null: the still did not hold it) */
   poses: Map<ThingName, M4 | null>;
-  light: { pos: V3; dir: V3; cos: [number, number]; int: number; kind: number; aim: V3 };
+  light: { pos: V3; dir: V3; cos: [number, number]; int: number; kind: number; aim: V3;
+    /** a black card that keeps this light off a thing (scene 5: the coin), in the world: centre, two half sides */
+    flag: [V3, V3, V3] | null };
 }
 export interface Layout {
   form: Form;
@@ -261,9 +265,10 @@ function projectorOf(key: string, scene: number, pass: number, room: M4, form: F
   const dl = [la[0] - lp[0], la[1] - lp[1], la[2] - lp[2]] as V3, dn = Math.hypot(...dl);
   const cone = (L.cone ?? 90) * DEG, pen = L.pen ?? 0;
   void form;
+  const fl = L.flag ? (() => { const c = point(room, L.flag!.c), at = (d: V3) => { const q = point(room, add(L.flag!.c, d)); return [q[0] - c[0], q[1] - c[1], q[2] - c[2]] as V3; }; return [c, at(L.flag!.u), at(L.flag!.v)] as [V3, V3, V3]; })() : null;
   return {
     key, scene, pass, eye, target, VP, near, far, w: c.w, h: c.h, fpx, ppx, ppy, poses,
-    light: { pos: lp, dir: [dl[0] / dn, dl[1] / dn, dl[2] / dn], cos: [Math.cos(cone), Math.cos(cone * (1 - pen))], int: L.int, kind: L.kind === 'panel' ? 1 : 0, aim: la },
+    light: { pos: lp, dir: [dl[0] / dn, dl[1] / dn, dl[2] / dn], cos: [Math.cos(cone), Math.cos(cone * (1 - pen))], int: L.int, kind: L.kind === 'panel' ? 1 : 0, aim: la, flag: fl },
   };
 }
 
@@ -304,6 +309,10 @@ function menuPose(L: Layout, t: number): M4 {
 /* ---------- the drawing ---------- */
 interface Mesh { vao: WebGLVertexArrayObject; count: number; type: number; bufs: WebGLBuffer[] }
 interface Tex { key: string; state: 'none' | 'loading' | 'decoded' | 'ready' | 'failed'; url: string; strips: ImageBitmap[]; size: [number, number]; tex: WebGLTexture | null; bytes: number; used: number; row: number; rank: number; want: boolean;
+  /** build 12E (WebKit): the picture's pixels, decoded while the page was still (see World.PIXELS) */
+  px: Uint8Array | null;
+  /** build 12E (WebKit): asked for only to be decoded ahead (the scene after the wanted ones), not to go into the chip */
+  ahead: boolean;
   /** the picture, small and soft (about 128 px on its long side): the floor past its frame takes it */
   small: WebGLTexture | null }
 interface DepthMap { fb: WebGLFramebuffer; tex: WebGLTexture; w: number; h: number }
@@ -315,6 +324,11 @@ export class World {
   static TOUCH = true;
   /** the screen's light of scene 2's phone drawn live, against the stills' (matched on the lifted phone at its rest) */
   static SCREEN = 0.6;
+  /** Build 12E. WebKit (Safari, and every browser on an iPhone) decodes a picture read in as an ImageBitmap only when
+   *  its first rows go into the chip: 29 to 36 ms in the simulator, a stop when that falls in a scroll (9 of 12D's 21
+   *  stops). There the pictures are decoded ahead, while the page is still (drawn once into a canvas read on the processor), into plain pixels, and those go
+   *  into the chip a strip at a time with nothing left to decode. Elsewhere the ImageBitmap is decoded when it is made. */
+  static PIXELS = typeof navigator !== 'undefined' && /AppleWebKit/.test(navigator.userAgent) && (!/Chrome|Chromium|Edg|Android/.test(navigator.userAgent) || /CriOS|FxiOS|EdgiOS/.test(navigator.userAgent));
   /** the bytes of a picture read into the chip in one call (smaller on a phone) */
   stripBytes = 1.1e6;
   private lastUpload = 0;
@@ -508,25 +522,37 @@ export class World {
 
   /* ---------- the stills, read into the chip ---------- */
   /** Asks for these pictures (most wanted first); starts reading those not yet read. */
-  want(list: { key: string; url: string }[]): void {
+  want(list: { key: string; url: string }[], ahead: { key: string; url: string }[] = [], idle = false): void {
     const now = performance.now();
     for (const { key, url } of list) {
       let t = this.texs.get(key);
       if (t && t.url !== url && t.state !== 'loading') { this.drop(t); t = undefined; }
-      if (!t) { t = { key, state: 'none', url, strips: [], size: [0, 0], tex: null, bytes: 0, used: now, row: 0, rank: 0, want: true, small: null }; this.texs.set(key, t); }
+      if (!t) { t = { key, state: 'none', url, strips: [], size: [0, 0], tex: null, bytes: 0, used: now, row: 0, rank: 0, want: true, small: null, px: null, ahead: false }; this.texs.set(key, t); }
       t.used = now;
     }
+    // build 12E (WebKit): the pictures of the scene after those, decoded ahead into pixels while the page is still
+    for (const { key, url } of ahead) {
+      if (this.texs.has(key)) continue;
+      this.texs.set(key, { key, state: 'none', url, strips: [], size: [0, 0], tex: null, bytes: 0, used: now - 1, row: 0, rank: 0, want: false, small: null, px: null, ahead: true });
+    }
+    this.idle = idle;
     // the order of this list is the order of reading (a picture no longer asked for is not read)
-    const order = new Map(list.map((x, i) => [x.key, i]));
-    for (const t of this.texs.values()) { t.want = order.has(t.key); t.rank = order.get(t.key) ?? 1e9; }
+    const order = new Map([...list, ...ahead].map((x, i) => [x.key, i])), wanted = new Set(list.map((x) => x.key));
+    for (const t of this.texs.values()) {
+      t.want = wanted.has(t.key); t.ahead = !t.want && order.has(t.key); t.rank = order.get(t.key) ?? 1e9;
+      // pixels decoded ahead for a picture no longer asked for: let go (they are its whole size in memory)
+      if (t.px && !t.want && !t.ahead && !t.tex) { t.px = null; t.state = 'none'; }
+    }
     this.pump();
   }
   /** One picture decoded at a time, the most wanted first, a frame between two (each decoded picture handed back to
    *  the page costs it about 10 ms at a fourth of a laptop's speed: seven at once were one frame of 75 ms) */
   private decoding = false;
+  /** the page has been still for a second (build 12E: only then are pictures read ahead) */
+  private idle = false;
   private pump(): void {
     if (this.decoding) return;
-    const t = [...this.texs.values()].filter((x) => x.state === 'none' && x.want).sort((a, b) => a.rank - b.rank)[0];
+    const t = [...this.texs.values()].filter((x) => x.state === 'none' && (x.want || (x.ahead && this.idle))).sort((a, b) => a.rank - b.rank)[0];
     if (t) this.load(t);
   }
   private load(t: Tex): void {
@@ -552,7 +578,39 @@ export class World {
   has(key: string): boolean { const t = this.texs.get(key); return !!t && t.state === 'ready' && !!t.tex; }
   failed(key: string): boolean { return this.texs.get(key)?.state === 'failed'; }
   /** decoded pictures still waiting to go into the chip */
-  pending(): number { let n = 0; for (const t of this.texs.values()) if (t.state === 'decoded') n++; return n; }
+  pending(): number { let n = 0; for (const t of this.texs.values()) if (t.state === 'decoded' && (t.want || !t.ahead)) n++; return n; }
+  /** build 12E: pictures still to read or decode ahead (frames go on while the page is still, one step each) */
+  aheadWork(): boolean {
+    if (!World.PIXELS || this.warmFailed) return false;
+    for (const t of this.texs.values()) if ((t.want || t.ahead) && (t.state === 'none' || t.state === 'loading' || (t.state === 'decoded' && !t.px && !t.tex && t.row === 0))) return true;
+    return false;
+  }
+  /** Build 12E (WebKit only): decodes one picture ahead into plain pixels, the most wanted first, while the page is
+   *  still (film3d.ts calls it once the page has been still for a second, at most one picture a call). A picture already
+   *  going into the chip is left as it is. Returns true when it decoded one. */
+  private canvas2d: HTMLCanvasElement | null = null;
+  private warmFailed = false;
+  warm(): boolean {
+    if (!World.PIXELS || this.lost) return false;
+    const t = [...this.texs.values()].filter((x) => x.state === 'decoded' && (x.want || x.ahead) && !x.px && x.row === 0 && !x.tex && x.strips[0]).sort((a, b) => a.rank - b.rank)[0];
+    if (!t) return false;
+    const [W, H] = t.size, bm = t.strips[0];
+    try {
+      // a canvas read on the processor (willReadFrequently): drawing the picture decodes it, getImageData hands its pixels
+      // back as they are (the pictures are opaque sRGB: nothing to convert or unpremultiply)
+      const c = this.canvas2d ?? (this.canvas2d = document.createElement('canvas'));
+      if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+      const ctx = c.getContext('2d', { willReadFrequently: true, alpha: false });
+      if (!ctx) { this.warmFailed = true; return false; }
+      ctx.drawImage(bm, 0, 0);
+      const d = ctx.getImageData(0, 0, W, H).data;
+      t.px = new Uint8Array(d.buffer, d.byteOffset, d.byteLength);
+      bm.close(); t.strips = [];
+      // (the canvas keeps no copy: made 1 x 1 again)
+      c.width = 1; c.height = 1;
+    } catch { this.warmFailed = true; return false; }
+    return true;
+  }
   /** Puts up to `max` decoded pictures into the chip (the most wanted first), and lets go of the least used ones over
    *  the budget. Returns how many went in. */
   upload(max: number, keep: Set<string>, still = true): number {
@@ -561,7 +619,8 @@ export class World {
     // one picture at a time, in strips of rows, one strip a call (a whole 2880 x 1800 picture took 20 to 24 ms of the
     // page's time at a fourth of a laptop's speed; a strip takes a quarter of that)
     let t = [...this.texs.values()].find((x) => x.state === 'decoded' && x.row > 0);
-    if (!t) t = [...this.texs.values()].filter((x) => x.state === 'decoded').sort((a, b) => b.used - a.used)[0];
+    // (not a picture asked for only to be decoded ahead)
+    if (!t) t = [...this.texs.values()].filter((x) => x.state === 'decoded' && (x.want || !x.ahead)).sort((a, b) => b.used - a.used)[0];
     let n = 0;
     const t0 = performance.now();
     // never two calls within one frame's time (Safari ran several in one long frame), and never more than about 4 ms
@@ -602,14 +661,17 @@ export class World {
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
       gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
       gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
-      gl.pixelStorei(gl.UNPACK_SKIP_ROWS, t.row);
-      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, t.row, W, rows, gl.RGBA, gl.UNSIGNED_BYTE, bm);
-      gl.pixelStorei(gl.UNPACK_SKIP_ROWS, 0);
+      if (t.px) gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, t.row, W, rows, gl.RGBA, gl.UNSIGNED_BYTE, t.px, t.row * W * 4);
+      else {
+        gl.pixelStorei(gl.UNPACK_SKIP_ROWS, t.row);
+        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, t.row, W, rows, gl.RGBA, gl.UNSIGNED_BYTE, bm);
+        gl.pixelStorei(gl.UNPACK_SKIP_ROWS, 0);
+      }
       t.row += rows;
       n++;
       this.lastUpload = performance.now();
       if (t.row >= H) {
-        bm.close(); t.strips = [];
+        bm?.close(); t.strips = []; t.px = null;
         t.state = 'ready'; t.row = 0;
         // read once now, by a draw nobody sees, so the chip has it before the first frame that shows it (a browser
         // may send a picture to the chip only when it is first drawn with: a stop in the middle of a scene change)
@@ -637,7 +699,7 @@ export class World {
     t.row = 0;
     for (const x of t.strips) x.close();
     if (t.small && !this.lost) this.gl.deleteTexture(t.small);
-    t.tex = null; t.small = null; t.strips = []; t.state = 'none';
+    t.tex = null; t.small = null; t.strips = []; t.px = null; t.state = 'none';
   }
 
   /* ---------- depth maps: what each still's camera saw ---------- */
@@ -751,7 +813,7 @@ export class World {
     const u = (n: string) => this.uni(this.progW, this.uW, n);
     gl.uniformMatrix4fv(u('uVP'), false, VP);
     gl.uniform3fv(u('uEye'), st.cam.eye);
-    const pe: number[] = [], np: number[] = [], w: number[] = [], sat: number[] = [], fade: number[] = [], lp: number[] = [], ld: number[] = [], lc: number[] = [], li: number[] = [], lk: number[] = [];
+    const pe: number[] = [], np: number[] = [], w: number[] = [], sat: number[] = [], fade: number[] = [], lp: number[] = [], ld: number[] = [], lc: number[] = [], li: number[] = [], lk: number[] = [], lf: number[] = [];
     const keys: (Projector['light'] | null)[] = [];
     for (let s = 0; s < SLOTS; s++) {
       const sl = slots[s], p0 = proj[s * PASSES];
@@ -770,6 +832,7 @@ export class World {
       if (sl) sl.passes.forEach((ps, k) => { const pk = proj[s * PASSES + k]; if (pk && pk.light.kind === 0 && (!spot || ps.t >= 0.5)) spot = pk; });
       keys.push(spot ? (spot as Projector).light : null);
       lp.push(...(l ? l.pos : [0, 1000, 0])); ld.push(...(l ? l.dir : [0, -1, 0])); lc.push(...(l ? l.cos : [0, 1])); li.push(l ? l.int : 0); lk.push(l ? l.kind : 0);
+      lf.push(...(l?.flag ? l.flag.flat() : [0, 0, 0, 0, 0, 0, 0, 0, 0]));
     }
     gl.uniform3fv(u('uPE[0]'), pe);
     gl.uniform1iv(u('uNP[0]'), np);
@@ -789,7 +852,9 @@ export class World {
     gl.uniform4fv(u('uFade[0]'), fade);
     gl.uniform3fv(u('uSides[0]'), slots.flatMap((sl) => sl.sides ?? [0, 0, 0]).concat(slots.length < 2 ? [0, 0, 0] : []).slice(0, 6));
     gl.uniform1f(u('uPr'), st.pr);
+    gl.uniform2f(u('uRes'), W, H);
     gl.uniform3fv(u('uLp[0]'), lp); gl.uniform3fv(u('uLd[0]'), ld); gl.uniform2fv(u('uLc[0]'), lc); gl.uniform1fv(u('uLi[0]'), li); gl.uniform1fv(u('uLk[0]'), lk);
+    gl.uniform3fv(u('uLf[0]'), lf);
     // the floor's light between two scenes: one spot travelling from the first scene's key to the second's, as far as
     // the second scene's still has come in (two spots only; a soft panel does not travel)
     const [ka, kb] = keys, wa = slots[0]?.W ?? 0, wb = slots[1]?.W ?? 0, tm = wa + wb > 0 ? wb / (wa + wb) : 0;

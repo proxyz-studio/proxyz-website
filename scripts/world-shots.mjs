@@ -49,6 +49,12 @@ for (const [key, v] of Object.entries(sources)) {
     const d = dirFrom(j.kaz, j.kel);
     light = { kind: 'panel', pos: target.map((a, i) => r1(a + d[i] * j.kdist)), aim: target, size: j.ksize, int: j.kint };
   }
+  // build 12E: a black card (a flag) in the light's path keeps it off a thing (scene 5: the coin). The picture maker's fl
+  // setting lists the cards, the key light's first; the live film carries that one (its centre and two half sides, mm)
+  if (j.fl && light.kind === 'spot') {
+    const n = String(j.fl).split(';')[0].split(',').map(Number);
+    light.flag = { c: n.slice(0, 3), u: n.slice(3, 6), v: n.slice(6, 9) };
+  }
   const shot = {
     obj: j.obj,
     cam: { az: j.az, el: j.el, dist: j.dist, look: [j.lx, j.ly, j.lz], fov: j.fov ?? 30, sx: j.sx ?? 0, sy: j.sy ?? 0, w: j.w, h: j.h },
