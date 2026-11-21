@@ -403,7 +403,15 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
       world.draw(st, fgBox ? fgCtx : null);
       benchMs = [...b].sort((x, z) => x - z)[1];
       if (benchMs <= 60) benched = 2;
-      else if (benched === 1) { benchAt = now + 2500; drawn = ''; }
+      else if (benched === 1) {
+        benchAt = now + 2500; drawn = '';
+        // build 12F: the still film at once, in this very frame (it waited for the next frame, which on a slow chip came
+        // only with the second answer: the frame that was measured stayed on screen, live, for about 2.5 s)
+        for (const n of [...liveNow]) setLive(n, false);
+        under.style.visibility = 'hidden'; fg.style.visibility = 'hidden'; fade = null;
+        mark();
+        return true;
+      }
       else { why = 'bench'; giveUp(); return false; }
       if (benchMs > 24 && benchMs <= 60) { step = steps.length - 1; drawn = ''; }
     } else if (moving) measure(now, lastDraw === prevFrame ? prevFrame : 0);
