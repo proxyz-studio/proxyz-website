@@ -516,18 +516,18 @@
    {
     "w": 1440,
     "avifQ": 70,
-    "avif": "/pictures/s5-desk-p1-1440.dc5749a606.avif",
-    "avifBytes": 36973,
-    "webp": "/pictures/s5-desk-p1-1440.b6462243a2.webp",
-    "webpBytes": 41130
+    "avif": "/pictures/s5-desk-p1-1440.7ffa4e7e3f.avif",
+    "avifBytes": 26792,
+    "webp": "/pictures/s5-desk-p1-1440.03873e166b.webp",
+    "webpBytes": 27470
    },
    {
     "w": 2880,
     "avifQ": 70,
-    "avif": "/pictures/s5-desk-p1-2880.1283e6a62e.avif",
-    "avifBytes": 142141,
-    "webp": "/pictures/s5-desk-p1-2880.ec34b02b17.webp",
-    "webpBytes": 169144
+    "avif": "/pictures/s5-desk-p1-2880.f87c4fd396.avif",
+    "avifBytes": 109145,
+    "webp": "/pictures/s5-desk-p1-2880.ae091cdaff.webp",
+    "webpBytes": 121852
    }
   ]
  },
@@ -540,18 +540,18 @@
    {
     "w": 1440,
     "avifQ": 70,
-    "avif": "/pictures/s5-desk-p2-1440.110a2eb7de.avif",
-    "avifBytes": 41472,
-    "webp": "/pictures/s5-desk-p2-1440.1006a725ab.webp",
-    "webpBytes": 47164
+    "avif": "/pictures/s5-desk-p2-1440.ea9a63a39c.avif",
+    "avifBytes": 25312,
+    "webp": "/pictures/s5-desk-p2-1440.b06a946073.webp",
+    "webpBytes": 30418
    },
    {
     "w": 2880,
     "avifQ": 70,
-    "avif": "/pictures/s5-desk-p2-2880.95ef38079b.avif",
-    "avifBytes": 137658,
-    "webp": "/pictures/s5-desk-p2-2880.3a2e593fb6.webp",
-    "webpBytes": 163190
+    "avif": "/pictures/s5-desk-p2-2880.e16a9a8ebd.avif",
+    "avifBytes": 87133,
+    "webp": "/pictures/s5-desk-p2-2880.c14d1684d7.webp",
+    "webpBytes": 104826
    }
   ]
  },
@@ -564,18 +564,18 @@
    {
     "w": 1440,
     "avifQ": 70,
-    "avif": "/pictures/s5-desk-p3-1440.069ffa5786.avif",
-    "avifBytes": 38851,
-    "webp": "/pictures/s5-desk-p3-1440.6fa149be91.webp",
-    "webpBytes": 44122
+    "avif": "/pictures/s5-desk-p3-1440.be2d4a2b36.avif",
+    "avifBytes": 22773,
+    "webp": "/pictures/s5-desk-p3-1440.5bb6ff8ae0.webp",
+    "webpBytes": 27682
    },
    {
     "w": 2880,
     "avifQ": 70,
-    "avif": "/pictures/s5-desk-p3-2880.f42e31ff15.avif",
-    "avifBytes": 127782,
-    "webp": "/pictures/s5-desk-p3-2880.6636790d7c.webp",
-    "webpBytes": 153796
+    "avif": "/pictures/s5-desk-p3-2880.45771cf601.avif",
+    "avifBytes": 79741,
+    "webp": "/pictures/s5-desk-p3-2880.53391d1298.webp",
+    "webpBytes": 97058
    }
   ]
  },
@@ -588,18 +588,18 @@
    {
     "w": 786,
     "avifQ": 70,
-    "avif": "/pictures/s5-phone-p1-786.39eac5c6c0.avif",
-    "avifBytes": 28402,
-    "webp": "/pictures/s5-phone-p1-786.ebf12f8a82.webp",
-    "webpBytes": 30638
+    "avif": "/pictures/s5-phone-p1-786.993076363b.avif",
+    "avifBytes": 18636,
+    "webp": "/pictures/s5-phone-p1-786.ac937913f7.webp",
+    "webpBytes": 20392
    },
    {
     "w": 1572,
     "avifQ": 70,
-    "avif": "/pictures/s5-phone-p1-1572.489301b318.avif",
-    "avifBytes": 124233,
-    "webp": "/pictures/s5-phone-p1-1572.c60ab825d5.webp",
-    "webpBytes": 141750
+    "avif": "/pictures/s5-phone-p1-1572.131a2096dd.avif",
+    "avifBytes": 101699,
+    "webp": "/pictures/s5-phone-p1-1572.a39d755476.webp",
+    "webpBytes": 117264
    }
   ]
  },
@@ -612,18 +612,18 @@
    {
     "w": 786,
     "avifQ": 70,
-    "avif": "/pictures/s5-phone-p2-786.af8981e197.avif",
-    "avifBytes": 33478,
-    "webp": "/pictures/s5-phone-p2-786.d4c5cb1c48.webp",
-    "webpBytes": 39066
+    "avif": "/pictures/s5-phone-p2-786.56c5e53049.avif",
+    "avifBytes": 32943,
+    "webp": "/pictures/s5-phone-p2-786.40614bfc14.webp",
+    "webpBytes": 38658
    },
    {
     "w": 1572,
     "avifQ": 70,
-    "avif": "/pictures/s5-phone-p2-1572.29734f1141.avif",
-    "avifBytes": 113668,
-    "webp": "/pictures/s5-phone-p2-1572.c1f2174113.webp",
-    "webpBytes": 132322
+    "avif": "/pictures/s5-phone-p2-1572.808798f8b4.avif",
+    "avifBytes": 113174,
+    "webp": "/pictures/s5-phone-p2-1572.db12719e8c.webp",
+    "webpBytes": 130720
    }
   ]
  },
@@ -636,18 +636,18 @@
    {
     "w": 786,
     "avifQ": 70,
-    "avif": "/pictures/s5-phone-p3-786.80e549aab8.avif",
-    "avifBytes": 29521,
-    "webp": "/pictures/s5-phone-p3-786.253c8e9668.webp",
-    "webpBytes": 35262
+    "avif": "/pictures/s5-phone-p3-786.7740513ebd.avif",
+    "avifBytes": 29233,
+    "webp": "/pictures/s5-phone-p3-786.09845414fa.webp",
+    "webpBytes": 35152
    },
    {
     "w": 1572,
     "avifQ": 70,
-    "avif": "/pictures/s5-phone-p3-1572.a260cd72b9.avif",
-    "avifBytes": 104040,
-    "webp": "/pictures/s5-phone-p3-1572.67ee23c0a3.webp",
-    "webpBytes": 120460
+    "avif": "/pictures/s5-phone-p3-1572.e728881cdb.avif",
+    "avifBytes": 103572,
+    "webp": "/pictures/s5-phone-p3-1572.a4a7739937.webp",
+    "webpBytes": 119832
    }
   ]
  },
