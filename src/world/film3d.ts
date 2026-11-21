@@ -289,22 +289,24 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
     const want = wanted(active);
     const list = want.map((k) => ({ key: k, url: h.url(k, Number(/^s(\d)/.exec(k)?.[1] ?? active)) }));
     if (want.some((k) => k.startsWith('s2-'))) list.push({ key: SCREEN, url: menuScreen });
-    // build 12E (WebKit): while the page has been still for a second, the next scene's pictures are read and decoded ahead
-    // (one a frame, in the order the scroll needs them), so none is first decoded in a scroll
+    // build 12E (WebKit): every picture is decoded into plain pixels before it goes into the chip, one a frame and never in
+    // a frame that puts rows into the chip; while the page has been still for a second, the next scene's pictures are read
+    // and decoded ahead too (in the order the scroll needs them), so few are decoded in a scroll at all
     const idle = !moving && now - lastInput >= 1000;
     const nextUp = World.PIXELS ? [active + 1, active + 2, active + 3].filter((n) => n >= 1 && n <= h.count).flatMap((n) => passesOf(n)).filter((k) => !want.includes(k)).slice(0, 3) : [];
     world.want(list, nextUp.map((k) => ({ key: k, url: h.url(k, Number(/^s(\d)/.exec(k)?.[1] ?? active)) })), idle);
-    const warmed = idle && world.warm();
     // one picture into the chip a frame, and only while the page is still or the scene needs it now
     // while the film moves, only the stills of the scenes on screen (the rest while the page is still: a picture's first
     // rows cost Safari about 30 ms, its decoding)
     const need = [top + 1, top].filter((n) => n >= 1 && n <= h.count && !isReady(n));
+    const warmed = world.warm(idle, moving ? new Set([...need.flatMap((n) => passesOf(n)), ...(need.includes(2) ? [SCREEN] : [])]) : null);
     const more = world.pending() > 0;
     // never let go of the stills of a scene on screen (or the one before the scene arriving, or after it)
     const keep = new Set(want);
     for (const n of [top, top + 1, top + 2]) if (n >= 1 && n <= h.count) for (const k of passesOf(n)) keep.add(k);
     if ([top, top + 1, top + 2].includes(2)) keep.add(SCREEN);
-    if (world.pending() && (!moving || need.length)) world.upload(moving ? 1 : 4, keep, !moving);
+    if (warmed) { /* this frame decoded a picture: nothing into the chip */ }
+    else if (world.pending() && (!moving || need.length)) world.upload(moving ? 1 : 4, keep, !moving);
     else if (!moving) { world.upload(0, keep, true); world.tidy(); }
     for (let n = 1; n <= h.count; n++) if (isReady(n)) ready.add(n); else ready.delete(n);
     // the depth maps of the scenes next in line, ahead of their first frame (one a frame)

@@ -585,14 +585,21 @@ export class World {
     for (const t of this.texs.values()) if ((t.want || t.ahead) && (t.state === 'none' || t.state === 'loading' || (t.state === 'decoded' && !t.px && !t.tex && t.row === 0))) return true;
     return false;
   }
-  /** Build 12E (WebKit only): decodes one picture ahead into plain pixels, the most wanted first, while the page is
-   *  still (film3d.ts calls it once the page has been still for a second, at most one picture a call). A picture already
-   *  going into the chip is left as it is. Returns true when it decoded one. */
+  /** Build 12E (WebKit only): decodes one picture into plain pixels (about 20 ms in the simulator, the decode Safari
+   *  would otherwise do at the picture's first rows, 29 to 36 ms, and then 7 ms a strip). The most wanted first; a picture
+   *  asked for only ahead (the scene after) only while the page has been still for a second (`idle`). film3d.ts calls it
+   *  once a frame and puts nothing into the chip in a frame that decoded; while the film moves, only a picture of a scene
+   *  on screen that is not drawn yet (`only`). Returns true when it decoded one. */
   private canvas2d: HTMLCanvasElement | null = null;
   private warmFailed = false;
-  warm(): boolean {
-    if (!World.PIXELS || this.lost) return false;
-    const t = [...this.texs.values()].filter((x) => x.state === 'decoded' && (x.want || x.ahead) && !x.px && x.row === 0 && !x.tex && x.strips[0]).sort((a, b) => a.rank - b.rank)[0];
+  private lastWarm = -1e9;
+  warm(idle: boolean, only: Set<string> | null = null): boolean {
+    if (!World.PIXELS || this.lost || this.warmFailed) return false;
+    // (the page may run its frame more than once in one of the browser's frames: never two pictures decoded, or a
+    // picture decoded and rows put into the chip, within one frame's time)
+    const now = performance.now();
+    if (now - this.lastWarm < 40 || now - this.lastUpload < 16) return false;
+    const t = [...this.texs.values()].filter((x) => x.state === 'decoded' && (x.want || (x.ahead && idle)) && (!only || only.has(x.key)) && !x.px && x.row === 0 && !x.tex && x.strips[0]).sort((a, b) => a.rank - b.rank)[0];
     if (!t) return false;
     const [W, H] = t.size, bm = t.strips[0];
     try {
@@ -605,6 +612,7 @@ export class World {
       ctx.drawImage(bm, 0, 0);
       const d = ctx.getImageData(0, 0, W, H).data;
       t.px = new Uint8Array(d.buffer, d.byteOffset, d.byteLength);
+      this.lastWarm = performance.now();
       bm.close(); t.strips = [];
       // (the canvas keeps no copy: made 1 x 1 again)
       c.width = 1; c.height = 1;
@@ -619,12 +627,13 @@ export class World {
     // one picture at a time, in strips of rows, one strip a call (a whole 2880 x 1800 picture took 20 to 24 ms of the
     // page's time at a fourth of a laptop's speed; a strip takes a quarter of that)
     let t = [...this.texs.values()].find((x) => x.state === 'decoded' && x.row > 0);
-    // (not a picture asked for only to be decoded ahead)
-    if (!t) t = [...this.texs.values()].filter((x) => x.state === 'decoded' && (x.want || !x.ahead)).sort((a, b) => b.used - a.used)[0];
+    // (not a picture asked for only to be decoded ahead; in WebKit only one already decoded into pixels, see warm())
+    const px = World.PIXELS && !this.warmFailed;
+    if (!t) t = [...this.texs.values()].filter((x) => x.state === 'decoded' && (x.want || !x.ahead) && (!px || x.px)).sort((a, b) => b.used - a.used)[0];
     let n = 0;
     const t0 = performance.now();
     // never two calls within one frame's time (Safari ran several in one long frame), and never more than about 4 ms
-    if (t && t0 - this.lastUpload < 12) t = undefined;
+    if (t && (t0 - this.lastUpload < 12 || t0 - this.lastWarm < 16)) t = undefined;
     for (let k = 0; t && k < max && (k === 0 || performance.now() - t0 < 4); k++) {
       const [W, H] = t.size;
       if (!t.tex) {
@@ -656,7 +665,8 @@ export class World {
       }
       // about a megabyte a call (a quarter of a 2880 x 1800 picture took 20 ms of the page's time at a fourth of a
       // laptop's speed)
-      const bm = t.strips[0], rows = Math.min(H - t.row, Math.max(32, Math.floor(this.stripBytes / (W * 4))));
+      // (plain pixels go in at about a millisecond a megabyte: four times the rows a call)
+      const bm = t.strips[0], rows = Math.min(H - t.row, Math.max(32, Math.floor(((t.px ? 4 : 1) * this.stripBytes) / (W * 4))));
       gl.bindTexture(gl.TEXTURE_2D, t.tex);
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
       gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
