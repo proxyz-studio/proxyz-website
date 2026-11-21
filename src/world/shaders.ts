@@ -377,6 +377,33 @@ void main() {
     float gr = (hash(floor(P.xz / cell)) + hash(floor(P.xz / cell) + 17.31) - 1.0) * 3.2 / 255.0 * smoothstep(0.0, 0.03, pool.g);
     c = max(c, pool + gr);
   }
+  if (uMove > 0.0 && uIsFloor < 0.5) {
+    // build 12F: a thing a flag keeps in the dark (the coin, by scene 5's card) is never darker than the floor it stands
+    // on while the camera moves: the travelling light that lights the floor's pool at its base lights it too, at the same
+    // time and as strongly (its own colours and shading, at least the floor's light there, at most four times it), so it
+    // rises out of the dark with the floor round it, in 5 to 6 and back in 6 to 5. Only while the scene whose card it is
+    // leaves for the next one (the first of the two scenes drawn, slot 0, in both directions): in 4 to 5 the coin still
+    // falls into the card's shadow as scene 5's light takes over (as 12E judged right)
+    float fk = 1.0 - flagPass(vW, uLp[0], uLf[0], uLf[1], uLf[2]);
+    if (fk > 0.0) {
+      const vec3 FA = vec3(0.006, 0.006, 0.0058);
+      vec3 B = vec3(vW.x, 0.0, vW.z), up = vec3(0.0, 1.0, 0.0);
+      float near = 1.0 - smoothstep(120.0, 420.0, length(B.xz - uPc.xz));
+      vec2 q = (gl_FragCoord.xy - 0.5 * uRes) / (0.5 * length(uRes));
+      float lens = 1.0 - 0.7 * pow(min(length(q), 1.2), 2.0);
+      float sb = dot(shade(up, v, B, FA, 0.95, 0.0, uMp, uMd, uMw, uMi, 0.0), vec3(0.2126, 0.7152, 0.0722));
+      float sc = dot(shade(up, v, uPc, FA, 0.95, 0.0, uMp, uMd, uMw, uMi, 0.0), vec3(0.2126, 0.7152, 0.0722));
+      // the floor's light at the base, as the floor's pool draws it
+      float base = POOL_LIN * near * lens * clamp(sb / max(sc, 1e-12), 0.0, 1.5);
+      // the thing under the same light, against the floor under it
+      vec3 alb = uMap > 0.5 ? texture(uCoinMap, vL.xz / 130.0 + 0.5).rgb : uAlb;
+      vec3 sh = shade(n, v, vW, alb, uRough, uMetal, uMp, uMd, uMw, uMi, 0.0);
+      float shl = dot(sh, vec3(0.2126, 0.7152, 0.0722));
+      vec3 tint = shl > 1e-12 ? sh / shl : vec3(1.0);
+      float r = clamp(shl / max(sb, 1e-12), 1.0, 4.0);
+      c = mix(c, max(c, display(base * r * tint)), fk);
+    }
+  }
   if (uLiveK > 0.0) c = mix(c, phoneLive(n, v, uLp[0], uLd[0], uLc[0], uLi[0], uLk[0]), uLiveK);
   if (uFg > 0.5) {
     // the copy above the words: the scenes' dark band at the foot, which the page lays over the live picture under it
