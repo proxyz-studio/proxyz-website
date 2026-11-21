@@ -207,15 +207,19 @@ cannot run.
   all the same); what no picture saw is lit live by that scene's key light (the same light, colours and camera curve
   as the picture maker). While the camera moves every still's frame is feathered; the floor past a still's frame (and
   just behind a thing's edge) takes that still's small soft copy, carried out from its edge, so no seam or dark rim
-  shows; the two scenes' floors mix by their weights. An object is drawn by the scene whose still saw it; a thing one
+  shows; the two scenes' floors mix by their weights. The floor counts as seen by a still only where no thing stood
+  within about a texel of it in that still (build 12G: else the thing's lit rim in the still was drawn on the floor as
+  a dotted ghost of its outline once the camera moved). An object is drawn by the scene whose still saw it; a thing one
   scene's stills hold is lit by that scene and handed over at the half way point, while it is off the screen (it is
   solid under the other scene's light, never see-through). Between two scenes the floor is relit by one light
   travelling from the first scene's key to the second's, so the pool of light moves across the floor with the camera.
   A far room behind everything takes what the stills show past the floor's edge. The light passes mix as the page mixes the pictures; scene 6's later passes grow
   inside the same oval. Scene 2's phone lifts live (drawn by the live light, its screen look 11's menu picture,
   `src/world/menu.webp`) between its two stills, its glass reflecting the floor and the stand as scene 2's first still
-  shows them (and the pool of scene 2's spot past that still's frame, and the spot itself); scene 5's screen is lit as
-  soon as the phone shows.
+  shows them (and the pool of scene 2's spot past that still's frame, and the spot itself). That phone is laid over
+  what is drawn behind it by how much of it the stills show (none in scene 2's first still), never drawn as what a
+  still without it shows at its place (build 12G: while the camera moved that showed as a notch in the stand's lip and
+  a grey wedge on the floor). Scene 5's screen is lit as soon as the phone shows.
 - **The camera** (`src/world/path.ts`, the moves in `SHAPES` in `src/world/film3d.ts`): at each rest exactly the
   still's camera; between rests it travels slowly out, does most of its move while the light changes, and settles
   slowly in, never stopping and never swinging past. Scene 1 holds still until its light rests; scenes 6 and 7 share
@@ -231,7 +235,12 @@ cannot run.
   no input (one program linked, or one drawn once, never two in one frame); else at the first sign of intent, or at once when the visitor comes back
   through Back or a door's address. The film itself starts at the first sign of intent. The stills go into the graphics chip in the order the film
   needs them: one picture decoded at a time, a frame between two, about a megabyte of rows a frame, a new texture's
-  memory made and cleared alone. The shapes are read in slices between frames and the shaders compile aside
+  memory made and cleared alone, and a frame after its last rows its smaller copies (mipmaps, made by the chip, about
+  a third more memory). Every still is read through them (trilinear, anisotropic where the chip has it, a half step
+  sharper than the chip would choose), since it is almost always drawn smaller than its own pixels: a phone's canvas is
+  at most twice the page against a 1572 px still, and the governor's lower sharpness steps (1.5, 1.25, 1) make it
+  smaller still. Read with one level only (build 12F and before) the stand's fine print lines turned into zebra
+  stripes and every edge into steps on a real phone (test 38). The shapes are read in slices between frames and the shaders compile aside
   (`KHR_parallel_shader_compile` where the browser has it), so the visitor's first gesture never waits for any of it.
 - **When it does not run:** less motion (never started), no WebGL 2, a chip too slow for it (two slow first frames, a
   software chip for example), a lost context (the stills at once; live again when the context comes back, or with a
@@ -243,7 +252,7 @@ cannot run.
   height field and its part colours from the coin's real triangles; the phone and the trophy's base as the stills
   make them). `node scripts/world-shots.mjs <the stills project folder>` rebuilds `src/world/shots.json`, every
   still's camera, key light and poses (and the other things it holds, its `x12` setting), from the settings the
-  picture maker saved beside each drawing. Run both when a drawing is made again, then `npm run check` (tests 32 to 37
+  picture maker saved beside each drawing. Run both when a drawing is made again, then `npm run check` (tests 32 to 38
   prove the live film).
 - The page root carries `data-world` for the check: the scenes drawn live now, those whose stills are in the chip,
   and the first frame's time in ms.

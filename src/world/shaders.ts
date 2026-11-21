@@ -125,6 +125,11 @@ uniform vec4 uShade[2];
 uniform float uFgH;
 uniform float uDepthFar;
 uniform float uDbg;
+// build 12G: scene 2's phone, which only some of scene 2's stills hold, is laid over what is drawn behind it by how much
+// of it the stills show (see slot*): 1 while it draws, 0 for every other thing
+uniform float uMenu;
+// build 12G: the stills are read through their smaller copies; this shifts which copy (negative: sharper)
+uniform float uBias;
 // the floor's light while the camera moves between two scenes: one light travelling from the first scene's key to the
 // second's (where it stands, where it aims, its cone and strength), and how far it has come (0: none)
 uniform vec3 uMp;
@@ -156,6 +161,13 @@ float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.545
 // point next to a sharp step (the route's edge on the coin) may read the step's texel: a neighbour that saw the point
 // counts too, and the test is soft over one tolerance, so no edge is drawn as a hard staircase or a dark crack.
 float dz(sampler2D d, vec2 uv) { return unpack(texture(d, uv)) * uDepthFar; }
+// build 12G: under the floor, the nearest thing the still's camera saw within about a texel (its own texel and its eight
+// neighbours): the floor counts as seen only where no thing stood next to it in the still (see seen())
+float dzNear(sampler2D d, vec2 uv, vec2 texel) {
+  float z = dz(d, uv);
+  for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) if (i != 0 || j != 0) z = min(z, dz(d, uv + vec2(float(i), float(j)) * texel));
+  return z;
+}
 float seen(sampler2D d, vec2 uv, float w, vec2 texel) {
   // (uTol: a thing hidden only by itself, a hill of the coin behind another, takes the still's colour there all the
   // same, stretched like a rubber sheet, where a hole lit live would show as a dark crack)
@@ -163,11 +175,18 @@ float seen(sampler2D d, vec2 uv, float w, vec2 texel) {
   // else the floor far behind a thing passed as seen and took the thing's colours, smeared)
   float tol = 0.8 + 0.006 * w + (uIsFloor > 0.5 ? min(2.0 * fwidth(w), 3.0) : 2.0 * fwidth(w)) + uTol;
   float z0 = dz(d, uv);
-  // (the floor: its own texel only; a neighbour's would carry the bright rim of a thing standing on it out along the
-  // floor as a thin line where the thing hid it from the still's camera)
-  float zn = uIsFloor > 0.5 ? z0 : max(max(dz(d, uv + vec2(texel.x, 0.0)), dz(d, uv - vec2(texel.x, 0.0))), max(dz(d, uv + vec2(0.0, texel.y)), dz(d, uv - vec2(0.0, texel.y))));
-  // (nothing there in the still's camera: the map's clear value, past its far end)
-  float z = max(z0, zn);
+  float z;
+  if (uIsFloor > 0.5) {
+    // build 12G: the floor is seen only where no thing stood within about a texel of it in the still's camera. With its
+    // own texel alone (the depth map is coarser than the still, and read texel by texel), a point of the floor just
+    // outside a thing's outline in the still took the still's pixel there, which is the thing's own lit rim, drawn on
+    // the floor where the camera has moved: a dotted ghost of the thing's outline (scene 2's backboard, Tew's iPhone)
+    z = dzNear(d, uv, texel);
+  } else {
+    float zn = max(max(dz(d, uv + vec2(texel.x, 0.0)), dz(d, uv - vec2(texel.x, 0.0))), max(dz(d, uv + vec2(0.0, texel.y)), dz(d, uv - vec2(0.0, texel.y))));
+    // (nothing there in the still's camera: the map's clear value, past its far end)
+    z = max(z0, zn);
+  }
   if (z > uDepthFar * 0.999) return 1.0;
   return clamp((z + 2.0 * tol - w) / tol, 0.0, 1.0);
 }
@@ -252,7 +271,9 @@ vec3 phoneLive(vec3 n, vec3 v, vec3 lp, vec3 ld, vec2 lc, float li, float lk) {
       vec4 cl = uEnvVP * vec4(F, 1.0);
       vec2 uv = cl.xy / max(cl.w, 1e-3) * 0.5 + 0.5, e = min(uv, 1.0 - uv);
       float inside = cl.w > 0.0 ? smoothstep(0.0, 0.06, min(e.x, e.y)) : 0.0;
-      env = mix(pool, srgbLin(texture(uC0, vec2(uv.x, 1.0 - uv.y)).rgb), inside);
+      // (its base level, as before: read inside a branch that differs from pixel to pixel, where a picture with
+      // smaller copies has no defined choice of copy)
+      env = mix(pool, srgbLin(textureLod(uC0, vec2(uv.x, 1.0 - uv.y), 0.0).rgb), inside);
     }
     // the spot itself, a small bright disc where the glass mirrors it
     env += vec3(1.0, 0.975, 0.94) * 40.0 * smoothstep(0.99955, 0.99995, dot(r, normalize(lp - vW)));
@@ -267,7 +288,7 @@ vec3 phoneLive(vec3 n, vec3 v, vec3 lp, vec3 ld, vec2 lc, float li, float lk) {
 }
 ${[0, 1].map((s) => {
     const p = (k: number) => s * PASSES + k;
-    return `vec4 slot${s}(vec3 n, vec3 v) {
+    return `vec4 slot${s}(vec3 n, vec3 v, out float al) {
   vec3 fb = live(n, v, uLp[${s}], uLd[${s}], uLc[${s}], uLi[${s}], uLk[${s}], uHold[${s}], uLf[${s * 3}], uLf[${s * 3 + 1}], uLf[${s * 3 + 2}]);
   // the floor (and the room) where this still did not see it, past its frame or hidden behind a thing: the still
   // itself, softened (its small copy), carried out from its nearest edge, so its light and falloff go on with no seam
@@ -285,12 +306,18 @@ ${[0, 1].map((s) => {
     // the still), the live floor farther behind (else a blurred copy of the thing would show on the floor beyond it)
     // past the frame it gives way to the live floor within a short distance (a still that is all thing at its edge, the
     // close up of the coin, would carry that thing's colours out across the floor)
-    float far = u0 == bu ? smoothstep(12.0, 50.0, vC[${p(0)}].w - dz(uD${p(0)}, bu)) : smoothstep(0.0, 0.12, length(u0 - bu));
+    // (build 12G: by the same nearest thing as the test of sight, so the floor just outside a thing's outline in the
+    // still, hidden now by that thing, is the live floor as the floor farther behind it: by its own texel alone it took
+    // the soft copy, a thin pale line round the thing's outline in the still, on the dark floor)
+    float far = u0 == bu ? smoothstep(12.0, 50.0, vC[${p(0)}].w - dzNear(uD${p(0)}, bu, uDT[${p(0)}])) : smoothstep(0.0, 0.12, length(u0 - bu));
     fb = mix(acc / 9.0, fb, far);
   }
   if (uDbg > 0.5 && uDbg < 1.5) fb = vec3(0.6, 0.0, 0.0) + fb;
   vec3 c = fb;
   float frameY = 0.0, frameW = 0.0, cover = 0.0;
+  // build 12G, scene 2's phone: its colour from the stills that hold it alone, and how much of it they show (premultiplied)
+  vec3 mc = vec3(0.0);
+  float ma = 0.0;
 ${[0, 1, 2].map((k) => `  if (uNP[${s}] > ${k}) {
     vec4 cl = vC[${p(k)}];
     vec2 uv = cl.xy / cl.w * 0.5 + 0.5;
@@ -305,9 +332,18 @@ ${[0, 1, 2].map((k) => `  if (uNP[${s}] > ${k}) {
     // with that pass); if no still of this scene holds it, the thing itself under this scene's light (in its dark, as
     // a solid thing: never see-through while the camera moves), the still's own pixel only at the still's camera
     float vis = uPres[${p(k)}] > 0.5 ? mix(seen(uD${p(k)}, uv, cl.w, uDT[${p(k)}]) * max(smoothstep(-0.02, 0.08, vF[${p(k)}]), step(5.0, uTol)), 1.0, uNear[${p(k)}]) : uHold[${s}] > 0.5 || uSolid < 0.5 ? 1.0 : uNear[${p(k)}];
-    vec3 pc = texture(uC${p(k)}, vec2(uv.x, 1.0 - uv.y)).rgb;
-    ${k === 0 ? `c = mix(fb, pc, f * vis); frameY = 1.0 - uv.y; frameW = f; cover = uIsFloor > 0.5 ? 1.0 : soft;` : `c = mix(c, pc, uT[${p(k)}] * oval(uOv[${p(k)}], uv) * f * vis);`}
+    vec3 pc = texture(uC${p(k)}, vec2(uv.x, 1.0 - uv.y), uBias).rgb;
+    ${k === 0 ? `c = mix(fb, pc, f * vis); frameY = 1.0 - uv.y; frameW = f; cover = uIsFloor > 0.5 ? 1.0 : soft;
+    if (uPres[${p(k)}] > 0.5) { mc = c; ma = 1.0; }` : `float a${k} = uT[${p(k)}] * oval(uOv[${p(k)}], uv);
+    c = mix(c, pc, a${k} * f * vis);
+    // (a still without the phone lays over it what lay behind it: it fades out; one with it, the phone as it shows it)
+    mc *= 1.0 - a${k}; ma *= 1.0 - a${k};
+    if (uPres[${p(k)}] > 0.5) { mc += mix(fb, pc, f * vis) * a${k}; ma += a${k}; }`}
   }`).join('\n')}
+  // scene 2's phone: drawn only as much as the stills show it, over what is drawn behind it (a still without it once
+  // showed what lay behind it at the phone's own place, which is right only at that still's camera: while the camera
+  // moved, the lip of the stand and the floor in front of it, carried onto the phone, showed as a notch and a grey wedge)
+  if (uMenu > 0.5) { c = ma > 1e-4 ? mc / ma : fb; al = ma; } else al = 1.0;
   c = sat(c, uSat[${s}]);
   float fm = fadeOf(uFade[${s}], frameY);
   c = mix(FILM, c, mix(1.0, fm, frameW));
@@ -334,7 +370,8 @@ void main() {
   // between two scenes, each point is drawn mostly by the scene whose still saw it (the other one's live light, where
   // its still did not reach, is only a stand in: a washed grey patch where the old scene's spot lit what its still
   // never held)
-  vec4 a = uNP[0] > 0 && w0 > 0.0 ? slot0(n, v) : vec4(0.0), b = uNP[1] > 0 && w1 > 0.0 ? slot1(n, v) : vec4(0.0);
+  float al0 = 0.0, al1 = 0.0;
+  vec4 a = uNP[0] > 0 && w0 > 0.0 ? slot0(n, v, al0) : vec4(0.0), b = uNP[1] > 0 && w1 > 0.0 ? slot1(n, v, al1) : vec4(0.0);
   // (not for a thing only one of them holds: that one draws it whole, above)
   if (!held && w0 > 0.0 && w1 > 0.0) {
     float x0 = w0 * mix(0.001, 1.0, a.a), x1 = w1 * mix(0.001, 1.0, b.a);
@@ -345,6 +382,9 @@ void main() {
     w0 = mix(x0 / (x0 + x1), w0, fl); w1 = 1.0 - w0;
   }
   vec3 c = w0 * a.rgb + w1 * b.rgb;
+  // (scene 2's phone: each scene's colour by how much of the phone it shows)
+  float ma = uMenu > 0.5 ? w0 * al0 + w1 * al1 : 1.0;
+  if (uMenu > 0.5) c = ma > 1e-4 ? (w0 * al0 * a.rgb + w1 * al1 * b.rgb) / ma : c;
   if (uMove > 0.0 && uIsFloor > 0.5 && n.y > 0.9) {
     // the floor between two scenes: the two stills' floors mixed, relit by one light travelling from the first scene's
     // key to the second's, so the pool of light moves across the floor with the camera (never a whole floor brightening
@@ -404,7 +444,7 @@ void main() {
       c = mix(c, max(c, display(base * r * tint)), fk);
     }
   }
-  if (uLiveK > 0.0) c = mix(c, phoneLive(n, v, uLp[0], uLd[0], uLc[0], uLi[0], uLk[0]), uLiveK);
+  if (uLiveK > 0.0) { c = mix(c, phoneLive(n, v, uLp[0], uLd[0], uLc[0], uLi[0], uLk[0]), uLiveK); ma = mix(ma, 1.0, uLiveK); }
   if (uFg > 0.5) {
     // the copy above the words: the scenes' dark band at the foot, which the page lays over the live picture under it
     float y = gl_FragCoord.y / uFgH, keep = 1.0;
@@ -416,7 +456,8 @@ void main() {
     c = mix(FILM, c, keep);
   }
   // (the copy above the words, premultiplied: a thing only scene 6's words stand behind comes in front as scene 6 comes in)
-  o = uFg > 0.5 ? vec4(c * uFgA, uFgA) : vec4(c, 1.0);
+  // (scene 2's phone is laid over what is behind it, premultiplied: 1 for every other thing)
+  o = uFg > 0.5 ? vec4(c * uFgA * ma, uFgA * ma) : vec4(c * ma, ma);
 }`;
 
 /** the depth of each surface along the projector's axis, packed into 8 bit colour (works on every phone) */

@@ -107,7 +107,9 @@ export function prepareFilm3d(idle = false): Promise<{ world: World; relay: Rela
     const relay: Relay = { on: null, lost: () => relay.on?.lost(), restored: () => relay.on?.restored() };
     // on idle, even the context waits for a still page (making one can take Safari tens of ms)
     const quiet = (): Promise<void> => new Promise((res) => { const t = (): void => { if (urgent || performance.now() - lastInput >= 1000) res(); else window.setTimeout(t, 100); }; t(); });
-    prepared = (idle ? quiet() : Promise.resolve()).then(() => World.create(relay, phoneChip ? 120e6 : 260e6, idle)).then((w) => {
+    // (the pictures the chip may hold: build 12E's 120 MB on a phone and 260 MB elsewhere, plus a third for each
+    // picture's smaller copies, build 12G, so the same pictures fit)
+    prepared = (idle ? quiet() : Promise.resolve()).then(() => World.create(relay, phoneChip ? 160e6 : 347e6, idle)).then((w) => {
       w.depthLong = phoneChip ? 1024 : 1536;
       w.stripBytes = 1.1e6;
       // one step of its making a frame: on idle only once the page has been still for a second, else at once

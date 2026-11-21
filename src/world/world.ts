@@ -314,8 +314,17 @@ interface Tex { key: string; state: 'none' | 'loading' | 'decoded' | 'ready' | '
   /** build 12E (WebKit): asked for only to be decoded ahead (the scene after the wanted ones), not to go into the chip */
   ahead: boolean;
   /** the picture, small and soft (about 128 px on its long side): the floor past its frame takes it */
-  small: WebGLTexture | null }
+  small: WebGLTexture | null;
+  /** build 12G: every row is in, its smaller copies (mipmaps) are made next, in a call of their own */
+  mipDue?: boolean }
 interface DepthMap { fb: WebGLFramebuffer; tex: WebGLTexture; w: number; h: number }
+/** Build 12G: a still is drawn smaller than its own pixels almost everywhere (a phone's canvas is at most twice the page,
+ *  860 px wide, against a 1572 px still; a quarter of it at the lowest sharpness), so it keeps its whole chain of smaller
+ *  copies (mipmaps), each half the one before, and is read through them (trilinear, and anisotropic where the chip has
+ *  it). With one level only, every screen pixel took the one or four texels nearest it: the stand's fine print lines
+ *  came out as zebra stripes and the edges as steps (Tew's iPhone, 21 Nov 2026). The copies cost a third more memory. */
+const levelsOf = (w: number, h: number) => Math.floor(Math.log2(Math.max(w, h))) + 1;
+const bytesOf = (w: number, h: number) => { let b = 0; for (let l = 0; l < levelsOf(w, h); l++) b += Math.max(1, w >> l) * Math.max(1, h >> l) * 4; return b; };
 
 export interface WorldEvents { lost(): void; restored(): void }
 
@@ -324,6 +333,8 @@ export class World {
   static TOUCH = true;
   /** the screen's light of scene 2's phone drawn live, against the stills' (matched on the lifted phone at its rest) */
   static SCREEN = 0.6;
+  /** build 12G: which of a still's smaller copies is read (0: as the chip chooses; negative: sharper) */
+  static BIAS = -0.5;
   /** Build 12E. WebKit (Safari, and every browser on an iPhone) decodes a picture read in as an ImageBitmap only when
    *  its first rows go into the chip: 29 to 36 ms in the simulator, a stop when that falls in a scroll (9 of 12D's 21
    *  stops). There the pictures are decoded ahead, while the page is still (drawn once into a canvas read on the processor), into plain pixels, and those go
@@ -389,6 +400,8 @@ export class World {
     // the shaders compile while the page goes on (the browser's own threads where it can): their state is asked only
     // once they are done (asking at once waited for the compiler on the page's thread, a stop at the first gesture)
     this.parallel = gl.getExtension('KHR_parallel_shader_compile');
+    this.aniso = gl.getExtension('EXT_texture_filter_anisotropic');
+    this.anisoN = this.aniso ? Math.min(4, Number(gl.getParameter((this.aniso as unknown as { MAX_TEXTURE_MAX_ANISOTROPY_EXT: number }).MAX_TEXTURE_MAX_ANISOTROPY_EXT)) || 1) : 1;
     this.linkedOk = false;
     this.progW = this.progD = null!;
     const compile = (vs: string, fs: string) => {
@@ -408,7 +421,7 @@ export class World {
     this.uW.clear(); this.uD.clear();
     this.meshes.clear();
     // every picture and depth map is gone with a lost context: read again when asked
-    for (const t of this.texs.values()) { t.tex = null; t.small = null; t.row = 0; if (t.state === 'ready') t.state = 'none'; }
+    for (const t of this.texs.values()) { t.tex = null; t.small = null; t.row = 0; if (t.state === 'ready' || t.mipDue) t.state = 'none'; t.mipDue = false; }
     this.clearFb = null; this.shrinkProg = null; this.shrinkVao = null; this.shrinkFb = null;
     this.spare.clear(); this.spareBytes = 0;
     this.held = 0;
@@ -482,6 +495,9 @@ export class World {
   }
 
   private parallel: { COMPLETION_STATUS_KHR: number } | null = null;
+  /** anisotropic filtering: the extension, and how many samples (at most 4) */
+  private aniso: { TEXTURE_MAX_ANISOTROPY_EXT: number } | null = null;
+  private anisoN = 1;
   private linkedOk = false;
   /** why the shaders could not be built, if they could not */
   broken = '';
@@ -636,28 +652,45 @@ export class World {
     if (t && (t0 - this.lastUpload < 12 || t0 - this.lastWarm < 16)) t = undefined;
     for (let k = 0; t && k < max && (k === 0 || performance.now() - t0 < 4); k++) {
       const [W, H] = t.size;
+      if (t.mipDue && t.tex) {
+        // build 12G: its smaller copies, made by the chip from the whole picture, alone in this call (a frame after its
+        // last rows); only then is the picture drawn, and read through them
+        gl.bindTexture(gl.TEXTURE_2D, t.tex);
+        gl.generateMipmap(gl.TEXTURE_2D);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+        if (this.aniso && this.anisoN > 1) gl.texParameterf(gl.TEXTURE_2D, this.aniso.TEXTURE_MAX_ANISOTROPY_EXT, this.anisoN);
+        t.mipDue = false; t.state = 'ready'; t.row = 0;
+        n++;
+        this.lastUpload = performance.now();
+        break;
+      }
       if (!t.tex) {
         // a texture let go of earlier, of the same size, if there is one (no new memory, nothing to wait for)
         const k = W + 'x' + H, spare = this.spare.get(k)?.pop();
         t.tex = spare ?? gl.createTexture()!;
         gl.bindTexture(gl.TEXTURE_2D, t.tex);
         if (!spare) {
-          gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, W, H);
-          // cleared once by the chip (Firefox otherwise clears it itself before the first rows go in, and warns)
+          // (build 12G: with room for its smaller copies, made once every row is in)
+          const lv = levelsOf(W, H);
+          gl.texStorage2D(gl.TEXTURE_2D, lv, gl.RGBA8, W, H);
+          // cleared once by the chip (Firefox otherwise clears it itself before the first rows go in, and warns), every level
           if (!this.clearFb) this.clearFb = gl.createFramebuffer();
           gl.bindFramebuffer(gl.FRAMEBUFFER, this.clearFb);
-          gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t.tex, 0);
           gl.clearColor(0, 0, 0, 1); gl.disable(gl.SCISSOR_TEST);
-          gl.clear(gl.COLOR_BUFFER_BIT);
+          for (let l = 0; l < lv; l++) {
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t.tex, l);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+          }
           gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, null, 0);
           gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         }
-        else this.spareBytes -= W * H * 4;
+        else this.spareBytes -= bytesOf(W, H);
+        // (the base level alone until the smaller copies are made)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        t.bytes = W * H * 4;
+        t.bytes = bytesOf(W, H);
         this.held += t.bytes;
         t.row = 0;
         // the new memory alone this frame (a phone's chip took 25 ms to make it), the rows from the next
@@ -682,10 +715,12 @@ export class World {
       this.lastUpload = performance.now();
       if (t.row >= H) {
         bm?.close(); t.strips = []; t.px = null;
-        t.state = 'ready'; t.row = 0;
+        // (build 12G: ready once its smaller copies are made, in the next call)
+        t.mipDue = true;
         // read once now, by a draw nobody sees, so the chip has it before the first frame that shows it (a browser
         // may send a picture to the chip only when it is first drawn with: a stop in the middle of a scene change)
-        // its small soft copy, made by the chip from it (which also reads it into the chip before its first frame)
+        // its small soft copy, made by the chip from it (which also reads it into the chip before its first frame), from
+        // its base level as before the smaller copies
         this.shrink(t);
         break;
       }
@@ -704,12 +739,14 @@ export class World {
     if (t.tex && !this.lost) {
       const k = t.size[0] + 'x' + t.size[1], list = this.spare.get(k) ?? [];
       list.push(t.tex); this.spare.set(k, list); this.spareBytes += t.bytes;
+      // (a spare goes back to its base level alone until its next picture's copies are made)
+      this.gl.bindTexture(this.gl.TEXTURE_2D, t.tex); this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
     }
     if (t.tex) this.held -= t.bytes;
     t.row = 0;
     for (const x of t.strips) x.close();
     if (t.small && !this.lost) this.gl.deleteTexture(t.small);
-    t.tex = null; t.small = null; t.strips = []; t.px = null; t.state = 'none';
+    t.tex = null; t.small = null; t.strips = []; t.px = null; t.state = 'none'; t.mipDue = false;
   }
 
   /* ---------- depth maps: what each still's camera saw ---------- */
@@ -890,6 +927,7 @@ export class World {
     gl.uniformMatrix4fv(u('uEnvVP'), false, env ? env.VP : ident());
     gl.uniform1f(u('uDepthFar'), 6000);
     gl.uniform1f(u('uDbg'), this.debug);
+    gl.uniform1f(u('uBias'), World.BIAS);
     const T: number[] = [], ov: number[] = [], dt: number[] = [];
     for (let i = 0; i < UNITS; i++) {
       const ps = slots[Math.floor(i / PASSES)]?.passes[i % PASSES], p = proj[i];
@@ -932,9 +970,13 @@ export class World {
     // which things show: those of a scene on screen (the floor always)
     const scenesOn = new Set(slots.filter((s) => s.W > 0).map((s) => s.scene));
     const drawThings = (only: ((t: Thing) => boolean) | null) => {
-      for (const th of this.things) {
+      // build 12G: scene 2's phone last, laid over what is drawn behind it by how much of it the stills show
+      for (const th of [...this.things.filter((x) => x.name !== 'menu'), ...this.things.filter((x) => x.name === 'menu')]) {
         if (!th.scenes.some((n) => scenesOn.has(n))) continue;
         if (only && !only(th)) continue;
+        const menu = th.name === 'menu';
+        gl.uniform1f(u('uMenu'), menu ? 1 : 0);
+        if (menu) { gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); } else gl.disable(gl.BLEND);
         const model = this.thingPose(th.name, st.lift);
         for (const dr of th.draws) {
           const mesh = this.meshes.get(dr.part);
@@ -968,6 +1010,7 @@ export class World {
           gl.drawElements(gl.TRIANGLES, mesh.count, mesh.type, 0);
         }
       }
+      gl.disable(gl.BLEND);
     };
     // 1. the things that stand in front of the giant words, alone, copied into the page layer above the words
     if (st.fg && fgCtx) {
@@ -1012,7 +1055,7 @@ export class World {
   /** While the page is still: spares beyond two of a size are deleted (never while the film moves). */
   tidy(): void {
     if (this.lost) return;
-    for (const [k, list] of this.spare) while (list.length > 2) { const [w, h] = k.split('x').map(Number); this.gl.deleteTexture(list.shift()!); this.spareBytes -= w * h * 4; }
+    for (const [k, list] of this.spare) while (list.length > 2) { const [w, h] = k.split('x').map(Number); this.gl.deleteTexture(list.shift()!); this.spareBytes -= bytesOf(w, h); }
   }
   private clearFb: WebGLFramebuffer | null = null;
   private shrinkProg: WebGLProgram | null = null;
