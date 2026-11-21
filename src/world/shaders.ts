@@ -268,7 +268,9 @@ ${[0, 1, 2].map((k) => `  if (uNP[${s}] > ${k}) {
     vec2 uv = cl.xy / cl.w * 0.5 + 0.5;
     // a still's frame: sharp at its own camera (a rest), feathered while the camera moves (no straight seam)
     vec2 ed = min(uv, 1.0 - uv);
-    float soft = cl.w > 0.0 ? smoothstep(0.0, 0.07, min(ed.x, ed.y)) : 0.0;
+    // (wider on a thing: a still's frame edge crossing a thing that moves through it, the coin in 4 to 5 on a phone,
+    // showed as a hard diagonal between the still's light and the live light)
+    float soft = cl.w > 0.0 ? smoothstep(0.0, uIsFloor > 0.5 ? 0.07 : 0.22, min(ed.x, ed.y)) : 0.0;
     float f = uDbg > 1.5 ? 0.0 : mix(soft, inFrame(uv, cl.w), uNear[${p(k)}]);
     // at the still's own camera every point on screen is the still's (no test); away from it, what the still saw
     // a thing this still does not hold: if another still of this scene holds it, what lies behind it here (it comes in

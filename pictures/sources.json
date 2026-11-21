@@ -1,5 +1,5 @@
 {
- "_note": "Source drawing for each picture (the 1x drawing). Paths are relative to the source folder given to scripts/pictures.py. A value may be an object: \"src\" the drawing, \"max2x\" a byte budget for the 2x file, \"only1x\" no 2x file, \"q\" its own AVIF quality. s7t-* are the empty pool of scene 6, for the scene 7 choice \"twin\" (content/site.json). A key ending in -matte is the matte of the thing a scene lights first (\"matte\": true). Build 12D: out-12d/ holds stills drawn again with the other things of the one room that their camera sees (each in its world place, lit by that scene's light): scene 2 (laptop) with the coin, scene 4 with the stand, scene 5 with the coin.",
+ "_note": "Source drawing for each picture (the 1x drawing). Paths are relative to the source folder given to scripts/pictures.py. A value may be an object: \"src\" the drawing, \"max2x\" a byte budget for the 2x file, \"only1x\" no 2x file, \"q\" its own AVIF quality. s7t-* are the empty pool of scene 6, for the scene 7 choice \"twin\" (content/site.json). A key ending in -matte is the matte of the thing a scene lights first (\"matte\": true). Build 12D: out-12d/ holds stills drawn again with the other things of the one room that their camera sees (each in its world place, lit by that scene's light): scene 2 (laptop) with the coin, scene 4 with the stand, scene 5 with the coin. The PULZ screens of scenes 5 and 6 are the app in its v90 colours (out-12d s5v4-*, brainv2-*; screens made by the stills project's pt-12d/tools/pt/stills5/coach_screens_v90.py from the made up sample person's screens only).",
  "s1-desk-p1": "out2/s1-desk-p1.png",
  "s1-desk-p2": "out2/s1-desk-p2.png",
  "s1-phone-p1": {
@@ -38,11 +38,11 @@
  "s4-phone-p1": "out-12d/s4v2-phone-p1@1x.png",
  "s4-phone-p2": "out-12d/s4v2-phone-p2@1x.png",
  "s5-desk-p1": "out-12d/s5v3-desk-p1@1x.png",
- "s5-desk-p2": "out-12d/s5v3-desk-p2@1x.png",
- "s5-desk-p3": "out-12d/s5v3-desk-p3@1x.png",
+ "s5-desk-p2": "out-12d/s5v4-desk-p2@1x.png",
+ "s5-desk-p3": "out-12d/s5v4-desk-p3@1x.png",
  "s5-phone-p1": "out-12d/s5v3-phone-p1@1x.png",
- "s5-phone-p2": "out-12d/s5v3-phone-p2@1x.png",
- "s5-phone-p3": "out-12d/s5v3-phone-p3@1x.png",
+ "s5-phone-p2": "out-12d/s5v4-phone-p2@1x.png",
+ "s5-phone-p3": "out-12d/s5v4-phone-p3@1x.png",
  "s5-desk-matte": {
   "src": "out5/s5v2-desk-matte@1x.png",
   "matte": true
@@ -53,10 +53,10 @@
  },
  "s6-desk-p1": "out3/brain-desk-p1.png",
  "s6-desk-p2": "out3/brain-desk-p2.png",
- "s6-desk-p3": "out6/brain-desk-p3@1x.png",
+ "s6-desk-p3": "out-12d/brainv2-desk-p3@1x.png",
  "s6-phone-p1": "out3/brain-phone-p1.png",
  "s6-phone-p2": "out3/brain-phone-p2.png",
- "s6-phone-p3": "out6/brain-phone-p3@1x.png",
+ "s6-phone-p3": "out-12d/brainv2-phone-p3@1x.png",
  "s6-desk-matte": {
   "src": "out5/brain-desk-matte@1x.png",
   "matte": true
