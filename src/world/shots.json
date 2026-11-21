@@ -170,7 +170,15 @@
     "pen": 0.2,
     "int": 11000000
    },
-   "phone": null
+   "phone": null,
+   "extra": [
+    {
+     "name": "coin",
+     "x": -181.343,
+     "z": 164.923,
+     "turn": -20
+    }
+   ]
   },
   "s2-desk-p2": {
    "obj": "stand5",
@@ -217,7 +225,15 @@
      9.59
     ]
    },
-   "screen": "menu-page1_6.png"
+   "screen": "menu-page1_6.png",
+   "extra": [
+    {
+     "name": "coin",
+     "x": -181.343,
+     "z": 164.923,
+     "turn": -20
+    }
+   ]
   },
   "s2-desk-p3": {
    "obj": "stand5",
@@ -264,7 +280,15 @@
      -3
     ]
    },
-   "screen": "menu-page2.png"
+   "screen": "menu-page2.png",
+   "extra": [
+    {
+     "name": "coin",
+     "x": -181.343,
+     "z": 164.923,
+     "turn": -20
+    }
+   ]
   },
   "s2-phone-p1": {
    "obj": "stand5",
@@ -543,8 +567,8 @@
     "fov": 30,
     "sx": 0,
     "sy": 0,
-    "w": 1440,
-    "h": 900
+    "w": 2880,
+    "h": 1800
    },
    "light": {
     "kind": "spot",
@@ -561,7 +585,15 @@
     "cone": 8,
     "pen": 0.8,
     "int": 5000000
-   }
+   },
+   "extra": [
+    {
+     "name": "stand",
+     "x": 114,
+     "z": -217,
+     "turn": 20
+    }
+   ]
   },
   "s4-desk-p2": {
    "obj": "lines",
@@ -577,8 +609,8 @@
     "fov": 30,
     "sx": 0,
     "sy": 0,
-    "w": 1440,
-    "h": 900
+    "w": 2880,
+    "h": 1800
    },
    "light": {
     "kind": "spot",
@@ -595,7 +627,15 @@
     "cone": 5,
     "pen": 0.8,
     "int": 7000000
-   }
+   },
+   "extra": [
+    {
+     "name": "stand",
+     "x": 114,
+     "z": -217,
+     "turn": 20
+    }
+   ]
   },
   "s4-phone-p1": {
    "obj": "lines",
@@ -611,8 +651,8 @@
     "fov": 30,
     "sx": 0,
     "sy": 0,
-    "w": 786,
-    "h": 1704
+    "w": 1572,
+    "h": 3408
    },
    "light": {
     "kind": "spot",
@@ -629,7 +669,15 @@
     "cone": 8,
     "pen": 0.8,
     "int": 5000000
-   }
+   },
+   "extra": [
+    {
+     "name": "stand",
+     "x": 74,
+     "z": -225,
+     "turn": 20
+    }
+   ]
   },
   "s4-phone-p2": {
    "obj": "lines",
@@ -645,8 +693,8 @@
     "fov": 30,
     "sx": 0,
     "sy": 0,
-    "w": 786,
-    "h": 1704
+    "w": 1572,
+    "h": 3408
    },
    "light": {
     "kind": "spot",
@@ -663,7 +711,15 @@
     "cone": 5,
     "pen": 0.8,
     "int": 7000000
-   }
+   },
+   "extra": [
+    {
+     "name": "stand",
+     "x": 74,
+     "z": -225,
+     "turn": 20
+    }
+   ]
   },
   "s5-desk-p1": {
    "obj": "coach",
@@ -704,7 +760,15 @@
      0,
      -18
     ]
-   }
+   },
+   "extra": [
+    {
+     "name": "coin",
+     "x": -277.022,
+     "z": 16.637,
+     "turn": 42
+    }
+   ]
   },
   "s5-desk-p2": {
    "obj": "coach",
@@ -746,7 +810,15 @@
      -18
     ]
    },
-   "screen": "coach-today.png"
+   "screen": "coach-today.png",
+   "extra": [
+    {
+     "name": "coin",
+     "x": -277.022,
+     "z": 16.637,
+     "turn": 42
+    }
+   ]
   },
   "s5-desk-p3": {
    "obj": "coach",
@@ -788,7 +860,15 @@
      -18
     ]
    },
-   "screen": "coach-tell.png"
+   "screen": "coach-tell.png",
+   "extra": [
+    {
+     "name": "coin",
+     "x": -277.022,
+     "z": 16.637,
+     "turn": 42
+    }
+   ]
   },
   "s5-phone-p1": {
    "obj": "coach",
@@ -829,7 +909,15 @@
      0,
      -18
     ]
-   }
+   },
+   "extra": [
+    {
+     "name": "coin",
+     "x": 20.361,
+     "z": -247.642,
+     "turn": -43
+    }
+   ]
   },
   "s5-phone-p2": {
    "obj": "coach",
@@ -871,7 +959,15 @@
      -18
     ]
    },
-   "screen": "coach-today.png"
+   "screen": "coach-today.png",
+   "extra": [
+    {
+     "name": "coin",
+     "x": 20.361,
+     "z": -247.642,
+     "turn": -43
+    }
+   ]
   },
   "s5-phone-p3": {
    "obj": "coach",
@@ -913,7 +1009,15 @@
      -18
     ]
    },
-   "screen": "coach-tell.png"
+   "screen": "coach-tell.png",
+   "extra": [
+    {
+     "name": "coin",
+     "x": 20.361,
+     "z": -247.642,
+     "turn": -43
+    }
+   ]
   },
   "s6-desk-p1": {
    "obj": "trio",
