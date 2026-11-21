@@ -2897,6 +2897,117 @@ async function main() {
     ok(!bad.length, 37, 'One room: every thing that stands inside a still\'s view in the live film\'s world (the stand, the race piece, the coin, the coach phone; outline points inside the still\'s frame) is in that still, every still of scenes 1 to 6, both screen shapes (the last scene is the empty pool by its story; scene 2\'s own phone is there in scene 2 only)', `${seen.join(', ')}, ${checked} checks`, bad.slice(0, 8).join('; '));
   });
 
+  /* 38. no stripes: the live film on a phone at its sharpest and its lowest sharpness, against the stills */
+  // (build 12G) On the owner's iPhone the live film showed zebra stripes (moire) on the stand's fine print lines, stepped
+  // edges and hatched letters where the still is smooth: every still was read into the chip with one level only, so a
+  // still drawn at half its size or less (always on a phone: a canvas of at most twice the page against a 1572 px still,
+  // a quarter of it at the lowest sharpness) took the one texel nearest each screen pixel. Test 33 never saw it: at
+  // twice the page the stripes are faint, and its mean difference is blind to them. Here a phone of the owner's size
+  // (430x745 at 3) is looked at twice: at its sharpest (twice the page), and at the lowest step, where the live film's
+  // own governor puts a phone whose frames are slow (the processor slowed until the canvas is the page's own size, then
+  // given back). At each rest the still film's frame and the live film's are both averaged down to the canvas's own
+  // pixels (the still as the browser would show it at that size, the target look) and band passed (detail of about 2 to
+  // 18 canvas pixels: where stripes, steps and ghost lines show); the stripes are the band's strength in the live frame
+  // more than in the still's, in tiles of 40 CSS px where the still shows something (a tile the still keeps black is
+  // left out: what the live film draws past a still's frame is test 33's), the words and scene 6's board hidden.
+  async function stripes(a, b, s, g, box) {
+    return labPage.evaluate(async ([a64, b64, s, g, box, decode]) => {
+      const dec = (0, eval)(decode);
+      const [A, B] = await Promise.all([dec(a64), dec(b64)]);
+      const [bx, by, bw, bh] = box, px = s / g, W = Math.floor(bw * g), H = Math.floor(bh * g), x0 = bx * s, y0 = by * s;
+      const down = (D) => {
+        const o = new Float32Array(W * H);
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          let sum = 0, n = 0;
+          const xa = Math.round(x0 + x * px), xb = Math.max(xa + 1, Math.round(x0 + (x + 1) * px)), ya = Math.round(y0 + y * px), yb = Math.max(ya + 1, Math.round(y0 + (y + 1) * px));
+          for (let yy = ya; yy < Math.min(yb, D.height); yy++) for (let xx = xa; xx < Math.min(xb, D.width); xx++) { const i = (yy * D.width + xx) * 4; sum += 0.2126 * D.data[i] + 0.7152 * D.data[i + 1] + 0.0722 * D.data[i + 2]; n++; }
+          o[y * W + x] = n ? sum / n : 0;
+        }
+        return o;
+      };
+      const gauss = (X, sig) => {
+        const r = Math.max(1, Math.ceil(3 * sig)), k = [];
+        let t = 0; for (let i = -r; i <= r; i++) { const v = Math.exp(-(i * i) / (2 * sig * sig)); k.push(v); t += v; }
+        const T = new Float32Array(W * H), O = new Float32Array(W * H);
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { let v = 0; for (let i = -r; i <= r; i++) v += (k[i + r] / t) * X[y * W + Math.min(W - 1, Math.max(0, x + i))]; T[y * W + x] = v; }
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { let v = 0; for (let i = -r; i <= r; i++) v += (k[i + r] / t) * T[Math.min(H - 1, Math.max(0, y + i)) * W + x]; O[y * W + x] = v; }
+        return O;
+      };
+      const la = down(A), lb = down(B);
+      const band = (X) => { const p = gauss(X, 0.6), q = gauss(X, 3); for (let i = 0; i < p.length; i++) p[i] -= q[i]; return p; };
+      const pa = band(la), pb = band(lb), T = Math.round(40 * g);
+      let worst = 0, at = null;
+      for (let ty = 0; ty + T <= H; ty += T >> 1) for (let tx = 0; tx + T <= W; tx += T >> 1) {
+        let ea = 0, eb = 0, lum = 0;
+        for (let y = ty; y < ty + T; y++) for (let x = tx; x < tx + T; x++) { const i = y * W + x; ea += Math.abs(pa[i]); eb += Math.abs(pb[i]); lum += la[i]; }
+        if (lum / (T * T) < 4) continue;
+        const e = (eb - ea) / (T * T);
+        if (e > worst) { worst = e; at = [Math.round(bx + tx / g), Math.round(by + ty / g)]; }
+      }
+      return { worst, at };
+    }, [a.toString('base64'), b.toString('base64'), s, g, box, decode]);
+  }
+  if (want(38) && gpuOk) await guarded(38, async () => {
+    const bad = [], seen = [], LIM = 0.4;
+    const [w, h, dpr] = [430, 745, 3];
+    for (const mode of ['sharpest', 'lowest']) {
+      let done = false;
+      for (let run = 0; run < 2 && !done; run++) {
+        const c = await ctx('gpu', { viewport: { width: w, height: h }, deviceScaleFactor: dpr, bypassCSP: true });
+        const still = await open(c, '/', `stripes still ${mode}`);
+        const live = await open(c, '/', `stripes live ${mode}`);
+        const HIDE = INK_HIDE + '.board{visibility:hidden !important}';
+        for (const p of [still, live]) await p.evaluate((css) => { const s = document.createElement('style'); s.textContent = css; document.head.append(s); }, HIDE);
+        await settle(live, 600);
+        await live.touchscreen.tap(w / 2, h / 2);
+        await live.waitForFunction(LIVE, 1, { timeout: 20000 }).catch(() => {});
+        await settle(live, 1500);
+        const canvasW = () => live.evaluate(() => document.querySelector('canvas.world')?.width ?? -1);
+        if (mode === 'lowest') {
+          // a phone whose frames stay slow: the governor lowers the sharpness a step at a time, down to the page's own size
+          step(`stripes ${mode} | slowing the processor until the lowest sharpness`);
+          const cdp = await c.newCDPSession(live);
+          await cdp.send('Emulation.setCPUThrottlingRate', { rate: 20 });
+          let dir = 1;
+          for (let i = 0; i < 120 && (await canvasW()) > w; i++) {
+            const y0 = dir > 0 ? 650 : 100;
+            await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: w / 2, y: y0 }] });
+            for (let k = 1; k <= 5; k++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: w / 2, y: y0 - dir * k * 40 }] });
+            await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+            const y = await live.evaluate(() => scrollY);
+            if (y > 3000) dir = -1; else if (y < 200) dir = 1;
+          }
+          await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+          await settle(live, 1500);
+        }
+        const cw = await canvasW(), g = cw / w;
+        if (/^\|\|/.test(await live.evaluate(() => document.documentElement.dataset.world ?? '')) || (mode === 'lowest' ? cw !== w : cw !== 2 * w)) {
+          seen.push(`${mode}: run ${run + 1} not at the step asked (canvas ${cw} px wide, ${await live.evaluate(() => document.documentElement.dataset.world)})`);
+          await c.close();
+          continue;
+        }
+        const band = await still.evaluate(() => Math.ceil(document.getElementById('top').getBoundingClientRect().bottom) + 4);
+        const box = [0, band, w, h - band - 4];
+        const per = [];
+        for (let n = 1; n <= content.scenes.length; n++) {
+          step(`stripes ${mode} | scene ${n}`);
+          await restAt(still, n); await restAt(live, n);
+          await toScene(still, n, 1);
+          if (!(await live.waitForFunction(LIVE, n, { timeout: 20000 }).then(() => true, () => false))) { bad.push(`${mode} scene ${n}: not live at rest`); continue; }
+          await settle(live, 900); await settle(still, 300);
+          const r = await stripes(await still.screenshot(), await live.screenshot(), dpr, g, box);
+          per.push(`${n} ${r.worst.toFixed(2)}`);
+          if (!(r.worst <= LIM)) bad.push(`${mode} (canvas ${g} px a CSS px) scene ${n}: stripes ${r.worst.toFixed(2)} at ${r.at}`);
+        }
+        seen.push(`${mode} (canvas ${g}x): ${per.join(', ')}`);
+        done = true;
+        await c.close();
+      }
+      if (!done) bad.push(`${mode}: the live film could not be held at that step`);
+    }
+    ok(!bad.length, 38, `No stripes: at each of the seven rests, on a phone of 430x745 at 3 at the sharpest step and at the lowest (where the governor puts a phone whose frames stay slow), the live frame has no more detail of 2 to 18 canvas pixels than the still shown at the canvas's own size (at most ${LIM} of 255 more in any 40 px tile where the still shows something; moire stripes, stepped edges, ghost lines) (Chromium with a graphics chip)`, seen.join('; '), bad.slice(0, 8).join('; '));
+  });
+
   /* 5. the email pictures */
   if (want(5)) await guarded(5, async () => {
     const bad = [];
