@@ -362,13 +362,16 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
       const tight = x.n === 4 || x.n === BRAIN || (x.n === 7 && h.view(7).placeAs === BRAIN);
       shade.push([x.W, tight ? 0.09 : 0.22, tight ? 0.2 : 0.46]);
     }
-    // in the copy above the words, as scene 6 comes in: scene 6's board makes that copy the whole screen, so a thing only
-    // scene 6's still puts in front of its words (the coin, the stand) comes in front as those words come in, and never
-    // bites into scene 5's "AI COACH.", which scene 5's still has over the coin. Every other thing in front of its own
-    // scene's words stays in front for the whole move (build 12's rule).
+    // in the copy above the words, as scene 6 comes in: scene 6's board makes that copy the whole screen, so a thing the
+    // leaving scene's still holds behind its words (the coin, under scene 5's "AI COACH.") comes in front only as scene
+    // 6's words come in, and never bites into the leaving words. Every other thing in front of its own scene's words
+    // stays in front for the whole move (build 12's rule).
     const fgA: Record<string, number> = {};
-    if (shown.length === 2) for (const [name, list] of Object.entries(FG)) {
-      if (shown[1].n === BRAIN && list.includes(BRAIN) && !list.includes(shown[0].n)) fgA[name] = smooth((shown[1].W - 0.25) / 0.5);
+    if (shown.length === 2 && shown[1].n === BRAIN && L) {
+      const leaving = L.projectors.get(passesOf(shown[0].n)[0]);
+      for (const [name, list] of Object.entries(FG)) {
+        if (list.includes(BRAIN) && !list.includes(shown[0].n) && leaving?.poses.get(name as 'coin')) fgA[name] = smooth((shown[1].W - 0.25) / 0.5);
+      }
     }
     const st: FrameState = { vw: h.vw(), vh: h.vh(), pr, cam, slots, lift, fg: fgBox, shade, menuLive: menuLive > 0 ? menuLive * menuLive * (3 - 2 * menuLive) : 0, screen: SCREEN, hold, fgA };
     const sig = JSON.stringify([st, liveNow.size]);
