@@ -126,8 +126,17 @@ uniform float uDbg;
 uniform vec3 uMp;
 uniform vec3 uMd;
 uniform vec2 uMc;
+// (its cone for the pool on the empty floor, opened on the way)
+uniform vec2 uMw;
 uniform float uMi;
 uniform float uMove;
+// where the travelling light's axis meets the floor (the middle of its pool)
+uniform vec3 uPc;
+// the two ends of that travel: each scene's key spot (a soft panel never travels: scene 3's spot, not its panel)
+uniform vec3 uTp[2];
+uniform vec3 uTd[2];
+uniform vec2 uTc[2];
+uniform float uTi[2];
 // scene 2's first still's projector (the glass of the lifted phone reflects what it shows)
 uniform mat4 uEnvVP;
 out vec4 o;
@@ -135,6 +144,7 @@ ${AGX}
 const vec3 FILM = vec3(1.0 / 255.0);
 // the live light against the picture maker's: matched on the lit floor of scenes 2, 5 and 6 (build 12)
 #define LIVE_EXPOSURE ${expo.toFixed(4)}
+#define POOL_LIN 0.024
 float unpack(vec4 c) { return dot(c, vec4(1.0, 1.0 / 255.0, 1.0 / 65025.0, 1.0 / 16581375.0)); }
 float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
 // in sight of the projector: its depth map (the depth of the nearest surface it saw, along its axis, in mm over
@@ -319,11 +329,20 @@ void main() {
     // at once). At a rest the travelling light is that scene's own: the still, untouched.
     const vec3 FA = vec3(0.006, 0.006, 0.0058);
     vec3 P = vec3(vW.x, 0.0, vW.z);
-    float la = dot(display(shade(n, v, P, FA, 0.95, 0.0, uLp[0], uLd[0], uLc[0], uLi[0], uLk[0])), vec3(0.2126, 0.7152, 0.0722));
-    float lb = dot(display(shade(n, v, P, FA, 0.95, 0.0, uLp[1], uLd[1], uLc[1], uLi[1], uLk[1])), vec3(0.2126, 0.7152, 0.0722));
+    float la = dot(display(shade(n, v, P, FA, 0.95, 0.0, uTp[0], uTd[0], uTc[0], uTi[0], 0.0)), vec3(0.2126, 0.7152, 0.0722));
+    float lb = dot(display(shade(n, v, P, FA, 0.95, 0.0, uTp[1], uTd[1], uTc[1], uTi[1], 0.0)), vec3(0.2126, 0.7152, 0.0722));
     float lm = dot(display(shade(n, v, P, FA, 0.95, 0.0, uMp, uMd, uMc, uMi, 0.0)), vec3(0.2126, 0.7152, 0.0722));
     float e = 3.0 / 255.0;
-    c *= clamp((lm + e) / (w0 * la + w1 * lb + e), 0.0, 6.0);
+    c *= clamp((lm + e) / (w0 * la + w1 * lb + e), 0.0, 3.0);
+    // where neither still saw the floor (the empty floor between the race piece and the coin in 3 to 4), the travelling
+    // light itself: a pool moving over it, never a black frame. Its shape is the travelling spot's on the floor, its
+    // brightness at its middle a still's lit floor (the live light of the low raking spots of scenes 3 and 4 alone is
+    // far darker than their stills' floor, which carries the room's bounce)
+    float sp = dot(shade(n, v, P, FA, 0.95, 0.0, uMp, uMd, uMw, uMi, 0.0), vec3(0.2126, 0.7152, 0.0722));
+    float sc = dot(shade(n, v, uPc, FA, 0.95, 0.0, uMp, uMd, uMw, uMi, 0.0), vec3(0.2126, 0.7152, 0.0722));
+    // (a pool, not a wash: it fades out within about 40 cm of its middle)
+    float near = 1.0 - smoothstep(120.0, 420.0, length(P.xz - uPc.xz));
+    c = max(c, display(vec3(POOL_LIN * near * clamp(sp / max(sc, 1e-12), 0.0, 1.5))));
   }
   if (uLiveK > 0.0) c = mix(c, phoneLive(n, v, uLp[0], uLd[0], uLc[0], uLi[0], uLk[0]), uLiveK);
   if (uFg > 0.5) {

@@ -225,7 +225,7 @@ export interface Projector {
   w: number; h: number; fpx: number; ppx: number; ppy: number;
   /** each thing's pose when the still was drawn (null: the still did not hold it) */
   poses: Map<ThingName, M4 | null>;
-  light: { pos: V3; dir: V3; cos: [number, number]; int: number; kind: number };
+  light: { pos: V3; dir: V3; cos: [number, number]; int: number; kind: number; aim: V3 };
 }
 export interface Layout {
   form: Form;
@@ -263,7 +263,7 @@ function projectorOf(key: string, scene: number, pass: number, room: M4, form: F
   void form;
   return {
     key, scene, pass, eye, target, VP, near, far, w: c.w, h: c.h, fpx, ppx, ppy, poses,
-    light: { pos: lp, dir: [dl[0] / dn, dl[1] / dn, dl[2] / dn], cos: [Math.cos(cone), Math.cos(cone * (1 - pen))], int: L.int, kind: L.kind === 'panel' ? 1 : 0 },
+    light: { pos: lp, dir: [dl[0] / dn, dl[1] / dn, dl[2] / dn], cos: [Math.cos(cone), Math.cos(cone * (1 - pen))], int: L.int, kind: L.kind === 'panel' ? 1 : 0, aim: la },
   };
 }
 
@@ -764,7 +764,11 @@ export class World {
       let best = p0;
       if (sl) sl.passes.forEach((ps, k) => { if (k > 0 && ps.t >= 0.5 && proj[s * PASSES + k]) best = proj[s * PASSES + k]; });
       const l = best?.light;
-      keys.push(sl && l ? l : null);
+      // the spot that travels: the strongest spot pass shown, else the scene's first spot (scene 3 lights its first
+      // pass with a soft panel)
+      let spot: Projector | null = null;
+      if (sl) sl.passes.forEach((ps, k) => { const pk = proj[s * PASSES + k]; if (pk && pk.light.kind === 0 && (!spot || ps.t >= 0.5)) spot = pk; });
+      keys.push(spot ? (spot as Projector).light : null);
       lp.push(...(l ? l.pos : [0, 1000, 0])); ld.push(...(l ? l.dir : [0, -1, 0])); lc.push(...(l ? l.cos : [0, 1])); li.push(l ? l.int : 0); lk.push(l ? l.kind : 0);
     }
     gl.uniform3fv(u('uPE[0]'), pe);
@@ -794,9 +798,17 @@ export class World {
       const d: V3 = [lerp(ka.dir[0], kb.dir[0]), lerp(ka.dir[1], kb.dir[1]), lerp(ka.dir[2], kb.dir[2])], dn = Math.hypot(...d) || 1;
       gl.uniform3f(u('uMp'), lerp(ka.pos[0], kb.pos[0]), lerp(ka.pos[1], kb.pos[1]), lerp(ka.pos[2], kb.pos[2]));
       gl.uniform3f(u('uMd'), d[0] / dn, d[1] / dn, d[2] / dn);
+      // (its pool on the empty floor opens on the way, up to three times as wide half way, so it spans the floor between
+      // the two things, as a light pulled back while it travels)
+      const open = 1 + 2 * Math.sin(Math.PI * tm), cone = (c: number) => Math.cos(Math.min(1.2, Math.acos(c) * open));
       gl.uniform2f(u('uMc'), lerp(ka.cos[0], kb.cos[0]), lerp(ka.cos[1], kb.cos[1]));
+      gl.uniform2f(u('uMw'), cone(lerp(ka.cos[0], kb.cos[0])), cone(lerp(ka.cos[1], kb.cos[1])));
       gl.uniform1f(u('uMi'), Math.exp(lerp(Math.log(ka.int), Math.log(kb.int))));
       gl.uniform1f(u('uMove'), 1);
+      // the pool's middle: on the floor under the point the light aims at, travelling from the one thing to the other
+      gl.uniform3f(u('uPc'), lerp(ka.aim[0], kb.aim[0]), 0, lerp(ka.aim[2], kb.aim[2]));
+      gl.uniform3fv(u('uTp[0]'), [...ka.pos, ...kb.pos]); gl.uniform3fv(u('uTd[0]'), [...ka.dir, ...kb.dir]);
+      gl.uniform2fv(u('uTc[0]'), [...ka.cos, ...kb.cos]); gl.uniform1fv(u('uTi[0]'), [ka.int, kb.int]);
     } else gl.uniform1f(u('uMove'), 0);
     // the glass of scene 2's lifted phone reflects what scene 2's first still shows
     const env = slots[0]?.scene === 2 ? proj[0] : null;

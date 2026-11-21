@@ -53,8 +53,9 @@ export const SHAPES: Shape[] = [
   // about scene 2's, turned): a pan over the dark floor between them
   { leave: 0.3, settle: 0.5, ease: 0.03 },
   // 3 to 4: over to the coin and down along it, never pulled back, so the race piece has left the screen before the coin
-  // comes in (the two are never on screen together), and the light changes over in between, on the empty floor
-  { leave: 0.3, settle: 0.5, ease: 0.03, blend: [0.38, 0.72] },
+  // comes in (the two are never on screen together); the light changes over in between, over the whole empty stretch,
+  // its pool travelling across the floor (never a black frame)
+  { leave: 0.3, settle: 0.5, ease: 0.03, blend: [0.2, 0.9] },
   { leave: 0.3, settle: 0.5, ease: 0.03, via: { out: 1.3, lift: 8 } },   // 4 to 5: up off the coin, over to the phone
   { leave: 0.3, settle: 1.55, ease: 0.025 },                             // 5 to 6: the pull back lands early, the light then opens
   { leave: 0, settle: 0, ease: 0 },                                      // 6 to 7: one camera
