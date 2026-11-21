@@ -19,14 +19,18 @@ import worldUrl from './world.bin?url';
 export type Form = 'desktop' | 'phone';
 interface Cam { az: number; el: number; dist: number; look: V3; fov: number; sx: number; sy: number; w: number; h: number }
 interface Light { kind: 'spot' | 'panel'; pos: V3; aim: V3; cone?: number; pen?: number; int: number }
-interface Shot { obj: string; cam: Cam; light: Light; phone?: { pos?: V3; rot?: V3; floor?: V3 } | null; trio?: number[] }
+interface Shot { obj: string; cam: Cam; light: Light; phone?: { pos?: V3; rot?: V3; floor?: V3 } | null; trio?: number[];
+  /** the other things of the one room the still holds, where they stand in its own room (build 12D) */
+  extra?: { name: 'stand' | 'coin' | 'coach'; x: number; z: number; turn: number }[] }
 const SHOTS = (shotsData as unknown as { pictures: Record<string, Shot> }).pictures;
 
 const dirFrom = (az: number, el: number): V3 => [Math.sin(az * DEG) * Math.cos(el * DEG), Math.sin(el * DEG), Math.cos(az * DEG) * Math.cos(el * DEG)];
 const add = (a: V3, b: V3, k = 1): V3 => [a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k];
 
-/** where scene 3's race piece stands in the world (scene 6 does not hold it), per shape: x, z, turn */
-const TROPHY: Record<Form, [number, number, number]> = { desktop: [-250, -40, 8], phone: [-230, -20, 8] };
+/** where scene 3's race piece stands in the world, per shape: x, z, turn. Build 12D: to the right of the stand, outside
+ *  every other still's frame (scenes 1, 2, 4, 5, 6 and 7 never see it), and scene 3's own frame holds nothing else; turned
+ *  so scene 3's camera stands about where scene 2's stands (2 to 3 is a pan) */
+const TROPHY: Record<Form, [number, number, number]> = { desktop: [500, -50, -30], phone: [300, -100, -30] };
 /** the coin on the trophy's base (ptRound5.ts coinOnPlinth): its bottom centre up 38.85 mm, turned 22 degrees about x */
 const COIN_ON_BASE = mul(translate(0, 14 + 65 * Math.sin(22 * DEG) + 0.5, 0), rotX(22 * DEG));
 const PHONE_T = 8;
@@ -51,6 +55,8 @@ export interface FrameState {
   fg: [number, number, number, number] | null;
   /** scene 2's phone drawn by the live light (0: from the stills, 1: live), and its screen's picture */
   menuLive: number; screen: string | null;
+  /** how strongly each thing stands in front of the giant words in the copy above them (1 when not named) */
+  fgA?: Record<string, number>;
   /** a thing held by one scene's stills only is drawn by that scene (not between scenes 6 and 7: one camera) */
   hold: boolean;
   /** the dark band at the foot of each scene shown: its weight, and where (share of the screen's height from the foot)
@@ -248,6 +254,9 @@ function projectorOf(key: string, scene: number, pass: number, room: M4, form: F
   if (s.obj === 'lines') poses.set('coin', base.coin);
   if (s.obj === 'coach') poses.set('coach', base.coach);
   if (s.obj === 'trio') { poses.set('stand', base.stand); poses.set('coin', base.coin); poses.set('coach', base.coach); }
+  // the other things of the room in the still's view, drawn where they stand (its room placed in the world: where they
+  // stand in the world, by construction)
+  for (const e of s.extra ?? []) poses.set(e.name, mul(room, floorPose(e.x, e.z, e.turn, e.name === 'coach' ? PHONE_T / 2 : 0)));
   const L = s.light, lp = point(room, L.pos), la = point(room, L.aim);
   const dl = [la[0] - lp[0], la[1] - lp[1], la[2] - lp[2]] as V3, dn = Math.hypot(...dl);
   const cone = (L.cone ?? 90) * DEG, pen = L.pen ?? 0;
@@ -367,6 +376,7 @@ export class World {
     // once they are done (asking at once waited for the compiler on the page's thread, a stop at the first gesture)
     this.parallel = gl.getExtension('KHR_parallel_shader_compile');
     this.linkedOk = false;
+    this.progW = this.progD = null!;
     const compile = (vs: string, fs: string) => {
       const p = gl.createProgram()!;
       for (const [type, src] of [[gl.VERTEX_SHADER, vs], [gl.FRAGMENT_SHADER, fs]] as const) {
@@ -376,25 +386,13 @@ export class World {
       }
       gl.bindAttribLocation(p, 0, 'aPos'); gl.bindAttribLocation(p, 1, 'aNor');
       gl.linkProgram(p);
+      // where the browser has no compiler of its own threads (Safari), the link is done here and now, in this step's
+      // frame (asked at once, so it never lands on a later frame together with another program's)
+      if (!this.parallel) gl.getProgramParameter(p, gl.LINK_STATUS);
       return p;
     };
-    this.progW = compile(WORLD_VS, WORLD_FS(World.EXPOSURE));
-    this.progD = compile(DEPTH_VS, DEPTH_FS);
     this.uW.clear(); this.uD.clear();
-    this.warmed = false;
     this.meshes.clear();
-    for (const [name, p] of this.parts) {
-      const vao = gl.createVertexArray()!;
-      gl.bindVertexArray(vao);
-      const b0 = gl.createBuffer()!, b1 = gl.createBuffer()!, b2 = gl.createBuffer()!;
-      gl.bindBuffer(gl.ARRAY_BUFFER, b0); gl.bufferData(gl.ARRAY_BUFFER, p.P, gl.STATIC_DRAW);
-      gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
-      gl.bindBuffer(gl.ARRAY_BUFFER, b1); gl.bufferData(gl.ARRAY_BUFFER, p.N, gl.STATIC_DRAW);
-      gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, b2); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, p.I, gl.STATIC_DRAW);
-      gl.bindVertexArray(null);
-      this.meshes.set(name, { vao, count: p.I.length, type: p.I instanceof Uint32Array ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT, bufs: [b0, b1, b2] });
-    }
     // every picture and depth map is gone with a lost context: read again when asked
     for (const t of this.texs.values()) { t.tex = null; t.small = null; t.row = 0; if (t.state === 'ready') t.state = 'none'; }
     this.clearFb = null; this.shrinkProg = null; this.shrinkVao = null; this.shrinkFb = null;
@@ -405,24 +403,81 @@ export class World {
     this.blank = gl.createTexture()!;
     gl.bindTexture(gl.TEXTURE_2D, this.blank);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
-    this.coinTex = gl.createTexture()!;
-    gl.bindTexture(gl.TEXTURE_2D, this.coinTex);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.coinMap.n, this.coinMap.n, 0, gl.RGBA, gl.UNSIGNED_BYTE, this.coinMap.rgba);
-    for (const [a, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, a, v);
+    // Build 12D: the rest of the work is done one step at a time, at most one a frame (src/world/film3d.ts paces them:
+    // on idle only once the page has been still for a second, else one a frame): Safari links a program on the page's
+    // thread (about 300 ms for the world's) and builds its pipeline at its first draw (78 to 113 ms), so no frame ever
+    // holds more than one of them
+    const upload = (names: string[]) => () => {
+      for (const name of names) {
+        const p = this.parts.get(name)!;
+        const vao = gl.createVertexArray()!;
+        gl.bindVertexArray(vao);
+        const b0 = gl.createBuffer()!, b1 = gl.createBuffer()!, b2 = gl.createBuffer()!;
+        gl.bindBuffer(gl.ARRAY_BUFFER, b0); gl.bufferData(gl.ARRAY_BUFFER, p.P, gl.STATIC_DRAW);
+        gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, b1); gl.bufferData(gl.ARRAY_BUFFER, p.N, gl.STATIC_DRAW);
+        gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, b2); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, p.I, gl.STATIC_DRAW);
+        gl.bindVertexArray(null);
+        this.meshes.set(name, { vao, count: p.I.length, type: p.I instanceof Uint32Array ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT, bufs: [b0, b1, b2] });
+      }
+    };
+    const names = [...this.parts.keys()];
+    this.steps = [
+      { run: upload(names.filter((n) => n !== 'coin')) },
+      { run: () => {
+        upload(['coin'])();
+        this.coinTex = gl.createTexture()!;
+        gl.bindTexture(gl.TEXTURE_2D, this.coinTex);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.coinMap.n, this.coinMap.n, 0, gl.RGBA, gl.UNSIGNED_BYTE, this.coinMap.rgba);
+        for (const [a, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, a, v);
+      } },
+      { run: () => { this.progW = compile(WORLD_VS, WORLD_FS(World.EXPOSURE)); } },
+      { run: () => { this.progD = compile(DEPTH_VS, DEPTH_FS); } },
+      { run: () => { this.shrinkInit(); if (!this.parallel) gl.getProgramParameter(this.shrinkProg!, gl.LINK_STATUS); } },
+      // each program drawn once, in the very state the frames draw with (a browser builds a program's pipeline for its
+      // state at its first draw), once it is linked
+      { run: () => this.warmWorld(), wait: () => !this.done(this.progW) },
+      { run: () => this.warmDepth(), wait: () => !this.done(this.progD) },
+      { run: () => { this.shrinkTo(this.blank, 1, 1, null); gl.flush(); }, wait: () => !this.done(this.shrinkProg!) },
+    ];
+  }
+
+  /** the work still to do before the first frame (src/world/film3d.ts runs it, one step a frame) */
+  private steps: { run(): void; wait?(): boolean }[] = [];
+  private stepAt = -1e9;
+  /** Runs the next step of the world's making, at most one a frame. Returns true while steps remain. */
+  step(): boolean {
+    if (this.lost || this.broken) return false;
+    const now = performance.now();
+    if (!this.steps.length) return false;
+    if (now - this.stepAt < 12) return true;
+    const s = this.steps[0];
+    if (s.wait?.()) return true;
+    this.steps.shift();
+    this.stepAt = now;
+    s.run();
+    this.ready();
+    return this.steps.length > 0;
+  }
+  /** every step done: the world can draw */
+  get built(): boolean { return !this.steps.length && !this.lost; }
+  /** a program the browser has finished (never waits for it where the browser compiles on its own threads) */
+  private done(p: WebGLProgram): boolean {
+    return !this.parallel || !!this.gl.getProgramParameter(p, this.parallel.COMPLETION_STATUS_KHR);
   }
 
   private parallel: { COMPLETION_STATUS_KHR: number } | null = null;
   private linkedOk = false;
-  private warmed = false;
   /** why the shaders could not be built, if they could not */
   broken = '';
   /** the shaders are compiled and linked (never waits for them where the browser compiles on its own threads) */
   ready(): boolean {
-    if (this.linkedOk) return true;
-    if (this.lost) return false;
+    if (this.linkedOk) return !this.steps.length;
+    if (this.lost || !this.progW || !this.progD || !this.shrinkProg) return false;
     const gl = this.gl;
-    if (this.parallel && !(gl.getProgramParameter(this.progW, this.parallel.COMPLETION_STATUS_KHR) && gl.getProgramParameter(this.progD, this.parallel.COMPLETION_STATUS_KHR))) return false;
-    for (const p of [this.progW, this.progD]) {
+    if (!this.done(this.progW) || !this.done(this.progD) || !this.done(this.shrinkProg)) return false;
+    for (const p of [this.progW, this.progD, this.shrinkProg]) {
       if (!gl.getProgramParameter(p, gl.LINK_STATUS) && !gl.isContextLost()) {
         // a chip that cannot build them: the still film (src/world/film3d.ts gives up)
         this.broken = 'link: ' + gl.getProgramInfoLog(p) + ' ' + (gl.getAttachedShaders(p)?.map((x) => gl.getShaderInfoLog(x)).join(' ') ?? '');
@@ -430,7 +485,7 @@ export class World {
       }
     }
     this.linkedOk = true;
-    return true;
+    return !this.steps.length;
   }
 
   private uni(prog: WebGLProgram, map: Map<string, WebGLUniformLocation | null>, name: string): WebGLUniformLocation | null {
@@ -676,7 +731,6 @@ export class World {
   /** Draws one frame. Returns false when it could not (no context, a picture missing). */
   draw(st: FrameState, fgCtx: CanvasRenderingContext2D | null): boolean {
     if (this.lost || !this.layout || !this.ready()) return false;
-    if (!this.warmed) { this.warmed = true; this.warm(); }
     const gl = this.gl, L = this.layout;
     const W = Math.max(1, Math.round(st.vw * st.pr)), H = Math.max(1, Math.round(st.vh * st.pr));
     if (this.canvas.width !== W || this.canvas.height !== H) { this.canvas.width = W; this.canvas.height = H; }
@@ -698,6 +752,7 @@ export class World {
     gl.uniformMatrix4fv(u('uVP'), false, VP);
     gl.uniform3fv(u('uEye'), st.cam.eye);
     const pe: number[] = [], np: number[] = [], w: number[] = [], sat: number[] = [], fade: number[] = [], lp: number[] = [], ld: number[] = [], lc: number[] = [], li: number[] = [], lk: number[] = [];
+    const keys: (Projector['light'] | null)[] = [];
     for (let s = 0; s < SLOTS; s++) {
       const sl = slots[s], p0 = proj[s * PASSES];
       np.push(sl && p0 ? sl.passes.length : 0);
@@ -709,6 +764,7 @@ export class World {
       let best = p0;
       if (sl) sl.passes.forEach((ps, k) => { if (k > 0 && ps.t >= 0.5 && proj[s * PASSES + k]) best = proj[s * PASSES + k]; });
       const l = best?.light;
+      keys.push(sl && l ? l : null);
       lp.push(...(l ? l.pos : [0, 1000, 0])); ld.push(...(l ? l.dir : [0, -1, 0])); lc.push(...(l ? l.cos : [0, 1])); li.push(l ? l.int : 0); lk.push(l ? l.kind : 0);
     }
     gl.uniform3fv(u('uPE[0]'), pe);
@@ -730,13 +786,32 @@ export class World {
     gl.uniform3fv(u('uSides[0]'), slots.flatMap((sl) => sl.sides ?? [0, 0, 0]).concat(slots.length < 2 ? [0, 0, 0] : []).slice(0, 6));
     gl.uniform1f(u('uPr'), st.pr);
     gl.uniform3fv(u('uLp[0]'), lp); gl.uniform3fv(u('uLd[0]'), ld); gl.uniform2fv(u('uLc[0]'), lc); gl.uniform1fv(u('uLi[0]'), li); gl.uniform1fv(u('uLk[0]'), lk);
+    // the floor's light between two scenes: one spot travelling from the first scene's key to the second's, as far as
+    // the second scene's still has come in (two spots only; a soft panel does not travel)
+    const [ka, kb] = keys, wa = slots[0]?.W ?? 0, wb = slots[1]?.W ?? 0, tm = wa + wb > 0 ? wb / (wa + wb) : 0;
+    if (ka && kb && ka.kind === 0 && kb.kind === 0 && tm > 1e-4 && tm < 1 - 1e-4) {
+      const lerp = (a: number, b: number) => a + (b - a) * tm;
+      const d: V3 = [lerp(ka.dir[0], kb.dir[0]), lerp(ka.dir[1], kb.dir[1]), lerp(ka.dir[2], kb.dir[2])], dn = Math.hypot(...d) || 1;
+      gl.uniform3f(u('uMp'), lerp(ka.pos[0], kb.pos[0]), lerp(ka.pos[1], kb.pos[1]), lerp(ka.pos[2], kb.pos[2]));
+      gl.uniform3f(u('uMd'), d[0] / dn, d[1] / dn, d[2] / dn);
+      gl.uniform2f(u('uMc'), lerp(ka.cos[0], kb.cos[0]), lerp(ka.cos[1], kb.cos[1]));
+      gl.uniform1f(u('uMi'), Math.exp(lerp(Math.log(ka.int), Math.log(kb.int))));
+      gl.uniform1f(u('uMove'), 1);
+    } else gl.uniform1f(u('uMove'), 0);
+    // the glass of scene 2's lifted phone reflects what scene 2's first still shows
+    const env = slots[0]?.scene === 2 ? proj[0] : null;
+    gl.uniformMatrix4fv(u('uEnvVP'), false, env ? env.VP : ident());
     gl.uniform1f(u('uDepthFar'), 6000);
     gl.uniform1f(u('uDbg'), this.debug);
     const T: number[] = [], ov: number[] = [], dt: number[] = [];
     for (let i = 0; i < UNITS; i++) {
       const ps = slots[Math.floor(i / PASSES)]?.passes[i % PASSES], p = proj[i];
       T.push(ps ? ps.t : 0);
-      if (ps?.oval && p) ov.push(ps.oval[0] / p.w, ps.oval[1] / p.h, ps.oval[2] / p.w, ps.oval[3] / p.h); else ov.push(0, 0, 0, 0);
+      // the growing oval is in the picture's logical pixels (1440 x 900, 786 x 1704: src/main.ts), whatever size the
+      // still was drawn at (scene 6's third pass was drawn at twice that: build 12D found its oval at half its place,
+      // the phone's pad drawn before the phone lit)
+      const lw = L.form === 'phone' ? 786 : 1440, lh = L.form === 'phone' ? 1704 : 900;
+      if (ps?.oval && p) ov.push(ps.oval[0] / lw, ps.oval[1] / lh, ps.oval[2] / lw, ps.oval[3] / lh); else ov.push(0, 0, 0, 0);
       const d = depthMaps[i];
       dt.push(d ? 1 / d.w : 0, d ? 1 / d.h : 0);
       gl.activeTexture(gl.TEXTURE0 + i);
@@ -796,6 +871,7 @@ export class World {
           gl.uniform1fv(u('uHold[0]'), [0, 1].map((s) => (proj.slice(s * PASSES, s * PASSES + PASSES).some((p) => p?.poses.get(th.name)) || th.name === 'floor' ? 1 : 0)));
           gl.uniform1f(u('uLiveK'), th.name === 'menu' && slots[0]?.scene === 2 ? menuK : 0);
           gl.uniform1f(u('uTol'), TOL[th.name]);
+          gl.uniform1f(u('uFgA'), st.fgA?.[th.name] ?? 1);
           gl.uniform1f(u('uIsFloor'), th.name === 'floor' ? 1 : 0);
           // a thing that stands in the world the whole film (scene 2's phone is there in scene 2 only)
           gl.uniform1f(u('uSolid'), th.name === 'menu' || th.name === 'floor' ? 0 : 1);
@@ -911,16 +987,12 @@ export class World {
     return small;
   }
 
-  /** Compiles the shaders and sends the shapes to the chip now (a draw nothing sees), so the first frame the scroll
-   *  asks for does not stop for it. */
-  warm(): void {
-    if (this.lost || !this.ready()) return;
+  /** The world's program drawn once (a draw nothing sees), in the state the frames draw with, so the first frame the
+   *  scroll asks for does not stop for its pipeline (Safari took 78 to 113 ms). */
+  private warmWorld(): void {
     const gl = this.gl;
-    this.warmed = true;
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, 1, 1);
-    // the very state the frames draw with (a browser builds each program's pipeline for its state at its first draw:
-    // Safari took 78 to 113 ms for the world's)
     gl.enable(gl.DEPTH_TEST); gl.disable(gl.BLEND); gl.disable(gl.CULL_FACE); gl.disable(gl.SCISSOR_TEST);
     gl.useProgram(this.progW);
     for (let i = 0; i < 2 * UNITS + 4; i++) { gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, this.blank); }
@@ -929,7 +1001,12 @@ export class World {
       gl.bindVertexArray(m.vao);
       gl.drawElements(gl.TRIANGLES, Math.min(m.count, 3), m.type, 0);
     }
-    // the depth maps' program, into a target of their kind (colour and depth)
+    gl.bindVertexArray(null);
+    gl.flush();
+  }
+  /** The depth maps' program drawn once, into a target of their kind (colour and depth). */
+  private warmDepth(): void {
+    const gl = this.gl;
     const tex = gl.createTexture()!, rb = gl.createRenderbuffer()!, fb = gl.createFramebuffer()!;
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, 4, 4, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
@@ -939,14 +1016,13 @@ export class World {
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
     gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, rb);
     gl.viewport(0, 0, 4, 4);
+    gl.enable(gl.DEPTH_TEST); gl.disable(gl.BLEND); gl.disable(gl.CULL_FACE); gl.disable(gl.SCISSOR_TEST);
     gl.useProgram(this.progD);
     gl.bindVertexArray(this.meshes.get('tile')!.vao);
     gl.drawElements(gl.TRIANGLES, 3, this.meshes.get('tile')!.type, 0);
     gl.bindVertexArray(null);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.deleteFramebuffer(fb); gl.deleteRenderbuffer(rb); gl.deleteTexture(tex);
-    // the small soft copies' program
-    this.shrinkTo(this.blank, 1, 1, null);
     gl.flush();
   }
   /** how long the chip takes to finish what was asked of it (ms) */

@@ -2850,6 +2850,53 @@ async function main() {
     ok(!bad.length, 36, 'The doors from a scene drawn live: the click opens the product\'s page, Back lands on the scene at rest and the live film comes back on its own, no scroll (Chromium with a graphics chip and the back/forward cache on, also with its context taken while away; Chromium with the cache off; WebKit, whose test build has no cache: a fresh page; 1512x860; the blend itself is test 28)', seen.join('; '), bad.join('; '));
   });
 
+  /* 37. one room: every thing a scene's rest camera sees is in that scene's still */
+  // (build 12D) The live film is one room; at each rest the frame is the still. A thing that stands in a still's view in
+  // the world but that the still left out would have to fade out in plain view while the camera moves (scene 5's coin in
+  // build 12C). The world module itself (src/world/world.ts, bundled here as the site bundles it) places the things and
+  // reads every still's camera and what it holds from src/world/shots.json (the picture maker's own settings).
+  if (want(37)) await guarded(37, async () => {
+    const bad = [], seen = [];
+    const { build } = await import(join(ROOT, 'node_modules/esbuild/lib/main.js'));
+    const urlStub = { name: 'url', setup(b) { b.onResolve({ filter: /\?url$/ }, (a) => ({ path: a.path, namespace: 'url' })); b.onLoad({ filter: /.*/, namespace: 'url' }, () => ({ contents: 'export default ""', loader: 'js' })); } };
+    const code = (await build({ stdin: { contents: "export { layoutOf } from './src/world/world.ts'; export * as mat from './src/world/mat.ts';", resolveDir: ROOT, loader: 'ts' }, bundle: true, write: false, format: 'esm', platform: 'node', logLevel: 'silent', plugins: [urlStub] })).outputFiles[0].text;
+    const { layoutOf, mat } = await import('data:text/javascript;base64,' + Buffer.from(code).toString('base64'));
+    // points on each thing's outline, in its own frame (mm): the stand's box, the race piece's base and tilted coin, the
+    // flat coin's rim, the coach phone's box
+    const ring = (r, y, n = 24) => Array.from({ length: n }, (_, i) => [r * Math.cos((i / n) * 2 * Math.PI), y, r * Math.sin((i / n) * 2 * Math.PI)]);
+    const box = (b) => { const o = []; for (const x of [b[0], (b[0] + b[3]) / 2, b[3]]) for (const y of [b[1], b[4]]) for (const z of [b[2], (b[2] + b[5]) / 2, b[5]]) o.push([x, y, z]); return o; };
+    const onBase = mat.mul(mat.translate(0, 14 + 65 * Math.sin(22 * mat.DEG) + 0.5, 0), mat.rotX(22 * mat.DEG));
+    const THINGS = { stand: [[null, box([-74, 0, -28, 74, 120, 30])]], trophy: [[null, [...ring(88, 0), ...ring(88, 14)]], [onBase, [...ring(65, 0), ...ring(65, 12)]]], coin: [[null, [...ring(65, 0), ...ring(65, 12)]]], coach: [[null, box([-36, -4, -75, 36, 4, 75])]] };
+    const proj = (M, q) => [0, 1, 2, 3].map((r) => M[r] * q[0] + M[4 + r] * q[1] + M[8 + r] * q[2] + M[12 + r] * q[3]);
+    let checked = 0;
+    for (const form of ['desktop', 'phone']) {
+      const passes = {};
+      for (let n = 1; n <= content.scenes.length; n++) {
+        const last = n === content.scenes.length && (content.scenes[n - 1].picture ?? 'twin') === 'twin';
+        passes[n] = film.scenes[last ? '7twin' : String(n)][form].passes;
+      }
+      const L = layoutOf(form, passes);
+      for (const [key, p] of L.projectors) {
+        // the last scene is the twin of scene 6: the pool of light after the three things have left it (its story)
+        if (p.scene === content.scenes.length) continue;
+        for (const [name, parts] of Object.entries(THINGS)) {
+          let inside = 0;
+          for (const [pre, pts] of parts) {
+            const M = pre ? mat.mul(L.pose[name], pre) : L.pose[name];
+            for (const q of pts) {
+              const c = proj(p.VP, proj(M, [...q, 1]));
+              if (c[3] > 0 && Math.abs(c[0] / c[3]) <= 1 && Math.abs(c[1] / c[3]) <= 1) inside++;
+            }
+          }
+          checked++;
+          if (inside && !p.poses.get(name)) bad.push(`${form} ${key}: the ${name} stands in its view (${inside} outline points) but the still does not hold it`);
+        }
+      }
+      seen.push(`${form}: ${L.projectors.size} stills`);
+    }
+    ok(!bad.length, 37, 'One room: every thing that stands inside a still\'s view in the live film\'s world (the stand, the race piece, the coin, the coach phone; outline points inside the still\'s frame) is in that still, every still of scenes 1 to 6, both screen shapes (the last scene is the empty pool by its story; scene 2\'s own phone is there in scene 2 only)', `${seen.join(', ')}, ${checked} checks`, bad.slice(0, 8).join('; '));
+  });
+
   /* 5. the email pictures */
   if (want(5)) await guarded(5, async () => {
     const bad = [];

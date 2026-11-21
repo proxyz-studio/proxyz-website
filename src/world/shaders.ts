@@ -115,10 +115,21 @@ uniform float uSolid;
 uniform float uScreenGain;
 uniform vec3 uEye;
 uniform float uFg;
+// the copy above the words: how strongly this thing stands in front of them (1 at rest)
+uniform float uFgA;
 uniform vec4 uShade[2];
 uniform float uFgH;
 uniform float uDepthFar;
 uniform float uDbg;
+// the floor's light while the camera moves between two scenes: one light travelling from the first scene's key to the
+// second's (where it stands, where it aims, its cone and strength), and how far it has come (0: none)
+uniform vec3 uMp;
+uniform vec3 uMd;
+uniform vec2 uMc;
+uniform float uMi;
+uniform float uMove;
+// scene 2's first still's projector (the glass of the lifted phone reflects what it shows)
+uniform mat4 uEnvVP;
 out vec4 o;
 ${AGX}
 const vec3 FILM = vec3(1.0 / 255.0);
@@ -204,7 +215,19 @@ vec3 phoneLive(vec3 n, vec3 v, vec3 lp, vec3 ld, vec2 lc, float li, float lk) {
     // the glass reflects the room as the stills light it: scene 2's still, small and soft, looked up along the
     // reflected ray (a picture of the room taken from about where the phone is), stronger at a glancing angle
     vec3 r = reflect(-v, n);
-    vec3 env = srgbLin(texture(uB0, vec2(0.5 + 0.42 * r.x, 0.5 - 0.42 * r.y)).rgb);
+    vec3 env = vec3(0.0);
+    if (r.y < -0.01) {
+      // where the reflected ray meets the floor: scene 2's first still there (the pool of light, the stand in it), and
+      // past that still's frame the pool as scene 2's spot lights the floor (the room behind the camera)
+      vec3 F = vW + r * (-vW.y / r.y);
+      vec3 pool = srgbLin(display(shade(vec3(0.0, 1.0, 0.0), -r, F, vec3(0.006, 0.006, 0.0058), 0.95, 0.0, lp, ld, lc, li, lk)));
+      vec4 cl = uEnvVP * vec4(F, 1.0);
+      vec2 uv = cl.xy / max(cl.w, 1e-3) * 0.5 + 0.5, e = min(uv, 1.0 - uv);
+      float inside = cl.w > 0.0 ? smoothstep(0.0, 0.06, min(e.x, e.y)) : 0.0;
+      env = mix(pool, srgbLin(texture(uC0, vec2(uv.x, 1.0 - uv.y)).rgb), inside);
+    }
+    // the spot itself, a small bright disc where the glass mirrors it
+    env += vec3(1.0, 0.975, 0.94) * 40.0 * smoothstep(0.99955, 0.99995, dot(r, normalize(lp - vW)));
     float fr = 0.04 + 0.96 * pow(1.0 - max(dot(n, v), 0.0), 5.0);
     c += env * fr * 2.2;
   }
@@ -236,19 +259,6 @@ ${[0, 1].map((s) => {
     // close up of the coin, would carry that thing's colours out across the floor)
     float far = u0 == bu ? smoothstep(12.0, 50.0, vC[${p(0)}].w - dz(uD${p(0)}, bu)) : smoothstep(0.0, 0.12, length(u0 - bu));
     fb = mix(acc / 9.0, fb, far);
-  }
-  // a thing this scene's stills do not hold, inside its first still's frame: as dark as the still shows that place (the
-  // still is the scene's light: where it shows dark floor the thing stands in that dark, never lit brighter than it)
-  if (uIsFloor < 0.5 && uSolid > 0.5 && uHold[${s}] < 0.5 && uNP[${s}] > 0 && vC[${p(0)}].w > 0.0) {
-    vec2 su = vC[${p(0)}].xy / vC[${p(0)}].w * 0.5 + 0.5;
-    vec2 se = min(su, 1.0 - su);
-    float inside = smoothstep(0.0, 0.07, min(se.x, se.y));
-    if (inside > 0.0) {
-      vec2 cu = clamp(su, 0.0, 1.0);
-      float L = dot(texture(uB${s}, vec2(cu.x, 1.0 - cu.y)).rgb, vec3(0.2126, 0.7152, 0.0722));
-      float F = dot(display(shade(vec3(0.0, 1.0, 0.0), normalize(uEye - vW), vec3(vW.x, 0.0, vW.z), vec3(0.006, 0.006, 0.0058), 0.95, 0.0, uLp[${s}], uLd[${s}], uLc[${s}], uLi[${s}], uLk[${s}])), vec3(0.2126, 0.7152, 0.0722));
-      fb *= mix(1.0, clamp(L / max(F, 0.004), 0.0, 1.0), inside);
-    }
   }
   if (uDbg > 0.5 && uDbg < 1.5) fb = vec3(0.6, 0.0, 0.0) + fb;
   vec3 c = fb;
@@ -301,6 +311,18 @@ void main() {
     w0 = x0 / (x0 + x1); w1 = 1.0 - w0;
   }
   vec3 c = w0 * a.rgb + w1 * b.rgb;
+  if (uMove > 0.0 && uIsFloor > 0.5 && n.y > 0.9) {
+    // the floor between two scenes: the two stills' floors mixed, relit by one light travelling from the first scene's
+    // key to the second's, so the pool of light moves across the floor with the camera (never a whole floor brightening
+    // at once). At a rest the travelling light is that scene's own: the still, untouched.
+    const vec3 FA = vec3(0.006, 0.006, 0.0058);
+    vec3 P = vec3(vW.x, 0.0, vW.z);
+    float la = dot(display(shade(n, v, P, FA, 0.95, 0.0, uLp[0], uLd[0], uLc[0], uLi[0], uLk[0])), vec3(0.2126, 0.7152, 0.0722));
+    float lb = dot(display(shade(n, v, P, FA, 0.95, 0.0, uLp[1], uLd[1], uLc[1], uLi[1], uLk[1])), vec3(0.2126, 0.7152, 0.0722));
+    float lm = dot(display(shade(n, v, P, FA, 0.95, 0.0, uMp, uMd, uMc, uMi, 0.0)), vec3(0.2126, 0.7152, 0.0722));
+    float e = 3.0 / 255.0;
+    c *= clamp((lm + e) / (w0 * la + w1 * lb + e), 0.0, 6.0);
+  }
   if (uLiveK > 0.0) c = mix(c, phoneLive(n, v, uLp[0], uLd[0], uLc[0], uLi[0], uLk[0]), uLiveK);
   if (uFg > 0.5) {
     // the copy above the words: the scenes' dark band at the foot, which the page lays over the live picture under it
@@ -312,7 +334,8 @@ void main() {
     }
     c = mix(FILM, c, keep);
   }
-  o = vec4(c, 1.0);
+  // (the copy above the words, premultiplied: a thing only scene 6's words stand behind comes in front as scene 6 comes in)
+  o = uFg > 0.5 ? vec4(c * uFgA, uFgA) : vec4(c, 1.0);
 }`;
 
 /** the depth of each surface along the projector's axis, packed into 8 bit colour (works on every phone) */

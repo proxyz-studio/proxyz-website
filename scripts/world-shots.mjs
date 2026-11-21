@@ -67,6 +67,9 @@ for (const [key, v] of Object.entries(sources)) {
     if (j.scr) shot.screen = path.basename(j.scr);
   }
   if (j.obj === 'trio' || (j.obj === 'empty' && j.trio)) shot.trio = String(j.trio).split(',').map(Number);
+  // build 12D: the other things of the one room this still's camera sees, drawn in it where they stand (x mm, z mm,
+  // turn degrees in the still's own room; the picture maker's x12 setting)
+  if (j.x12) shot.extra = String(j.x12).split(';').filter(Boolean).map((e) => { const [name, x, z, turn] = e.split(','); return { name, x: Number(x), z: Number(z), turn: Number(turn) }; });
   out.pictures[key] = shot;
 }
 writeFileSync(path.join(root, 'src/world/shots.json'), JSON.stringify(out, null, 1) + '\n');

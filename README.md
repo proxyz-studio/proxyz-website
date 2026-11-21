@@ -188,8 +188,16 @@ cannot run.
 
 - **One world.** The things stand where scene 6's drawing puts them (the stand, the race coin, the coach phone);
   scenes 1 and 2 are close visits to the stand, scene 4 to the coin, scene 5 to the phone, and scene 6 pulls back to
-  show the three on one floor. Scene 3's race piece on its base has its own spot; scene 2's phone (the one that taps
-  the tile) is there in scene 2 only.
+  show the three on one floor. Scene 3's race piece on its base has its own spot, to the right of the stand, where no
+  other scene's camera sees it and its own camera sees nothing else; scene 2's phone (the one that taps the tile) is
+  there in scene 2 only.
+- **One room (build 12D).** Every still holds every thing its camera sees in the world, where it stands, lit by that
+  scene's light: scene 2's laptop stills hold the coin (in the dark at the pool's edge), scene 4's the stand (far off in
+  the dark), scene 5's the coin (in the edge of scene 5's light). So no thing ever fades out in plain view: it stays
+  solid and leaves the frame by the camera moving. The stills drawn again for it are in the stills project's
+  `out-12d/` (the picture maker's `x12` setting places the other things, `pt-12d/tools/pt/stills12d/jobs.json`). Test 37
+  proves it for every still of scenes 1 to 6, both shapes. The last scene is the empty pool by its story (the three
+  things leave it); scene 2's own phone is there in scene 2 only.
 - **Drawn from the stills.** Every surface is drawn from the very pictures the still film shows (the same files, so
   the browser's cache serves them), each cast back onto the shapes from the camera that drew it. At each scene's rest
   the camera is exactly that camera, framed where the page puts the picture, so the live frame is the still (no
@@ -200,11 +208,14 @@ cannot run.
   as the picture maker). While the camera moves every still's frame is feathered; the floor past a still's frame (and
   just behind a thing's edge) takes that still's small soft copy, carried out from its edge, so no seam or dark rim
   shows; the two scenes' floors mix by their weights. An object is drawn by the scene whose still saw it; a thing one
-  scene's stills hold is lit by that scene and handed over in the dark at the half way point (it is solid under the
-  other scene's light, darkened to what that scene's still shows at its place, never see-through). A far room behind everything takes what the
-  stills show past the floor's edge. The light passes mix as the page mixes the pictures; scene 6's later passes grow
+  scene's stills hold is lit by that scene and handed over at the half way point, while it is off the screen (it is
+  solid under the other scene's light, never see-through). Between two scenes the floor is relit by one light
+  travelling from the first scene's key to the second's, so the pool of light moves across the floor with the camera.
+  A far room behind everything takes what the stills show past the floor's edge. The light passes mix as the page mixes the pictures; scene 6's later passes grow
   inside the same oval. Scene 2's phone lifts live (drawn by the live light, its screen look 11's menu picture,
-  `src/world/menu.webp`) between its two stills; scene 5's screen is lit as soon as the phone shows.
+  `src/world/menu.webp`) between its two stills, its glass reflecting the floor and the stand as scene 2's first still
+  shows them (and the pool of scene 2's spot past that still's frame, and the spot itself); scene 5's screen is lit as
+  soon as the phone shows.
 - **The camera** (`src/world/path.ts`, the moves in `SHAPES` in `src/world/film3d.ts`): at each rest exactly the
   still's camera; between rests it travels slowly out, does most of its move while the light changes, and settles
   slowly in, never stopping and never swinging past. Scene 1 holds still until its light rests; scenes 6 and 7 share
@@ -216,7 +227,8 @@ cannot run.
 - **Loading.** Nothing of it loads with the first screen (test 11 counts the first load). The script (about 22 KB
   compressed) and the shapes (`src/world/world.bin`, about 500 KB) load on idle no sooner than 4 s after load (never
   with Save-Data, a 2G connection or less motion), where the world is made and each program drawn once (Safari builds
-  a program's pipeline at its first draw); else at the first sign of intent, or at once when the visitor comes back
+  a program's pipeline at its first draw), one step a frame and only once the page has been still for a second with
+  no input (one program linked, or one drawn once, never two in one frame); else at the first sign of intent, or at once when the visitor comes back
   through Back or a door's address. The film itself starts at the first sign of intent. The stills go into the graphics chip in the order the film
   needs them: one picture decoded at a time, a frame between two, about a megabyte of rows a frame, a new texture's
   memory made and cleared alone. The shapes are read in slices between frames and the shaders compile aside
@@ -230,8 +242,9 @@ cannot run.
   `src/world/world.bin` (the stand's parts from `src/world/stand.bin`, made by `scripts/stand-model.mjs`; the coin's
   height field and its part colours from the coin's real triangles; the phone and the trophy's base as the stills
   make them). `node scripts/world-shots.mjs <the stills project folder>` rebuilds `src/world/shots.json`, every
-  still's camera, key light and poses, from the settings the picture maker saved beside each drawing. Run both when a
-  drawing is made again, then `npm run check` (tests 32 to 36 prove the live film).
+  still's camera, key light and poses (and the other things it holds, its `x12` setting), from the settings the
+  picture maker saved beside each drawing. Run both when a drawing is made again, then `npm run check` (tests 32 to 37
+  prove the live film).
 - The page root carries `data-world` for the check: the scenes drawn live now, those whose stills are in the chip,
   and the first frame's time in ms.
 

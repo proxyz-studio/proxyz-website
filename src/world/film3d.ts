@@ -47,10 +47,14 @@ const DEG = Math.PI / 180;
 /** the scene of the board (it shares its camera with the last scene) */
 const BRAIN = 6;
 /** how each move between two rests is shaped (scene i+1 to i+2) */
-const SHAPES: Shape[] = [
+export const SHAPES: Shape[] = [
   { leave: 0.3, settle: 0.5, ease: 0.03, via: { frame: 1, out: 1, at: 0.28 }, blend: [0.05, 0.45] },        // 1 to 2: the pull back from the letters to the whole stand (it finds its place early, clear of the words)
-  { leave: 0.3, settle: 0.5, ease: 0.03, via: { out: 1.25, lift: 4 } },  // 2 to 3: back a little, across to the race piece
-  { leave: 0.3, settle: 0.5, ease: 0.03, via: { out: 1.1, lift: 6 } },   // 3 to 4: over to the coin and down along it
+  // 2 to 3: the camera turns from the stand to the race piece, standing almost where it stood (scene 3's camera is
+  // about scene 2's, turned): a pan over the dark floor between them
+  { leave: 0.3, settle: 0.5, ease: 0.03 },
+  // 3 to 4: over to the coin and down along it, never pulled back, so the race piece has left the screen before the coin
+  // comes in (the two are never on screen together), and the light changes over in between, on the empty floor
+  { leave: 0.3, settle: 0.5, ease: 0.03, blend: [0.38, 0.72] },
   { leave: 0.3, settle: 0.5, ease: 0.03, via: { out: 1.3, lift: 8 } },   // 4 to 5: up off the coin, over to the phone
   { leave: 0.3, settle: 1.55, ease: 0.025 },                             // 5 to 6: the pull back lands early, the light then opens
   { leave: 0, settle: 0, ease: 0 },                                      // 6 to 7: one camera
@@ -84,19 +88,33 @@ const smooth = (x: number): number => { const t = Math.max(0, Math.min(1, x)); r
 
 interface Relay { lost(): void; restored(): void; on: { lost(): void; restored(): void } | null }
 let prepared: Promise<{ world: World; relay: Relay }> | null = null;
+/** the film is wanted now (a gesture, Back): the world's making goes on one step a frame, still or not */
+let urgent = false;
+/** the last sign of the visitor's input (a scroll, the wheel, a touch, a key, the pointer) */
+let lastInput = performance.now();
+for (const t of ['scroll', 'wheel', 'touchstart', 'touchmove', 'keydown', 'pointerdown', 'pointermove']) addEventListener(t, () => { lastInput = performance.now(); }, { passive: true, capture: true });
 /** Makes the world ahead of the visitor's first gesture, on idle once the page has settled (src/main.ts): its shapes
  *  read, its shaders compiled and drawn once each (Safari builds a program's pipeline at its first draw, 78 to 113 ms
- *  in the simulator, a stop at the first gesture otherwise). No picture is read until the film starts. */
+ *  in the simulator, a stop at the first gesture otherwise). No picture is read until the film starts. Build 12D: made
+ *  ahead only while the page has been still for a second with no input, one step a frame (one program linked, or one
+ *  drawn once, never two in one frame); a stop while nothing moves, never in a scroll. */
 export function prepareFilm3d(idle = false): Promise<{ world: World; relay: Relay }> {
+  if (!idle) urgent = true;
   if (!prepared) {
     const phoneChip = matchMedia('(pointer: coarse)').matches;
     const relay: Relay = { on: null, lost: () => relay.on?.lost(), restored: () => relay.on?.restored() };
-    prepared = World.create(relay, phoneChip ? 120e6 : 260e6, idle).then((w) => {
+    // on idle, even the context waits for a still page (making one can take Safari tens of ms)
+    const quiet = (): Promise<void> => new Promise((res) => { const t = (): void => { if (urgent || performance.now() - lastInput >= 1000) res(); else window.setTimeout(t, 100); }; t(); });
+    prepared = (idle ? quiet() : Promise.resolve()).then(() => World.create(relay, phoneChip ? 120e6 : 260e6, idle)).then((w) => {
       w.depthLong = phoneChip ? 1024 : 1536;
       w.stripBytes = 1.1e6;
-      // once the shaders are built (they compile aside), each drawn once, a frame apart from anything else
-      const tick = (): void => { if (w.lost || w.broken) return; if (w.ready()) w.warm(); else window.setTimeout(tick, 120); };
-      window.setTimeout(tick, 60);
+      // one step of its making a frame: on idle only once the page has been still for a second, else at once
+      const tick = (): void => {
+        if (w.lost || w.broken || w.built) return;
+        if (urgent || performance.now() - lastInput >= 1000) w.step();
+        requestAnimationFrame(() => { window.setTimeout(tick, urgent ? 0 : 60); });
+      };
+      tick();
       return { world: w, relay };
     });
     prepared.catch(() => { prepared = null; });
@@ -261,6 +279,8 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
       return false;
     }
     if (world.broken) { why = 'shaders'; giveUp(); return false; }
+    // the world still being made (a fresh context, or a gesture before it was made ahead): one step a frame
+    if (!world.built) { world.step(); if (world.broken) { why = 'shaders'; giveUp(); return false; } if (!world.built) return true; }
     relayout();
     if (!L) return false;
     const active = h.active();
@@ -342,7 +362,15 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
       const tight = x.n === 4 || x.n === BRAIN || (x.n === 7 && h.view(7).placeAs === BRAIN);
       shade.push([x.W, tight ? 0.09 : 0.22, tight ? 0.2 : 0.46]);
     }
-    const st: FrameState = { vw: h.vw(), vh: h.vh(), pr, cam, slots, lift, fg: fgBox, shade, menuLive: menuLive > 0 ? menuLive * menuLive * (3 - 2 * menuLive) : 0, screen: SCREEN, hold };
+    // in the copy above the words, as scene 6 comes in: scene 6's board makes that copy the whole screen, so a thing only
+    // scene 6's still puts in front of its words (the coin, the stand) comes in front as those words come in, and never
+    // bites into scene 5's "AI COACH.", which scene 5's still has over the coin. Every other thing in front of its own
+    // scene's words stays in front for the whole move (build 12's rule).
+    const fgA: Record<string, number> = {};
+    if (shown.length === 2) for (const [name, list] of Object.entries(FG)) {
+      if (shown[1].n === BRAIN && list.includes(BRAIN) && !list.includes(shown[0].n)) fgA[name] = smooth((shown[1].W - 0.25) / 0.5);
+    }
+    const st: FrameState = { vw: h.vw(), vh: h.vh(), pr, cam, slots, lift, fg: fgBox, shade, menuLive: menuLive > 0 ? menuLive * menuLive * (3 - 2 * menuLive) : 0, screen: SCREEN, hold, fgA };
     const sig = JSON.stringify([st, liveNow.size]);
     if (sig === drawn && !(benched < 2 && now >= benchAt && !moving)) return more || benched < 2;
     canvas.style.width = st.vw + 'px'; canvas.style.height = st.vh + 'px';
