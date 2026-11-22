@@ -343,7 +343,9 @@ ${[0, 1, 2].map((k) => `  if (uNP[${s}] > ${k}) {
     // a solid thing: never see-through while the camera moves), the still's own pixel only at the still's camera
     float vis = uPres[${p(k)}] > 0.5 ? mix(seen(uD${p(k)}, uv, cl.w, uDT[${p(k)}]) * max(smoothstep(-0.02, 0.08, vF[${p(k)}]), step(5.0, uTol)), 1.0, uNear[${p(k)}]) : uHold[${s}] > 0.5 || uSolid < 0.5 ? 1.0 : uNear[${p(k)}];
     vec3 pc = texture(uC${p(k)}, vec2(uv.x, 1.0 - uv.y), uBias).rgb;
-    ${k === 0 ? `c = mix(fb, pc, f * vis); frameY = 1.0 - uv.y; frameW = f; cover = uIsFloor > 0.5 ? 1.0 : soft;
+    // (build 12H: below a faded picture's foot, scene 1's, the live picture is faded as the page fades the still: there the
+    // stand's base and its printed icons, lit live, showed as a coloured band under the giant words, the still film black)
+    ${k === 0 ? `c = mix(fb, pc, f * vis); frameY = 1.0 - uv.y; frameW = cl.w > 0.0 && uv.y < 0.0 ? 1.0 : f; cover = uIsFloor > 0.5 ? 1.0 : soft;
     if (uPres[${p(k)}] > 0.5) { mc = c; ma = 1.0; }` : `float a${k} = uT[${p(k)}] * oval(uOv[${p(k)}], uv);
     c = mix(c, pc, a${k} * f * vis);
     // (a still without the phone lays over it what lay behind it: it fades out; one with it, the phone as it shows it)
