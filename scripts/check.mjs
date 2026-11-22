@@ -2986,7 +2986,8 @@ async function main() {
     const bad = [], seen = [];
     for (const [engine, w, h] of [['chromium', 1512, 860], ['chromium', 430, 739], ['webkit', 430, 739], ['firefox', 1512, 860]]) {
       const tag = `${engine} ${w}x${h}`;
-      const c = await ctx(engine, { viewport: { width: w, height: h } });
+      // (bypassCSP: a screenshot in WebKit adds the test tool's own style, which the page's policy refuses and reports)
+      const c = await ctx(engine, { viewport: { width: w, height: h }, bypassCSP: true });
       const p = await open(c, '/', `end ${tag}`);
       // scrolled hard past the end, three times
       for (let i = 0; i < 3; i++) { await p.evaluate(() => scrollTo(0, document.documentElement.scrollHeight * 2)); await p.mouse.wheel(0, 3000).catch(() => {}); await settle(p, 300); }

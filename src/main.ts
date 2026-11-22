@@ -623,7 +623,7 @@ function boardForm(): void {
   if (gaveUp) return;
   if (!boardBox) return;
   const k = form === 'desktop' ? 'bd' : 'bp';
-  for (const svg of boardBox.querySelectorAll<SVGSVGElement>('svg.board, svg.alive')) svg.style.display = svg.classList.contains(k) || svg.classList.contains('a' + k.slice(1)) ? '' : 'none';
+  for (const svg of boardBox.querySelectorAll<SVGSVGElement>('svg.board')) svg.style.display = svg.classList.contains(k) ? '' : 'none';
   const svg = boardBox.querySelector<SVGSVGElement>('svg.' + k)!;
   if (BV?.svg === svg) return;
   stopAlive();
@@ -757,7 +757,7 @@ function stopAlive(): void {
   cancelAnimationFrame(aliveRaf);
   aliveRaf = 0;
   if (aliving) aliveAt(-1, 0);
-  if (BV) BV.al.svg.style.willChange = '';
+  if (BV) { BV.al.svg.style.willChange = ''; BV.al.svg.style.display = ''; }
   aliving = false;
   document.documentElement.dataset.alive = '';
 }
@@ -825,9 +825,9 @@ function boardAt(y: number): void {
   if (next) setO(next, step[6]);
   // the board at work: at rest (the light at rest, the scene not leaving), the scene on screen, motion allowed, the tab shown
   const want = !rest && active === BRAIN && step[3] >= 1 && u >= LIGHT_SHARE && document.visibilityState === 'visible';
-  // (its own layer while it works: drawn again alone each frame, never with the board's masked drawing; slow frames of 50
-  // to 90 ms on a phone at a fourth of the speed without it)
-  if (want && !aliving) { aliving = true; aliveFrom = 0; BV.al.svg.style.willChange = 'transform'; document.documentElement.dataset.alive = '1'; aliveRaf = requestAnimationFrame(aliveFrame); }
+  // (shown only while it works, on a layer of its own: drawn again alone each frame, never with the board's masked drawing;
+  // and its blending, which makes the board's box one group drawn aside, costs nothing while the board is drawn in)
+  if (want && !aliving) { aliving = true; aliveFrom = 0; BV.al.svg.style.display = 'block'; BV.al.svg.style.willChange = 'transform'; document.documentElement.dataset.alive = '1'; aliveRaf = requestAnimationFrame(aliveFrame); }
   else if (!want && aliving) stopAlive();
 }
 
