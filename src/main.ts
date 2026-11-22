@@ -21,7 +21,7 @@ interface Pass { key: string; img: HTMLImageElement; node: HTMLElement; ready: b
 interface Matte { url: string; img: HTMLImageElement; ready: boolean }
 interface SceneState {
   el: HTMLElement; layer: HTMLElement; box: HTMLElement;
-  /** the words at the foot of the screen (the giant words of scenes 1 and 7, the small line of the others) */
+  /** the words at the foot of the screen (the giant words of scene 1, the small line of the others) */
   words: HTMLElement | null;
   /** the stage wide box of the giant words at the top, and the heading in it (scenes 2 to 6) */
   cut: HTMLElement | null; top: HTMLElement | null;
@@ -31,7 +31,7 @@ interface SceneState {
   /** scene 6: the matte of all three things, which the board on the floor is hidden in */
   things: Matte | null;
   /** the lines of words that leave and arrive one by one: at the top (the giant lines, the letterhead), then at the
-   *  foot (the giant lines of scenes 1 and 7, the small line, its note, the tool and height lines), for one shape */
+   *  foot (the giant lines of scene 1, the small line, its note, the tool and height lines), for one shape */
   lines: { form: Form; top: HTMLElement[]; foot: HTMLElement[] } | null;
   /** when its first picture was ready (a change into it never shows its black ground before its picture) */
   readyAt: number;
@@ -82,7 +82,7 @@ const top = $('#top');
 try { history.scrollRestoration = 'manual'; } catch { /* old browser: it restores what it can */ }
 
 /* ---------- start: take the later pictures out, then switch the film on ---------- */
-// The resting pictures of scenes 2 to 7 are for the page without the script. Taken out before the film styles apply,
+// The resting pictures of scenes 2 to 6 are for the page without the script. Taken out before the film styles apply,
 // so they do not all load at once; each is put back as a light pass when the visitor nears its scene.
 const sections = $$('#film .scene');
 let boardBox: HTMLElement | null = null;
@@ -123,7 +123,7 @@ function giveUp(): void {
   gaveUp = true;
   let on = 1;
   try { on = active; } catch { /* the film had not started its scroll work */ }
-  try { stopPulses(); cancelAnimationFrame(pulseRaf); clearTimeout(settle); clearTimeout(saveT); clearTimeout(aheadT); } catch { /* not started */ }
+  try { stopAlive(); clearTimeout(settle); clearTimeout(saveT); clearTimeout(aheadT); } catch { /* not started */ }
   try { live3d?.dispose(); } catch { /* not started */ }
   try { for (const o of observers) o.disconnect(); } catch { /* not started */ }
   doc.classList.remove('film', 'film-init');
@@ -376,8 +376,7 @@ function placeAtRest(s: SceneState, view: View): void {
 }
 
 /* ---------- building the light passes of one scene ---------- */
-// the last scene may use the twin of scene 6 (a build time choice, written on the section)
-const viewOf = (n: number): View => scenes[sections[n - 1].dataset.view === 'twin' ? `${n}twin` : String(n)][form];
+const viewOf = (n: number): View => scenes[String(n)][form];
 
 function build(n: number): void {
   if (gaveUp) return;
@@ -552,14 +551,14 @@ function light(n: number, prog: number): void {
 /* ---------- scene 6: the board on the floor ---------- */
 // The page holds the board at rest (build/board.ts). The film draws it in as a pure function of the scroll, in steps
 // tied to the light: the chip and the stand's trace as the scene comes in, the race piece's trace with the second
-// pass, the phone's with the third, then the net and the place for the next one. At rest small pulses run the three
-// live traces. With less motion: the rest state, no pulses.
+// pass, the phone's with the third, then the net and the place for the next one. At rest the board works (build 12H,
+// alive below). With less motion: the rest state, nothing moving.
 type Pt = number[];
 interface Line { pts: Pt[]; at: number[]; d: string }
 interface Trace { co: SVGPathElement; gl: SVGPathElement; sd: SVGPathElement[]; pd: SVGPathElement; pu: SVGPathElement; fl: SVGPathElement; line: Line; side: Line[]; f: number;
   /** its thing's name tag (none when the venture has no name) */
   nm: HTMLElement | null }
-interface BoardView { svg: SVGSVGElement; b1: SVGElement; b4: SVGElement[]; dm: SVGElement; arrive: number[]; tr: Trace[]; dr: SVGPathElement; dp: SVGPathElement; route: Line }
+interface BoardView { svg: SVGSVGElement; al: Alive; b1: SVGElement; b4: SVGElement[]; dm: SVGElement; arrive: number[]; tr: Trace[]; dr: SVGPathElement; dp: SVGPathElement; route: Line }
 /** every path's resting d, so the plain page gets the board back whole if the film gives up */
 const restD = new Map<SVGPathElement, string>();
 const lineOf = (d: string): Line => {
@@ -624,9 +623,10 @@ function boardForm(): void {
   if (gaveUp) return;
   if (!boardBox) return;
   const k = form === 'desktop' ? 'bd' : 'bp';
-  for (const svg of boardBox.querySelectorAll<SVGSVGElement>('svg.board')) svg.style.display = svg.classList.contains(k) ? '' : 'none';
+  for (const svg of boardBox.querySelectorAll<SVGSVGElement>('svg.board, svg.alive')) svg.style.display = svg.classList.contains(k) || svg.classList.contains('a' + k.slice(1)) ? '' : 'none';
   const svg = boardBox.querySelector<SVGSVGElement>('svg.' + k)!;
   if (BV?.svg === svg) return;
+  stopAlive();
   const q = <T extends Element>(sel: string, el: ParentNode = svg) => el.querySelector<T>(sel)!;
   for (const e of svg.querySelectorAll('path')) if (!restD.has(e)) restD.set(e, e.getAttribute('d') ?? '');
   const tr = ['stand', 'coin', 'phone'].map((t): Trace => {
@@ -636,7 +636,7 @@ function boardForm(): void {
     return { co, gl: q('.gl', g), sd, pd: q('.pd', g), pu: q('.pu', g), fl: q('.fl', g), line, side, f: -1, nm: labelBox ? $('.blab.n-' + t, labelBox) : null };
   });
   const dr = q<SVGPathElement>('.dr');
-  BV = { svg, b1: q('.b1'), dm: q('.dm'), arrive: (svg.dataset.arrive ?? '0.7,0.7').split(',').map(Number), b4: [...svg.querySelectorAll<SVGElement>('g.b4:not(.nx)')], tr, dr, dp: q('.dp'), route: lineOf(restD.get(dr)!) };
+  BV = { svg, al: aliveOf(boardBox.querySelector<SVGSVGElement>('svg.a' + k.slice(1))!), b1: q('.b1'), dm: q('.dm'), arrive: (svg.dataset.arrive ?? '0.7,0.7').split(',').map(Number), b4: [...svg.querySelectorAll<SVGElement>('g.b4:not(.nx)')], tr, dr, dp: q('.dp'), route: lineOf(restD.get(dr)!) };
   // the labels sit by share of the picture box, for this screen shape
   if (labelBox) for (const e of $$('.blab', labelBox)) {
     const [x, y, side] = (e.dataset[form === 'desktop' ? 'd' : 'p'] ?? '0,0,r').split(',');
@@ -669,27 +669,105 @@ function boardMask(url: string): void {
     st.setProperty('-webkit-mask-composite', 'xor'); st.setProperty('mask-composite', 'exclude');
   }
 }
-function boardGone(): void { stopPulses(); BV = null; }
+function boardGone(): void { stopAlive(); BV = null; }
 
-let pulseRaf = 0, pulsing = false;
-function stopPulses(): void {
-  cancelAnimationFrame(pulseRaf);
-  pulseRaf = 0;
-  if (pulsing && BV) for (const t of BV.tr) { setD(t.pu, ''); setO(t.fl, 0); }
-  pulsing = false;
+/* ---------- build 12H: the board at work ---------- */
+// While scene 6 rests, all three ventures work at the same time, on one loop of LOOP seconds: the stand's tiles light one
+// after another as if tapped (each tile's own icon, its colours lifted, and a soft halo), the race route draws itself in
+// along its real line on the coin and rests lit, and the coach phone's dial fills round. Then a spark of each one's
+// trace colour runs down its trace to the chip, the three arriving together; the chip flashes once; three white sparks
+// run back out, and each venture brightens a little as its spark lands. Then the loop starts again. It is light added
+// over the picture (build/board.ts aliveSvg, its own layer, screen), and nothing of it shows at the loop's zero frame,
+// so a rest is still its still. It runs only at rest, with motion allowed and the tab shown; it fades in over half a
+// second and stops at once when the scene starts to leave. It writes only the board's own layer: the live film does not
+// draw a frame for it.
+const LOOP = 5.2;
+interface Alive { svg: SVGSVGElement; tiles: SVGGElement[]; ar: SVGGElement; rg: SVGPathElement; rc: SVGPathElement; ad: SVGGElement; dg: SVGPathElement; dc: SVGPathElement; cf: SVGElement;
+  sp: SVGPathElement[][]; route: Line; H: number[]; dial: number[]; aspect: number }
+function aliveOf(svg: SVGSVGElement): Alive {
+  const q = <T extends Element>(sel: string) => svg.querySelector<T>(sel)!;
+  const route = lineOf('M' + (svg.dataset.route ?? '').split(' ').join('L'));
+  const c = (svg.dataset.screen ?? '').split(',').map(Number);
+  return {
+    svg, tiles: [...svg.querySelectorAll<SVGGElement>('.ti')], ar: q('.ar'), rg: q('.rg'), rc: q('.rc'), ad: q('.ad'), dg: q('.dg'), dc: q('.dc'), cf: q('.cf'),
+    sp: ['stand', 'coin', 'phone'].map((t) => ['.k0', '.k1', '.k2', '.k3'].map((k) => svg.querySelector<SVGPathElement>(`.s-${t} ${k}`)!)),
+    route, H: homography([[c[0], c[1]], [c[2], c[3]], [c[4], c[5]], [c[6], c[7]]]), dial: (svg.dataset.dial ?? '0.5,0.36,0.33').split(',').map(Number),
+    // the screen picture's height over its width (the coach phone's display, 144.8 by 66.8 mm)
+    aspect: 144.8 / 66.8,
+  };
 }
-// a loop of 3.6 s: each pulse runs its trace in 1.5 s, the three 0.4 s apart; the pad flashes as it arrives
-function pulseFrame(now: number): void {
-  if (gaveUp) return;
-  pulseRaf = requestAnimationFrame(pulseFrame);
-  if (!BV) return;
-  const sec = now / 1000;
-  BV.tr.forEach((t, k) => {
-    const L = lenOf(t.line), ph = ((((sec - 0.4 * k) % 3.6) + 3.6) % 3.6) / 1.5;
-    setD(t.pu, ph <= 1 ? partD(t.line, ph * L - 46, ph * L) : '');
-    const since = (ph - 1) * 1.5;
-    setO(t.fl, ph < 1 ? 0 : since < 0.08 ? since / 0.08 : Math.max(0, 1 - (since - 0.08) / 0.5));
+/** the projective map from the unit square (the screen picture: (0,0) its top left, (1,1) its bottom right) to a quad */
+function homography(q: number[][]): number[] {
+  const [[x0, y0], [x1, y1], [x2, y2], [x3, y3]] = q;
+  const dx1 = x1 - x2, dx2 = x3 - x2, dx3 = x0 - x1 + x2 - x3, dy1 = y1 - y2, dy2 = y3 - y2, dy3 = y0 - y1 + y2 - y3;
+  const den = dx1 * dy2 - dx2 * dy1 || 1, g = (dx3 * dy2 - dx2 * dy3) / den, h = (dx1 * dy3 - dx3 * dy1) / den;
+  return [x1 - x0 + g * x1, x3 - x0 + h * x3, x0, y1 - y0 + g * y1, y3 - y0 + h * y3, y0, g, h];
+}
+const onScreen = (m: number[], u: number, v: number): Pt => { const w = m[6] * u + m[7] * v + 1; return [(m[0] * u + m[1] * v + m[2]) / w, (m[3] * u + m[4] * v + m[5]) / w]; };
+/** the dial's ring from 12 o'clock round to share f of a turn, on the screen as the picture shows it */
+function dialD(a: Alive, f: number): string {
+  if (f <= 0) return '';
+  const [cx, cy, r] = a.dial, n = Math.max(2, Math.ceil(72 * f)), out: string[] = [];
+  for (let i = 0; i <= n; i++) {
+    const t = (i / n) * f * 2 * Math.PI, p = onScreen(a.H, cx + r * Math.sin(t), cy - (r / a.aspect) * Math.cos(t));
+    out.push(p[0].toFixed(1) + ',' + p[1].toFixed(1));
+  }
+  return 'M' + out.join('L');
+}
+const bump = (t: number, a: number, peak: number, b: number) => (t <= a || t >= b ? 0 : t < peak ? smoothT((t - a) / (peak - a)) : 1 - smoothT((t - peak) / (b - peak)));
+const smoothT = (x: number) => x * x * (3 - 2 * x);
+/** a spark on a line: its head at length h, running toward the line's start (in) or its end (out), a fading tail behind */
+function spark(paths: SVGPathElement[], l: Line, h: number, inward: boolean, on: boolean): void {
+  const L = lenOf(l), tail = [0, 10, 22, 38];
+  paths.forEach((e, k) => {
+    if (!on) { setD(e, ''); return; }
+    const a = inward ? h : h - tail[k] - 2, b = inward ? h + tail[k] + 2 : h;
+    setD(e, partD(l, Math.max(0, Math.min(L, a)), Math.max(0, Math.min(L, b))));
   });
+}
+/** the whole board at work at loop time t (seconds, 0 to LOOP), at strength k (the half second fade in); t < 0: nothing */
+function aliveAt(t: number, k: number): void {
+  if (!BV) return;
+  const a = BV.al, on = t >= 0;
+  // the stand: each tile lit in turn (its tap), then all four a little as the white spark lands
+  a.tiles.forEach((g, i) => setO(g, on ? k * Math.max(0.62 * bump(t, 0.25 + 0.42 * i, 0.5 + 0.42 * i, 1.3 + 0.42 * i), 0.3 * bump(t, 4.0, 4.15, 4.8)) : 0));
+  // the route: drawn in from its start, at rest lit, brighter as the spark lands, gone by the loop's end
+  const rf = on ? smoothT(clamp((t - 0.2) / 2.0)) : 0, RL = lenOf(a.route);
+  setD(a.rg, rf > 0 ? partD(a.route, 0, rf * RL) : ''); setD(a.rc, rf > 0 ? partD(a.route, 0, rf * RL) : '');
+  setO(a.ar, on ? k * Math.min(1, 0.75 + 0.25 * bump(t, 4.0, 4.15, 4.8)) * (1 - smoothT(clamp((t - 4.6) / 0.6))) : 0);
+  // the dial: its ring fills round
+  const df = on ? smoothT(clamp((t - 0.2) / 2.0)) : 0, dd = dialD(a, df);
+  setD(a.dg, dd); setD(a.dc, dd);
+  setO(a.ad, on ? k * Math.min(1, 0.75 + 0.25 * bump(t, 4.0, 4.15, 4.8)) * (1 - smoothT(clamp((t - 4.6) / 0.6))) : 0);
+  // the sparks: in from the three things to the chip (2.4 to 3.2 s, together), white back out (3.3 to 4.1 s)
+  BV.tr.forEach((tr, i) => {
+    const L = lenOf(tr.line), ps = a.sp[i];
+    const g = ps[0].parentNode as SVGGElement;
+    if (on && t >= 2.4 && t < 3.25) { g.setAttribute('stroke', ['#F2D78C', '#5BC9B8', '#FF4193'][i]); spark(ps, tr.line, L * (1 - smoothT(clamp((t - 2.4) / 0.8))), true, true); setO(g, k); }
+    else if (on && t >= 3.3 && t < 4.15) { g.setAttribute('stroke', '#f3eee4'); spark(ps, tr.line, L * smoothT(clamp((t - 3.3) / 0.8)), false, true); setO(g, k); }
+    else spark(ps, tr.line, 0, true, false);
+    // its pad brightens as the white spark lands
+    tr.fl.setAttribute('stroke-opacity', on ? (0.9 * k * bump(t, 4.05, 4.15, 4.7)).toFixed(3) : '0');
+  });
+  // the chip flashes once as the three arrive
+  setO(a.cf, on ? k * bump(t, 3.15, 3.27, 3.9) : 0);
+}
+let aliveRaf = 0, aliving = false, aliveFrom = 0;
+function stopAlive(): void {
+  cancelAnimationFrame(aliveRaf);
+  aliveRaf = 0;
+  if (aliving) aliveAt(-1, 0);
+  if (BV) BV.al.svg.style.willChange = '';
+  aliving = false;
+  document.documentElement.dataset.alive = '';
+}
+function aliveFrame(now: number): void {
+  if (gaveUp) return;
+  aliveRaf = requestAnimationFrame(aliveFrame);
+  if (!BV) return;
+  if (!aliveFrom) aliveFrom = now;
+  const sec = (now - aliveFrom) / 1000;
+  aliveAt(sec % LOOP, clamp(sec / 0.5));
 }
 
 function boardAt(y: number): void {
@@ -736,7 +814,7 @@ function boardAt(y: number): void {
     setO(t.pd, pad);
     if (t.nm) setO(t.nm, pad);
     // the head of a trace being drawn is brighter
-    if (!pulsing) setD(t.pu, f > 0 && f < 1 ? partD(t.line, f * L - 30, f * L) : '');
+    setD(t.pu, f > 0 && f < 1 ? partD(t.line, f * L - 30, f * L) : '');
   });
   for (const g of BV.b4) setO(g, step[4]);
   // the darker floor lifts again over the scene's last stretch, before the change to the empty pool starts, so
@@ -745,10 +823,12 @@ function boardAt(y: number): void {
   setD(BV.dr, partD(BV.route, 0, step[5] * lenOf(BV.route)));
   setO(BV.dp, step[6]);
   if (next) setO(next, step[6]);
-  // pulses: at rest, while the scene is on screen, with motion allowed
-  const want = !rest && active === BRAIN && step[3] >= 1 && document.visibilityState === 'visible';
-  if (want && !pulsing) { pulsing = true; pulseRaf = requestAnimationFrame(pulseFrame); }
-  else if (!want && pulsing) stopPulses();
+  // the board at work: at rest (the light at rest, the scene not leaving), the scene on screen, motion allowed, the tab shown
+  const want = !rest && active === BRAIN && step[3] >= 1 && u >= LIGHT_SHARE && document.visibilityState === 'visible';
+  // (its own layer while it works: drawn again alone each frame, never with the board's masked drawing; slow frames of 50
+  // to 90 ms on a phone at a fourth of the speed without it)
+  if (want && !aliving) { aliving = true; aliveFrom = 0; BV.al.svg.style.willChange = 'transform'; document.documentElement.dataset.alive = '1'; aliveRaf = requestAnimationFrame(aliveFrame); }
+  else if (!want && aliving) stopAlive();
 }
 
 /* ---------- scroll: which scene, how far through its light ---------- */
@@ -937,11 +1017,10 @@ function motion(y: number, now: number): boolean {
  *  together), its lines of words, its door. */
 function stage(k: number, y: number, wIn: number, wOut: number, rest: boolean, strength: number): void {
   const s = S[k], n = S.length;
-  const twin = sections[k].dataset.view === 'twin', twinNext = k < n - 1 && sections[k + 1].dataset.view === 'twin';
   const h = heights[k] / VH, sr = LIGHT_SHARE * Math.max(0, h - 1);
   // within 3 px of its rest the scene is exactly at rest
   const at = Math.abs(y - tops[k] - sr * VH) < 3 ? sr : (y - tops[k]) / VH;
-  const [dyS, sc] = rest ? [0, 1] : camera(at, sr, h, wIn, wOut, { first: k === 0, last: k === n - 1, stillIn: twin, stillOut: twinNext });
+  const [dyS, sc] = rest ? [0, 1] : camera(at, sr, h, wIn, wOut, { first: k === 0, last: k === n - 1 });
   const dy = dyS * VH;
   // a live scene: its picture is the live camera's; scene 6's board and labels follow the floor (src/world/film3d.ts)
   const live = live3d?.live(k + 1) ? live3d : null, bd = live && k === BRAIN - 1 ? live.board(k + 1) : null;
@@ -1118,10 +1197,12 @@ doors = startDoors({
 /* ---------- go ---------- */
 build(1);
 measure();
-// an address with #s1 to #s7 opens on that scene (the sections grew when the film switched on); else the place saved
+// an address with #s1 to #s6 opens on that scene (the sections grew when the film switched on), and an old link to a
+// scene past the last (#s7, the empty pool of light, gone in build 12H) on the last scene at rest; else the place saved
 // for this page (a reload, Back); else a door's hash (/#tapz) opens on its product's scene, its light at rest
 const target = /^#s([1-9])$/.exec(location.hash);
 if (target && +target[1] <= S.length) scrollTo(0, tops[+target[1] - 1]);
+else if (target) scrollTo(0, Math.round(restY(S.length)));
 else if (!returnTo()) {
   const n = doors.hashScene(location.hash);
   if (n) scrollTo(0, Math.round(restY(n)));
