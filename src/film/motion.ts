@@ -61,18 +61,17 @@ export function lineIn(w: number, r: number, L: Lines, stage = 1): [number, numb
 }
 
 /** A scene's camera at local position s (screens from its top): [rise below its place in screens, scale].
- *  sr: its rest; h: its height in screens; first, last: no change into it / out of it; still: the twin pair (the
- *  pool of light holds, so neither the scene before the twin after its rest nor the twin moves); wIn, wOut: where the
- *  changes into and out of it are. */
+ *  sr: its rest; h: its height in screens; first, last: no change into it / out of it; wIn, wOut: where the changes
+ *  into and out of it are. */
 export function camera(s: number, sr: number, h: number, wIn: number, wOut: number,
-  o: { first: boolean; last: boolean; stillIn: boolean; stillOut: boolean }): [number, number] {
+  o: { first: boolean; last: boolean }): [number, number] {
   const sa = -0.5 - WINDOW / 2, sd = h - 0.5 + WINDOW / 2;
   const rate = DRIFT / Math.max(0.5, sr - sa);
   let dy = 0, k = 1;
-  if (s < sr) { if (!o.first && !o.stillIn) dy = rate * Math.min(sr - s, sr - sa); }
-  else if (!o.last && !o.stillOut) dy = -rate * Math.min(s - sr, sd - sr);
-  if (!o.first && !o.stillIn) k += GROW * (1 - smooth(wIn));
-  if (!o.last && !o.stillOut) k += GROW * smooth(wOut);
+  if (s < sr) { if (!o.first) dy = rate * Math.min(sr - s, sr - sa); }
+  else if (!o.last) dy = -rate * Math.min(s - sr, sd - sr);
+  if (!o.first) k += GROW * (1 - smooth(wIn));
+  if (!o.last) k += GROW * smooth(wOut);
   return [dy, k];
 }
 

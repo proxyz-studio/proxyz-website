@@ -434,91 +434,19 @@
     "doors": { "stand": { "anchor": [398, 594, 332], "thing": [365, 247, 632, 490], "hit": [365, 247, 632, 548] }, "race": { "anchor": [138, 372, 626], "thing": [130, 572, 383, 707], "hit": [130, 566, 388, 772] } },
   "things": "s6-phone-things-matte"
    }
-  },
-  "7": {
-   "desktop": {
-    "passes": [
-     "s7-desk-p1"
-    ],
-    "end": "dark",
-    "still": 0,
-    "frame": {
-     "fit": "cover",
-     "zoom": 1,
-     "fx": 0.5,
-     "fy": 0.5,
-     "vx": 0.5,
-     "vy": 0.5
-    }
-   },
-   "phone": {
-    "passes": [
-     "s7-phone-p1"
-    ],
-    "end": "dark",
-    "still": 0,
-    "frame": {
-     "fit": "cover",
-     "zoom": 1,
-     "fx": 0.5,
-     "fy": 0.5,
-     "vx": 0.5,
-     "vy": 0.5
-    }
-   }
-  },
-  "7twin": {
-   "desktop": {
-    "passes": [
-     "s7t-desk-p1"
-    ],
-    "end": "dark",
-    "still": 0,
-    "placeAs": 6,
-    "frame": {
-     "fit": "cover",
-     "zoom": 1,
-     "fx": 0.5,
-     "fy": 0,
-     "vx": 0.5,
-     "vy": 0
-    }
-   },
-   "phone": {
-    "passes": [
-     "s7t-phone-p1"
-    ],
-    "end": "dark",
-    "still": 0,
-    "placeAs": 6,
-    "frame": {
-     "fit": "width",
-     "zoom": 1.4,
-     "fx": 0.485,
-     "fy": 0.372,
-     "vx": 0.5,
-     "vy": 0.47,
-     "span": [
-      246,
-      1032
-     ],
-     "sides": true
-    }
-   }
   }
  },
  "tall": {
+  "2": 3.6,
   "6": 3.6
  },
  "brainScene": 6,
  "type": {
   "bottom": [
-   1,
-   7
+   1
   ],
   "share": {
-   "1": 0.6,
-   "7": 0.6
+   "1": 0.6
   },
   "shareDefault": 0.46,
   "blockMax": 0.4,

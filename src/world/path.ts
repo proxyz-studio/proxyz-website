@@ -4,8 +4,7 @@
 // box). Between two rests it travels like a camera on a slider: it leaves the rest slowly, does most of its travel
 // while the light changes from one scene to the next, and settles slowly into the next rest, never stopping and never
 // overshooting (each number eased with a curve that cannot swing past its keys). Scene 1 holds still until its light
-// rests (the first screen is the page as it loads), and scenes 6 and 7 share one camera (the pool of light holds while
-// the three things leave it).
+// rests (the first screen is the page as it loads). Build 12H: the film ends on scene 6, held.
 //
 // The camera is kept as nine numbers: the point it looks at (3), its turn, height and distance around that point (so
 // it moves in arcs round the things, not through them), and its lens on the screen (focal length, and where the lens
