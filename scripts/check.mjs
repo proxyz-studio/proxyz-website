@@ -106,8 +106,8 @@ const EXPECT = {
     ...content.legal.sections.flatMap((s) => [s.heading, ...s.lead, ...s.parts.flatMap((p) => [p.heading, ...p.text, ...(p.list ?? []), ...(p.after ?? [])])])],
   '/nope-nope/': [B.place, content.pages.notFound.line],
 };
-/** The film data of scene n as the build chose it (scene 7 may use the twin of scene 6). */
-const viewOf = (n, form) => film.scenes[content.scenes[n - 1]?.picture === 'twin' ? `${n}twin` : String(n)][form];
+/** The film data of scene n. */
+const viewOf = (n, form) => film.scenes[String(n)][form];
 const META = {
   '/': content.pages.home, '/machines/': content.pages.machines, '/legal/': content.pages.legal,
 };
@@ -355,25 +355,6 @@ async function main() {
     const m = await labInk(shown, hidden, items.map((t) => t.box));
     return items.map((t, i) => ({ ...t, ink: m[i].ink, ratio: contrastOf(m[i].p95, t.kind), need: TEXT_KINDS.find((k) => k[1] === t.kind)[3] }));
   }
-  /** The pool of light in each frame, as a percent of the end frame: measured where the two ends agree (the floor,
-   *  not the three things) and the floor is lit, between the border and the words. pct.start: the first end. */
-  async function pool(start, end, frames) {
-    const out = await labPage.evaluate(async ([b64s, decode]) => {
-      const dec = (0, eval)(decode);
-      const [a, b, ...fs] = await Promise.all(b64s.map(dec));
-      const grey = (d, i) => 0.299 * d.data[i] + 0.587 * d.data[i + 1] + 0.114 * d.data[i + 2];
-      const idx = [];
-      for (let y = Math.floor(b.height * 0.14); y < b.height * 0.78; y++) for (let x = 0; x < b.width; x++) {
-        const i = (y * b.width + x) * 4, gb = grey(b, i);
-        if (gb >= 18 && Math.abs(grey(a, i) - gb) < 4) idx.push(i);
-      }
-      const mean = (d) => idx.reduce((s, i) => s + grey(d, i), 0) / Math.max(1, idx.length);
-      const ref = mean(b);
-      return { start: (100 * mean(a)) / ref, frames: fs.map((d) => (100 * mean(d)) / ref), n: idx.length };
-    }, [[start, end, ...frames].map((x) => x.toString('base64')), decode]);
-    const pct = out.frames; pct.start = out.start; return pct;
-  }
-
   /* 1. words */
   if (want(1)) await guarded(1, async () => {
     const c = await ctx('chromium', { javaScriptEnabled: false });
@@ -437,7 +418,7 @@ async function main() {
     const p = await open(c, '/', 'descriptions');
     const got = await p.evaluate(() => [...document.querySelectorAll('#film .passes')].map((b) => (b.getAttribute('role') === 'img' ? b.getAttribute('aria-label') : '')));
     const d = sameSeq(got, content.scenes.map((s) => s.alt));
-    ok(d.equal, 1, 'Film running: all seven picture descriptions are there before any scroll', 'all seven', d.at);
+    ok(d.equal, 1, 'Film running: all six picture descriptions are there before any scroll', 'all six', d.at);
     await c.close();
   });
 
@@ -582,7 +563,7 @@ async function main() {
     }
     const n = content.scenes.length;
     ok(r.sections === n && r.pics === n && !dead.length && r.heights.every((h) => h >= 500), 7,
-      'Scripts off: seven sections, seven pictures, all words (test 1 ran with scripts off), working links',
+      'Scripts off: six sections, six pictures, all words (test 1 ran with scripts off), working links',
       `${r.sections} sections, ${r.pics} pictures, ${r.links.length} links all answer 200`,
       `${r.sections} sections, ${r.pics} pictures, dead links [${dead.join(', ')}]`);
     await c.close();
@@ -707,7 +688,7 @@ async function main() {
     for (const engine of ['chromium', 'webkit', 'firefox']) {
       const c = await ctx(engine, { viewport: { width: 393, height: 852 } });
       const p = await open(c, '/', `reload ${engine}`);
-      for (const n of [3, 6, 7]) {
+      for (const n of [3, 5, 6]) {
         await toScene(p, n, 0.5);
         const before = await p.evaluate(() => [document.querySelector('#film .scene.on')?.id, scrollY]);
         await p.reload({ waitUntil: 'load' });
@@ -757,7 +738,7 @@ async function main() {
         await c.close();
       }
     }
-    ok(!bad.length, 7, 'Film script late: no picture of scenes 2 to 7 loads before the film runs; film script blocked: after about 4 s the plain page shows all seven pictures (Chromium, WebKit, Firefox)', 'held back, then seven pictures', bad.join('; '));
+    ok(!bad.length, 7, 'Film script late: no picture of scenes 2 to 6 loads before the film runs; film script blocked: after about 4 s the plain page shows all six pictures (Chromium, WebKit, Firefox)', 'held back, then six pictures', bad.join('; '));
   });
 
   /* 12. phones, with the browser's bar showing and with it slid away */
@@ -843,35 +824,8 @@ async function main() {
     }
     const bars = BARS.map((b) => `${b[0]} wide ${b[1]}/${b[2]}`).join(', ');
     ok(!place.length, 12, `Phone, bar showing and bar away (${bars}): the words at the foot (giant words of scenes 1 and 7, the small line of the others) sit 60 px above the visible bottom in each; the giant words at the top and every picture box are the same in both states (Chromium; WebKit for the first two)`, 'words on the edge, pictures and top words still', place.slice(0, 6).join('; '));
-    ok(!read.length, 12, `Phone, both states (${bars}): the giant words, the small line, its note and the grey tool line at least 4.5 to 1 against what lies behind their letters, the height line at least 3 to 1, all seven scenes (Chromium; WebKit for the first two)`, 'all readable', read.slice(0, 6).join('; '));
+    ok(!read.length, 12, `Phone, both states (${bars}): the giant words, the small line, its note and the grey tool line at least 4.5 to 1 against what lies behind their letters, the height line at least 3 to 1, all six scenes (Chromium; WebKit for the first two)`, 'all readable', read.slice(0, 6).join('; '));
     ok(!back.length, 12, 'Phone, bar away: the backings of scenes 3 and 4 leave the picture above the words as it is (within 2%); scene 4 keeps at least 88% of its drawing\'s light there', `no dimming; scene 4 keeps ${s4.join(', ')}`, back.join('; '));
-
-    /* the last scene: the twin fades in over a steady pool of light */
-    if (content.scenes[content.scenes.length - 1].picture === 'twin') {
-      const bad = [], seen = [];
-      for (const engine of ['chromium', 'webkit']) {
-        for (const [form, mk] of [['phone', () => stateCtx(engine, 'away')], ['laptop', () => ctx(engine, { viewport: { width: 1512, height: 860 }, bypassCSP: true })]]) {
-          const c = await mk();
-          const p = await open(c, '/', `twin ${engine} ${form}`);
-          const last = content.scenes.length;
-          await toScene(p, last, 0); await toScene(p, last - 1, 1); await settle(p, 900);
-          // the change plays with the scroll (src/film/motion.ts): from where the twin starts to come in to where it
-          // has fully come in, stepped in eleven places
-          const g = await p.evaluate((n) => { const s = document.getElementById('s' + n), vh = document.querySelector('.probe').offsetHeight || innerHeight; return { cut: s.offsetTop - vh / 2, span: vh * 0.8 }; }, last);
-          const at = (w) => Math.round(g.cut + (w - 0.5) * g.span);
-          const shot = async (w) => { await p.evaluate((y) => scrollTo(0, y), at(w)); await p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))); await settle(p, 250); return p.screenshot(); };
-          const before = await shot(0.12);
-          const frames = [];
-          for (let k = 0; k <= 10; k++) frames.push(await shot(0.12 + (k / 10) * 0.7));
-          const after = await shot(0.82);
-          const pct = await pool(before, after, frames);
-          seen.push(`${engine} ${form} ${Math.min(...pct).toFixed(1)} to ${Math.max(...pct).toFixed(1)}%`);
-          if (Math.min(...pct) < 96 || Math.max(...pct) > Math.max(pct.start, 100) + 1) bad.push(`${engine} ${form}: ${pct.map((v) => v.toFixed(1)).join(' ')}`);
-          await c.close();
-        }
-      }
-      ok(!bad.length, 12, 'Last scene is the twin: through the change from scene 6 the pool of light stays between 96% and the brightness of its two ends (phone and laptop, Chromium, WebKit)', seen.join(', '), bad.join('; '));
-    }
 
     /* the bottom safe area changes as the bar slides (older iPhones: 0 with it showing, 34 px with it away). Forced in
        the test with a style: a scene placed at 0 is placed again once when it grows to 34 and then equals a fresh load
@@ -1003,7 +957,7 @@ async function main() {
   });
 
   /* 15. contrast at every listed size: the giant words, the small line and its note, the grey tool line (4.5 to 1) and
-     the height line (3 to 1), against what lies behind their own letters, all seven scenes at rest */
+     the height line (3 to 1), against what lies behind their own letters, all six scenes at rest */
   if (want(15)) await guarded(15, async () => {
     const bad = [], low = [];
     for (const [w, h] of VIEWPORTS) {
@@ -1433,7 +1387,8 @@ async function main() {
     await settle(p, 600);
   }
   const styleIt = (p, css) => p.evaluate((css) => { let s = document.getElementById('t-board'); if (!s) { s = document.createElement('style'); s.id = 't-board'; document.head.append(s); } s.textContent = css; }, css);
-  const QUIET = '#top,#frame,.bottom-sw,.marks{visibility:hidden !important}';
+  // (build 12H: the board at work is hidden in the board's tests, which measure the board at rest: its loop's zero frame)
+  const QUIET = '#top,#frame,.bottom-sw,.marks{visibility:hidden !important}.alive{display:none !important}';
   /** the board's box and the picture's box (first pass, or the resting picture with scripts off), relative to the layer */
   const boxes = (p) => p.evaluate((n) => {
     const s = document.getElementById('s' + n), l = s.querySelector('.layer').getBoundingClientRect();
@@ -1860,7 +1815,8 @@ async function main() {
       await toBoard(p, { u: 1 });
       // the ink of the giant words alone (white on black), then the board alone in one flat colour (its darkened floor
       // and the chip's soft glow left out: they are shade, not lines), its labels too
-      await styleIt(p, QUIET + PICS + `${N} .bbox,${N} .lbox{visibility:hidden !important}${N} .big{color:#fff !important}`); await settle(p, 150);
+      // (build 12H: scene 6 is the last scene and carries the page's foot, the LEGAL link: not a giant word)
+      await styleIt(p, QUIET + PICS + `${N} .bbox,${N} .lbox,${N} .foot{visibility:hidden !important}${N} .big{color:#fff !important}`); await settle(p, 150);
       const W = await p.screenshot();
       await styleIt(p, QUIET + PICS + `${N} .cut{visibility:hidden !important}${N} .board *{stroke:#ff00ff !important;stroke-opacity:1 !important;fill-opacity:1 !important}${N} .board rect,${N} .board ellipse{visibility:hidden !important}${N} .board path[fill]{fill:#ff00ff !important}${N} .blab{color:#ff00ff !important;text-shadow:none !important}`); await settle(p, 150);
       const K = await p.screenshot();
@@ -1967,7 +1923,7 @@ async function main() {
     ok(!gbad.length, 22, `Scene ${BOARD_N}: on big screens the labels grow with the picture (2428x1300 and 1920x1080: StudioOS over 14 px, the others over 12 px); at 1440x900 and below, and upright, their base sizes (14 px, 12 px)`, grow.filter((g) => /StudioOS|NEXT/.test(g)).join(', '), [...new Set(gbad)].slice(0, 8).join('; '));
   });
 
-  // 23. less motion: nothing on the board moves and its rest state is complete; with motion, the pulses run at rest
+  // 23. less motion: nothing on the board moves and its rest state is complete; with motion, the board works at rest
   // and stop once the scene is off screen
   if (want(23) && boardForms.length) await guarded(23, async () => {
     const bad = [];
@@ -1995,19 +1951,36 @@ async function main() {
         const a = await p.screenshot(); await settle(p, 800); const b = await p.screenshot();
         if (!a.equals(b)) bad.push(`${tag} less motion: the scene changes over 0.8 s`);
         await c.close();
+        // build 12H, the board at work: at rest it runs (the alive layer changes, the tiles, the route, the dial, the
+        // sparks); it stops at once when the scene starts to leave and when the tab is hidden, its layer empty
         const c2 = await ctx(engine, { viewport: { width: w, height: h }, bypassCSP: true });
-        const p2 = await open(c2, '/', `board pulses ${tag}`);
+        const p2 = await open(c2, '/', `board at work ${tag}`);
         await toBoard(p2, { u: 1 });
-        const ds = () => p2.evaluate((n) => [...document.querySelectorAll(`#s${n} .board .pu`)].map((e) => e.getAttribute('d')).join('|'), BOARD_N);
-        const d1 = await ds(); await settle(p2, 300); const d2 = await ds();
-        if (d1 === d2) bad.push(`${tag}: no pulses at rest`);
-        await p2.evaluate(() => scrollTo(0, 0)); await settle(p2, 600);
-        const e1 = await ds(); await settle(p2, 400); const e2 = await ds();
-        if (e1.replace(/\|/g, '') || e2.replace(/\|/g, '')) bad.push(`${tag}: pulses still drawn with the scene off screen`);
+        const look = () => p2.evaluate((n) => {
+          const svg = [...document.querySelectorAll(`#s${n} svg.alive`)].find((e) => getComputedStyle(e).display !== 'none');
+          if (!svg) return { on: document.documentElement.dataset.alive, sig: 'no layer', lit: -1 };
+          const ds = [...svg.querySelectorAll('path[class]')].map((e) => e.getAttribute('d') ?? '');
+          const ops = [...svg.querySelectorAll('.ti, .ar, .ad, .cf, .sp')].map((e) => getComputedStyle(e).opacity);
+          return { on: document.documentElement.dataset.alive, sig: ds.join('|') + ops.join(','), lit: ds.filter(Boolean).length + ops.filter((o) => +o > 0.001 && o !== '1').length };
+        }, BOARD_N);
+        const sigs = [];
+        for (let i = 0; i < 6; i++) { sigs.push(await look()); await settle(p2, 450); }
+        if (sigs.some((x) => x.on !== '1')) bad.push(`${tag}: the board does not work at rest`);
+        if (new Set(sigs.map((x) => x.sig)).size < 4) bad.push(`${tag}: the board at work does not change over 2.7 s`);
+        // the scene starts to leave: back up, before its rest
+        await toBoard(p2, { u: 0.55 });
+        const l1 = await look();
+        if (l1.on || l1.lit > 0) bad.push(`${tag}: still at work as the scene leaves (${l1.lit} parts lit)`);
+        await toBoard(p2, { u: 1 }); await settle(p2, 900);
+        if ((await look()).on !== '1') bad.push(`${tag}: not at work again back at rest`);
+        await p2.evaluate(() => { Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' }); document.dispatchEvent(new Event('visibilitychange')); });
+        await settle(p2, 300);
+        const l2 = await look();
+        if (l2.on || l2.lit > 0) bad.push(`${tag}: still at work with the tab hidden (${l2.lit} parts lit)`);
         await c2.close();
       }
     }
-    ok(!bad.length, 23, `Scene ${BOARD_N}: with less motion every line of the board whole, every part and all ${2 + BOARD_NAMES.length} labels fully shown, no pulse, nothing changes over 0.8 s; with motion the pulses run at rest and stop once the scene is off screen (Chromium, WebKit, Firefox; 430x739, 1512x860)`, 'as specified', bad.slice(0, 6).join('; '));
+    ok(!bad.length, 23, `Scene ${BOARD_N}: with less motion every line of the board whole, every part and all ${2 + BOARD_NAMES.length} labels fully shown, nothing changes over 0.8 s (the board never works); with motion the board works at rest (build 12H: the tiles, the route, the dial, the sparks) and stops at once, its layer empty, when the scene starts to leave and when the tab is hidden (Chromium, WebKit, Firefox; 430x739, 1512x860)`, 'as specified', bad.slice(0, 6).join('; '));
   });
 
   /* 6. LEGAL: the email address is a mail link, in the text's grey, underlined, at least 44 px tall to tap */
@@ -2584,7 +2557,7 @@ async function main() {
       }
       await c.close();
     }
-    ok(!bad.length, 31, 'At rest every scene is the composition as built: its stage alone at full strength, its picture, its giant words, every line of words and its door in place, unmoved and at full strength, none of them on a layer of its own (Chromium 430x739, 393x852, 1512x860, 2428x1300; WebKit 430x739; Firefox 1512x860; the live film: Chromium with a graphics chip 1512x860)', 'all seven, every size', [...new Set(bad)].slice(0, 8).join('; '));
+    ok(!bad.length, 31, 'At rest every scene is the composition as built: its stage alone at full strength, its picture, its giant words, every line of words and its door in place, unmoved and at full strength, none of them on a layer of its own (Chromium 430x739, 393x852, 1512x860, 2428x1300; WebKit 430x739; Firefox 1512x860; the live film: Chromium with a graphics chip 1512x860)', 'all six, every size', [...new Set(bad)].slice(0, 8).join('; '));
   });
 
   /* ---------- build 12: the whole film as one live 3D world (src/world/) ---------- */
@@ -2657,6 +2630,8 @@ async function main() {
       const c = await ctx(engine, { viewport: { width: w, height: h }, deviceScaleFactor: dpr, bypassCSP: true });
       const still = await open(c, '/', `rest still ${engine} ${name}`);
       const live = await open(c, '/', `rest live ${engine} ${name}`);
+      // (build 12H: scene 6's board at work, measured at its loop's zero frame, its layer empty)
+      for (const p of [still, live]) await p.evaluate(() => { const s = document.createElement('style'); s.textContent = '.alive{visibility:hidden !important}'; document.head.append(s); });
       await settle(live, 600);
       await live.keyboard.press('Shift');
       // below the border (its clock ticks)
@@ -2680,7 +2655,7 @@ async function main() {
       seen.push(`${engine} ${name} largest scene ${worst.n} ${worst.mean.toFixed(2)} (${(100 * worst.over).toFixed(2)}%), dark lines at most ${(1e4 * darkest.dark).toFixed(2)} in 10,000 (scene ${darkest.n || '-'})`);
       await c.close();
     }
-    ok(!bad.length, 33, 'At rest every scene drawn live is its still: below the border a mean difference of at most 2.5 of 255, at most 2.5% of the pixels more than 24 apart, and no dark lines (at most 1.5 in 10,000 pixels more than 24 darker than the darkest of the still\'s 3x3 around them), all seven scenes (Chromium with a graphics chip, phone 430x739 at 3 and laptop 1512x860 at 2; WebKit laptop)', seen.join('; '), bad.slice(0, 8).join('; '));
+    ok(!bad.length, 33, 'At rest every scene drawn live is its still: below the border a mean difference of at most 2.5 of 255, at most 2.5% of the pixels more than 24 apart, and no dark lines (at most 1.5 in 10,000 pixels more than 24 darker than the darkest of the still\'s 3x3 around them), all six scenes (Chromium with a graphics chip, phone 430x739 at 3 and laptop 1512x860 at 2; WebKit laptop)', seen.join('; '), bad.slice(0, 8).join('; '));
   });
 
   /* 34. every way the live film cannot run shows the still film, never a black or empty frame */
@@ -2872,13 +2847,10 @@ async function main() {
     for (const form of ['desktop', 'phone']) {
       const passes = {};
       for (let n = 1; n <= content.scenes.length; n++) {
-        const last = n === content.scenes.length && (content.scenes[n - 1].picture ?? 'twin') === 'twin';
-        passes[n] = film.scenes[last ? '7twin' : String(n)][form].passes;
+        passes[n] = film.scenes[String(n)][form].passes;
       }
       const L = layoutOf(form, passes);
       for (const [key, p] of L.projectors) {
-        // the last scene is the twin of scene 6: the pool of light after the three things have left it (its story)
-        if (p.scene === content.scenes.length) continue;
         for (const [name, parts] of Object.entries(THINGS)) {
           let inside = 0;
           for (const [pre, pts] of parts) {
@@ -2894,7 +2866,7 @@ async function main() {
       }
       seen.push(`${form}: ${L.projectors.size} stills`);
     }
-    ok(!bad.length, 37, 'One room: every thing that stands inside a still\'s view in the live film\'s world (the stand, the race piece, the coin, the coach phone; outline points inside the still\'s frame) is in that still, every still of scenes 1 to 6, both screen shapes (the last scene is the empty pool by its story; scene 2\'s own phone is there in scene 2 only)', `${seen.join(', ')}, ${checked} checks`, bad.slice(0, 8).join('; '));
+    ok(!bad.length, 37, 'One room: every thing that stands inside a still\'s view in the live film\'s world (the stand, the race piece, the coin, the coach phone; outline points inside the still\'s frame) is in that still, every still of scenes 1 to 6, both screen shapes (scene 2\'s own phone is there in scene 2 only)', `${seen.join(', ')}, ${checked} checks`, bad.slice(0, 8).join('; '));
   });
 
   /* 38. no stripes: the live film on a phone at its sharpest and its lowest sharpness, against the stills */
@@ -2956,7 +2928,7 @@ async function main() {
         const c = await ctx('gpu', { viewport: { width: w, height: h }, deviceScaleFactor: dpr, bypassCSP: true });
         const still = await open(c, '/', `stripes still ${mode}`);
         const live = await open(c, '/', `stripes live ${mode}`);
-        const HIDE = INK_HIDE + '.board{visibility:hidden !important}';
+        const HIDE = INK_HIDE + '.board,.alive{visibility:hidden !important}';
         for (const p of [still, live]) await p.evaluate((css) => { const s = document.createElement('style'); s.textContent = css; document.head.append(s); }, HIDE);
         await settle(live, 600);
         await live.touchscreen.tap(w / 2, h / 2);
@@ -3005,7 +2977,123 @@ async function main() {
       }
       if (!done) bad.push(`${mode}: the live film could not be held at that step`);
     }
-    ok(!bad.length, 38, `No stripes: at each of the seven rests, on a phone of 430x745 at 3 at the sharpest step and at the lowest (where the governor puts a phone whose frames stay slow), the live frame has no more detail of 2 to 18 canvas pixels than the still shown at the canvas's own size (at most ${LIM} of 255 more in any 40 px tile where the still shows something; moire stripes, stepped edges, ghost lines) (Chromium with a graphics chip)`, seen.join('; '), bad.slice(0, 8).join('; '));
+    ok(!bad.length, 38, `No stripes: at each of the six rests, on a phone of 430x745 at 3 at the sharpest step and at the lowest (where the governor puts a phone whose frames stay slow), the live frame has no more detail of 2 to 18 canvas pixels than the still shown at the canvas's own size (at most ${LIM} of 255 more in any 40 px tile where the still shows something; moire stripes, stepped edges, ghost lines) (Chromium with a graphics chip)`, seen.join('; '), bad.slice(0, 8).join('; '));
+  });
+
+  /* 39. build 12H: the film ends on scene 6, held: six scenes, nothing scrolls past scene 6's rest, never a blank screen
+   *  at the end, and an old link to scene 7 opens scene 6 at rest */
+  if (want(39)) await guarded(39, async () => {
+    const bad = [], seen = [];
+    for (const [engine, w, h] of [['chromium', 1512, 860], ['chromium', 430, 739], ['webkit', 430, 739], ['firefox', 1512, 860]]) {
+      const tag = `${engine} ${w}x${h}`;
+      const c = await ctx(engine, { viewport: { width: w, height: h } });
+      const p = await open(c, '/', `end ${tag}`);
+      // scrolled hard past the end, three times
+      for (let i = 0; i < 3; i++) { await p.evaluate(() => scrollTo(0, document.documentElement.scrollHeight * 2)); await p.mouse.wheel(0, 3000).catch(() => {}); await settle(p, 300); }
+      await settle(p, 900);
+      const r = await p.evaluate((n) => {
+        const s = document.getElementById('s' + n), vh = document.querySelector('.probe')?.offsetHeight || innerHeight;
+        const next = document.querySelector('.blab.next');
+        return { scenes: document.querySelectorAll('#film .scene').length, s7: !!document.getElementById('s7'), y: scrollY, max: document.documentElement.scrollHeight - innerHeight,
+          end: s.offsetTop + s.offsetHeight - vh, on: document.querySelector('#film .scene.on')?.id, next: next ? +getComputedStyle(next).opacity : -1 };
+      }, content.scenes.length);
+      if (r.scenes !== 6 || r.s7) bad.push(`${tag}: ${r.scenes} scenes${r.s7 ? ', a #s7' : ''}`);
+      if (r.on !== 's6') bad.push(`${tag}: scrolled to the end, the scene on screen is ${r.on}`);
+      if (r.max > r.end + 2) bad.push(`${tag}: ${Math.round(r.max - r.end)} px of scroll past scene 6's end`);
+      if (r.next < 0.99) bad.push(`${tag}: at the end the board is not whole (NEXT at ${r.next})`);
+      // never blank: the picture below the border shows the board's pool of light
+      const png = await p.screenshot();
+      const [m] = await lab(png, [[0, h * 0.15, w, h * 0.7]]);
+      if (!(m.mean >= 12)) bad.push(`${tag}: the end looks blank (mean ${m.mean.toFixed(1)} of 255)`);
+      seen.push(`${tag} ${r.y}/${r.max} px, mean ${m.mean.toFixed(1)}`);
+      // an old link to scene 7: scene 6 at rest
+      const p2 = await open(c, '/#s7', `old s7 link ${tag}`);
+      await settle(p2, 900);
+      const o = await p2.evaluate(() => [document.querySelector('#film .scene.on')?.id, scrollY, document.getElementById('s6').offsetTop]);
+      if (o[0] !== 's6' || o[1] <= o[2]) bad.push(`${tag}: /#s7 opens ${o[0]} at ${o[1]}`);
+      await c.close();
+    }
+    ok(!bad.length, 39, 'The film ends on scene 6, held: six scenes and no seventh, scrolled hard past the end the page holds scene 6 at rest with its board whole and its pool of light (never a blank screen), no scroll past scene 6\'s end, and an old link to scene 7 (/#s7) opens scene 6 at rest (Chromium, WebKit, Firefox; 1512x860, 430x739)', seen.join(', '), bad.slice(0, 8).join('; '));
+  });
+
+  /* 40. build 12H: scene 2's phone comes from below the frame and taps the first tile (the photo app's icon); at its two
+   *  rests it is exactly where the stills hold it */
+  if (want(40)) await guarded(40, async () => {
+    const bad = [], seen = [];
+    const { build } = await import(join(ROOT, 'node_modules/esbuild/lib/main.js'));
+    const urlStub = { name: 'url', setup(b) { b.onResolve({ filter: /\?url$/ }, (a) => ({ path: a.path, namespace: 'url' })); b.onLoad({ filter: /.*/, namespace: 'url' }, () => ({ contents: 'export default ""', loader: 'js' })); } };
+    const code = (await build({ stdin: { contents: "export { layoutOf, menuPose } from './src/world/world.ts';", resolveDir: ROOT, loader: 'ts' }, bundle: true, write: false, format: 'esm', platform: 'node', logLevel: 'silent', plugins: [urlStub] })).outputFiles[0].text;
+    const { layoutOf, menuPose } = await import('data:text/javascript;base64,' + Buffer.from(code).toString('base64'));
+    const proj = (M, q) => [0, 1, 2, 3].map((r) => M[r] * q[0] + M[4 + r] * q[1] + M[8 + r] * q[2] + M[12 + r] * q[3]);
+    const corners = []; for (const x of [-36, 36]) for (const y of [-4, 4]) for (const z of [-75, 75]) corners.push([x, y, z, 1]);
+    const TILES = [-51.9, -17.3, 17.3, 51.9];
+    for (const form of ['desktop', 'phone']) {
+      const passes = {};
+      for (let n = 1; n <= content.scenes.length; n++) passes[n] = film.scenes[String(n)][form].passes;
+      const L = layoutOf(form, passes), cams = passes[2].map((k) => L.projectors.get(k));
+      // below the frame at the start, for every camera of scene 2 (the move settles into them)
+      const M0 = menuPose(L, -1);
+      for (const p of cams) for (const q of corners) { const c = proj(p.VP, proj(M0, q)); if (c[3] > 0 && c[1] / c[3] > -1) bad.push(`${form}: at the start the phone shows in ${p.key} (a corner at ${(c[1] / c[3]).toFixed(2)})`); }
+      // it rises: its middle goes up the frame of scene 2's first still all the way to the tile
+      let last = -Infinity, rises = true;
+      for (let t = -1; t <= 0.0001; t += 0.05) { const c = proj(cams[0].VP, proj(menuPose(L, t), [0, 0, 0, 1])), y = c[1] / c[3]; if (y < last - 0.02) rises = false; last = Math.max(last, y); }
+      if (!rises) bad.push(`${form}: the phone does not rise steadily to the tile`);
+      // on the tile: the stills' tap pose, its top end over the first tile (nearest of the four)
+      const T = menuPose(L, 0), tap = L.projectors.get(passes[2][1]).poses.get('menu');
+      if (T.some((v, i) => Math.abs(v - tap[i]) > 1e-6)) bad.push(`${form}: on the tile, not the still's pose`);
+      const lift = menuPose(L, 1), held = L.projectors.get(passes[2][2]).poses.get('menu');
+      if (lift.some((v, i) => Math.abs(v - held[i]) > 1e-6)) bad.push(`${form}: lifted, not the still's pose`);
+      const top = proj(T, [0, -4, -73, 1]);
+      const st = L.stand, sx = st[12], sz = st[14], ca = st[0], sa = st[8];
+      // the top end in the stand's own frame (the stand turned about y): x along the stand
+      const dx = top[0] - sx, dz = top[2] - sz, lx = dx * ca + dz * (-sa);
+      const near = TILES.map((x) => Math.abs(x - lx)), k = near.indexOf(Math.min(...near));
+      if (k !== 0) bad.push(`${form}: the phone taps tile ${k + 1}, want the first`);
+      seen.push(`${form} taps tile ${k + 1} (${lx.toFixed(1)} mm)`);
+    }
+    ok(!bad.length, 40, 'Scene 2\'s phone starts below the frame of every scene 2 camera, rises steadily to the stand and taps the first tile (the photo app\'s icon); on the tile and lifted it is exactly where the stills hold it', seen.join(', '), bad.join('; '));
+  });
+
+  /* 41. build 12H: the four tile icons are in the stills, where the stand's tiles are (a pixel probe on each icon's ground:
+   *  the photo app's warm sweep, the review tile's white, the menu's tan, the chat's green) */
+  if (want(41)) await guarded(41, async () => {
+    const bad = [], seen = [];
+    const { build } = await import(join(ROOT, 'node_modules/esbuild/lib/main.js'));
+    const urlStub = { name: 'url', setup(b) { b.onResolve({ filter: /\?url$/ }, (a) => ({ path: a.path, namespace: 'url' })); b.onLoad({ filter: /.*/, namespace: 'url' }, () => ({ contents: 'export default ""', loader: 'js' })); } };
+    const code = (await build({ stdin: { contents: "export { layoutOf } from './src/world/world.ts'; export * as mat from './src/world/mat.ts';", resolveDir: ROOT, loader: 'ts' }, bundle: true, write: false, format: 'esm', platform: 'node', logLevel: 'silent', plugins: [urlStub] })).outputFiles[0].text;
+    const { layoutOf, mat } = await import('data:text/javascript;base64,' + Buffer.from(code).toString('base64'));
+    const pics = JSON.parse(readFileSync(join(ROOT, 'src/generated/pictures.json'), 'utf8'));
+    const proj = (M, q) => [0, 1, 2, 3].map((r) => M[r] * q[0] + M[4 + r] * q[1] + M[8 + r] * q[2] + M[12 + r] * q[3]);
+    const TILES = [-51.9, -17.3, 17.3, 51.9];
+    const kinds = [
+      ['photo', (c) => c[0] > c[2] && c[0] > 1.25 * c[1] && c[0] > 70],
+      ['review', (c) => Math.min(...c) > 90 && Math.max(...c) - Math.min(...c) < 60],
+      ['menu', (c) => c[0] > c[1] && c[1] > c[2] && c[0] - c[2] > 30],
+      ['chat', (c) => c[1] > 1.3 * c[0] && c[1] > 1.15 * c[2] && c[1] > 60],
+    ];
+    for (const form of ['desktop', 'phone']) {
+      const passes = {};
+      for (let n = 1; n <= content.scenes.length; n++) passes[n] = film.scenes[String(n)][form].passes;
+      const L = layoutOf(form, passes);
+      for (const key of [passes[2][0], passes[6][passes[6].length - 1]]) {
+        const p = L.projectors.get(key), info = pics[key], file = info.files[0];
+        const png = readFileSync(join(DIST, file.webp));
+        const at = TILES.map((x) => {
+          // (a point near the icon's lower right corner, clear of its white drawing: the icon's own ground)
+          const u = 0.32 * 24, v = 0.36 * 24, S = Math.sin(15 * Math.PI / 180), C = Math.cos(15 * Math.PI / 180);
+          const c = proj(p.VP, proj(L.stand, [x + u, 21.4 + 0.1 * C - v * S, 7.29 + 0.1 * S + v * C, 1]));
+          return [((c[0] / c[3] + 1) / 2) * info.size[0], ((1 - c[1] / c[3]) / 2) * info.size[1]];
+        });
+        const cols = await labPage.evaluate(async ([b64, at, decode]) => {
+          const d = await (0, eval)(decode)(b64);
+          return at.map(([x, y]) => { const s = [0, 0, 0]; let n = 0; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { const k = (Math.round(y + j) * d.width + Math.round(x + i)) * 4; s[0] += d.data[k]; s[1] += d.data[k + 1]; s[2] += d.data[k + 2]; n++; } return s.map((v) => Math.round(v / n)); });
+        }, [png.toString('base64'), at, decode]);
+        cols.forEach((c, i) => { if (!kinds[i][1](c)) bad.push(`${key} tile ${i + 1} (${kinds[i][0]}) at ${at[i].map(Math.round).join(',')}: rgb ${c.join(',')}`); });
+        seen.push(`${key} ${cols.map((c) => c.join('/')).join(' ')}`);
+      }
+    }
+    void mat;
+    ok(!bad.length, 41, 'The four tile icons are printed on the stand in the stills of scenes 2 and 6 (both screen shapes): a pixel probe on each icon\'s ground finds the photo app\'s warm sweep, the review tile\'s white, the menu\'s tan and the chat\'s green, left to right', seen.join('; '), bad.slice(0, 8).join('; '));
   });
 
   /* 5. the email pictures */

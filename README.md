@@ -1,6 +1,6 @@
 # PROXYZ website
 
-This repo holds the website at https://proxyz.studio: a slow dark film in seven scenes, plus the same site as plain
+This repo holds the website at https://proxyz.studio: a slow dark film in six scenes, plus the same site as plain
 text at `/machines/` and one plain page at `/legal/`.
 
 A static site: Vite and TypeScript, no framework, nothing loaded from any other host.
@@ -137,20 +137,34 @@ trace to an empty place marked NEXT. It is drawn by the page over the drawing, n
   two labels as real text, from `board` in scene 6 of `content/site.json`). Lines keep their width in screen pixels.
 - `src/main.ts` draws it in as a pure function of the scroll: the chip and the stand's trace as the scene comes in,
   the race piece's trace with the second pass, the phone's with the third, then the net, the darker floor, the dashed
-  trace and NEXT. At rest small pulses run the three live traces (only while the scene is on screen). With less
-  motion, the rest state and no pulses. With scripts off, or once the film gives up, the rest state.
+  trace and NEXT. With less motion, the rest state. With scripts off, or once the film gives up, the rest state.
+- **The board at work (build 12H).** While scene 6 rests (the film ends there, held), the three ventures work at the
+  same time on one loop of 5.2 s: the stand's tiles light one after another as if tapped (each tile's own printed
+  icon, its colours lifted, with a soft halo), the race route draws itself in along its real line on the coin and
+  rests lit, the coach phone's dial fills round; then a spark of each trace's colour runs to the chip, the three
+  arriving together, the chip flashes once and three white sparks run back out, each thing brightening a little as
+  its spark lands. It is its own layer over the picture (`aliveSvg` in `build/board.ts`, light added: screen), empty
+  at the loop's zero frame, so a rest is still its still; `alive` in `src/main.ts` moves it. Its places come from
+  `scripts/board.mjs`: the four icons on the tiles (`alive` in `src/film/board.json`), the route
+  (`src/film/route.json`, made by `node scripts/route-line.mjs <the stills project folder>` from the race's GPX track
+  and the coin's print file), the coach phone's lit screen (`screen`, from the drawing's notes) and the dial on it.
+  It starts only at rest (with motion allowed and the tab shown), fades in over half a second, stops at once when the
+  scene starts to leave or the tab is hidden, and the live film draws no frame for it. Test 23 proves it.
+- **The tile icons (build 12H).** The stand's four tiles carry printed look-alike icons, left to right a photo app, a
+  review page, a menu and a chat app: our own drawings (`src/film/icons/*.svg`), never a real logo file. The stills
+  print them (the picture maker's `ico` setting), the live film's tiles carry them where no still saw them
+  (`src/world/tile-icons.webp`, made from the same drawings) and the board at work lights them. Test 41 probes them in
+  the stills.
 - Behind the things: the board is hidden inside the matte of all three things (`things` in scene 6's view, a
   `-things-matte` picture in `pictures/sources.json`). No matte, no board.
 - `npm run check` tests 19 to 23 prove it: placed as the picture, hidden inside the things, no tell before each step,
   clear of the giant words, the labels readable and on screen, still with less motion.
 
-### The last scene's picture
+### The end of the film
 
-`content/site.json`, last scene, `"picture"`: `"twin"` (the default: the pool of light of scene 6, now empty, framed
-exactly like scene 6, so through the change the light stays in place and only the three things leave it) or `"own"` (the
-alternative: its own small, faint pool of light). The twin's film data is `"7twin"` in `src/film/scenes.json`; its
-pictures are `s7t-*`. While the twin fades in, scene 6 holds at full strength under it, so the pool does not dim.
-Change the word, build, check.
+The film ends on scene 6 (ONE BRAIN. EVERY VENTURE.), held: the page's scroll ends with scene 6 at rest and its board
+at work (build 12H took out the seventh scene, the empty pool of light; an old link to `#s7` opens scene 6 at rest).
+Test 39 proves it.
 
 ### How the film moves
 
@@ -161,8 +175,7 @@ moves the page in steps). Nothing runs on a timer, so scrolling back plays every
 
 - The change between two scenes plays over 0.8 screens of scroll, centred where the scene on screen changes. Each
   scene's stage has its own dark ground; the arriving scene comes in over the one leaving, held at full strength, so
-  the light never dips and no frame is empty. The scene after 6 is the twin: nothing moves, only the three things
-  leave the pool of light.
+  the light never dips and no frame is empty.
 - A scene's picture, with its giant words at the top (and the matte cut, and scene 6's board and labels), rests a
   little below its place as the change into it starts, rises into place as the light comes, and keeps rising at the
   same pace after it; it grows 3% as it leaves. At each scene's rest (within 3 px) it is exactly in place.
@@ -182,7 +195,7 @@ moves the page in steps). Nothing runs on a timer, so scrolling back plays every
 ### The live 3D film (build 12)
 
 Once the visitor shows intent (a touch, the wheel, a key, the mouse moving), the whole film is also drawn live: one
-WebGL 2 world with one camera that follows the playhead, from the letters of scene 1 to the empty pool of scene 7. The
+WebGL 2 world with one camera that follows the playhead, from the letters of scene 1 to the board of scene 6. The
 still film above stays underneath it all the time: it is the first screen, and it takes over whenever the live film
 cannot run.
 
@@ -196,8 +209,7 @@ cannot run.
   the dark), scene 5's the coin (in the edge of scene 5's light). So no thing ever fades out in plain view: it stays
   solid and leaves the frame by the camera moving. The stills drawn again for it are in the stills project's
   `out-12d/` (the picture maker's `x12` setting places the other things, `pt-12d/tools/pt/stills12d/jobs.json`). Test 37
-  proves it for every still of scenes 1 to 6, both shapes. The last scene is the empty pool by its story (the three
-  things leave it); scene 2's own phone is there in scene 2 only.
+  proves it for every still of scenes 1 to 6, both shapes. Scene 2's own phone is there in scene 2 only.
 - **Drawn from the stills.** Every surface is drawn from the very pictures the still film shows (the same files, so
   the browser's cache serves them), each cast back onto the shapes from the camera that drew it. At each scene's rest
   the camera is exactly that camera, framed where the page puts the picture, so the live frame is the still (no
@@ -214,16 +226,18 @@ cannot run.
   solid under the other scene's light, never see-through). Between two scenes the floor is relit by one light
   travelling from the first scene's key to the second's, so the pool of light moves across the floor with the camera.
   A far room behind everything takes what the stills show past the floor's edge. The light passes mix as the page mixes the pictures; scene 6's later passes grow
-  inside the same oval. Scene 2's phone lifts live (drawn by the live light, its screen look 11's menu picture,
-  `src/world/menu.webp`) between its two stills, its glass reflecting the floor and the stand as scene 2's first still
+  inside the same oval. Scene 2's phone (build 12H) comes up live from below the frame, held as a person holds a phone out,
+  and tilts onto the first tile (the photo app's icon) over about 1.4 screens of scroll, its screen calm; as it touches
+  the tile the second light comes in (the tile lights and the cafe's profile page opens on its screen); then it lifts
+  live between its two stills (`tap` and `menuPose`; its screens `src/world/phone-screens.webp`, the calm screen and
+  the profile page side by side; scene 2 is 3.6 screens tall for it), its glass reflecting the floor and the stand as scene 2's first still
   shows them (and the pool of scene 2's spot past that still's frame, and the spot itself). That phone is laid over
   what is drawn behind it by how much of it the stills show (none in scene 2's first still), never drawn as what a
   still without it shows at its place (build 12G: while the camera moved that showed as a notch in the stand's lip and
   a grey wedge on the floor). Scene 5's screen is lit as soon as the phone shows.
 - **The camera** (`src/world/path.ts`, the moves in `SHAPES` in `src/world/film3d.ts`): at each rest exactly the
   still's camera; between rests it travels slowly out, does most of its move while the light changes, and settles
-  slowly in, never stopping and never swinging past. Scene 1 holds still until its light rests; scenes 6 and 7 share
-  one camera. The stills of two scenes are mixed by where the camera is (each strongest near its own camera).
+  slowly in, never stopping and never swinging past. Scene 1 holds still until its light rests; scene 6, the last, holds its camera to the end. The stills of two scenes are mixed by where the camera is (each strongest near its own camera).
 - **In the page.** The live picture is one canvas inside the pictures' box of the lowest live scene on screen, so the
   dark band at the foot, scene 6's board and the giant words stay above it as above a still. The things that stand in
   front of the giant words are copied into a second canvas above the words (`.world-fg`). Scene 6's board and its
