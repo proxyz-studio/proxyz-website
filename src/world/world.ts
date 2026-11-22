@@ -1010,6 +1010,15 @@ export class World {
     // (it shares the coin's unit: a phone's chip may have only 16, all others taken; a tile is never the coin)
     let unit12: WebGLTexture | null = this.coinTex;
     const menuK = screen ? st.menuLive : 0;
+    // build 12H: the live phone's frame (rigid: its turn transposed), for its own shadow; none at its rests
+    {
+      const M = this.thingPose('menu', st.lift), I = new Float32Array(16);
+      for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) I[c * 4 + r] = M[r * 4 + c];
+      for (let r = 0; r < 3; r++) I[12 + r] = -(I[r] * M[12] + I[4 + r] * M[13] + I[8 + r] * M[14]);
+      I[15] = 1;
+      gl.uniformMatrix4fv(u('uPhInv'), false, I);
+      gl.uniform1f(u('uPhK'), s2 >= 0 ? menuK : 0);
+    }
     gl.uniform1fv(u('uT[0]'), T);
     gl.uniform4fv(u('uOv[0]'), ov);
     gl.uniform2fv(u('uDT[0]'), dt);
