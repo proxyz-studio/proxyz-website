@@ -18,12 +18,23 @@ const stills = process.argv[2];
 if (!stills) { console.error('usage: node scripts/world-shots.mjs <stills project folder>'); process.exit(2); }
 const sources = JSON.parse(readFileSync(path.join(root, 'pictures/sources.json'), 'utf8'));
 
-// scene 2's phone where it taps the third tile: the stills' tap mode, written out as a pose by look 11
-// (scripts/s2-frames.mjs --tap; the same numbers as look 11's src/s2/path.ts)
-const TAP = {
-  desk: { pos: [62.16, 26.05, 74.24], rot: [-2.36, 38.625, 9.59] },
-  phone: { pos: [55.2, 35.06, 77.34], rot: [-9.505, 32.63, 8.662] },
-};
+// scene 2's phone where it taps a tile: the stills' tap mode (pt ptRound5.ts tapPose), written out as a pose. Build 12H:
+// worked out here from the job's own numbers (tile, along, side, spin, tilt, gap) and the tile's face as the picture maker
+// measures it (its notes: 30 mm squares tipped 15 degrees, their faces' middles at y 21.4, z 7.29); look 11 wrote the
+// third tile's pose out by hand (desk 62.16, 26.05, 74.24 / -2.36, 38.625, 9.59), which this gives back within 0.01 mm
+// and 0.01 degrees
+function tapPose([tile, along, side, spin, tilt, gap = 0.3]) {
+  const D = Math.PI / 180, T = 8, L = 150;
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const nrm = (a) => { const l = Math.hypot(...a); return a.map((v) => v / l); };
+  const add = (a, b, k = 1) => a.map((v, i) => v + b[i] * k);
+  const turn = (v, k, t) => { const c = Math.cos(t), s = Math.sin(t), kv = cross(k, v), d = k[0] * v[0] + k[1] * v[1] + k[2] * v[2]; return v.map((x, i) => x * c + kv[i] * s + k[i] * d * (1 - c)); };
+  const top = [[-51.9, -17.3, 17.3, 51.9][tile], 21.4, 7.29], up = [0, Math.cos(15 * D), Math.sin(15 * D)], fwd = [0, -Math.sin(15 * D), Math.cos(15 * D)];
+  const ez0 = turn(fwd, up, spin * D), ex = nrm(cross(up, ez0)), ey = turn(up, ex, -tilt * D), ez = turn(ez0, ex, -tilt * D);
+  const pos = add(add(add(add(top, fwd, along), nrm(cross(fwd, up)), side), ey, T / 2 + gap), ez, L / 2 - 2);
+  const rot = [Math.asin(-Math.max(-1, Math.min(1, ez[1]))), Math.atan2(ez[0], ez[2]), Math.atan2(ex[1], ey[1])];
+  return { pos: pos.map((v) => Math.round(v * 100) / 100), rot: rot.map((v) => Math.round((v / D) * 1000) / 1000) };
+}
 const DEG = Math.PI / 180;
 const dirFrom = (az, el) => [Math.sin(az * DEG) * Math.cos(el * DEG), Math.sin(el * DEG), Math.cos(az * DEG) * Math.cos(el * DEG)];
 const r1 = (v) => Math.round(v * 1000) / 1000;
@@ -36,7 +47,6 @@ for (const [key, v] of Object.entries(sources)) {
   if (!existsSync(file)) file = path.join(stills, src.replace(/@1x\.png$/, '@2x.json'));
   if (!existsSync(file)) throw new Error(`no settings for ${key} (${src})`);
   const j = JSON.parse(readFileSync(file, 'utf8')).job;
-  const form = j.w >= j.h ? 'desk' : 'phone';
   // the key light (ptDark.ts buildDarkScene): a spot (cone) at a fixed place or kdist from its aim, else a soft panel
   const target = j.obj === 'stand' ? [0, 60, 0] : j.obj === 'empty' ? [0, 0, 0] : [0, 8, 0];
   const aim = j.kax !== undefined ? [j.kax, j.kay, j.kaz2] : target;
@@ -62,7 +72,7 @@ for (const [key, v] of Object.entries(sources)) {
   };
   if (j.obj === 'stand5') {
     const ph = String(j.ph5 ?? '').split(',');
-    if (ph[0] === 'tap') shot.phone = TAP[form];
+    if (ph[0] === 'tap') shot.phone = tapPose(ph.slice(1).map(Number));
     else if (ph[0] === 'free') shot.phone = { pos: ph.slice(1, 4).map(Number), rot: ph.slice(4, 7).map(Number) };
     else shot.phone = null;
     if (j.scr) shot.screen = path.basename(j.scr);

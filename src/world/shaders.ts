@@ -109,6 +109,11 @@ uniform sampler2D uCoinMap;
 uniform float uRough;
 uniform float uMetal;
 uniform float uLiveK;
+// build 12H: the slot of scene 2 (its light draws the live phone), and the page its screen shows (0 calm, 1 the page)
+uniform int uLiveSlot;
+// build 12H: which tile this draw is (-1: not a tile); its four icons, side by side, are then in uCoinMap's unit
+uniform float uTile;
+uniform float uScrPage;
 uniform float uTol;
 uniform int uPart;
 uniform sampler2D uScreen;
@@ -247,14 +252,19 @@ vec3 shade(vec3 n, vec3 v, vec3 P, vec3 alb, float rough, float metal, vec3 lp, 
   vec3 diff = (1.0 - metal) * alb / 3.14159;
   return (diff + spec) * E * nl * LIVE_EXPOSURE;
 }
+vec3 srgbLin(vec3 c) { return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c)); }
 vec3 live(vec3 n, vec3 v, vec3 lp, vec3 ld, vec2 lc, float li, float lk, float held, vec3 fc, vec3 fu, vec3 fv) {
   // scene 2's phone outside scene 2: not there (the floor under it)
   if (held < 0.5 && uSolid < 0.5) { vec3 F = vec3(vW.x, 0.0, vW.z); return display(shade(vec3(0.0, 1.0, 0.0), v, F, vec3(0.006, 0.006, 0.0058), 0.95, 0.0, lp, ld, lc, li * flagPass(F, lp, fc, fu, fv), lk)); }
   // the coin: its own colours by part (its spools), where no still saw it
   vec3 alb = uMap > 0.5 ? texture(uCoinMap, vL.xz / 130.0 + 0.5).rgb : uAlb;
+  // build 12H: a tile's printed icon, a 24 mm square on its face (the face 8 mm up its own axis, its top toward the back)
+  if (uTile >= 0.0 && vL.y > 7.6 && abs(vL.x) < 12.0 && abs(vL.z) < 12.0) {
+    vec4 ic = texture(uCoinMap, vec2((uTile + (vL.x + 12.0) / 24.0) / 4.0, (vL.z + 12.0) / 24.0));
+    alb = mix(alb, srgbLin(ic.rgb) * 0.8, ic.a);
+  }
   return display(shade(n, v, vW, alb, uRough, uMetal, lp, ld, lc, li * flagPass(vW, lp, fc, fu, fv), lk));
 }
-vec3 srgbLin(vec3 c) { return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c)); }
 /** scene 2's phone while it lifts: drawn whole by the live light, its screen the menu (the stills' screen light) */
 vec3 phoneLive(vec3 n, vec3 v, vec3 lp, vec3 ld, vec2 lc, float li, float lk) {
   vec3 c = shade(n, v, vW, uAlb, uRough, uMetal, lp, ld, lc, li, lk);
@@ -281,7 +291,7 @@ vec3 phoneLive(vec3 n, vec3 v, vec3 lp, vec3 ld, vec2 lc, float li, float lk) {
     c += env * fr * 2.2;
   }
   if (uPart == 2) {
-    vec2 st = vec2((vL.x + 33.4) / 66.8, (vL.z + 72.4) / 144.8);
+    vec2 st = vec2(((vL.x + 33.4) / 66.8 + uScrPage) * 0.5, (vL.z + 72.4) / 144.8);
     c += srgbLin(texture(uScreen, st).rgb) * uScreenGain;
   }
   return display(c);
@@ -444,7 +454,7 @@ void main() {
       c = mix(c, max(c, display(base * r * tint)), fk);
     }
   }
-  if (uLiveK > 0.0) { c = mix(c, phoneLive(n, v, uLp[0], uLd[0], uLc[0], uLi[0], uLk[0]), uLiveK); ma = mix(ma, 1.0, uLiveK); }
+  if (uLiveK > 0.0) { c = mix(c, phoneLive(n, v, uLp[uLiveSlot], uLd[uLiveSlot], uLc[uLiveSlot], uLi[uLiveSlot], uLk[uLiveSlot]), uLiveK); ma = mix(ma, 1.0, uLiveK); }
   if (uFg > 0.5) {
     // the copy above the words: the scenes' dark band at the foot, which the page lays over the live picture under it
     float y = gl_FragCoord.y / uFgH, keep = 1.0;

@@ -30,7 +30,7 @@ const dirFrom = (az: number, el: number): V3 => [Math.sin(az * DEG) * Math.cos(e
 const add = (a: V3, b: V3, k = 1): V3 => [a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k];
 
 /** where scene 3's race piece stands in the world, per shape: x, z, turn. Build 12D: to the right of the stand, outside
- *  every other still's frame (scenes 1, 2, 4, 5, 6 and 7 never see it), and scene 3's own frame holds nothing else; turned
+ *  every other still's frame (scenes 1, 2, 4, 5 and 6 never see it), and scene 3's own frame holds nothing else; turned
  *  so scene 3's camera stands about where scene 2's stands (2 to 3 is a pan) */
 const TROPHY: Record<Form, [number, number, number]> = { desktop: [500, -50, -30], phone: [300, -100, -30] };
 /** the coin on the trophy's base (ptRound5.ts coinOnPlinth): its bottom centre up 38.85 mm, turned 22 degrees about x */
@@ -57,6 +57,10 @@ export interface FrameState {
   fg: [number, number, number, number] | null;
   /** scene 2's phone drawn by the live light (0: from the stills, 1: live), and its screen's picture */
   menuLive: number; screen: string | null;
+  /** build 12H: which picture the live phone's screen shows (0: the calm screen, 1: the cafe's profile page) */
+  page?: number;
+  /** build 12H: the picture of the four tile icons, for the tiles where no still saw them */
+  tiles?: string;
   /** how strongly each thing stands in front of the giant words in the copy above them (1 when not named) */
   fgA?: Record<string, number>;
   /** a thing held by one scene's stills only is drawn by that scene (not between scenes 6 and 7: one camera) */
@@ -201,12 +205,12 @@ const TILE_AT: V3[] = [[-51.9, 13.6684, 5.2229], [-17.3, 13.6684, 5.2229], [17.3
 type ThingName = 'stand' | 'menu' | 'trophy' | 'coin' | 'coach' | 'floor';
 /** how far (mm) a thing may be hidden behind itself in a still and still take the still's colour (its own relief) */
 const TOL: Record<ThingName, number> = { stand: 4, menu: 2, trophy: 12, coin: 22, coach: 2, floor: 0 };
-interface Draw { part: string; local: M4; mat: Mat }
+interface Draw { part: string; local: M4; mat: Mat; /** build 12H: which tile (its printed icon) */ tile?: number }
 interface Thing { name: ThingName; draws: Draw[]; /** the scenes whose stills hold it */ scenes: number[]; fg: number[] }
 
 function things(): Thing[] {
   const stand: Draw[] = STAND_PARTS.map((p) => ({ part: p, local: ident(), mat: MATS[p] ?? MATS.black }));
-  for (const t of TILE_AT) stand.push({ part: 'tile', local: mul(translate(...t), rotX(15 * DEG)), mat: MATS.black });
+  TILE_AT.forEach((t, i) => stand.push({ part: 'tile', local: mul(translate(...t), rotX(15 * DEG)), mat: MATS.black, tile: i }));
   const phone = (): Draw[] => ['phone_body', 'phone_glass', 'phone_display'].map((p) => ({ part: p, local: ident(), mat: MATS[p] }));
   return [
     { name: 'stand', draws: stand, scenes: [1, 2, 6], fg: [2, 6] },
@@ -214,7 +218,7 @@ function things(): Thing[] {
     { name: 'trophy', draws: [{ part: 'base', local: ident(), mat: MATS.base }, { part: 'coin', local: COIN_ON_BASE, mat: MATS.coin }], scenes: [3], fg: [3] },
     { name: 'coin', draws: [{ part: 'coin', local: ident(), mat: MATS.coin }], scenes: [4, 6], fg: [6] },
     { name: 'coach', draws: phone(), scenes: [5, 6], fg: [5, 6] },
-    { name: 'floor', draws: [{ part: 'floor', local: ident(), mat: MATS.floor }, { part: 'room', local: ident(), mat: MATS.room }], scenes: [1, 2, 3, 4, 5, 6, 7], fg: [] },
+    { name: 'floor', draws: [{ part: 'floor', local: ident(), mat: MATS.floor }, { part: 'room', local: ident(), mat: MATS.room }], scenes: [1, 2, 3, 4, 5, 6], fg: [] },
   ];
 }
 
@@ -237,6 +241,8 @@ export interface Layout {
   pose: Record<Exclude<ThingName, 'menu'>, M4>;
   stand: M4;
   tap: M4; lift: M4;
+  /** build 12H: where scene 2's phone starts, below the frame, held out toward the stand (see menuPose) */
+  from: { pos: V3; ang: V3; ctl: V3 };
   projectors: Map<string, Projector>;
 }
 
@@ -285,22 +291,58 @@ export function layoutOf(form: Form, passes: Record<number, string[]>): Layout {
   const rooms: Record<number, M4> = {
     1: stand, 2: stand, 3: base.trophy, 4: coin,
     5: floorPose(trio[6] - 0, trio[7], trio[8] - coachShot[2]),
-    6: ident(), 7: ident(),
+    6: ident(),
   };
   const projectors = new Map<string, Projector>();
   for (const [n, keys] of Object.entries(passes)) keys.forEach((k, i) => projectors.set(k, projectorOf(k, +n, i, rooms[+n], form, base, stand)));
   const s2 = passes[2];
   const tap = projectors.get(s2[1])?.poses.get('menu') ?? ident(), lift = projectors.get(s2[2])?.poses.get('menu') ?? ident();
-  return { form, pose: base, stand, tap, lift, projectors };
+  return { form, pose: base, stand, tap, lift, from: fromOf(tap, projectors.get(s2[0])), projectors };
 }
 
+const angOf = (m: M4): V3 => [Math.asin(Math.max(-1, Math.min(1, -m[9]))), Math.atan2(m[8], m[10]), Math.atan2(m[1], m[5])];
+/** Build 12H: scene 2's phone before it taps, as a person holds a phone out toward a counter: below the frame of scene 2's
+ *  first still, between the camera and the stand, standing up more (its screen toward the person, so toward the camera),
+ *  its foot toward the camera. It comes up from there over the tile (ctl: the curve's middle point, above the tile and a
+ *  little in front of it) and tips onto it. The farther from the tile the start, the lower in the frame: it is moved
+ *  toward the camera until the whole phone is under the frame's foot. */
+function fromOf(tap: M4, p1: Projector | undefined): { pos: V3; ang: V3; ctl: V3 } {
+  const P: V3 = [tap[12], tap[13], tap[14]], a = angOf(tap);
+  if (!p1) return { pos: P, ang: a, ctl: P };
+  const e = p1.eye, hx = e[0] - P[0], hz = e[2] - P[2], hl = Math.hypot(hx, hz) || 1, to: V3 = [hx / hl, 0, hz / hl];
+  const ang: V3 = [a[0] + 50 * DEG, Math.atan2(to[0], to[2]), 0];
+  const box = BOUNDS_MENU;
+  for (let d = 120; d < 900; d += 10) {
+    const pos: V3 = [P[0] + to[0] * d, P[1] + 30 + d * 0.12, P[2] + to[2] * d];
+    const M = mulAll(translate(...pos), rotY(ang[1]), rotX(ang[0]), rotZ(ang[2])), PM = mul(p1.VP, M);
+    let below = true;
+    for (let c = 0; c < 8 && below; c++) {
+      const q: V3 = [c & 1 ? box[3] : box[0], c & 2 ? box[4] : box[1], c & 4 ? box[5] : box[2]];
+      const w = PM[3] * q[0] + PM[7] * q[1] + PM[11] * q[2] + PM[15], y = (PM[1] * q[0] + PM[5] * q[1] + PM[9] * q[2] + PM[13]) / w;
+      if (w > 0 && y > -1.04) below = false;
+    }
+    if (below) return { pos, ang, ctl: [P[0] + to[0] * d * 0.3, P[1] + 55, P[2] + to[2] * d * 0.3] };
+  }
+  return { pos: P, ang: a, ctl: P };
+}
+/** the phone's box, mm in its own frame (as film3d's BOUNDS) */
+const BOUNDS_MENU = [-36, -4, -75, 36, 4, 75];
+
 /** Scene 2's phone between its two poses: slerp-free blend of the two matrices' parts, lifted a little in an arc. */
-function menuPose(L: Layout, t: number): M4 {
+export function menuPose(L: Layout, t: number): M4 {
+  if (t < 0) {
+    // build 12H: on its way from below the frame (-1) to the tile (0): along a curve up and over the tile, turning from
+    // held up toward the person to lying back on the tile; slow at both ends
+    const e = 1 + Math.max(-1, t), f = L.from, a = angOf(L.tap), q = 1 - e;
+    const pos = [0, 1, 2].map((j) => q * q * f.pos[j] + 2 * q * e * f.ctl[j] + e * e * L.tap[12 + j]) as V3;
+    const k = e * e * (3 - 2 * e), wrap = (d: number) => Math.atan2(Math.sin(d), Math.cos(d));
+    const r = [0, 1, 2].map((j) => f.ang[j] + wrap(a[j] - f.ang[j]) * k) as V3;
+    return mulAll(translate(...pos), rotY(r[1]), rotX(r[0]), rotZ(r[2]));
+  }
   if (t <= 0) return L.tap;
   if (t >= 1) return L.lift;
   // blend position, and the turn by its three Euler angles read back from the matrices (both small and well apart)
-  const ang = (m: M4): V3 => [Math.asin(Math.max(-1, Math.min(1, -m[9]))), Math.atan2(m[8], m[10]), Math.atan2(m[1], m[5])];
-  const a = ang(L.tap), b = ang(L.lift), e = t;
+  const a = angOf(L.tap), b = angOf(L.lift), e = t;
   const r: V3 = [a[0] + (b[0] - a[0]) * e, a[1] + (b[1] - a[1]) * e, a[2] + (b[2] - a[2]) * e];
   const pos: V3 = [L.tap[12] + (L.lift[12] - L.tap[12]) * e, L.tap[13] + (L.lift[13] - L.tap[13]) * e + 14 * Math.sin(Math.PI * e), L.tap[14] + (L.lift[14] - L.tap[14]) * e];
   return mulAll(translate(...pos), rotY(r[1]), rotX(r[0]), rotZ(r[2]));
@@ -923,7 +965,9 @@ export class World {
       gl.uniform2fv(u('uTc[0]'), [...ka.cos, ...kb.cos]); gl.uniform1fv(u('uTi[0]'), [ka.int, kb.int]);
     } else gl.uniform1f(u('uMove'), 0);
     // the glass of scene 2's lifted phone reflects what scene 2's first still shows
-    const env = slots[0]?.scene === 2 ? proj[0] : null;
+    const s2 = slots.findIndex((x) => x?.scene === 2), env = s2 >= 0 ? proj[s2 * PASSES] : null;
+    gl.uniform1i(u('uLiveSlot'), Math.max(0, s2));
+    gl.uniform1f(u('uScrPage'), st.page ?? 1);
     gl.uniformMatrix4fv(u('uEnvVP'), false, env ? env.VP : ident());
     gl.uniform1f(u('uDepthFar'), 6000);
     gl.uniform1f(u('uDbg'), this.debug);
@@ -962,6 +1006,9 @@ export class World {
       gl.uniform1i(u('uB' + s), 2 * UNITS + 2 + s);
     }
     gl.uniform1f(u('uScreenGain'), World.SCREEN);
+    const tilesTex = st.tiles && this.has(st.tiles) ? this.texs.get(st.tiles)!.tex : null;
+    // (it shares the coin's unit: a phone's chip may have only 16, all others taken; a tile is never the coin)
+    let unit12: WebGLTexture | null = this.coinTex;
     const menuK = screen ? st.menuLive : 0;
     gl.uniform1fv(u('uT[0]'), T);
     gl.uniform4fv(u('uOv[0]'), ov);
@@ -998,13 +1045,16 @@ export class World {
           gl.uniform1fv(u('uPres[0]'), pres);
           // does each slot's scene hold this thing (any of its stills)
           gl.uniform1fv(u('uHold[0]'), [0, 1].map((s) => (proj.slice(s * PASSES, s * PASSES + PASSES).some((p) => p?.poses.get(th.name)) || th.name === 'floor' ? 1 : 0)));
-          gl.uniform1f(u('uLiveK'), th.name === 'menu' && slots[0]?.scene === 2 ? menuK : 0);
+          gl.uniform1f(u('uLiveK'), th.name === 'menu' && s2 >= 0 ? menuK : 0);
           gl.uniform1f(u('uTol'), TOL[th.name]);
           gl.uniform1f(u('uFgA'), st.fgA?.[th.name] ?? 1);
           gl.uniform1f(u('uIsFloor'), th.name === 'floor' ? 1 : 0);
           // a thing that stands in the world the whole film (scene 2's phone is there in scene 2 only)
           gl.uniform1f(u('uSolid'), th.name === 'menu' || th.name === 'floor' ? 0 : 1);
           gl.uniform1i(u('uPart'), dr.part === 'phone_display' ? 2 : dr.part === 'phone_glass' ? 1 : 0);
+          gl.uniform1f(u('uTile'), dr.tile !== undefined && tilesTex ? dr.tile : -1);
+          const want12 = dr.tile !== undefined && tilesTex ? tilesTex : this.coinTex;
+          if (want12 !== unit12) { gl.activeTexture(gl.TEXTURE0 + 2 * UNITS); gl.bindTexture(gl.TEXTURE_2D, want12); unit12 = want12; }
           gl.uniform3fv(u('uAlb'), dr.mat.alb); gl.uniform1f(u('uRough'), dr.mat.rough); gl.uniform1f(u('uMetal'), dr.mat.metal); gl.uniform1f(u('uMap'), dr.mat.map ? 1 : 0);
           gl.bindVertexArray(mesh.vao);
           gl.drawElements(gl.TRIANGLES, mesh.count, mesh.type, 0);

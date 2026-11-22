@@ -17,10 +17,15 @@ import type { View } from '../types';
 import { World, layoutOf, type CamState, type Form, type FrameState, type Layout, type SlotState } from './world';
 import { at, camOf, keyOf, keysOf, type Key, type Shape } from './path';
 import { cssHomography, homography, type V3 } from './mat';
-import menuScreen from './menu.webp?url';
+import menuScreen from './phone-screens.webp?url';
+import tileIcons from './tile-icons.webp?url';
 
-/** the picture on scene 2's phone screen, for the phone drawn live while it lifts (look 11's menu) */
+/** the pictures on scene 2's phone screen, for the phone drawn live (build 12H: side by side, the calm screen it is
+ *  held out with, and the cafe's profile page it shows once it has tapped the tile) */
 const SCREEN = 'menu-screen';
+/** build 12H: the four icons printed on the stand's tiles (src/film/icons, the art the stills print), for the tiles where no
+ *  still saw them */
+const TILES = 'tile-icons';
 
 export interface Box { left: number; top: number; w: number; h: number }
 export interface SceneEls { layer: HTMLElement; box: HTMLElement; passes: HTMLElement[]; shade: HTMLElement | null; top: HTMLElement | null }
@@ -59,7 +64,6 @@ export const SHAPES: Shape[] = [
   { leave: 0.42, settle: 0.62, ease: 0.03, blend: [0.2, 0.9] },
   { leave: 0.3, settle: 0.5, ease: 0.03, via: { out: 1.3, lift: 8 } },   // 4 to 5: up off the coin, over to the phone
   { leave: 0.3, settle: 1.55, ease: 0.025 },                             // 5 to 6: the pull back lands early, the light then opens
-  { leave: 0, settle: 0, ease: 0 },                                      // 6 to 7: one camera
 ];
 
 export interface Film3d {
@@ -291,6 +295,7 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
     const want = wanted(active);
     const list = want.map((k) => ({ key: k, url: h.url(k, Number(/^s(\d)/.exec(k)?.[1] ?? active)) }));
     if (want.some((k) => k.startsWith('s2-'))) list.push({ key: SCREEN, url: menuScreen });
+    if (want.some((k) => /^s[126]-/.test(k))) list.push({ key: TILES, url: tileIcons });
     // build 12E (WebKit): every picture is decoded into plain pixels before it goes into the chip, one a frame and never in
     // a frame that puts rows into the chip; while the page has been still for a second, the next scene's pictures are read
     // and decoded ahead too (in the order the scroll needs them), so few are decoded in a scroll at all
@@ -307,6 +312,7 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
     const keep = new Set(want);
     for (const n of [top, top + 1, top + 2]) if (n >= 1 && n <= h.count) for (const k of passesOf(n)) keep.add(k);
     if ([top, top + 1, top + 2].includes(2)) keep.add(SCREEN);
+    keep.add(TILES);
     if (warmed) { /* this frame decoded a picture: nothing into the chip */ }
     else if (world.pending() && (!moving || need.length)) world.upload(moving ? 1 : 4, keep, !moving);
     else if (!moving) { world.upload(0, keep, true); world.tidy(); }
@@ -365,12 +371,13 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
     const pr = steps[step];
     const fgBox = fgRect(cam, slots, lift);
     // scene 2's phone, lifted live: drawn from the stills on the tile and at the top, by the live light between
-    const menuLive = Math.min(1, Math.min(lift, 1 - lift) / 0.12);
+    // (on its way to the tile, drawn live until the second light shows it on the tile)
+    const menuLive = lift <= 0 ? 1 - tap(y).t[1] : Math.min(1, Math.min(lift, 1 - lift) / 0.12);
     const hold = !(a + 1 === BRAIN && a + 2 <= h.count);
     // the dark band at the foot of the scenes shown (the copy above the words is above it too): its strength by height
     const shade: [number, number, number][] = [];
     for (const x of shown) {
-      const tight = x.n === 4 || x.n === BRAIN || (x.n === 7 && h.view(7).placeAs === BRAIN);
+      const tight = x.n === 4 || x.n === BRAIN;
       shade.push([x.W, tight ? 0.09 : 0.22, tight ? 0.2 : 0.46]);
     }
     // in the copy above the words, as scene 6 comes in: scene 6's board makes that copy the whole screen, so a thing the
@@ -384,7 +391,7 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
         if (list.includes(BRAIN) && !list.includes(shown[0].n) && leaving?.poses.get(name as 'coin')) fgA[name] = smooth((shown[1].W - 0.25) / 0.5);
       }
     }
-    const st: FrameState = { vw: h.vw(), vh: h.vh(), pr, cam, slots, lift, fg: fgBox, shade, menuLive: menuLive > 0 ? menuLive * menuLive * (3 - 2 * menuLive) : 0, screen: SCREEN, hold, fgA };
+    const st: FrameState = { vw: h.vw(), vh: h.vh(), pr, cam, slots, lift, fg: fgBox, shade, menuLive: menuLive > 0 ? menuLive * menuLive * (3 - 2 * menuLive) : 0, screen: SCREEN, page: lift < 0 ? 0 : 1, tiles: TILES, hold, fgA };
     const sig = JSON.stringify([st, liveNow.size]);
     if (sig === drawn && !(benched < 2 && now >= benchAt && !moving)) return more || warmed || (!moving && world.aheadWork()) || benched < 2;
     canvas.style.width = st.vw + 'px'; canvas.style.height = st.vh + 'px';
@@ -435,7 +442,7 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
   }
 
   function slotOf(n: number, W: number, y: number): SlotState {
-    const v = h.view(n), t = h.strengths(n, y), g = restBox[n - 1];
+    const v = h.view(n), t = n === 2 ? tap(y).t : h.strengths(n, y), g = restBox[n - 1];
     const fe = g ? 0.14 * g.w : 0;
     return {
       scene: n, W,
@@ -456,10 +463,20 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
       }),
     };
   }
-  /** scene 2's phone: on the tile while the second light comes in, lifted as the third does (with that light) */
+  /** Build 12H, scene 2's phone, as a pure function of the scroll (r: how far scene 2's light has come, 0 at the scene's
+   *  top, 1 at its rest, past 0 before it): the phone comes up from below the frame, held as a person holds a phone out,
+   *  and tilts onto the first tile (r -0.15 to 0.55, about 1.4 screens of scroll: slow at a mouse wheel's 900 px a
+   *  second); it touches it and the second light comes in (the tile lights, the page opens on the screen: 0.52 to 0.64);
+   *  then it lifts to the camera with the third light (0.68 to 0.95). The still film, under it, keeps its own steps. */
+  function tap(y: number): { a: number; t: number[] } {
+    const tops = h.tops(), hs = h.heights(), r = (y - tops[1]) / (h.lightShare * Math.max(1, hs[1] - h.vh()));
+    const c = (v: number) => Math.max(0, Math.min(1, v));
+    return { a: smooth(c((r + 0.15) / 0.7)), t: [1, c((r - 0.52) / 0.12), c((r - 0.68) / 0.27)] };
+  }
+  /** scene 2's phone: -1 below the frame, -1 to 0 on its way to the tile, 0 on the tile, 1 lifted to the camera */
   function liftOf(y: number): number {
-    const t = h.strengths(2, y)[2] ?? 0;
-    return t * t * (3 - 2 * t);
+    const k = tap(y);
+    return k.t[2] > 0 ? smooth(k.t[2]) : k.a - 1;
   }
 
   /** the box of the things in front of the giant words of the scenes on screen, where it meets those words */
