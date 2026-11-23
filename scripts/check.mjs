@@ -3017,8 +3017,8 @@ async function main() {
     ok(!bad.length, 39, 'The film ends on scene 6, held: six scenes and no seventh, scrolled hard past the end the page holds scene 6 at rest with its board whole and its pool of light (never a blank screen), no scroll past scene 6\'s end, and an old link to scene 7 (/#s7) opens scene 6 at rest (Chromium, WebKit, Firefox; 1512x860, 430x739)', seen.join(', '), bad.slice(0, 8).join('; '));
   });
 
-  /* 40. build 12H: scene 2's phone comes from below the frame and taps the first tile (the photo app's icon); at its two
-   *  rests it is exactly where the stills hold it */
+  /* 40. build 12H: scene 2's phone comes from below the frame and taps a tile; at its two rests it is exactly where the
+   *  stills hold it. Build 12I: the tile it taps is the second, the pink camera (the photo tile, as on TAPZ) */
   if (want(40)) await guarded(40, async () => {
     const bad = [], seen = [];
     const { build } = await import(join(ROOT, 'node_modules/esbuild/lib/main.js'));
@@ -3039,7 +3039,7 @@ async function main() {
       let last = -Infinity, rises = true;
       for (let t = -1; t <= 0.0001; t += 0.05) { const c = proj(cams[0].VP, proj(menuPose(L, t), [0, 0, 0, 1])), y = c[1] / c[3]; if (y < last - 0.02) rises = false; last = Math.max(last, y); }
       if (!rises) bad.push(`${form}: the phone does not rise steadily to the tile`);
-      // on the tile: the stills' tap pose, its top end over the first tile (nearest of the four)
+      // on the tile: the stills' tap pose, its top end over the second tile (nearest of the four)
       const T = menuPose(L, 0), tap = L.projectors.get(passes[2][1]).poses.get('menu');
       if (T.some((v, i) => Math.abs(v - tap[i]) > 1e-6)) bad.push(`${form}: on the tile, not the still's pose`);
       const lift = menuPose(L, 1), held = L.projectors.get(passes[2][2]).poses.get('menu');
@@ -3049,14 +3049,16 @@ async function main() {
       // the top end in the stand's own frame (the stand turned about y): x along the stand
       const dx = top[0] - sx, dz = top[2] - sz, lx = dx * ca + dz * (-sa);
       const near = TILES.map((x) => Math.abs(x - lx)), k = near.indexOf(Math.min(...near));
-      if (k !== 0) bad.push(`${form}: the phone taps tile ${k + 1}, want the first`);
+      if (k !== 1) bad.push(`${form}: the phone taps tile ${k + 1}, want the second (the pink camera)`);
       seen.push(`${form} taps tile ${k + 1} (${lx.toFixed(1)} mm)`);
     }
-    ok(!bad.length, 40, 'Scene 2\'s phone starts below the frame of every scene 2 camera, rises steadily to the stand and taps the first tile (the photo app\'s icon); on the tile and lifted it is exactly where the stills hold it', seen.join(', '), bad.join('; '));
+    ok(!bad.length, 40, 'Scene 2\'s phone starts below the frame of every scene 2 camera, rises steadily to the stand and taps the second tile (the pink camera); on the tile and lifted it is exactly where the stills hold it', seen.join(', '), bad.join('; '));
   });
 
-  /* 41. build 12H: the four tile icons are in the stills, where the stand's tiles are (a pixel probe on each icon's ground:
-   *  the photo app's warm sweep, the review tile's white, the menu's tan, the chat's green) */
+  /* 41. build 12H, build 12I: the four TAPZ tile pictures are in the stills, where the stand's tiles are: left to right a
+   *  green chat bubble, a pink camera, a white fork and knife, a white globe, raised on black tiles. A probe on each
+   *  picture's solid part (the brightest pixel within 2 px of the point, so a thin white line counts) and one on the black
+   *  tile below it */
   if (want(41)) await guarded(41, async () => {
     const bad = [], seen = [];
     const { build } = await import(join(ROOT, 'node_modules/esbuild/lib/main.js'));
@@ -3066,12 +3068,15 @@ async function main() {
     const pics = JSON.parse(readFileSync(join(ROOT, 'src/generated/pictures.json'), 'utf8'));
     const proj = (M, q) => [0, 1, 2, 3].map((r) => M[r] * q[0] + M[4 + r] * q[1] + M[8 + r] * q[2] + M[12 + r] * q[3]);
     const TILES = [-51.9, -17.3, 17.3, 51.9];
+    const white = (c) => Math.min(...c) > 90 && Math.max(...c) - Math.min(...c) < 60;
+    // [name, a point on the picture (TAPZ grid units, x right, y toward the stand's front), its colour test]
     const kinds = [
-      ['photo', (c) => c[0] > c[2] && c[0] > 1.25 * c[1] && c[0] > 70],
-      ['review', (c) => Math.min(...c) > 90 && Math.max(...c) - Math.min(...c) < 60],
-      ['menu', (c) => c[0] > c[1] && c[1] > c[2] && c[0] - c[2] > 30],
-      ['chat', (c) => c[1] > 1.3 * c[0] && c[1] > 1.15 * c[2] && c[1] > 60],
+      ['chat (green)', [12, 6], (c) => c[1] > 1.3 * c[0] && c[1] > 1.15 * c[2] && c[1] > 60],
+      ['photo (pink)', [6, 16.5], (c) => c[0] > c[2] && c[0] > 1.25 * c[1] && c[0] > 70],
+      ['menu (white)', [8.6, 9.2], white],
+      ['web (white)', [12, 12], white],
     ];
+    const black = (c) => Math.max(...c) < 75;
     for (const form of ['desktop', 'phone']) {
       const passes = {};
       for (let n = 1; n <= content.scenes.length; n++) passes[n] = film.scenes[String(n)][form].passes;
@@ -3079,22 +3084,34 @@ async function main() {
       for (const key of [passes[2][0], passes[6][passes[6].length - 1]]) {
         const p = L.projectors.get(key), info = pics[key], file = info.files[0];
         const png = readFileSync(join(DIST, file.webp));
-        const at = TILES.map((x) => {
-          // (a point near the icon's lower right corner, clear of its white drawing: the icon's own ground)
-          const u = 0.32 * 24, v = 0.36 * 24, S = Math.sin(15 * Math.PI / 180), C = Math.cos(15 * Math.PI / 180);
-          const c = proj(p.VP, proj(L.stand, [x + u, 21.4 + 0.1 * C - v * S, 7.29 + 0.1 * S + v * C, 1]));
+        const S = Math.sin(15 * Math.PI / 180), C = Math.cos(15 * Math.PI / 180);
+        const px = (x, g, h) => {
+          const u = (g[0] - 12) * 0.98, v = (g[1] - 12) * 0.98;
+          const c = proj(p.VP, proj(L.stand, [x + u, 21.4 + h * C - v * S, 7.29 + h * S + v * C, 1]));
           return [((c[0] / c[3] + 1) / 2) * info.size[0], ((1 - c[1] / c[3]) / 2) * info.size[1]];
-        });
+        };
+        // on the picture's top (1 mm up), and on the black tile below it (grid y 23.3, below every picture)
+        const at = TILES.flatMap((x, i) => [px(x, kinds[i][1], 1), px(x, [12, 23.3], 0.1)]);
         const cols = await labPage.evaluate(async ([b64, at, decode]) => {
           const d = await (0, eval)(decode)(b64);
-          return at.map(([x, y]) => { const s = [0, 0, 0]; let n = 0; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { const k = (Math.round(y + j) * d.width + Math.round(x + i)) * 4; s[0] += d.data[k]; s[1] += d.data[k + 1]; s[2] += d.data[k + 2]; n++; } return s.map((v) => Math.round(v / n)); });
+          const get = (x, y) => { const k = (y * d.width + x) * 4; return [d.data[k], d.data[k + 1], d.data[k + 2]]; };
+          return at.map(([x, y], n) => {
+            if (n % 2) { const s = [0, 0, 0]; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) get(Math.round(x + i), Math.round(y + j)).forEach((v, q) => (s[q] += v / 9)); return s.map(Math.round); }
+            let best = [0, 0, 0], bl = -1;
+            for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) { const c = get(Math.round(x + i), Math.round(y + j)), l = c[0] + c[1] + c[2]; if (l > bl) { bl = l; best = c; } }
+            return best;
+          });
         }, [png.toString('base64'), at, decode]);
-        cols.forEach((c, i) => { if (!kinds[i][1](c)) bad.push(`${key} tile ${i + 1} (${kinds[i][0]}) at ${at[i].map(Math.round).join(',')}: rgb ${c.join(',')}`); });
-        seen.push(`${key} ${cols.map((c) => c.join('/')).join(' ')}`);
+        kinds.forEach(([name, , test], i) => {
+          const c = cols[i * 2], g = cols[i * 2 + 1], a = at[i * 2];
+          if (!test(c)) bad.push(`${key} tile ${i + 1} ${name} at ${a.map(Math.round).join(',')}: rgb ${c.join(',')}`);
+          if (!black(g)) bad.push(`${key} tile ${i + 1}: the tile below the picture is not black (rgb ${g.join(',')})`);
+        });
+        seen.push(`${key} ${cols.filter((_, n) => !(n % 2)).map((c) => c.join('/')).join(' ')}`);
       }
     }
     void mat;
-    ok(!bad.length, 41, 'The four tile icons are printed on the stand in the stills of scenes 2 and 6 (both screen shapes): a pixel probe on each icon\'s ground finds the photo app\'s warm sweep, the review tile\'s white, the menu\'s tan and the chat\'s green, left to right', seen.join('; '), bad.slice(0, 8).join('; '));
+    ok(!bad.length, 41, 'The four TAPZ tile pictures are on the stand in the stills of scenes 2 and 6 (both screen shapes): left to right a green chat bubble, a pink camera, a white fork and knife and a white globe, each on a black tile (a pixel probe on each picture and on the tile below it)', seen.join('; '), bad.slice(0, 8).join('; '));
   });
 
   /* 5. the email pictures */

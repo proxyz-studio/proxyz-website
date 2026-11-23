@@ -139,22 +139,25 @@ trace to an empty place marked NEXT. It is drawn by the page over the drawing, n
   the race piece's trace with the second pass, the phone's with the third, then the net, the darker floor, the dashed
   trace and NEXT. With less motion, the rest state. With scripts off, or once the film gives up, the rest state.
 - **The board at work (build 12H).** While scene 6 rests (the film ends there, held), the three ventures work at the
-  same time on one loop of 5.2 s: the stand's tiles light one after another as if tapped (each tile's own printed
-  icon, its colours lifted, with a soft halo), the race route draws itself in along its real line on the coin and
+  same time on one loop of 5.2 s: the stand's tiles light one after another as if tapped (each tile's own
+  picture, its colours lifted, with a soft halo of its own colour), the race route draws itself in along its real line on the coin and
   rests lit, the coach phone's dial fills round; then a spark of each trace's colour runs to the chip, the three
   arriving together, the chip flashes once and three white sparks run back out, each thing brightening a little as
   its spark lands. It is its own layer over the picture (`aliveSvg` in `build/board.ts`, light added: screen), empty
   at the loop's zero frame, so a rest is still its still; `alive` in `src/main.ts` moves it. Its places come from
-  `scripts/board.mjs`: the four icons on the tiles (`alive` in `src/film/board.json`), the route
+  `scripts/board.mjs`: the four pictures on the tiles (`alive` in `src/film/board.json`), the route
   (`src/film/route.json`, made by `node scripts/route-line.mjs <the stills project folder>` from the race's GPX track
   and the coin's print file), the coach phone's lit screen (`screen`, from the drawing's notes) and the dial on it.
   It starts only at rest (with motion allowed and the tab shown), fades in over half a second, stops at once when the
   scene starts to leave or the tab is hidden, and the live film draws no frame for it. Test 23 proves it.
-- **The tile icons (build 12H).** The stand's four tiles carry printed look-alike icons, left to right a photo app, a
-  review page, a menu and a chat app: our own drawings (`src/film/icons/*.svg`), never a real logo file. The stills
-  print them (the picture maker's `ico` setting), the live film's tiles carry them where no still saw them
-  (`src/world/tile-icons.webp`, made from the same drawings) and the board at work lights them. Test 41 probes them in
-  the stills.
+- **The tile pictures (build 12H, build 12I).** The stand's four tiles carry the TAPZ site's own tile pictures, left to
+  right a green chat bubble with three white dots, a pink camera, a white fork and knife and a white globe, raised 1 mm
+  on the black tiles (the dots 1.3 mm). `scripts/tile-pictograms.mjs` is their one source: a port of the TAPZ site's
+  `src/three/stand/pictograms.ts` with the same grid and numbers. It writes `src/film/icons/*.svg` (the board at work
+  lights them); `python3 scripts/tile-pictograms.py` draws `src/world/tile-icons.webp` from it (the live film's tiles
+  where no still saw them); the picture maker raises the same drawings in the stills (its `pic` setting, in the stills
+  project's `pt-12i`, which holds a copy of the file). If TAPZ changes its pictures, port them here again and draw the
+  stills again. Test 41 probes them in the stills (green, pink, white, white, each on a black tile).
 - Behind the things: the board is hidden inside the matte of all three things (`things` in scene 6's view, a
   `-things-matte` picture in `pictures/sources.json`). No matte, no board.
 - `npm run check` tests 19 to 23 prove it: placed as the picture, hidden inside the things, no tell before each step,
@@ -227,7 +230,7 @@ cannot run.
   travelling from the first scene's key to the second's, so the pool of light moves across the floor with the camera.
   A far room behind everything takes what the stills show past the floor's edge. The light passes mix as the page mixes the pictures; scene 6's later passes grow
   inside the same oval. Scene 2's phone (build 12H) comes up live from below the frame, held as a person holds a phone out,
-  and tilts onto the first tile (the photo app's icon) over about 1.4 screens of scroll, its screen calm; as it touches
+  and tilts onto the second tile (the pink camera, the photo tile) over about 1.4 screens of scroll, its screen calm; as it touches
   the tile the second light comes in (the tile lights and the cafe's profile page opens on its screen); then it lifts
   live between its two stills (`tap` and `menuPose`; its screens `src/world/phone-screens.webp`, the calm screen and
   the profile page side by side; scene 2 is 3.6 screens tall for it), its glass reflecting the floor and the stand as scene 2's first still
