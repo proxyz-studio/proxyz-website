@@ -98,6 +98,9 @@ export const nameCss = (): string => TRACES.map((t) => `.blab.n-${t}{color:${BOA
 export const TILE_ICONS = ['chat', 'photo', 'menu', 'web'] as const;
 /** the main colour of each picture (its glow on the tile): TAPZ's green and pink, and a warm white */
 const ICON_GLOW = ['#22C55E', '#FF4193', '#ECEAE6', '#ECEAE6'];
+/** how strong each halo is: a white halo at full strength reads as a grey disc on the black stand, so the white pictures'
+ *  halos are a faint warm lift and the picture itself carries the light */
+const HALO = [1, 1, 0.3, 0.3];
 const iconRoot = new URL('../src/film/icons/', import.meta.url);
 /** an icon's drawing (its 512 unit square), its ids made unique (drawn in place, not through <use>: WebKit draws a <use>
  *  copy in a hidden tree of its own, which a strict style policy may refuse) */
@@ -111,7 +114,7 @@ const n1 = (v: number) => +v.toFixed(4);
 /** The board at work for one screen shape: empty and unseen at rest, moved by src/main.ts. */
 export function aliveSvg(f: BoardForm, k: 'd' | 'p'): string {
   const [W, H] = f.size, id = (s: string) => `a${k}${s}`, A = f.alive;
-  const defs = ICON_GLOW.map((c, i) => `<radialGradient id="${id('h' + i)}"><stop offset="0" stop-color="${c}" stop-opacity=".9"/><stop offset=".55" stop-color="${c}" stop-opacity=".35"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></radialGradient>`).join('')
+  const defs = ICON_GLOW.map((c, i) => { const k = HALO[i]; return `<radialGradient id="${id('h' + i)}"><stop offset="0" stop-color="${c}" stop-opacity="${n1(0.9 * k)}"/><stop offset=".55" stop-color="${c}" stop-opacity="${n1(0.35 * k)}"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></radialGradient>`; }).join('')
     + `<radialGradient id="${id('c')}"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".35" stop-color="#f3eee4" stop-opacity=".45"/><stop offset="1" stop-color="#f3eee4" stop-opacity="0"/></radialGradient>`;
   // each tile: its halo (an oval of the icon's colour round the tile) and the icon itself, laid on the tile's face
   const tiles = A.tiles.map(([tl, tr, bl], i) => {
