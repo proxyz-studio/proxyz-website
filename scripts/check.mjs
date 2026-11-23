@@ -106,8 +106,8 @@ const EXPECT = {
     ...content.legal.sections.flatMap((s) => [s.heading, ...s.lead, ...s.parts.flatMap((p) => [p.heading, ...p.text, ...(p.list ?? []), ...(p.after ?? [])])])],
   '/nope-nope/': [B.place, content.pages.notFound.line],
 };
-/** The film data of scene n as the build chose it (scene 7 may use the twin of scene 6). */
-const viewOf = (n, form) => film.scenes[content.scenes[n - 1]?.picture === 'twin' ? `${n}twin` : String(n)][form];
+/** The film data of scene n. */
+const viewOf = (n, form) => film.scenes[String(n)][form];
 const META = {
   '/': content.pages.home, '/machines/': content.pages.machines, '/legal/': content.pages.legal,
 };
@@ -188,6 +188,9 @@ async function main() {
   const outside = [], errors = [], cookieJar = [];
   const browsers = {};
   for (const e of ['chromium', 'webkit', 'firefox']) browsers[e] = await lib[e].launch({ headless: true });
+  // build 12: Chromium's own build with the graphics chip (still hidden), for the live film (tests 32 to 36)
+  browsers.gpu = await lib.chromium.launch({ headless: true, channel: 'chromium' }).catch(() => null);
+  if (!browsers.gpu) delete browsers.gpu;
   const contexts = [];
   // A hidden Firefox some minutes old stops answering: the page loads, the next evaluate never returns (seen 18 Nov 2026
   // on this site with and without the doors, in 7 of 8 runs at 5.5 minutes, none at 100 s; bringing the page to the
@@ -195,6 +198,7 @@ async function main() {
   // use once it is 90 s old, and WebKit after a minute unused, whenever no context of theirs is open.
   const lastUse = {}, born = { firefox: Date.now() };
   async function useBrowser(engine) {
+    if (engine === 'gpu') return browsers.gpu;
     const old = engine === 'firefox' ? Date.now() - born.firefox > 90000 : engine === 'webkit' && Date.now() - (lastUse.webkit ?? 0) > 60000;
     if (old && browsers[engine].contexts().length === 0) {
       step(`restarting ${engine}`);
@@ -351,25 +355,6 @@ async function main() {
     const m = await labInk(shown, hidden, items.map((t) => t.box));
     return items.map((t, i) => ({ ...t, ink: m[i].ink, ratio: contrastOf(m[i].p95, t.kind), need: TEXT_KINDS.find((k) => k[1] === t.kind)[3] }));
   }
-  /** The pool of light in each frame, as a percent of the end frame: measured where the two ends agree (the floor,
-   *  not the three things) and the floor is lit, between the border and the words. pct.start: the first end. */
-  async function pool(start, end, frames) {
-    const out = await labPage.evaluate(async ([b64s, decode]) => {
-      const dec = (0, eval)(decode);
-      const [a, b, ...fs] = await Promise.all(b64s.map(dec));
-      const grey = (d, i) => 0.299 * d.data[i] + 0.587 * d.data[i + 1] + 0.114 * d.data[i + 2];
-      const idx = [];
-      for (let y = Math.floor(b.height * 0.14); y < b.height * 0.78; y++) for (let x = 0; x < b.width; x++) {
-        const i = (y * b.width + x) * 4, gb = grey(b, i);
-        if (gb >= 18 && Math.abs(grey(a, i) - gb) < 4) idx.push(i);
-      }
-      const mean = (d) => idx.reduce((s, i) => s + grey(d, i), 0) / Math.max(1, idx.length);
-      const ref = mean(b);
-      return { start: (100 * mean(a)) / ref, frames: fs.map((d) => (100 * mean(d)) / ref), n: idx.length };
-    }, [[start, end, ...frames].map((x) => x.toString('base64')), decode]);
-    const pct = out.frames; pct.start = out.start; return pct;
-  }
-
   /* 1. words */
   if (want(1)) await guarded(1, async () => {
     const c = await ctx('chromium', { javaScriptEnabled: false });
@@ -433,7 +418,7 @@ async function main() {
     const p = await open(c, '/', 'descriptions');
     const got = await p.evaluate(() => [...document.querySelectorAll('#film .passes')].map((b) => (b.getAttribute('role') === 'img' ? b.getAttribute('aria-label') : '')));
     const d = sameSeq(got, content.scenes.map((s) => s.alt));
-    ok(d.equal, 1, 'Film running: all seven picture descriptions are there before any scroll', 'all seven', d.at);
+    ok(d.equal, 1, 'Film running: all six picture descriptions are there before any scroll', 'all six', d.at);
     await c.close();
   });
 
@@ -578,7 +563,7 @@ async function main() {
     }
     const n = content.scenes.length;
     ok(r.sections === n && r.pics === n && !dead.length && r.heights.every((h) => h >= 500), 7,
-      'Scripts off: seven sections, seven pictures, all words (test 1 ran with scripts off), working links',
+      'Scripts off: six sections, six pictures, all words (test 1 ran with scripts off), working links',
       `${r.sections} sections, ${r.pics} pictures, ${r.links.length} links all answer 200`,
       `${r.sections} sections, ${r.pics} pictures, dead links [${dead.join(', ')}]`);
     await c.close();
@@ -703,7 +688,7 @@ async function main() {
     for (const engine of ['chromium', 'webkit', 'firefox']) {
       const c = await ctx(engine, { viewport: { width: 393, height: 852 } });
       const p = await open(c, '/', `reload ${engine}`);
-      for (const n of [3, 6, 7]) {
+      for (const n of [3, 5, 6]) {
         await toScene(p, n, 0.5);
         const before = await p.evaluate(() => [document.querySelector('#film .scene.on')?.id, scrollY]);
         await p.reload({ waitUntil: 'load' });
@@ -753,7 +738,7 @@ async function main() {
         await c.close();
       }
     }
-    ok(!bad.length, 7, 'Film script late: no picture of scenes 2 to 7 loads before the film runs; film script blocked: after about 4 s the plain page shows all seven pictures (Chromium, WebKit, Firefox)', 'held back, then seven pictures', bad.join('; '));
+    ok(!bad.length, 7, 'Film script late: no picture of scenes 2 to 6 loads before the film runs; film script blocked: after about 4 s the plain page shows all six pictures (Chromium, WebKit, Firefox)', 'held back, then six pictures', bad.join('; '));
   });
 
   /* 12. phones, with the browser's bar showing and with it slid away */
@@ -839,35 +824,8 @@ async function main() {
     }
     const bars = BARS.map((b) => `${b[0]} wide ${b[1]}/${b[2]}`).join(', ');
     ok(!place.length, 12, `Phone, bar showing and bar away (${bars}): the words at the foot (giant words of scenes 1 and 7, the small line of the others) sit 60 px above the visible bottom in each; the giant words at the top and every picture box are the same in both states (Chromium; WebKit for the first two)`, 'words on the edge, pictures and top words still', place.slice(0, 6).join('; '));
-    ok(!read.length, 12, `Phone, both states (${bars}): the giant words, the small line, its note and the grey tool line at least 4.5 to 1 against what lies behind their letters, the height line at least 3 to 1, all seven scenes (Chromium; WebKit for the first two)`, 'all readable', read.slice(0, 6).join('; '));
+    ok(!read.length, 12, `Phone, both states (${bars}): the giant words, the small line, its note and the grey tool line at least 4.5 to 1 against what lies behind their letters, the height line at least 3 to 1, all six scenes (Chromium; WebKit for the first two)`, 'all readable', read.slice(0, 6).join('; '));
     ok(!back.length, 12, 'Phone, bar away: the backings of scenes 3 and 4 leave the picture above the words as it is (within 2%); scene 4 keeps at least 88% of its drawing\'s light there', `no dimming; scene 4 keeps ${s4.join(', ')}`, back.join('; '));
-
-    /* the last scene: the twin fades in over a steady pool of light */
-    if (content.scenes[content.scenes.length - 1].picture === 'twin') {
-      const bad = [], seen = [];
-      for (const engine of ['chromium', 'webkit']) {
-        for (const [form, mk] of [['phone', () => stateCtx(engine, 'away')], ['laptop', () => ctx(engine, { viewport: { width: 1512, height: 860 }, bypassCSP: true })]]) {
-          const c = await mk();
-          const p = await open(c, '/', `twin ${engine} ${form}`);
-          const last = content.scenes.length;
-          await toScene(p, last, 0); await toScene(p, last - 1, 1); await settle(p, 900);
-          const cut = await p.evaluate((n) => { const s = document.getElementById('s' + n); return Math.round(s.offsetTop - (document.querySelector('.probe').offsetHeight || innerHeight) / 2); }, last);
-          await p.evaluate((y) => scrollTo(0, y - 6), cut); await settle(p, 900);
-          const before = await p.screenshot();
-          // the change itself, its transitions paused and stepped every 50 ms
-          await p.evaluate(async (y) => { scrollTo(0, y + 6); await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); window.__an = document.getAnimations(); window.__an.forEach((a) => a.pause()); }, cut);
-          const frames = [];
-          for (let t = 0; t <= 500; t += 50) { await p.evaluate((t) => window.__an.forEach((a) => { a.currentTime = t; }), t); await settle(p, 60); frames.push(await p.screenshot()); }
-          await p.evaluate(() => window.__an.forEach((a) => a.finish())); await settle(p, 500);
-          const after = await p.screenshot();
-          const pct = await pool(before, after, frames);
-          seen.push(`${engine} ${form} ${Math.min(...pct).toFixed(1)} to ${Math.max(...pct).toFixed(1)}%`);
-          if (Math.min(...pct) < 96 || Math.max(...pct) > Math.max(pct.start, 100) + 1) bad.push(`${engine} ${form}: ${pct.map((v) => v.toFixed(1)).join(' ')}`);
-          await c.close();
-        }
-      }
-      ok(!bad.length, 12, 'Last scene is the twin: through the change from scene 6 the pool of light stays between 96% and the brightness of its two ends (phone and laptop, Chromium, WebKit)', seen.join(', '), bad.join('; '));
-    }
 
     /* the bottom safe area changes as the bar slides (older iPhones: 0 with it showing, 34 px with it away). Forced in
        the test with a style: a scene placed at 0 is placed again once when it grows to 34 and then equals a fresh load
@@ -999,7 +957,7 @@ async function main() {
   });
 
   /* 15. contrast at every listed size: the giant words, the small line and its note, the grey tool line (4.5 to 1) and
-     the height line (3 to 1), against what lies behind their own letters, all seven scenes at rest */
+     the height line (3 to 1), against what lies behind their own letters, all six scenes at rest */
   if (want(15)) await guarded(15, async () => {
     const bad = [], low = [];
     for (const [w, h] of VIEWPORTS) {
@@ -1429,7 +1387,8 @@ async function main() {
     await settle(p, 600);
   }
   const styleIt = (p, css) => p.evaluate((css) => { let s = document.getElementById('t-board'); if (!s) { s = document.createElement('style'); s.id = 't-board'; document.head.append(s); } s.textContent = css; }, css);
-  const QUIET = '#top,#frame,.bottom-sw,.marks{visibility:hidden !important}';
+  // (build 12H: the board at work is hidden in the board's tests, which measure the board at rest: its loop's zero frame)
+  const QUIET = '#top,#frame,.bottom-sw,.marks{visibility:hidden !important}.alive{display:none !important}';
   /** the board's box and the picture's box (first pass, or the resting picture with scripts off), relative to the layer */
   const boxes = (p) => p.evaluate((n) => {
     const s = document.getElementById('s' + n), l = s.querySelector('.layer').getBoundingClientRect();
@@ -1856,7 +1815,8 @@ async function main() {
       await toBoard(p, { u: 1 });
       // the ink of the giant words alone (white on black), then the board alone in one flat colour (its darkened floor
       // and the chip's soft glow left out: they are shade, not lines), its labels too
-      await styleIt(p, QUIET + PICS + `${N} .bbox,${N} .lbox{visibility:hidden !important}${N} .big{color:#fff !important}`); await settle(p, 150);
+      // (build 12H: scene 6 is the last scene and carries the page's foot, the LEGAL link: not a giant word)
+      await styleIt(p, QUIET + PICS + `${N} .bbox,${N} .lbox,${N} .foot{visibility:hidden !important}${N} .big{color:#fff !important}`); await settle(p, 150);
       const W = await p.screenshot();
       await styleIt(p, QUIET + PICS + `${N} .cut{visibility:hidden !important}${N} .board *{stroke:#ff00ff !important;stroke-opacity:1 !important;fill-opacity:1 !important}${N} .board rect,${N} .board ellipse{visibility:hidden !important}${N} .board path[fill]{fill:#ff00ff !important}${N} .blab{color:#ff00ff !important;text-shadow:none !important}`); await settle(p, 150);
       const K = await p.screenshot();
@@ -1963,7 +1923,7 @@ async function main() {
     ok(!gbad.length, 22, `Scene ${BOARD_N}: on big screens the labels grow with the picture (2428x1300 and 1920x1080: StudioOS over 14 px, the others over 12 px); at 1440x900 and below, and upright, their base sizes (14 px, 12 px)`, grow.filter((g) => /StudioOS|NEXT/.test(g)).join(', '), [...new Set(gbad)].slice(0, 8).join('; '));
   });
 
-  // 23. less motion: nothing on the board moves and its rest state is complete; with motion, the pulses run at rest
+  // 23. less motion: nothing on the board moves and its rest state is complete; with motion, the board works at rest
   // and stop once the scene is off screen
   if (want(23) && boardForms.length) await guarded(23, async () => {
     const bad = [];
@@ -1991,19 +1951,36 @@ async function main() {
         const a = await p.screenshot(); await settle(p, 800); const b = await p.screenshot();
         if (!a.equals(b)) bad.push(`${tag} less motion: the scene changes over 0.8 s`);
         await c.close();
+        // build 12H, the board at work: at rest it runs (the alive layer changes, the tiles, the route, the dial, the
+        // sparks); it stops at once when the scene starts to leave and when the tab is hidden, its layer empty
         const c2 = await ctx(engine, { viewport: { width: w, height: h }, bypassCSP: true });
-        const p2 = await open(c2, '/', `board pulses ${tag}`);
+        const p2 = await open(c2, '/', `board at work ${tag}`);
         await toBoard(p2, { u: 1 });
-        const ds = () => p2.evaluate((n) => [...document.querySelectorAll(`#s${n} .board .pu`)].map((e) => e.getAttribute('d')).join('|'), BOARD_N);
-        const d1 = await ds(); await settle(p2, 300); const d2 = await ds();
-        if (d1 === d2) bad.push(`${tag}: no pulses at rest`);
-        await p2.evaluate(() => scrollTo(0, 0)); await settle(p2, 600);
-        const e1 = await ds(); await settle(p2, 400); const e2 = await ds();
-        if (e1.replace(/\|/g, '') || e2.replace(/\|/g, '')) bad.push(`${tag}: pulses still drawn with the scene off screen`);
+        const look = () => p2.evaluate((n) => {
+          const svg = [...document.querySelectorAll(`#s${n} svg.alive`)].find((e) => getComputedStyle(e).display !== 'none');
+          if (!svg) return { on: document.documentElement.dataset.alive, sig: 'no layer', lit: -1 };
+          const ds = [...svg.querySelectorAll('path[class]')].map((e) => e.getAttribute('d') ?? '');
+          const ops = [...svg.querySelectorAll('.ti, .ar, .ad, .cf, .sp')].map((e) => getComputedStyle(e).opacity);
+          return { on: document.documentElement.dataset.alive, sig: ds.join('|') + ops.join(','), lit: ds.filter(Boolean).length + ops.filter((o) => +o > 0.001 && o !== '1').length };
+        }, BOARD_N);
+        const sigs = [];
+        for (let i = 0; i < 6; i++) { sigs.push(await look()); await settle(p2, 450); }
+        if (sigs.some((x) => x.on !== '1')) bad.push(`${tag}: the board does not work at rest`);
+        if (new Set(sigs.map((x) => x.sig)).size < 4) bad.push(`${tag}: the board at work does not change over 2.7 s`);
+        // the scene starts to leave: back up, before its rest
+        await toBoard(p2, { u: 0.55 });
+        const l1 = await look();
+        if (l1.on || l1.lit > 0) bad.push(`${tag}: still at work as the scene leaves (${l1.lit} parts lit)`);
+        await toBoard(p2, { u: 1 }); await settle(p2, 900);
+        if ((await look()).on !== '1') bad.push(`${tag}: not at work again back at rest`);
+        await p2.evaluate(() => { Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' }); document.dispatchEvent(new Event('visibilitychange')); });
+        await settle(p2, 300);
+        const l2 = await look();
+        if (l2.on || l2.lit > 0) bad.push(`${tag}: still at work with the tab hidden (${l2.lit} parts lit)`);
         await c2.close();
       }
     }
-    ok(!bad.length, 23, `Scene ${BOARD_N}: with less motion every line of the board whole, every part and all ${2 + BOARD_NAMES.length} labels fully shown, no pulse, nothing changes over 0.8 s; with motion the pulses run at rest and stop once the scene is off screen (Chromium, WebKit, Firefox; 430x739, 1512x860)`, 'as specified', bad.slice(0, 6).join('; '));
+    ok(!bad.length, 23, `Scene ${BOARD_N}: with less motion every line of the board whole, every part and all ${2 + BOARD_NAMES.length} labels fully shown, nothing changes over 0.8 s (the board never works); with motion the board works at rest (build 12H: the tiles, the route, the dial, the sparks) and stops at once, its layer empty, when the scene starts to leave and when the tab is hidden (Chromium, WebKit, Firefox; 430x739, 1512x860)`, 'as specified', bad.slice(0, 6).join('; '));
   });
 
   /* 6. LEGAL: the email address is a mail link, in the text's grey, underlined, at least 44 px tall to tap */
@@ -2495,6 +2472,629 @@ async function main() {
       s2.close();
       ok(!bad.length, 29, 'Against a copy of the product\'s site without the rulebook\'s asks (no blend, no opener policy): the exit, then a clean cut to its page (no blend, no error), and Back lands on the scene at rest (Chromium 1512x860)', 'a clean cut', bad.slice(0, 6).join('; '));
     }
+  });
+
+  /* 30. no empty frame: the change between two scenes plays with the scroll (the arriving scene comes in over the one
+     leaving, the lines of words leave and arrive one by one); sampled in eleven places through every change, a
+     picture and words always show */
+  if (want(30)) await guarded(30, async () => {
+    const bad = [], seen = [];
+    const HIDE = '.big,.small,.note,.tool,.addr{color:transparent !important}.hl,.door{visibility:hidden !important}';
+    // build 12: the live film too (Chromium with a graphics chip, started by a key press)
+    for (const [engine, w, h] of [['chromium', 430, 739], ['chromium', 1512, 860], ['webkit', 430, 739], ...(browsers.gpu ? [['gpu', 430, 739], ['gpu', 1512, 860]] : [])]) {
+      const c = await ctx(engine, { viewport: { width: w, height: h }, bypassCSP: true });
+      const p = await open(c, '/', `changes ${engine} ${w}x${h}`);
+      if (engine === 'gpu') { await settle(p, 500); await p.keyboard.press('Shift'); await settle(p, 1500); }
+      const geo = await p.evaluate(() => ({ vh: document.querySelector('.probe').offsetHeight, band: document.getElementById('top').getBoundingClientRect().bottom, tops: [...document.querySelectorAll('#film .scene')].map((s) => s.offsetTop) }));
+      // the picture under the border (on a phone the border is a dark band; on a wide screen the band of its words)
+      const box = [0, Math.round(Math.max(geo.band, 90)), w, Math.round(h - Math.max(geo.band, 90))];
+      for (let k = 1; k < geo.tops.length; k++) {
+        await toScene(p, k, 1);
+        const rows = [];
+        for (let i = 0; i <= 10; i++) {
+          step(`changes ${engine} ${w}x${h} | change ${k} at ${i / 10}`);
+          await p.evaluate((y) => scrollTo(0, y), Math.round(geo.tops[k] - geo.vh / 2 + (i / 10 - 0.5) * 0.8 * geo.vh));
+          await p.waitForFunction((k) => [k, k + 1].every((n) => [...document.querySelectorAll(`#s${n} .passes img`)].every((im) => im.complete)), k, { timeout: 4000 }).catch(() => {});
+          await p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+          await settle(p, 200);
+          const shown = await p.screenshot();
+          await p.evaluate((css) => { const s = document.createElement('style'); s.id = 't-hide'; s.textContent = css; document.head.append(s); }, HIDE);
+          await settle(p, 80);
+          const hidden = await p.screenshot();
+          await p.evaluate(() => document.getElementById('t-hide').remove());
+          const [pic] = await lab(hidden, [box]), [ink] = await labInk(shown, hidden, [box]);
+          rows.push({ at: i / 10, pic: pic.mean, ink: ink.ink });
+        }
+        const pic0 = Math.min(rows[0].pic, rows[10].pic), ink0 = Math.min(rows[0].ink, rows[10].ink);
+        const tag = `${engine} ${w}x${h} scene ${k} to ${k + 1}`;
+        if (!(pic0 > 1) || !(ink0 > 200)) bad.push(`${tag}: the ends show no picture or no words (${pic0.toFixed(1)}, ${ink0} ink px)`);
+        const lowPic = rows.reduce((a, r) => (r.pic < a.pic ? r : a)), lowInk = rows.reduce((a, r) => (r.ink < a.ink ? r : a));
+        seen.push([lowInk.ink, `${tag}: picture at least ${((100 * lowPic.pic) / pic0).toFixed(0)}% (at ${lowPic.at}), words at least ${lowInk.ink} ink px (at ${lowInk.at})`]);
+        for (const r of rows) {
+          if (r.pic < 0.5 * pic0) bad.push(`${tag} at ${r.at}: the picture at ${r.pic.toFixed(1)}, its ends ${rows[0].pic.toFixed(1)} and ${rows[10].pic.toFixed(1)}`);
+          // a line of the small words is about 2000 to 3000 ink px; the giant words tens of thousands
+          if (r.ink < 1000) bad.push(`${tag} at ${r.at}: words ${r.ink} ink px, its ends ${rows[0].ink} and ${rows[10].ink}`);
+        }
+      }
+      await c.close();
+    }
+    seen.sort((a, b) => a[0] - b[0]);
+    ok(!bad.length, 30, 'No empty frame: through every change between two scenes, eleven places along the scroll, a picture always shows (at least half the darker end\'s light) and words always show (at least 1000 ink px, about half a line of the small words; the giant lines at the top leave before the next ones arrive, so for a moment the words at the foot carry the screen) (Chromium 430x739 and 1512x860, WebKit 430x739; the live film: Chromium with a graphics chip 430x739 and 1512x860)', seen.slice(0, 3).map((s) => s[1]).join('; '), bad.slice(0, 8).join('; '));
+  });
+
+  /* 31. the rest of every scene is the composition as built: at rest nothing of the film's motion is left on it */
+  if (want(31)) await guarded(31, async () => {
+    const bad = [];
+    for (const [engine, w, h] of [['chromium', 430, 739], ['chromium', 393, 852], ['chromium', 1512, 860], ['chromium', 2428, 1300], ['webkit', 430, 739], ['firefox', 1512, 860], ...(browsers.gpu ? [['gpu', 1512, 860]] : [])]) {
+      const c = await ctx(engine, { viewport: { width: w, height: h } });
+      const p = await open(c, '/', `rest ${engine} ${w}x${h}`);
+      if (engine === 'gpu') { await settle(p, 500); await p.keyboard.press('Shift'); await settle(p, 1500); }
+      for (let n = 1; n <= content.scenes.length; n++) {
+        await toScene(p, n, 1);
+        await settle(p, 300);
+        const r = await p.evaluate((n) => {
+          const s = document.getElementById('s' + n), cs = (e) => getComputedStyle(e), out = [];
+          const moved = (e) => { const t = cs(e).transform; return t !== 'none' && t !== 'matrix(1, 0, 0, 1, 0, 0)'; };
+          const lay = s.querySelector('.layer');
+          if (cs(lay).visibility !== 'visible' || +cs(lay).opacity !== 1) out.push(`its stage at ${cs(lay).opacity}, ${cs(lay).visibility}`);
+          for (const e of [...s.querySelectorAll('.passes, .frame, .cam, .cut, .lbox, .lens, .cut .big .ln, .cut .big .pl, .addr, .words > *, .words .big .ln, .words .big .pl, .door.dlogo')]) {
+            if (moved(e)) out.push(`${e.className} moved (${cs(e).transform})`);
+            if (+cs(e).opacity !== 1) out.push(`${e.className} at ${cs(e).opacity}`);
+          }
+          // nothing that moves keeps a layer of its own at rest (a picture or a word on its own layer may be drawn a
+          // little softer than the page draws it)
+          for (const e of [...s.querySelectorAll('.pass, .lbox, .lens, .cut .big .ln, .cut .big .pl, .addr, .words > *, .words .big .ln, .words .big .pl')]) {
+            if (cs(e).willChange !== 'auto') out.push(`${e.className || e.tagName} keeps a layer (${cs(e).willChange})`);
+          }
+          for (const o of document.querySelectorAll('#film .scene')) {
+            if (o === s) continue;
+            const l = o.querySelector('.layer');
+            if (cs(l).visibility === 'visible' && +cs(l).opacity > 0) out.push(`${o.id} also shows (${cs(l).opacity})`);
+          }
+          return out;
+        }, n);
+        for (const x of r) bad.push(`${engine} ${w}x${h} scene ${n}: ${x}`);
+      }
+      await c.close();
+    }
+    ok(!bad.length, 31, 'At rest every scene is the composition as built: its stage alone at full strength, its picture, its giant words, every line of words and its door in place, unmoved and at full strength, none of them on a layer of its own (Chromium 430x739, 393x852, 1512x860, 2428x1300; WebKit 430x739; Firefox 1512x860; the live film: Chromium with a graphics chip 1512x860)', 'all six, every size', [...new Set(bad)].slice(0, 8).join('; '));
+  });
+
+  /* ---------- build 12: the whole film as one live 3D world (src/world/) ---------- */
+  // The live film needs a real graphics chip: Chromium's own build with the chip (channel "chromium", hidden), and
+  // WebKit. The hidden Chromium shell the other tests use draws WebGL in software; there the film rightly falls back to
+  // the still film (test 34 proves it). The page root carries data-world: the scenes drawn live now, then those whose
+  // stills are in the chip, then the first frame's time in ms.
+  // (a function, never a string: the page's policy allows no evaluated strings)
+  const LIVE = (n) => ((document.documentElement.dataset.world ?? '').split('|')[0] ?? '').split(',').includes(String(n));
+  const restAt = (p, n) => p.evaluate((n) => { const s = document.getElementById('s' + n), vh = document.querySelector('.probe').offsetHeight; scrollTo(0, Math.round(s.offsetTop + 0.8 * Math.max(0, s.offsetHeight - vh)) + 1); }, n);
+  /** the share of pixels whose largest channel differs by more than lim, and the mean of that difference, in a box;
+   *  and dark lines: the share of pixels of b darker by more than lim than the darkest of a's 3x3 around them (a thin
+   *  crack is no more than a few pixels, which the mean and the share never see) */
+  async function diff(a, b, box, lim = 24) {
+    return labPage.evaluate(async ([a64, b64, box, decode, lim]) => {
+      const dec = (0, eval)(decode);
+      const [A, B] = await Promise.all([dec(a64), dec(b64)]);
+      const [x, y, w, h] = box.map(Math.round);
+      let n = 0, sum = 0, over = 0, dark = 0;
+      const L = (D, i) => (D.data[i] + D.data[i + 1] + D.data[i + 2]) / 3;
+      for (let yy = y; yy < Math.min(A.height, y + h); yy++) for (let xx = x; xx < Math.min(A.width, x + w); xx++) {
+        const i = (yy * A.width + xx) * 4;
+        const d = Math.max(Math.abs(A.data[i] - B.data[i]), Math.abs(A.data[i + 1] - B.data[i + 1]), Math.abs(A.data[i + 2] - B.data[i + 2]));
+        sum += d; n++; if (d > lim) over++;
+        const lb = L(B, i);
+        if (lb < 200) {
+          let m = 255;
+          for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+            const X = Math.min(A.width - 1, Math.max(0, xx + dx)), Y = Math.min(A.height - 1, Math.max(0, yy + dy));
+            m = Math.min(m, L(A, (Y * A.width + X) * 4));
+          }
+          if (m - lb > lim) dark++;
+        }
+      }
+      return { mean: n ? sum / n : 0, over: n ? over / n : 0, dark: n ? dark / n : 0 };
+    }, [a.toString('base64'), b.toString('base64'), box, decode, lim]);
+  }
+  const SIZES12 = [[430, 739, 3, 'phone'], [1512, 860, 2, 'laptop']];
+  const gpuOk = !!browsers.gpu;
+  if (!gpuOk && [32, 33, 34, 35, 36].some(want)) warn(32, 'LIVE FILM NOT TESTED', 'no Chromium with a graphics chip (playwright-core\'s chromium channel) could start');
+
+  /* 32. the live film loads at the first sign of intent, never with the first screen */
+  if (want(32) && gpuOk) await guarded(32, async () => {
+    const bad = [], seen = [];
+    for (const [w, h, dpr, name] of SIZES12) {
+      const c = await ctx('gpu', { viewport: { width: w, height: h }, deviceScaleFactor: dpr });
+      const asked = [];
+      c.on('request', (r) => { if (/\/assets\/(film3d|world)-/.test(r.url())) asked.push(r.url().split('/').pop()); });
+      const p = await open(c, '/', `intent ${name}`);
+      await settle(p, 3000);
+      if (asked.length) bad.push(`${name}: ${asked.join(', ')} asked for in the first 3 s`);
+      // on idle once the page has settled (no sooner than 4 s after load): the world made ahead, its script and shapes
+      await settle(p, 4500);
+      const ahead = [...asked];
+      if (!ahead.some((u) => /^film3d-/.test(u)) || !ahead.some((u) => /^world-/.test(u))) bad.push(`${name}: not made ahead on idle (${ahead.join(', ') || 'nothing asked'})`);
+      if (w < 600) await p.touchscreen.tap(w / 2, h / 2); else await p.mouse.move(w / 2, h / 2);
+      const t0 = Date.now();
+      const live = await p.waitForFunction(LIVE, 1, { timeout: 15000 }).then(() => true, () => false);
+      if (!live) bad.push(`${name}: scene 1 not live 15 s after the first sign of intent (${await p.evaluate(() => document.documentElement.dataset.world)})`);
+      seen.push(`${name} live ${((Date.now() - t0) / 1000).toFixed(1)} s after it`);
+      await c.close();
+    }
+    ok(!bad.length, 32, 'The live film is made ahead on idle no sooner than 4 s after load (no request for its script or shapes in the first 3 s, both asked for by 7.5 s with no gesture) and starts at the first sign of intent (a touch, the wheel, a key, the pointer moving): scene 1 live (Chromium with a graphics chip, phone 430x739 and laptop 1512x860)', seen.join(', '), bad.join('; '));
+  });
+
+  /* 33. at rest every scene drawn live is its still */
+  if (want(33) && gpuOk) await guarded(33, async () => {
+    const bad = [], seen = [];
+    for (const [engine, [w, h, dpr, name]] of [...SIZES12.map((s) => ['gpu', s]), ['webkit', [1512, 860, 2, 'laptop']]]) {
+      const c = await ctx(engine, { viewport: { width: w, height: h }, deviceScaleFactor: dpr, bypassCSP: true });
+      const still = await open(c, '/', `rest still ${engine} ${name}`);
+      const live = await open(c, '/', `rest live ${engine} ${name}`);
+      // (build 12H: scene 6's board at work, measured at its loop's zero frame, its layer empty)
+      for (const p of [still, live]) await p.evaluate(() => { const s = document.createElement('style'); s.textContent = '.alive{visibility:hidden !important}'; document.head.append(s); });
+      await settle(live, 600);
+      await live.keyboard.press('Shift');
+      // below the border (its clock ticks)
+      const band = await still.evaluate(() => Math.ceil(document.getElementById('top').getBoundingClientRect().bottom) + 4);
+      const box = [0, band * dpr, w * dpr, (h - band) * dpr];
+      let worst = { mean: 0, over: 0, n: 0 }, darkest = { dark: 0, n: 0 };
+      for (let n = 1; n <= content.scenes.length; n++) {
+        step(`rest ${engine} ${name} | scene ${n}`);
+        await restAt(still, n); await restAt(live, n);
+        await toScene(still, n, 1);
+        const ok2 = await live.waitForFunction(LIVE, n, { timeout: 20000 }).then(() => true, () => false);
+        if (!ok2) { bad.push(`${engine} ${name} scene ${n}: not live at rest`); continue; }
+        await settle(live, 700); await settle(still, 300);
+        const [a, b] = [await still.screenshot(), await live.screenshot()];
+        const d = await diff(a, b, box);
+        if (d.mean > worst.mean) worst = { ...d, n };
+        if (d.dark > darkest.dark) darkest = { dark: d.dark, n };
+        if (!(d.mean <= 2.5) || !(d.over <= 0.025)) bad.push(`${engine} ${name} scene ${n}: mean difference ${d.mean.toFixed(2)} of 255, ${(100 * d.over).toFixed(2)}% of pixels more than 24 apart`);
+        if (!(d.dark <= 1.5e-4)) bad.push(`${engine} ${name} scene ${n}: dark lines, ${(1e4 * d.dark).toFixed(2)} in 10,000 pixels darker than the still's darkest near them`);
+      }
+      seen.push(`${engine} ${name} largest scene ${worst.n} ${worst.mean.toFixed(2)} (${(100 * worst.over).toFixed(2)}%), dark lines at most ${(1e4 * darkest.dark).toFixed(2)} in 10,000 (scene ${darkest.n || '-'})`);
+      await c.close();
+    }
+    ok(!bad.length, 33, 'At rest every scene drawn live is its still: below the border a mean difference of at most 2.5 of 255, at most 2.5% of the pixels more than 24 apart, and no dark lines (at most 1.5 in 10,000 pixels more than 24 darker than the darkest of the still\'s 3x3 around them), all six scenes (Chromium with a graphics chip, phone 430x739 at 3 and laptop 1512x860 at 2; WebKit laptop)', seen.join('; '), bad.slice(0, 8).join('; '));
+  });
+
+  /* 34. every way the live film cannot run shows the still film, never a black or empty frame */
+  if (want(34)) await guarded(34, async () => {
+    const bad = [], seen = [];
+    const pictureLight = async (p) => (await lab(await p.screenshot(), [[0, 120, 1512, 600]]))[0].mean;
+    const run = async (engine, label, opts, init, act) => {
+      const c = await ctx(engine, { viewport: { width: 1512, height: 860 }, bypassCSP: true, ...opts });
+      const asked = [];
+      c.on('request', (r) => { if (/\/assets\/(film3d|world)-/.test(r.url())) asked.push(r.url()); });
+      if (init) await c.addInitScript(init);
+      const p = await open(c, '/', `fallback ${label}`);
+      await settle(p, 600);
+      await p.mouse.move(700, 400); await p.keyboard.press('Shift');
+      await restAt(p, 2); await toScene(p, 2, 1);
+      await settle(p, 2500);
+      const r = await act(p, asked);
+      const st = await p.evaluate(() => ({ world: document.documentElement.dataset.world ?? '', canvas: !!document.querySelector('canvas.world'), hidden: [...document.querySelectorAll('#s2 .passes picture')].filter((e) => getComputedStyle(e).visibility === 'hidden').length, pics: document.querySelectorAll('#s2 .passes picture').length }));
+      const light = await pictureLight(p);
+      seen.push(`${label} ${light.toFixed(1)}`);
+      if (!(light > 20)) bad.push(`${label}: the picture's light ${light.toFixed(1)}`);
+      if (r) bad.push(...r.map((x) => `${label}: ${x}`));
+      await c.close();
+      return st;
+    };
+    // less motion: never loaded
+    if (gpuOk) {
+      const s = await run('gpu', 'less motion', { reducedMotion: 'reduce' }, null, async (p, asked) => (asked.length ? ['the live film was asked for'] : null));
+      if (s.canvas || s.world) bad.push('less motion: a live canvas');
+      // no WebGL 2
+      const s2 = await run('gpu', 'no WebGL', {}, () => { const g = HTMLCanvasElement.prototype.getContext; HTMLCanvasElement.prototype.getContext = function (k, o) { return k === 'webgl2' ? null : g.call(this, k, o); }; }, async () => null);
+      if (s2.canvas || s2.hidden || s2.pics !== 3) bad.push(`no WebGL: ${JSON.stringify(s2)}`);
+      // a context lost: the still film at once; given back: live again
+      await run('gpu', 'context lost', {}, null, async (p) => {
+        const out = [];
+        if (!(await p.evaluate(LIVE, 2))) return ['not live before the loss'];
+        const before = await pictureLight(p);
+        await p.evaluate(() => { window.__lose = document.querySelector('canvas.world').getContext('webgl2').getExtension('WEBGL_lose_context'); window.__lose.loseContext(); });
+        await settle(p, 120);
+        const during = await p.evaluate(() => [...document.querySelectorAll('#s2 .passes picture')].filter((e) => getComputedStyle(e).visibility === 'hidden').length);
+        const light = await pictureLight(p);
+        if (during) out.push(`${during} still pictures still hidden after the loss`);
+        if (Math.abs(light - before) > 2) out.push(`the light ${before.toFixed(1)} before, ${light.toFixed(1)} after the loss`);
+        await p.evaluate(() => window.__lose.restoreContext());
+        await p.mouse.wheel(0, 30); await settle(p, 600); await p.mouse.wheel(0, -30);
+        const back = await p.waitForFunction(LIVE, 2, { timeout: 10000 }).then(() => true, () => false);
+        if (!back) out.push('not live again once the context came back');
+        return out;
+      });
+    }
+    // a chip too slow for it (the hidden Chromium shell draws WebGL in software): the still film for good
+    // (it never shows live: two slow answers, 2.5 s apart, then the still film for good)
+    const s4 = await run('chromium', 'software chip', {}, null, async (p) => {
+      const out = [];
+      for (let i = 0; i < 16; i++) {
+        const st = await p.evaluate(() => ({ world: document.documentElement.dataset.world ?? '', hidden: [...document.querySelectorAll('#s2 .passes picture')].filter((e) => getComputedStyle(e).visibility === 'hidden').length }));
+        if (st.hidden) { out.push(`live while it measured the chip (${st.world})`); break; }
+        if (/^\|\|/.test(st.world)) break;
+        await settle(p, 500);
+      }
+      return out.length ? out : null;
+    });
+    if (s4.canvas || s4.hidden || !/^\|\|/.test(s4.world || '')) bad.push(`software chip: ${JSON.stringify(s4)}`);
+    ok(!bad.length, 34, 'Every way the live film cannot run shows the still film, never a black or empty frame: less motion (never loaded), no WebGL 2, a lost context (the stills at once, live again once it comes back), a chip too slow (Chromium in software: never shown live, given up after two slow answers) (laptop 1512x860; the picture\'s light in each)', seen.join(', '), bad.slice(0, 8).join('; '));
+  });
+
+  /* 35. no stall over 50 ms anywhere in the film, at a fourth of a laptop's speed */
+  if (want(35) && gpuOk) await guarded(35, async () => {
+    const bad = [], seen = [];
+    for (const [w, h, dpr, name] of SIZES12) {
+      let best = null;
+      for (let run = 0; run < 2 && !(best && best.max <= 50); run++) {
+        const c = await ctx('gpu', { viewport: { width: w, height: h }, deviceScaleFactor: dpr });
+        await c.addInitScript(() => { window.__ft = []; let last = 0; const f = (t) => { if (last) window.__ft.push([t - last, scrollY]); last = t; requestAnimationFrame(f); }; requestAnimationFrame(f); });
+        const p = await open(c, '/', `stall ${name}`);
+        const cdp = await c.newCDPSession(p);
+        await settle(p, 2500);
+        // slowed BEFORE the first gesture, and measured from it: the first wheel step or drag is the visitor's first
+        // sign of intent, so the live film's whole start (its script, shapes, shaders, first pictures) is in the count
+        await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+        await settle(p, 300);
+        await p.evaluate(() => { window.__ft.length = 0; });
+        const H = await p.evaluate(() => document.documentElement.scrollHeight - innerHeight);
+        step(`stall ${name} | through the film and back`);
+        for (const dir of [1, -1]) {
+          for (let i = 0; i < 500; i++) {
+            if (w < 600) {
+              const y0 = dir > 0 ? 650 : 60;
+              await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: w / 2, y: y0 }] });
+              for (let k = 1; k <= 20; k++) { await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: w / 2, y: y0 - dir * k * 30 }] }); await p.waitForTimeout(40); }
+              await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+              await p.waitForTimeout(250);
+            } else { await p.mouse.wheel(0, 100 * dir); await p.waitForTimeout(111); }
+            const y = await p.evaluate(() => scrollY);
+            if ((dir > 0 && y >= H - 2) || (dir < 0 && y <= 0)) break;
+          }
+          await settle(p, 800);
+        }
+        const ft = await p.evaluate(() => window.__ft);
+        // the live film did run (scenes read into the chip, not given up)
+        const ran = await p.evaluate(() => /^[^|]*\|[1-7]/.test(document.documentElement.dataset.world ?? ''));
+        if (!ran) bad.push(`${name}: the live film never ran (${await p.evaluate(() => document.documentElement.dataset.world)})`);
+        const d = ft.map((r) => r[0]).sort((a, b) => a - b);
+        const r = { frames: d.length, median: d[Math.floor(d.length / 2)], max: d[d.length - 1], at: ft.reduce((a, x) => (x[0] > a[0] ? x : a), [0, 0])[1] };
+        if (!best || r.max < best.max) best = r;
+        await c.close();
+      }
+      seen.push(`${name}: ${best.frames} frames, median ${best.median.toFixed(1)} ms, worst ${best.max.toFixed(1)} ms`);
+      if (!(best.max <= 50)) bad.push(`${name}: a frame of ${best.max.toFixed(1)} ms at ${best.at} px`);
+    }
+    ok(!bad.length, 35, 'No stall over 50 ms from the first gesture (the live film\'s start counted) through the whole live film and back, the processor at a fourth of its speed: a mouse wheel of 100 px every 111 ms (about 900 px a second) at 1512x860, drags of 600 px at about 700 px a second at 430x739 (Chromium with a graphics chip; a second run if the first one shows one)', seen.join('; '), bad.join('; '));
+  });
+
+  /* 36. the doors with the live film: the hand-over, and Back to the scene at rest, live again at once (no scroll) */
+  if (want(36) && gpuOk) await guarded(36, async () => {
+    const bad = [], seen = [];
+    // the back/forward cache on: Chromium's full build with the test tool's switch that turns it off left out (as test
+    // 28); WebKit's test build never keeps a page in it (every Back there is a fresh page, which the run records)
+    let bf = null;
+    try { bf = await lib.chromium.launch({ headless: true, channel: 'chromium', ignoreDefaultArgs: ['--disable-back-forward-cache'] }); } catch { bf = null; }
+    const RUNS = [
+      ...(bf ? [{ label: 'Chromium, cache on', engine: 'chromium', browser: bf }, { label: 'Chromium, cache on, context lost while away', engine: 'chromium', browser: bf, lose: true }] : []),
+      { label: 'Chromium, cache off', engine: 'chromium', browser: browsers.gpu },
+      { label: 'WebKit', engine: 'webkit' },
+    ];
+    if (!bf) warn(36, 'Back/forward cache not tested with the live film', 'no full Chromium build to run with the cache on');
+    for (const run of RUNS) {
+      for (const d of DOORS_ON) {
+        for (const n of (d.scenes ?? []).filter((x) => !content.scenes[x - 1]?.board)) {
+          if (run.lose && n !== (d.scenes ?? [])[0]) continue;
+          const tag = `${run.label} ${d.id} scene ${n}`;
+          step(`live door | ${tag}`);
+          const c = await doorCtx(run.browser ?? await useBrowser(run.engine), run.engine, { viewport: { width: 1512, height: 860 } });
+          await c.addInitScript(() => addEventListener('pageshow', (e) => { sessionStorage.setItem('shows', (sessionStorage.getItem('shows') || '') + (e.persisted ? 'P' : 'F')); }));
+          const p = await doorPage(c, BASE, '/', `live door ${tag}`);
+          await settle(p, 600);
+          await p.mouse.move(700, 400);
+          await restAt(p, n); await toScene(p, n, 1);
+          if (!(await p.waitForFunction(LIVE, n, { timeout: 20000 }).then(() => true, () => false))) { bad.push(`${tag}: not live`); await c.close(); continue; }
+          await settle(p, 800);
+          const y0 = await p.evaluate(() => scrollY);
+          // the context taken from the page while it waits in the cache (as a phone may do)
+          if (run.lose) await p.evaluate(() => addEventListener('pagehide', () => document.querySelector('canvas.world')?.getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext()));
+          await p.click(`#s${n} a.dlogo[data-door="${d.id}"]`);
+          const left = await p.waitForURL((u) => u.pathname.startsWith(d.path), { timeout: 8000 }).then(() => true, () => false);
+          if (!left) bad.push(`${tag}: the door did not open its page`);
+          await settle(p, 1200);
+          // a page from the cache never fires "load" again: wait for the address only
+          await p.goBack({ waitUntil: 'commit' });
+          const t0 = Date.now();
+          // no scroll, no pointer: the live film must come back on its own
+          const live = await p.waitForFunction(LIVE, n, { timeout: 8000 }).then(() => true, () => false);
+          const ms = Date.now() - t0;
+          await settle(p, 300);
+          const back = await p.evaluate(() => ({ hash: location.hash, y: scrollY, active: document.querySelector('#film .scene.on')?.id, shows: sessionStorage.getItem('shows') || '' }));
+          const cached = back.shows.endsWith('P');
+          if (run.browser === bf && !cached) bad.push(`${tag}: Back did not come from the cache (${back.shows})`);
+          if (back.active !== `s${n}` || Math.abs(back.y - y0) > 3) bad.push(`${tag}: back at ${back.active} ${back.y} px, left from s${n} ${y0} px`);
+          if (!live) bad.push(`${tag}: not live again within 8 s of Back, with no scroll (${await p.evaluate(() => document.documentElement.dataset.world)})`);
+          seen.push(`${tag}: ${cached ? 'from the cache' : 'a fresh page'}, ${live ? `live again ${(ms / 1000).toFixed(1)} s after Back` : 'NOT live'}`);
+          bad.push(...c.studioOut.map((x) => `${tag}: the studio asked another host: ${x}`), ...c.errs.map((x) => `${tag}: ${x}`));
+          await c.close();
+        }
+      }
+    }
+    if (bf) await bf.close();
+    ok(!bad.length, 36, 'The doors from a scene drawn live: the click opens the product\'s page, Back lands on the scene at rest and the live film comes back on its own, no scroll (Chromium with a graphics chip and the back/forward cache on, also with its context taken while away; Chromium with the cache off; WebKit, whose test build has no cache: a fresh page; 1512x860; the blend itself is test 28)', seen.join('; '), bad.join('; '));
+  });
+
+  /* 37. one room: every thing a scene's rest camera sees is in that scene's still */
+  // (build 12D) The live film is one room; at each rest the frame is the still. A thing that stands in a still's view in
+  // the world but that the still left out would have to fade out in plain view while the camera moves (scene 5's coin in
+  // build 12C). The world module itself (src/world/world.ts, bundled here as the site bundles it) places the things and
+  // reads every still's camera and what it holds from src/world/shots.json (the picture maker's own settings).
+  if (want(37)) await guarded(37, async () => {
+    const bad = [], seen = [];
+    const { build } = await import(join(ROOT, 'node_modules/esbuild/lib/main.js'));
+    const urlStub = { name: 'url', setup(b) { b.onResolve({ filter: /\?url$/ }, (a) => ({ path: a.path, namespace: 'url' })); b.onLoad({ filter: /.*/, namespace: 'url' }, () => ({ contents: 'export default ""', loader: 'js' })); } };
+    const code = (await build({ stdin: { contents: "export { layoutOf } from './src/world/world.ts'; export * as mat from './src/world/mat.ts';", resolveDir: ROOT, loader: 'ts' }, bundle: true, write: false, format: 'esm', platform: 'node', logLevel: 'silent', plugins: [urlStub] })).outputFiles[0].text;
+    const { layoutOf, mat } = await import('data:text/javascript;base64,' + Buffer.from(code).toString('base64'));
+    // points on each thing's outline, in its own frame (mm): the stand's box, the race piece's base and tilted coin, the
+    // flat coin's rim, the coach phone's box
+    const ring = (r, y, n = 24) => Array.from({ length: n }, (_, i) => [r * Math.cos((i / n) * 2 * Math.PI), y, r * Math.sin((i / n) * 2 * Math.PI)]);
+    const box = (b) => { const o = []; for (const x of [b[0], (b[0] + b[3]) / 2, b[3]]) for (const y of [b[1], b[4]]) for (const z of [b[2], (b[2] + b[5]) / 2, b[5]]) o.push([x, y, z]); return o; };
+    const onBase = mat.mul(mat.translate(0, 14 + 65 * Math.sin(22 * mat.DEG) + 0.5, 0), mat.rotX(22 * mat.DEG));
+    const THINGS = { stand: [[null, box([-74, 0, -28, 74, 120, 30])]], trophy: [[null, [...ring(88, 0), ...ring(88, 14)]], [onBase, [...ring(65, 0), ...ring(65, 12)]]], coin: [[null, [...ring(65, 0), ...ring(65, 12)]]], coach: [[null, box([-36, -4, -75, 36, 4, 75])]] };
+    const proj = (M, q) => [0, 1, 2, 3].map((r) => M[r] * q[0] + M[4 + r] * q[1] + M[8 + r] * q[2] + M[12 + r] * q[3]);
+    let checked = 0;
+    for (const form of ['desktop', 'phone']) {
+      const passes = {};
+      for (let n = 1; n <= content.scenes.length; n++) {
+        passes[n] = film.scenes[String(n)][form].passes;
+      }
+      const L = layoutOf(form, passes);
+      for (const [key, p] of L.projectors) {
+        for (const [name, parts] of Object.entries(THINGS)) {
+          let inside = 0;
+          for (const [pre, pts] of parts) {
+            const M = pre ? mat.mul(L.pose[name], pre) : L.pose[name];
+            for (const q of pts) {
+              const c = proj(p.VP, proj(M, [...q, 1]));
+              if (c[3] > 0 && Math.abs(c[0] / c[3]) <= 1 && Math.abs(c[1] / c[3]) <= 1) inside++;
+            }
+          }
+          checked++;
+          if (inside && !p.poses.get(name)) bad.push(`${form} ${key}: the ${name} stands in its view (${inside} outline points) but the still does not hold it`);
+        }
+      }
+      seen.push(`${form}: ${L.projectors.size} stills`);
+    }
+    ok(!bad.length, 37, 'One room: every thing that stands inside a still\'s view in the live film\'s world (the stand, the race piece, the coin, the coach phone; outline points inside the still\'s frame) is in that still, every still of scenes 1 to 6, both screen shapes (scene 2\'s own phone is there in scene 2 only)', `${seen.join(', ')}, ${checked} checks`, bad.slice(0, 8).join('; '));
+  });
+
+  /* 38. no stripes: the live film on a phone at its sharpest and its lowest sharpness, against the stills */
+  // (build 12G) On the owner's iPhone the live film showed zebra stripes (moire) on the stand's fine print lines, stepped
+  // edges and hatched letters where the still is smooth: every still was read into the chip with one level only, so a
+  // still drawn at half its size or less (always on a phone: a canvas of at most twice the page against a 1572 px still,
+  // a quarter of it at the lowest sharpness) took the one texel nearest each screen pixel. Test 33 never saw it: at
+  // twice the page the stripes are faint, and its mean difference is blind to them. Here a phone of the owner's size
+  // (430x745 at 3) is looked at twice: at its sharpest (twice the page), and at the lowest step, where the live film's
+  // own governor puts a phone whose frames are slow (the processor slowed until the canvas is the page's own size, then
+  // given back). At each rest the still film's frame and the live film's are both averaged down to the canvas's own
+  // pixels (the still as the browser would show it at that size, the target look) and band passed (detail of about 2 to
+  // 18 canvas pixels: where stripes, steps and ghost lines show); the stripes are the band's strength in the live frame
+  // more than in the still's, in tiles of 40 CSS px where the still shows something (a tile the still keeps black is
+  // left out: what the live film draws past a still's frame is test 33's), the words and scene 6's board hidden.
+  async function stripes(a, b, s, g, box) {
+    return labPage.evaluate(async ([a64, b64, s, g, box, decode]) => {
+      const dec = (0, eval)(decode);
+      const [A, B] = await Promise.all([dec(a64), dec(b64)]);
+      const [bx, by, bw, bh] = box, px = s / g, W = Math.floor(bw * g), H = Math.floor(bh * g), x0 = bx * s, y0 = by * s;
+      const down = (D) => {
+        const o = new Float32Array(W * H);
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          let sum = 0, n = 0;
+          const xa = Math.round(x0 + x * px), xb = Math.max(xa + 1, Math.round(x0 + (x + 1) * px)), ya = Math.round(y0 + y * px), yb = Math.max(ya + 1, Math.round(y0 + (y + 1) * px));
+          for (let yy = ya; yy < Math.min(yb, D.height); yy++) for (let xx = xa; xx < Math.min(xb, D.width); xx++) { const i = (yy * D.width + xx) * 4; sum += 0.2126 * D.data[i] + 0.7152 * D.data[i + 1] + 0.0722 * D.data[i + 2]; n++; }
+          o[y * W + x] = n ? sum / n : 0;
+        }
+        return o;
+      };
+      const gauss = (X, sig) => {
+        const r = Math.max(1, Math.ceil(3 * sig)), k = [];
+        let t = 0; for (let i = -r; i <= r; i++) { const v = Math.exp(-(i * i) / (2 * sig * sig)); k.push(v); t += v; }
+        const T = new Float32Array(W * H), O = new Float32Array(W * H);
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { let v = 0; for (let i = -r; i <= r; i++) v += (k[i + r] / t) * X[y * W + Math.min(W - 1, Math.max(0, x + i))]; T[y * W + x] = v; }
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { let v = 0; for (let i = -r; i <= r; i++) v += (k[i + r] / t) * T[Math.min(H - 1, Math.max(0, y + i)) * W + x]; O[y * W + x] = v; }
+        return O;
+      };
+      const la = down(A), lb = down(B);
+      const band = (X) => { const p = gauss(X, 0.6), q = gauss(X, 3); for (let i = 0; i < p.length; i++) p[i] -= q[i]; return p; };
+      const pa = band(la), pb = band(lb), T = Math.round(40 * g);
+      let worst = 0, at = null;
+      for (let ty = 0; ty + T <= H; ty += T >> 1) for (let tx = 0; tx + T <= W; tx += T >> 1) {
+        let ea = 0, eb = 0, lum = 0;
+        for (let y = ty; y < ty + T; y++) for (let x = tx; x < tx + T; x++) { const i = y * W + x; ea += Math.abs(pa[i]); eb += Math.abs(pb[i]); lum += la[i]; }
+        if (lum / (T * T) < 4) continue;
+        const e = (eb - ea) / (T * T);
+        if (e > worst) { worst = e; at = [Math.round(bx + tx / g), Math.round(by + ty / g)]; }
+      }
+      return { worst, at };
+    }, [a.toString('base64'), b.toString('base64'), s, g, box, decode]);
+  }
+  if (want(38) && gpuOk) await guarded(38, async () => {
+    const bad = [], seen = [], LIM = 0.4;
+    const [w, h, dpr] = [430, 745, 3];
+    for (const mode of ['sharpest', 'lowest']) {
+      let done = false;
+      for (let run = 0; run < 2 && !done; run++) {
+        const c = await ctx('gpu', { viewport: { width: w, height: h }, deviceScaleFactor: dpr, bypassCSP: true });
+        const still = await open(c, '/', `stripes still ${mode}`);
+        const live = await open(c, '/', `stripes live ${mode}`);
+        const HIDE = INK_HIDE + '.board,.alive{visibility:hidden !important}';
+        for (const p of [still, live]) await p.evaluate((css) => { const s = document.createElement('style'); s.textContent = css; document.head.append(s); }, HIDE);
+        await settle(live, 600);
+        await live.touchscreen.tap(w / 2, h / 2);
+        await live.waitForFunction(LIVE, 1, { timeout: 20000 }).catch(() => {});
+        await settle(live, 1500);
+        const canvasW = () => live.evaluate(() => document.querySelector('canvas.world')?.width ?? -1);
+        if (mode === 'lowest') {
+          // a phone whose frames stay slow: the governor lowers the sharpness a step at a time, down to the page's own size
+          step(`stripes ${mode} | slowing the processor until the lowest sharpness`);
+          const cdp = await c.newCDPSession(live);
+          await cdp.send('Emulation.setCPUThrottlingRate', { rate: 20 });
+          let dir = 1;
+          for (let i = 0; i < 120 && (await canvasW()) > w; i++) {
+            const y0 = dir > 0 ? 650 : 100;
+            await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: w / 2, y: y0 }] });
+            for (let k = 1; k <= 5; k++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: w / 2, y: y0 - dir * k * 40 }] });
+            await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+            const y = await live.evaluate(() => scrollY);
+            if (y > 3000) dir = -1; else if (y < 200) dir = 1;
+          }
+          await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+          await settle(live, 1500);
+        }
+        const cw = await canvasW(), g = cw / w;
+        if (/^\|\|/.test(await live.evaluate(() => document.documentElement.dataset.world ?? '')) || (mode === 'lowest' ? cw !== w : cw !== 2 * w)) {
+          seen.push(`${mode}: run ${run + 1} not at the step asked (canvas ${cw} px wide, ${await live.evaluate(() => document.documentElement.dataset.world)})`);
+          await c.close();
+          continue;
+        }
+        const band = await still.evaluate(() => Math.ceil(document.getElementById('top').getBoundingClientRect().bottom) + 4);
+        const box = [0, band, w, h - band - 4];
+        const per = [];
+        for (let n = 1; n <= content.scenes.length; n++) {
+          step(`stripes ${mode} | scene ${n}`);
+          await restAt(still, n); await restAt(live, n);
+          await toScene(still, n, 1);
+          if (!(await live.waitForFunction(LIVE, n, { timeout: 20000 }).then(() => true, () => false))) { bad.push(`${mode} scene ${n}: not live at rest`); continue; }
+          await settle(live, 900); await settle(still, 300);
+          const r = await stripes(await still.screenshot(), await live.screenshot(), dpr, g, box);
+          per.push(`${n} ${r.worst.toFixed(2)}`);
+          if (!(r.worst <= LIM)) bad.push(`${mode} (canvas ${g} px a CSS px) scene ${n}: stripes ${r.worst.toFixed(2)} at ${r.at}`);
+        }
+        seen.push(`${mode} (canvas ${g}x): ${per.join(', ')}`);
+        done = true;
+        await c.close();
+      }
+      if (!done) bad.push(`${mode}: the live film could not be held at that step`);
+    }
+    ok(!bad.length, 38, `No stripes: at each of the six rests, on a phone of 430x745 at 3 at the sharpest step and at the lowest (where the governor puts a phone whose frames stay slow), the live frame has no more detail of 2 to 18 canvas pixels than the still shown at the canvas's own size (at most ${LIM} of 255 more in any 40 px tile where the still shows something; moire stripes, stepped edges, ghost lines) (Chromium with a graphics chip)`, seen.join('; '), bad.slice(0, 8).join('; '));
+  });
+
+  /* 39. build 12H: the film ends on scene 6, held: six scenes, nothing scrolls past scene 6's rest, never a blank screen
+   *  at the end, and an old link to scene 7 opens scene 6 at rest */
+  if (want(39)) await guarded(39, async () => {
+    const bad = [], seen = [];
+    for (const [engine, w, h] of [['chromium', 1512, 860], ['chromium', 430, 739], ['webkit', 430, 739], ['firefox', 1512, 860]]) {
+      const tag = `${engine} ${w}x${h}`;
+      // (bypassCSP: a screenshot in WebKit adds the test tool's own style, which the page's policy refuses and reports)
+      const c = await ctx(engine, { viewport: { width: w, height: h }, bypassCSP: true });
+      const p = await open(c, '/', `end ${tag}`);
+      // scrolled hard past the end, three times
+      for (let i = 0; i < 3; i++) { await p.evaluate(() => scrollTo(0, document.documentElement.scrollHeight * 2)); await p.mouse.wheel(0, 3000).catch(() => {}); await settle(p, 300); }
+      await settle(p, 900);
+      const r = await p.evaluate((n) => {
+        const s = document.getElementById('s' + n), vh = document.querySelector('.probe')?.offsetHeight || innerHeight;
+        const next = document.querySelector('.blab.next');
+        return { scenes: document.querySelectorAll('#film .scene').length, s7: !!document.getElementById('s7'), y: scrollY, max: document.documentElement.scrollHeight - innerHeight,
+          end: s.offsetTop + s.offsetHeight - vh, on: document.querySelector('#film .scene.on')?.id, next: next ? +getComputedStyle(next).opacity : -1 };
+      }, content.scenes.length);
+      if (r.scenes !== 6 || r.s7) bad.push(`${tag}: ${r.scenes} scenes${r.s7 ? ', a #s7' : ''}`);
+      if (r.on !== 's6') bad.push(`${tag}: scrolled to the end, the scene on screen is ${r.on}`);
+      if (r.max > r.end + 2) bad.push(`${tag}: ${Math.round(r.max - r.end)} px of scroll past scene 6's end`);
+      if (r.next < 0.99) bad.push(`${tag}: at the end the board is not whole (NEXT at ${r.next})`);
+      // never blank: the picture below the border shows the board's pool of light
+      const png = await p.screenshot();
+      const [m] = await lab(png, [[0, h * 0.15, w, h * 0.7]]);
+      if (!(m.mean >= 12)) bad.push(`${tag}: the end looks blank (mean ${m.mean.toFixed(1)} of 255)`);
+      seen.push(`${tag} ${r.y}/${r.max} px, mean ${m.mean.toFixed(1)}`);
+      // an old link to scene 7: scene 6 at rest
+      const p2 = await open(c, '/#s7', `old s7 link ${tag}`);
+      await settle(p2, 900);
+      const o = await p2.evaluate(() => [document.querySelector('#film .scene.on')?.id, scrollY, document.getElementById('s6').offsetTop]);
+      if (o[0] !== 's6' || o[1] <= o[2]) bad.push(`${tag}: /#s7 opens ${o[0]} at ${o[1]}`);
+      await c.close();
+    }
+    ok(!bad.length, 39, 'The film ends on scene 6, held: six scenes and no seventh, scrolled hard past the end the page holds scene 6 at rest with its board whole and its pool of light (never a blank screen), no scroll past scene 6\'s end, and an old link to scene 7 (/#s7) opens scene 6 at rest (Chromium, WebKit, Firefox; 1512x860, 430x739)', seen.join(', '), bad.slice(0, 8).join('; '));
+  });
+
+  /* 40. build 12H: scene 2's phone comes from below the frame and taps the first tile (the photo app's icon); at its two
+   *  rests it is exactly where the stills hold it */
+  if (want(40)) await guarded(40, async () => {
+    const bad = [], seen = [];
+    const { build } = await import(join(ROOT, 'node_modules/esbuild/lib/main.js'));
+    const urlStub = { name: 'url', setup(b) { b.onResolve({ filter: /\?url$/ }, (a) => ({ path: a.path, namespace: 'url' })); b.onLoad({ filter: /.*/, namespace: 'url' }, () => ({ contents: 'export default ""', loader: 'js' })); } };
+    const code = (await build({ stdin: { contents: "export { layoutOf, menuPose } from './src/world/world.ts';", resolveDir: ROOT, loader: 'ts' }, bundle: true, write: false, format: 'esm', platform: 'node', logLevel: 'silent', plugins: [urlStub] })).outputFiles[0].text;
+    const { layoutOf, menuPose } = await import('data:text/javascript;base64,' + Buffer.from(code).toString('base64'));
+    const proj = (M, q) => [0, 1, 2, 3].map((r) => M[r] * q[0] + M[4 + r] * q[1] + M[8 + r] * q[2] + M[12 + r] * q[3]);
+    const corners = []; for (const x of [-36, 36]) for (const y of [-4, 4]) for (const z of [-75, 75]) corners.push([x, y, z, 1]);
+    const TILES = [-51.9, -17.3, 17.3, 51.9];
+    for (const form of ['desktop', 'phone']) {
+      const passes = {};
+      for (let n = 1; n <= content.scenes.length; n++) passes[n] = film.scenes[String(n)][form].passes;
+      const L = layoutOf(form, passes), cams = passes[2].map((k) => L.projectors.get(k));
+      // below the frame at the start, for every camera of scene 2 (the move settles into them)
+      const M0 = menuPose(L, -1);
+      for (const p of cams) for (const q of corners) { const c = proj(p.VP, proj(M0, q)); if (c[3] > 0 && c[1] / c[3] > -1) bad.push(`${form}: at the start the phone shows in ${p.key} (a corner at ${(c[1] / c[3]).toFixed(2)})`); }
+      // it rises: its middle goes up the frame of scene 2's first still all the way to the tile
+      let last = -Infinity, rises = true;
+      for (let t = -1; t <= 0.0001; t += 0.05) { const c = proj(cams[0].VP, proj(menuPose(L, t), [0, 0, 0, 1])), y = c[1] / c[3]; if (y < last - 0.02) rises = false; last = Math.max(last, y); }
+      if (!rises) bad.push(`${form}: the phone does not rise steadily to the tile`);
+      // on the tile: the stills' tap pose, its top end over the first tile (nearest of the four)
+      const T = menuPose(L, 0), tap = L.projectors.get(passes[2][1]).poses.get('menu');
+      if (T.some((v, i) => Math.abs(v - tap[i]) > 1e-6)) bad.push(`${form}: on the tile, not the still's pose`);
+      const lift = menuPose(L, 1), held = L.projectors.get(passes[2][2]).poses.get('menu');
+      if (lift.some((v, i) => Math.abs(v - held[i]) > 1e-6)) bad.push(`${form}: lifted, not the still's pose`);
+      const top = proj(T, [0, -4, -73, 1]);
+      const st = L.stand, sx = st[12], sz = st[14], ca = st[0], sa = st[8];
+      // the top end in the stand's own frame (the stand turned about y): x along the stand
+      const dx = top[0] - sx, dz = top[2] - sz, lx = dx * ca + dz * (-sa);
+      const near = TILES.map((x) => Math.abs(x - lx)), k = near.indexOf(Math.min(...near));
+      if (k !== 0) bad.push(`${form}: the phone taps tile ${k + 1}, want the first`);
+      seen.push(`${form} taps tile ${k + 1} (${lx.toFixed(1)} mm)`);
+    }
+    ok(!bad.length, 40, 'Scene 2\'s phone starts below the frame of every scene 2 camera, rises steadily to the stand and taps the first tile (the photo app\'s icon); on the tile and lifted it is exactly where the stills hold it', seen.join(', '), bad.join('; '));
+  });
+
+  /* 41. build 12H: the four tile icons are in the stills, where the stand's tiles are (a pixel probe on each icon's ground:
+   *  the photo app's warm sweep, the review tile's white, the menu's tan, the chat's green) */
+  if (want(41)) await guarded(41, async () => {
+    const bad = [], seen = [];
+    const { build } = await import(join(ROOT, 'node_modules/esbuild/lib/main.js'));
+    const urlStub = { name: 'url', setup(b) { b.onResolve({ filter: /\?url$/ }, (a) => ({ path: a.path, namespace: 'url' })); b.onLoad({ filter: /.*/, namespace: 'url' }, () => ({ contents: 'export default ""', loader: 'js' })); } };
+    const code = (await build({ stdin: { contents: "export { layoutOf } from './src/world/world.ts'; export * as mat from './src/world/mat.ts';", resolveDir: ROOT, loader: 'ts' }, bundle: true, write: false, format: 'esm', platform: 'node', logLevel: 'silent', plugins: [urlStub] })).outputFiles[0].text;
+    const { layoutOf, mat } = await import('data:text/javascript;base64,' + Buffer.from(code).toString('base64'));
+    const pics = JSON.parse(readFileSync(join(ROOT, 'src/generated/pictures.json'), 'utf8'));
+    const proj = (M, q) => [0, 1, 2, 3].map((r) => M[r] * q[0] + M[4 + r] * q[1] + M[8 + r] * q[2] + M[12 + r] * q[3]);
+    const TILES = [-51.9, -17.3, 17.3, 51.9];
+    const kinds = [
+      ['photo', (c) => c[0] > c[2] && c[0] > 1.25 * c[1] && c[0] > 70],
+      ['review', (c) => Math.min(...c) > 90 && Math.max(...c) - Math.min(...c) < 60],
+      ['menu', (c) => c[0] > c[1] && c[1] > c[2] && c[0] - c[2] > 30],
+      ['chat', (c) => c[1] > 1.3 * c[0] && c[1] > 1.15 * c[2] && c[1] > 60],
+    ];
+    for (const form of ['desktop', 'phone']) {
+      const passes = {};
+      for (let n = 1; n <= content.scenes.length; n++) passes[n] = film.scenes[String(n)][form].passes;
+      const L = layoutOf(form, passes);
+      for (const key of [passes[2][0], passes[6][passes[6].length - 1]]) {
+        const p = L.projectors.get(key), info = pics[key], file = info.files[0];
+        const png = readFileSync(join(DIST, file.webp));
+        const at = TILES.map((x) => {
+          // (a point near the icon's lower right corner, clear of its white drawing: the icon's own ground)
+          const u = 0.32 * 24, v = 0.36 * 24, S = Math.sin(15 * Math.PI / 180), C = Math.cos(15 * Math.PI / 180);
+          const c = proj(p.VP, proj(L.stand, [x + u, 21.4 + 0.1 * C - v * S, 7.29 + 0.1 * S + v * C, 1]));
+          return [((c[0] / c[3] + 1) / 2) * info.size[0], ((1 - c[1] / c[3]) / 2) * info.size[1]];
+        });
+        const cols = await labPage.evaluate(async ([b64, at, decode]) => {
+          const d = await (0, eval)(decode)(b64);
+          return at.map(([x, y]) => { const s = [0, 0, 0]; let n = 0; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { const k = (Math.round(y + j) * d.width + Math.round(x + i)) * 4; s[0] += d.data[k]; s[1] += d.data[k + 1]; s[2] += d.data[k + 2]; n++; } return s.map((v) => Math.round(v / n)); });
+        }, [png.toString('base64'), at, decode]);
+        cols.forEach((c, i) => { if (!kinds[i][1](c)) bad.push(`${key} tile ${i + 1} (${kinds[i][0]}) at ${at[i].map(Math.round).join(',')}: rgb ${c.join(',')}`); });
+        seen.push(`${key} ${cols.map((c) => c.join('/')).join(' ')}`);
+      }
+    }
+    void mat;
+    ok(!bad.length, 41, 'The four tile icons are printed on the stand in the stills of scenes 2 and 6 (both screen shapes): a pixel probe on each icon\'s ground finds the photo app\'s warm sweep, the review tile\'s white, the menu\'s tan and the chat\'s green, left to right', seen.join('; '), bad.slice(0, 8).join('; '));
   });
 
   /* 5. the email pictures */

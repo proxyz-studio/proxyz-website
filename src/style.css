@@ -112,17 +112,41 @@ a:focus-visible { outline: 1px solid var(--ink); outline-offset: 2px; }
 .probe-b { position: fixed; top: 0; left: 0; width: 0; height: var(--safe-b); visibility: hidden; pointer-events: none; }
 html.film body::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: var(--H); background: var(--film); }
 .film #film .scene { height: 240vh; height: 240lvh; overflow: visible; background: none; }
-.film .layer { position: fixed; z-index: 1; opacity: 0; transition: opacity .4s ease; pointer-events: none; }
-.film .scene.on .layer { opacity: 1; }
-/* the last scene as the twin of scene 6: scene 6 stays at full strength under it while the twin fades in, so the
-   pool of light holds steady and only the three things leave it (where :has() is missing, the two simply blend) */
-.film #s6:has(+ #s7[data-view="twin"].on) .layer { opacity: 1; }
-/* the twin's own stage is dark, so scene 6 never shows through at its soft side edges (short phones) */
-.film #s7[data-view="twin"] .layer { background: var(--film); }
+/* Each scene's stage on its own dark ground. The film (src/main.ts, src/film/motion.ts) sets, from the scroll alone,
+   which stages show and how strongly: the next scene comes in over the one before it, held at full, so the change is
+   a dissolve with no dip in the light (and the last scene, the twin of scene 6, keeps the pool of light steady while
+   the three things leave it). It moves the picture with its giant words at the top (from the top left corner of the
+   stage, so the matte cut stays on the thing) and each line of words. Nothing here fades on a timer. */
+.film .layer { position: fixed; z-index: 1; visibility: hidden; background: var(--film); pointer-events: none; will-change: opacity; }
+.film .scene.on .layer { visibility: visible; }
+/* the camera moves the box of the light passes and the box around the giant words */
+.film .frame, .film .cam { position: absolute; inset: 0; transform-origin: 0 0; will-change: transform; }
+.film .cam { pointer-events: none; }
+/* look 11: scene 2's live picture (src/s2), over the still pictures it replaces, never moved by the film's drift */
+/* build 12: the live picture, under every scene's layer (src/world/film3d.ts) */
+.world-under { position: fixed; z-index: 1; left: 0; top: 0; pointer-events: none; visibility: hidden; }
+.world-under canvas { display: block; }
+/* build 12: a live scene's pictures' box holds the live picture (src/world/film3d.ts) and shows at once */
+.film .passes.live { opacity: 1; transition: none; }
+/* the copy of the live things that stand in front of the giant words: above every scene, under the border */
+.world-fg { position: fixed; z-index: 1; left: 0; top: 0; display: block; pointer-events: none; visibility: hidden; }
+html.door-leaving .world-fg, html.door-back .world-fg { visibility: hidden !important; }
+.film .lbox { transform-origin: 0 0; }
+/* the board's labels: on a layer of their own only while they move (at rest their small type is drawn on whole
+   pixels, as sharp as the page draws it) */
+.film .lbox.moving { will-change: transform; }
+/* scene 6: a later light pass grows from the old pool of light through an oval (the lens's mask, drawn once at its
+   full size and placed by the film); the film scales the lens to the oval of the moment and the picture back */
+.film .lens { position: absolute; transform-origin: 0 0; }
+.film .lens > .lm { position: absolute; inset: 0; }
+.film .lens.oval > .lm { -webkit-mask-image: radial-gradient(closest-side, #000 68%, transparent 100%); mask-image: radial-gradient(closest-side, #000 68%, transparent 100%); -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; }
+.film .lens .pass { transform-origin: 0 0; }
+/* What moves gets a layer of its own only while it moves (the film sets it: a light pass while its light grows, the
+   lines of words through a change, scene 6's lens while its oval grows), so at rest every picture and every word is
+   drawn exactly as the page draws it. The picture's box and the giant words' box keep theirs. */
+/* a late picture still fades in (it is a picture arriving, not a scene changing) */
 .film .passes { opacity: 0; transition: opacity .3s ease; }
 .film .passes.ready { opacity: 1; }
-.film .scene .words, .film .scene .cut, .film .scene .addr { opacity: 0; transition: opacity .15s ease; }
-.film .scene.on .words, .film .scene.on .cut, .film .scene.on .addr { opacity: 1; transition: opacity .25s ease .2s; }
 /* the first frame after the switch: nothing fades, so no scene shows on top of the first one */
 .film-init *, .film-init *::before { transition: none !important; }
 @media (prefers-reduced-motion: reduce) {
@@ -218,8 +242,7 @@ a.nm { min-width: 44px; }
   .film .words { position: fixed; bottom: calc(var(--words-base) + var(--safe-b)); }
   /* a late change of the bottom safe area (an iPhone's home bar inset as the bar slides) is a short glide, not a jump.
      The ride with the browser's bar is the screen itself moving, not this value, so it is not slowed. */
-  .film .scene .words { transition: opacity .15s ease, bottom .2s ease; }
-  .film .scene.on .words { transition: opacity .25s ease .2s, bottom .2s ease; }
+  .film .scene .words { transition: bottom .2s ease; }
   /* scenes 3 and 4: a dark backing that travels with the words, always there (it does not wait for the bar's height).
      It fades in over the 24 px just above the words and leaves the picture above them as it is. */
   .film #s3 .words::before, .film #s4 .words::before {
@@ -280,6 +303,17 @@ a.nm { min-width: 44px; }
 .board .wf { stroke-width: clamp(2px, calc(var(--bw) * 2.5), 3.5px); }
 .board .wv { stroke-width: clamp(2.5px, calc(var(--bw) * 3.4), 4.5px); }
 .board .wn { stroke-dasharray: 5 6; }
+/* build 12H: the board at work, light added over the picture (empty at rest; src/main.ts alive) */
+.alive { display: none; position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke-linecap: round; stroke-linejoin: round; mix-blend-mode: screen; overflow: visible; }
+.alive path { vector-effect: non-scaling-stroke; }
+.alive .rg { stroke: #ff5a3c; stroke-opacity: .35; stroke-width: clamp(3px, calc(var(--bw) * 4.5), 6px); }
+.alive .rc { stroke: #ff7a55; stroke-width: clamp(1.25px, calc(var(--bw) * 1.6), 2.25px); }
+.alive .dg { stroke: #d8f34a; stroke-opacity: .3; stroke-width: clamp(3px, calc(var(--bw) * 4), 6px); }
+.alive .dc { stroke: #e4f77a; stroke-width: clamp(1.25px, calc(var(--bw) * 1.6), 2.25px); }
+.alive .k0 { stroke-width: clamp(2.5px, calc(var(--bw) * 3.4), 4.5px); }
+.alive .k1 { stroke-width: clamp(2px, calc(var(--bw) * 2.6), 3.5px); stroke-opacity: .7; }
+.alive .k2 { stroke-width: clamp(1.75px, calc(var(--bw) * 2.2), 3px); stroke-opacity: .4; }
+.alive .k3 { stroke-width: clamp(1.5px, calc(var(--bw) * 1.9), 2.5px); stroke-opacity: .18; }
 /* the labels grow with the picture on a big screen, never below their base size: StudioOS loudest, the three names
    (each in its trace's colour, set at the end of the file), NEXT quietest */
 .blab { position: absolute; line-height: 1; white-space: nowrap; color: #f3eee4; text-shadow: 0 0 6px #000, 0 0 2px #000; }
@@ -326,11 +360,12 @@ a.nm { min-width: 44px; }
 .blab .arr { position: absolute; left: 100%; top: 50%; width: .62em; height: .62em; margin: -.36em 0 0 .3em; }
 /* the address hash of a door (/#tapz): a mark at the top of its scene, moved by the film to where the light rests */
 .at { position: absolute; left: 0; top: 0; width: 1px; height: 1px; pointer-events: none; }
-/* with the film: a door is there only while its scene is on; the logo shows once the light rests (or on focus) */
+/* with the film: a door is there only while its scene is on; the logo shows as the light comes to rest (the film sets
+   how strongly, from the scroll), and on focus */
 .film .door { visibility: hidden; }
 .film .scene.on .door.dboard, .film .scene.on .door.dlogo.placed { visibility: visible; }
-.film .door.dlogo { opacity: 0; pointer-events: none; transition: opacity .35s ease; }
-.film .door.dlogo.lit, .film .door.dlogo:focus-visible { opacity: 1; }
+.film .door.dlogo { opacity: 0; pointer-events: none; }
+html.film:not(.door-leaving) .door.dlogo:focus-visible { opacity: 1 !important; }
 .film .door.dlogo.lit { pointer-events: auto; }
 @media (prefers-reduced-motion: reduce) { .door, .door .dz, .door .arr { transition: none !important; } }
 

@@ -1,6 +1,6 @@
 # PROXYZ website
 
-This repo holds the website at https://proxyz.studio: a slow dark film in seven scenes, plus the same site as plain
+This repo holds the website at https://proxyz.studio: a slow dark film in six scenes, plus the same site as plain
 text at `/machines/` and one plain page at `/legal/`.
 
 A static site: Vite and TypeScript, no framework, nothing loaded from any other host.
@@ -22,7 +22,8 @@ npm run check      # builds, serves dist/ locally and proves the rules (see belo
 |---|---|
 | `content/site.json` | Every word on the site. The pages, `llms.txt` (with its closing list of page links), the meta tags and the structured data are all made from it at build time. Edit words here, nowhere else. |
 | `src/film/scenes.json` | How the film moves: the light passes of each scene, where each picture sits (`frame`), how far the light travels (`rest`, `hold`, `still`), scene 6's growing light (`opens`), the height line. |
-| `src/main.ts` | The film: scroll position to light, scene changes, the five marks. |
+| `src/main.ts` | The film: from one playhead (the scroll position) to the light, the pictures, the words, the changes between scenes, the five marks. |
+| `src/film/motion.ts` | How the film moves, as pure functions of the playhead: the change between two scenes, the drift of the pictures, the lines of words leaving and arriving. See "How the film moves" below. |
 | `src/film/math.ts` | The light and mask arithmetic, shared by the film and the build. |
 | `src/style.css` | The one style file for every page. |
 | `build/pages.ts` | Writes the pages from the three data files (and the picture placement and the size of every giant line, used before the script runs and with no script at all). |
@@ -33,6 +34,8 @@ npm run check      # builds, serves dist/ locally and proves the rules (see belo
 | `src/film/board.json`, `scripts/board.mjs`, `build/board.ts` | Scene 6's board on the floor: its layout in millimetres and the two drawing cameras; the generator that projects it into picture pixels (`npm run board`, writes `src/generated/board.json`); the drawing of it in the page. See "Scene 6: the board" below. |
 | `scripts/check.mjs`, `scripts/serve.mjs` | The proof (`npm run check`) and the local server that follows `vercel.json`. |
 | `scripts/preview-file.mjs` | One self contained file of the real build, for looking at it without a server. |
+| `src/world/` | The live 3D film (build 12): `film3d.ts` (what to draw from the playhead, the page layers, the fallbacks), `world.ts` (the world and its drawing, WebGL 2), `shaders.ts`, `path.ts` (the camera), `mat.ts`, `shots.json` (every still's camera and light), `world.bin` (the shapes). See "The live 3D film" below. |
+| `scripts/world-pack.mjs`, `scripts/world-shots.mjs`, `scripts/stand-model.mjs` | Make `src/world/world.bin`, `src/world/shots.json` and `src/world/stand.bin`. |
 | `src/fonts/` | IBM Plex Mono, Regular (400) and SemiBold (600): IBM's own split Latin 1 files from its package `@ibm/plex-mono` version 2.5.0 (licence OFL-1.1, source github.com/ibm/plex), byte for byte, with IBM's licence as `OFL.txt`. To prove it, unpack that package and compare: `fonts/split/woff2/IBMPlexMono-Regular-Latin1.woff2` sha256 `e8993d946649b9d01abb1ed06d574b19d8ea3e66b5c3948602db335c44c18e56`, `fonts/split/woff2/IBMPlexMono-SemiBold-Latin1.woff2` sha256 `b7acd05041ab65f3b7039e218ddd893065e11a07e85ea85019473152a51b6b7d`. The giant lines: Anton (400), the Latin file of the package `@fontsource/anton` version 5.3.0 (`files/anton-latin-400-normal.woff2`, Anton 2.116, licence OFL-1.1, copyright The Anton Project Authors, no reserved font name, source github.com/googlefonts/AntonFont), byte for byte, sha256 `d0fa07ff63dd60cbc0e2f58e29c802dca2a5ae0276c999f59c6111ab7bbaec3b`, with the package's licence as `OFL-Anton.txt`. |
 
 ## Names and links of ventures
@@ -134,20 +137,139 @@ trace to an empty place marked NEXT. It is drawn by the page over the drawing, n
   two labels as real text, from `board` in scene 6 of `content/site.json`). Lines keep their width in screen pixels.
 - `src/main.ts` draws it in as a pure function of the scroll: the chip and the stand's trace as the scene comes in,
   the race piece's trace with the second pass, the phone's with the third, then the net, the darker floor, the dashed
-  trace and NEXT. At rest small pulses run the three live traces (only while the scene is on screen). With less
-  motion, the rest state and no pulses. With scripts off, or once the film gives up, the rest state.
+  trace and NEXT. With less motion, the rest state. With scripts off, or once the film gives up, the rest state.
+- **The board at work (build 12H).** While scene 6 rests (the film ends there, held), the three ventures work at the
+  same time on one loop of 5.2 s: the stand's tiles light one after another as if tapped (each tile's own printed
+  icon, its colours lifted, with a soft halo), the race route draws itself in along its real line on the coin and
+  rests lit, the coach phone's dial fills round; then a spark of each trace's colour runs to the chip, the three
+  arriving together, the chip flashes once and three white sparks run back out, each thing brightening a little as
+  its spark lands. It is its own layer over the picture (`aliveSvg` in `build/board.ts`, light added: screen), empty
+  at the loop's zero frame, so a rest is still its still; `alive` in `src/main.ts` moves it. Its places come from
+  `scripts/board.mjs`: the four icons on the tiles (`alive` in `src/film/board.json`), the route
+  (`src/film/route.json`, made by `node scripts/route-line.mjs <the stills project folder>` from the race's GPX track
+  and the coin's print file), the coach phone's lit screen (`screen`, from the drawing's notes) and the dial on it.
+  It starts only at rest (with motion allowed and the tab shown), fades in over half a second, stops at once when the
+  scene starts to leave or the tab is hidden, and the live film draws no frame for it. Test 23 proves it.
+- **The tile icons (build 12H).** The stand's four tiles carry printed look-alike icons, left to right a photo app, a
+  review page, a menu and a chat app: our own drawings (`src/film/icons/*.svg`), never a real logo file. The stills
+  print them (the picture maker's `ico` setting), the live film's tiles carry them where no still saw them
+  (`src/world/tile-icons.webp`, made from the same drawings) and the board at work lights them. Test 41 probes them in
+  the stills.
 - Behind the things: the board is hidden inside the matte of all three things (`things` in scene 6's view, a
   `-things-matte` picture in `pictures/sources.json`). No matte, no board.
 - `npm run check` tests 19 to 23 prove it: placed as the picture, hidden inside the things, no tell before each step,
   clear of the giant words, the labels readable and on screen, still with less motion.
 
-### The last scene's picture
+### The end of the film
 
-`content/site.json`, last scene, `"picture"`: `"twin"` (the default: the pool of light of scene 6, now empty, framed
-exactly like scene 6, so at the cut the light stays in place and only the three things leave it) or `"own"` (the
-alternative: its own small, faint pool of light). The twin's film data is `"7twin"` in `src/film/scenes.json`; its
-pictures are `s7t-*`. While the twin fades in, scene 6 holds at full strength under it, so the pool does not dim.
-Change the word, build, check.
+The film ends on scene 6 (ONE BRAIN. EVERY VENTURE.), held: the page's scroll ends with scene 6 at rest and its board
+at work (build 12H took out the seventh scene, the empty pool of light; an old link to `#s7` opens scene 6 at rest).
+Test 39 proves it.
+
+### How the film moves
+
+Everything the film shows is set on every frame from one number, the playhead: the scroll position, followed at once
+for a script, a key or a scroll bar, within about 40 ms for a finger and within about 90 ms for a mouse wheel (which
+moves the page in steps). Nothing runs on a timer, so scrolling back plays everything in reverse. The numbers live in
+`src/film/motion.ts`:
+
+- The change between two scenes plays over 0.8 screens of scroll, centred where the scene on screen changes. Each
+  scene's stage has its own dark ground; the arriving scene comes in over the one leaving, held at full strength, so
+  the light never dips and no frame is empty.
+- A scene's picture, with its giant words at the top (and the matte cut, and scene 6's board and labels), rests a
+  little below its place as the change into it starts, rises into place as the light comes, and keeps rising at the
+  same pace after it; it grows 3% as it leaves. At each scene's rest (within 3 px) it is exactly in place.
+- The lines of words leave and arrive one by one, moving 22 to 40 px: the giant lines at the top first, the words at
+  the foot later. Words never pass over other words.
+- Each light pass is eased at both ends of its step, resting exactly where the light arithmetic rests it.
+- The door's logo shows as the light comes to rest and leaves first.
+- With less motion: no movement, each scene at its rest, a plain cut between scenes.
+- The scenes next to the one on screen are built and painted (unseen) while the page is still, after the first scroll.
+- On every frame the film writes only transforms and opacity, on boxes that do not carry a mask: the camera moves a
+  box inside the pictures' box (`.frame`, the passes and the board) and a box around the giant words' box (`.cam`);
+  scene 6's growing light is an oval mask drawn once in a box (`.lm`) inside a box the film scales (`.lens`). A
+  browser draws a masked box again whenever its style is touched, so the masked boxes are only touched on a resize.
+- What moves gets a layer of its own only while it moves (a light pass while its light grows, the lines of words
+  through a change, the board's labels while they move), so at rest everything is drawn as the page draws it.
+
+### The live 3D film (build 12)
+
+Once the visitor shows intent (a touch, the wheel, a key, the mouse moving), the whole film is also drawn live: one
+WebGL 2 world with one camera that follows the playhead, from the letters of scene 1 to the board of scene 6. The
+still film above stays underneath it all the time: it is the first screen, and it takes over whenever the live film
+cannot run.
+
+- **One world.** The things stand where scene 6's drawing puts them (the stand, the race coin, the coach phone);
+  scenes 1 and 2 are close visits to the stand, scene 4 to the coin, scene 5 to the phone, and scene 6 pulls back to
+  show the three on one floor. Scene 3's race piece on its base has its own spot, to the right of the stand, where no
+  other scene's camera sees it and its own camera sees nothing else; scene 2's phone (the one that taps the tile) is
+  there in scene 2 only.
+- **One room (build 12D).** Every still holds every thing its camera sees in the world, where it stands, lit by that
+  scene's light: scene 2's laptop stills hold the coin (in the dark at the pool's edge), scene 4's the stand (far off in
+  the dark), scene 5's the coin (in the edge of scene 5's light). So no thing ever fades out in plain view: it stays
+  solid and leaves the frame by the camera moving. The stills drawn again for it are in the stills project's
+  `out-12d/` (the picture maker's `x12` setting places the other things, `pt-12d/tools/pt/stills12d/jobs.json`). Test 37
+  proves it for every still of scenes 1 to 6, both shapes. Scene 2's own phone is there in scene 2 only.
+- **Drawn from the stills.** Every surface is drawn from the very pictures the still film shows (the same files, so
+  the browser's cache serves them), each cast back onto the shapes from the camera that drew it. At each scene's rest
+  the camera is exactly that camera, framed where the page puts the picture, so the live frame is the still (no
+  visibility test there at all). While the camera moves, the shapes give the pictures their depth: a point takes a
+  still's colour where that still's camera saw it (a soft test over five texels of its depth map, so no edge turns
+  into a staircase or a dark crack, and a thing hidden only by its own relief, a hill of the coin, takes the colour
+  all the same); what no picture saw is lit live by that scene's key light (the same light, colours and camera curve
+  as the picture maker). While the camera moves every still's frame is feathered; the floor past a still's frame (and
+  just behind a thing's edge) takes that still's small soft copy, carried out from its edge, so no seam or dark rim
+  shows; the two scenes' floors mix by their weights. The floor counts as seen by a still only where no thing stood
+  within about a texel of it in that still (build 12G: else the thing's lit rim in the still was drawn on the floor as
+  a dotted ghost of its outline once the camera moved). An object is drawn by the scene whose still saw it; a thing one
+  scene's stills hold is lit by that scene and handed over at the half way point, while it is off the screen (it is
+  solid under the other scene's light, never see-through). Between two scenes the floor is relit by one light
+  travelling from the first scene's key to the second's, so the pool of light moves across the floor with the camera.
+  A far room behind everything takes what the stills show past the floor's edge. The light passes mix as the page mixes the pictures; scene 6's later passes grow
+  inside the same oval. Scene 2's phone (build 12H) comes up live from below the frame, held as a person holds a phone out,
+  and tilts onto the first tile (the photo app's icon) over about 1.4 screens of scroll, its screen calm; as it touches
+  the tile the second light comes in (the tile lights and the cafe's profile page opens on its screen); then it lifts
+  live between its two stills (`tap` and `menuPose`; its screens `src/world/phone-screens.webp`, the calm screen and
+  the profile page side by side; scene 2 is 3.6 screens tall for it), its glass reflecting the floor and the stand as scene 2's first still
+  shows them (and the pool of scene 2's spot past that still's frame, and the spot itself). That phone is laid over
+  what is drawn behind it by how much of it the stills show (none in scene 2's first still), never drawn as what a
+  still without it shows at its place (build 12G: while the camera moved that showed as a notch in the stand's lip and
+  a grey wedge on the floor). Scene 5's screen is lit as soon as the phone shows.
+- **The camera** (`src/world/path.ts`, the moves in `SHAPES` in `src/world/film3d.ts`): at each rest exactly the
+  still's camera; between rests it travels slowly out, does most of its move while the light changes, and settles
+  slowly in, never stopping and never swinging past. Scene 1 holds still until its light rests; scene 6, the last, holds its camera to the end. The stills of two scenes are mixed by where the camera is (each strongest near its own camera).
+- **In the page.** The live picture is one canvas inside the pictures' box of the lowest live scene on screen, so the
+  dark band at the foot, scene 6's board and the giant words stay above it as above a still. The things that stand in
+  front of the giant words are copied into a second canvas above the words (`.world-fg`). Scene 6's board and its
+  labels follow the floor while the camera moves.
+- **Loading.** Nothing of it loads with the first screen (test 11 counts the first load). The script (about 22 KB
+  compressed) and the shapes (`src/world/world.bin`, about 500 KB) load on idle no sooner than 4 s after load (never
+  with Save-Data, a 2G connection or less motion), where the world is made and each program drawn once (Safari builds
+  a program's pipeline at its first draw), one step a frame and only once the page has been still for a second with
+  no input (one program linked, or one drawn once, never two in one frame); else at the first sign of intent, or at once when the visitor comes back
+  through Back or a door's address. The film itself starts at the first sign of intent. The stills go into the graphics chip in the order the film
+  needs them: one picture decoded at a time, a frame between two, about a megabyte of rows a frame, a new texture's
+  memory made and cleared alone, and a frame after its last rows its smaller copies (mipmaps, made by the chip, about
+  a third more memory). Every still is read through them (trilinear, anisotropic where the chip has it, a half step
+  sharper than the chip would choose), since it is almost always drawn smaller than its own pixels: a phone's canvas is
+  at most twice the page against a 1572 px still, and the governor's lower sharpness steps (1.5, 1.25, 1) make it
+  smaller still. Read with one level only (build 12F and before) the stand's fine print lines turned into zebra
+  stripes and every edge into steps on a real phone (test 38). The shapes are read in slices between frames and the shaders compile aside
+  (`KHR_parallel_shader_compile` where the browser has it), so the visitor's first gesture never waits for any of it.
+- **When it does not run:** less motion (never started), no WebGL 2, a chip too slow for it (two slow first frames, a
+  software chip for example), a lost context (the stills at once; live again when the context comes back, or with a
+  new one after 2 s, scroll or not). Back from the back/forward cache draws again at once (`pageshow`), with a fresh
+  context if it came back lost. It draws only when something changes, never while the tab is hidden, and sends its work to the
+  chip on every frame (a context left with its work queued stalled look 11 for up to 360 ms).
+- **The shapes.** `node scripts/world-pack.mjs <the stills project's pt/tools/pt/coin-lines folder>` rebuilds
+  `src/world/world.bin` (the stand's parts from `src/world/stand.bin`, made by `scripts/stand-model.mjs`; the coin's
+  height field and its part colours from the coin's real triangles; the phone and the trophy's base as the stills
+  make them). `node scripts/world-shots.mjs <the stills project folder>` rebuilds `src/world/shots.json`, every
+  still's camera, key light and poses (and the other things it holds, its `x12` setting), from the settings the
+  picture maker saved beside each drawing. Run both when a drawing is made again, then `npm run check` (tests 32 to 38
+  prove the live film).
+- The page root carries `data-world` for the check: the scenes drawn live now, those whose stills are in the chip,
+  and the first frame's time in ms.
 
 ### Replacing a drawing with a real photo
 
@@ -182,7 +304,8 @@ cache for files with a hash in their name (`/assets/`, `/pictures/`).
 
 ## npm run check
 
-Needs hidden browsers (Chromium, WebKit, Firefox) through `playwright-core`, which is not a dependency of the site:
+Needs hidden browsers (Chromium, WebKit, Firefox, and Chromium's own build with the graphics chip, its `chromium`
+channel, for the live film's tests 32 to 36) through `playwright-core`, which is not a dependency of the site:
 set `PLAYWRIGHT_CORE` to a copy whose browsers are already installed. It never downloads anything. Set
 `BLOCKED_WORDS_FILE` to an optional local file, one word or phrase per line, that must never ship: the check fails if
 any of them appears in a tracked file, a file name or the build. Without it that test is skipped with a warning.

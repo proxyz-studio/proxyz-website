@@ -1,6 +1,7 @@
 // Scene 6, the board: the circuit board on the floor, written into the page at rest (as the page shows it with no
 // script). The film (src/main.ts) draws it in step by step from the same elements. The shapes come from
 // src/generated/board.json (made by scripts/board.mjs from src/film/board.json), in picture pixels.
+import { readFileSync } from 'node:fs';
 import type { BoardForm, BoardWords, Venture } from '../src/types';
 
 const WHITE = '#f3eee4';
@@ -84,3 +85,46 @@ export function labelCss(f: BoardForm): string {
 
 /** Each name in its trace's colour. */
 export const nameCss = (): string => TRACES.map((t) => `.blab.n-${t}{color:${BOARD_COLOURS[t]}}`).join('');
+
+/* ---------- build 12H: the board at work ---------- */
+// While scene 6 rests, the three ventures work at the same time (src/main.ts alive): the stand's tiles light one after
+// another as if tapped, the race route draws itself in on the coin, the coach phone's dial fills; then a spark of each
+// one's colour runs down its trace to the chip, the chip flashes, and white sparks run back out. All of it is drawn
+// here, over the picture (light added to it: screen), empty at rest; the zero frame of the loop is the still.
+
+/** The four printed tile icons (look-alikes in our own drawing, src/film/icons, the same art the stills print on the
+ *  tiles), left to right. */
+export const TILE_ICONS = ['photo', 'review', 'menu', 'chat'] as const;
+/** the main colour of each icon (its glow on the tile) */
+const ICON_GLOW = ['#F0544A', '#FBBC05', '#E0AE68', '#06C152'];
+const iconRoot = new URL('../src/film/icons/', import.meta.url);
+/** an icon's drawing (its 512 unit square), its ids made unique (drawn in place, not through <use>: WebKit draws a <use>
+ *  copy in a hidden tree of its own, which a strict style policy may refuse) */
+function iconBody(name: string, id: string): string {
+  const src = readFileSync(new URL(name + '.svg', iconRoot), 'utf8');
+  return src.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '')
+    .replace(/id="([^"]+)"/g, `id="${id}-$1"`).replace(/url\(#([^)]+)\)/g, `url(#${id}-$1)`);
+}
+const n1 = (v: number) => +v.toFixed(4);
+
+/** The board at work for one screen shape: empty and unseen at rest, moved by src/main.ts. */
+export function aliveSvg(f: BoardForm, k: 'd' | 'p'): string {
+  const [W, H] = f.size, id = (s: string) => `a${k}${s}`, A = f.alive;
+  const defs = ICON_GLOW.map((c, i) => `<radialGradient id="${id('h' + i)}"><stop offset="0" stop-color="${c}" stop-opacity=".9"/><stop offset=".55" stop-color="${c}" stop-opacity=".35"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></radialGradient>`).join('')
+    + `<radialGradient id="${id('c')}"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".35" stop-color="#f3eee4" stop-opacity=".45"/><stop offset="1" stop-color="#f3eee4" stop-opacity="0"/></radialGradient>`;
+  // each tile: its halo (an oval of the icon's colour round the tile) and the icon itself, laid on the tile's face
+  const tiles = A.tiles.map(([tl, tr, bl], i) => {
+    const a = (tr[0] - tl[0]) / 512, b = (tr[1] - tl[1]) / 512, c = (bl[0] - tl[0]) / 512, d = (bl[1] - tl[1]) / 512;
+    const cx = (tr[0] + bl[0]) / 2, cy = (tr[1] + bl[1]) / 2, rx = Math.hypot(tr[0] - tl[0], tr[1] - tl[1]) * 0.95, ry = Math.hypot(bl[0] - tl[0], bl[1] - tl[1]) * 1.05;
+    return `<g class="ti" opacity="0"><ellipse cx="${n1(cx)}" cy="${n1(cy)}" rx="${n1(rx)}" ry="${n1(ry)}" fill="url(#${id('h' + i)})"/>`
+      + `<g transform="matrix(${[a, b, c, d, tl[0], tl[1]].map(n1).join(' ')})">${iconBody(TILE_ICONS[i], id('i' + i))}</g></g>`;
+  }).join('');
+  const [cx, cy, rx, ry] = f.chip.glow;
+  return `<svg class="alive a${k}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true" focusable="false" data-route="${A.route.map((p) => p.join(',')).join(' ')}" data-screen="${A.screen.flat().join(',')}" data-dial="${A.dial.join(',')}"><defs>${defs}</defs>`
+    + `<g class="at">${tiles}</g>`
+    + '<g class="ar" opacity="0"><path class="rg" d=""/><path class="rc" d=""/></g>'
+    + '<g class="ad" opacity="0"><path class="dg" d=""/><path class="dc" d=""/></g>'
+    + `<ellipse class="cf" cx="${cx}" cy="${cy}" rx="${n1(rx * 1.6)}" ry="${n1(ry * 1.6)}" fill="url(#${id('c')})" opacity="0"/>`
+    + (['stand', 'coin', 'phone'] as const).map((t) => `<g class="sp s-${t}" stroke="${BOARD_COLOURS[t]}"><path class="k3" d=""/><path class="k2" d=""/><path class="k1" d=""/><path class="k0" d=""/></g>`).join('')
+    + '</svg>';
+}

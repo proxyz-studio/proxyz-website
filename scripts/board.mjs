@@ -14,6 +14,8 @@ const layout = JSON.parse(readFileSync(ROOT + 'src/film/board.json', 'utf8'));
 const film = JSON.parse(readFileSync(ROOT + 'src/film/scenes.json', 'utf8'));
 // the words of the five labels, for the room the net leaves them (never copied: read from the content file)
 const content = JSON.parse(readFileSync(ROOT + 'content/site.json', 'utf8'));
+// build 12H: the race route as one line on the coin (scripts/route-line.mjs, from the GPX track and the print file)
+const ROUTE = JSON.parse(readFileSync(ROOT + 'src/film/route.json', 'utf8')).pts;
 const WORDS = content.scenes.find((s) => s.board)?.board ?? { chip: '', next: '' };
 const nameOf = (t) => content.ventures.find((v) => v.id === layout.ventures[t])?.name ?? '';
 const DEG = Math.PI / 180;
@@ -293,6 +295,22 @@ function form(F, key) {
         coin: arrival(view, 1, fp(circle(T.coin[0], T.coin[1], T.coin[2], 120))),
         phone: arrival(view, 2, fp(rect(T.phone[0], T.phone[1], T.phone[3], T.phone[4], T.phone[2]))),
       };
+    })(),
+    // build 12H, the board at work (src/main.ts alive): the four printed icons on the stand's tiles (three corners each:
+    // the icon's top left, top right and bottom left, its top toward the stand's back), the route on the coin, the coach
+    // phone's lit screen and the dial on it
+    alive: (() => {
+      const A = layout.alive, [ty, tz] = A.tileTop, h = A.icon / 2, D = 15 * DEG;
+      const up = [0, Math.cos(D), Math.sin(D)], back = [0, Math.sin(D), -Math.cos(D)];
+      const [sx0, sz0, st] = T.stand, c = Math.cos(st * DEG), sn = Math.sin(st * DEG);
+      const W = ([x, y, z]) => pt([sx0 + x * c + z * sn, sz0 - x * sn + z * c], y);
+      const tiles = A.tiles.map((x) => {
+        const m = [x + up[0] * 0.1, ty + up[1] * 0.1, tz + up[2] * 0.1];
+        const at = (a, k) => [m[0] + a, m[1] + back[1] * k, m[2] + back[2] * k];
+        return [W(at(-h, h)), W(at(h, h)), W(at(-h, -h))];
+      });
+      const route = ROUTE.map(([x, y, z]) => pt([T.coin[0] + x, T.coin[1] + z], y));
+      return { tiles, route, screen: F.screen, dial: A.dial };
     })(),
     footprints: {
       stand: poly(rect(T.stand[0], T.stand[1], T.stand[3], T.stand[4], T.stand[2])),

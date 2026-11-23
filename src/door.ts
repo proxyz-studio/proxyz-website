@@ -40,8 +40,11 @@ export interface FilmHooks {
 export interface Doors {
   /** place scene n's door from its picture box g (called by the film's own place) */
   place(n: number, g: Box): void;
-  /** the strength of scene n's last light pass: the logo shows once the light rests */
+  /** the strength of scene n's last light pass: the logo is a link once the light rests */
   light(n: number, last: number): void;
+  /** the film's motion for scene n's logo (src/main.ts): how strongly it shows, and how far below its place it sits:
+   *  the picture's camera (a logo placed by the picture) and its own travel (both, in px) */
+  motion(n: number, op: number, camera: number, own: number, cameraX?: number): void;
   /** the film gave up: put everything back, the doors are plain links from now on */
   giveUp(): void;
   /** the scene a door's hash (/#tapz) lands on, or 0 */
@@ -152,6 +155,19 @@ export function startDoors(film: FilmHooks): Doors {
   }
   function light(n: number, last: number): void {
     for (const a of links) if (a.classList.contains('dlogo') && Number(a.dataset.scene) === n) a.classList.toggle('lit', film.reduced() || last >= 0.98);
+  }
+  const shown = new WeakMap<HTMLElement, [string, string]>();
+  function motion(n: number, op: number, camera: number, own: number, cameraX = 0): void {
+    for (const a of links) {
+      if (!a.classList.contains('dlogo') || Number(a.dataset.scene) !== n) continue;
+      // a logo riding with the words at the foot moves with them; one placed by the picture moves with the picture
+      const fixed = a.style.position === 'fixed', dy = (fixed ? 0 : camera) + own, dx = fixed ? 0 : cameraX;
+      const o = op >= 0.999 ? '1' : op <= 0.001 ? '0' : op.toFixed(3), t = Math.abs(dy) < 0.01 && Math.abs(dx) < 0.01 ? '' : `translate(${dx.toFixed(2)}px,${dy.toFixed(2)}px)`;
+      const was = shown.get(a);
+      if (was?.[0] !== o) a.style.opacity = o;
+      if (was?.[1] !== t) a.style.transform = t;
+      shown.set(a, [o, t]);
+    }
   }
 
   /* ---------- getting the product's page ready early ---------- */
@@ -382,6 +398,7 @@ export function startDoors(film: FilmHooks): Doors {
   return {
     place,
     light,
+    motion,
     giveUp() { restore(false); },
     hashScene(hash: string) {
       const d = (DOORS as unknown as Door[]).find((x) => '#' + x.id === hash);

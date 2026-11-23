@@ -69,9 +69,6 @@ export interface SceneWords {
   heightLine?: boolean;
   toolLine?: string;
   letterhead?: string;
-  /** Last scene only, chosen at build time: "own" (its own picture, the default) or "twin" (the pool of light of
-   *  scene 6, now empty, framed exactly like scene 6; film data "7twin"). */
-  picture?: 'own' | 'twin';
   /** Scene 6 only: the two labels of the board drawn on its floor (the chip, and the place for the next one). */
   board?: BoardWords;
 }
@@ -99,6 +96,9 @@ export interface BoardForm {
   footprints: Record<string, string>;
   /** the pass strengths [at 40%, at 70%] at which the light covers the race piece and the coach phone */
   arrive: Record<'coin' | 'phone', [number, number]>;
+  /** build 12H, the board at work: the four tile icons (top left, top right, bottom left corners), the route on the coin,
+   *  the coach phone's lit screen (its four corners) and the dial on it [x, y, radius] in shares of the screen picture */
+  alive: { tiles: number[][][]; route: number[][]; screen: number[][]; dial: number[] };
 }
 
 export interface PageMeta {

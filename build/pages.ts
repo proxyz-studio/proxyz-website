@@ -6,7 +6,7 @@ import type { Plugin } from 'vite';
 import type { BoardForm, Content, FilmData, Pictures, SceneWords, View, Venture } from '../src/types';
 import { cutMask, frameMask, restingPass } from '../src/film/math';
 import { readFont } from './font';
-import { boardLabels, boardSvg, labelCss, nameCss } from './board';
+import { aliveSvg, boardLabels, boardSvg, labelCss, nameCss } from './board';
 import { DOOR_ARROW, boardDoor, boardDoorCss, doorCss, doorsOf, hashMark, hashMarkCss, hashScene, sceneDoor, speculationRules } from './door';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
@@ -26,15 +26,9 @@ const LANDSCAPE = '(min-aspect-ratio: 1001/1000)';
 /** The display face of the giant lines (its widths size every line in CSS, see typeCss). */
 export const DISPLAY_FONT = 'src/fonts/anton-latin-400-normal.woff2';
 
-/** The views of scene n. Scene 7 has a build time choice of picture in the content file: its own, or the twin of
- *  scene 6 (the same pool of light, now empty, framed exactly like scene 6). */
+/** The views of scene n. */
 export function sceneViews(film: FilmData, c: Content, n: number): { desktop: View; phone: View } {
-  const s = c.scenes[n - 1];
-  if (s?.picture === 'twin') {
-    const twin = film.scenes[`${n}twin`];
-    if (!twin) throw new Error(`site-pages: scene ${n} asks for the twin picture, but src/film/scenes.json has no "${n}twin"`);
-    return twin;
-  }
+  void c;
   return film.scenes[String(n)];
 }
 
@@ -218,11 +212,10 @@ function sceneHtml(c: Content, film: FilmData, p: Pictures, n: number): string {
   const foot = n === c.scenes.length
     ? `<div class="foot"><a href="${c.pages.legal.path}">${esc(c.border.legal)}</a>${switchHtml(c, 'people', 'foot-sw')}</div>` : '';
   const mark = s.venture ? c.ventures.findIndex((v) => v.id === s.venture) : -1;
-  const view = n === c.scenes.length && s.picture === 'twin' ? ' data-view="twin"' : '';
   // scene 6: the board on the floor, at rest, in the picture's own box (one drawing per screen shape); its labels in a
   // box of their own just after the pictures, the same size and place, where the picture's soft side edges never reach
   const b = s.board ? load().board : null;
-  const board = s.board && b ? `<div class="bbox">${boardSvg(b.desktop, 'd')}${boardSvg(b.phone, 'p')}</div>` : '';
+  const board = s.board && b ? `<div class="bbox">${boardSvg(b.desktop, 'd')}${boardSvg(b.phone, 'p')}${aliveSvg(b.desktop, 'd')}${aliveSvg(b.phone, 'p')}</div>` : '';
   // a product's door (build/door.ts): in its own scene the logo and an arrow; on the board its name tag and its thing
   // are one link. Its address hash (/#tapz) lands on its own scene.
   const doors = doorsOf(c, n);
@@ -230,7 +223,7 @@ function sceneHtml(c: Content, film: FilmData, p: Pictures, n: number): string {
   const onBoard = s.board ? doors.map((d) => ({ venture: d.venture, arrow: DOOR_ARROW, link: boardDoor(d, n) })) : [];
   const labels = s.board && b ? boardLabels(s.board, c.ventures, b.desktop, b.phone, onBoard) : '';
   const marks = c.doors.filter((d) => hashScene(c, d) === n).map(hashMark).join('');
-  return `<section id="s${n}" class="scene" data-mark="${mark}"${view}><div class="layer"><div class="passes ready">${scenePicture(n, film, p, s.alt)}${board}</div>${labels}<div class="dim"></div><div class="shade"></div>${cut}${words}${addr}${own}</div>${marks}${foot}</section>`;
+  return `<section id="s${n}" class="scene" data-mark="${mark}"><div class="layer"><div class="passes ready">${scenePicture(n, film, p, s.alt)}${board}</div>${labels}<div class="dim"></div><div class="shade"></div>${cut}${words}${addr}${own}</div>${marks}${foot}</section>`;
 }
 
 function head(c: Content, kind: Kind, entry: string, extra = ''): string {

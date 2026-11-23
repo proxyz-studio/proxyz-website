@@ -1,18 +1,18 @@
 {
- "_note": "Source drawing for each picture (the 1x drawing). Paths are relative to the source folder given to scripts/pictures.py. A value may be an object: \"src\" the drawing, \"max2x\" a byte budget for the 2x file, \"only1x\" no 2x file, \"q\" its own AVIF quality. s7t-* are the empty pool of scene 6, for the scene 7 choice \"twin\" (content/site.json). A key ending in -matte is the matte of the thing a scene lights first (\"matte\": true).",
+ "_note": "Source drawing for each picture (the 1x drawing). Paths are relative to the source folder given to scripts/pictures.py. A value may be an object: \"src\" the drawing, \"max2x\" a byte budget for the 2x file, \"only1x\" no 2x file, \"q\" its own AVIF quality. A key ending in -matte is the matte of the thing a scene lights first (\"matte\": true). Build 12D: out-12d/ holds stills drawn again with the other things of the one room that their camera sees (each in its world place, lit by that scene's light): scene 2 (laptop) with the coin, scene 4 with the stand, scene 5 with the coin. The PULZ screens of scenes 5 and 6 are the app in its v90 colours (out-12d s5v4-*, brainv2-*; screens made by the stills project's pt-12d/tools/pt/stills5/coach_screens_v90.py from the made up sample person's screens only). Build 12H: out-12h/ holds scenes 1 (phone), 2 and 6 drawn again with the four printed tile icons (the picture maker's ico setting, pt-12h/tools/pt/stills12h/jobs.json), and scene 2's phone tapping the first tile with the cafe's profile page on its screen.",
  "s1-desk-p1": "out2/s1-desk-p1.png",
  "s1-desk-p2": "out2/s1-desk-p2.png",
  "s1-phone-p1": {
-  "src": "out2/s1-phone-p1.png",
+  "src": "out-12h/s1v3-phone-p1@1x.png",
   "max2x": 78000
  },
- "s1-phone-p2": "out2/s1-phone-p2.png",
- "s2-desk-p1": "out5/s2v2-desk-p1@1x.png",
- "s2-desk-p2": "out5/s2v2-desk-p2@1x.png",
- "s2-desk-p3": "out5/s2v2-desk-p3@1x.png",
- "s2-phone-p1": "out5/s2v2-phone-p1@1x.png",
- "s2-phone-p2": "out5/s2v2-phone-p2@1x.png",
- "s2-phone-p3": "out5/s2v2-phone-p3@1x.png",
+ "s1-phone-p2": "out-12h/s1v3-phone-p2@1x.png",
+ "s2-desk-p1": "out-12h/s2v4-desk-p1@1x.png",
+ "s2-desk-p2": "out-12h/s2v4-desk-p2@1x.png",
+ "s2-desk-p3": "out-12h/s2v4-desk-p3@1x.png",
+ "s2-phone-p1": "out-12h/s2v4-phone-p1@1x.png",
+ "s2-phone-p2": "out-12h/s2v4-phone-p2@1x.png",
+ "s2-phone-p3": "out-12h/s2v4-phone-p3@1x.png",
  "s2-desk-matte": {
   "src": "out5/s2v2-desk-matte@1x.png",
   "matte": true
@@ -33,16 +33,16 @@
   "src": "out5/s3v2-phone-matte@1x.png",
   "matte": true
  },
- "s4-desk-p1": "out2/s4-desk-p1.png",
- "s4-desk-p2": "out2/s4-desk-p2.png",
- "s4-phone-p1": "out2/s4-phone-p1.png",
- "s4-phone-p2": "out2/s4-phone-p2.png",
- "s5-desk-p1": "out5/s5v2-desk-p1@1x.png",
- "s5-desk-p2": "out5/s5v2-desk-p2@1x.png",
- "s5-desk-p3": "out5/s5v2-desk-p3@1x.png",
- "s5-phone-p1": "out5/s5v2-phone-p1@1x.png",
- "s5-phone-p2": "out5/s5v2-phone-p2@1x.png",
- "s5-phone-p3": "out5/s5v2-phone-p3@1x.png",
+ "s4-desk-p1": "out-12d/s4v2-desk-p1.png",
+ "s4-desk-p2": "out-12d/s4v2-desk-p2.png",
+ "s4-phone-p1": "out-12d/s4v2-phone-p1.png",
+ "s4-phone-p2": "out-12d/s4v2-phone-p2.png",
+ "s5-desk-p1": "out-12e/s5v5-desk-p1@1x.png",
+ "s5-desk-p2": "out-12e/s5v5-desk-p2@1x.png",
+ "s5-desk-p3": "out-12e/s5v5-desk-p3@1x.png",
+ "s5-phone-p1": "out-12e/s5v5-phone-p1@1x.png",
+ "s5-phone-p2": "out-12e/s5v5-phone-p2@1x.png",
+ "s5-phone-p3": "out-12e/s5v5-phone-p3@1x.png",
  "s5-desk-matte": {
   "src": "out5/s5v2-desk-matte@1x.png",
   "matte": true
@@ -51,12 +51,12 @@
   "src": "out5/s5v2-phone-matte@1x.png",
   "matte": true
  },
- "s6-desk-p1": "out3/brain-desk-p1.png",
- "s6-desk-p2": "out3/brain-desk-p2.png",
- "s6-desk-p3": "out6/brain-desk-p3@1x.png",
- "s6-phone-p1": "out3/brain-phone-p1.png",
- "s6-phone-p2": "out3/brain-phone-p2.png",
- "s6-phone-p3": "out6/brain-phone-p3@1x.png",
+ "s6-desk-p1": "out-12h/brainv3-desk-p1@1x.png",
+ "s6-desk-p2": "out-12h/brainv3-desk-p2@1x.png",
+ "s6-desk-p3": "out-12h/brainv3-desk-p3@1x.png",
+ "s6-phone-p1": "out-12h/brainv3-phone-p1@1x.png",
+ "s6-phone-p2": "out-12h/brainv3-phone-p2@1x.png",
+ "s6-phone-p3": "out-12h/brainv3-phone-p3@1x.png",
  "s6-desk-matte": {
   "src": "out5/brain-desk-matte@1x.png",
   "matte": true
@@ -72,23 +72,5 @@
  "s6-phone-things-matte": {
   "src": "out6/brain-phone-things-matte@1x.png",
   "matte": true
- },
- "s7-desk-p1": {
-  "src": "out2/s6-desk-p1.png",
-  "only1x": true,
-  "q": 94
- },
- "s7-phone-p1": {
-  "src": "out2/s6-phone-p1.png",
-  "only1x": true,
-  "q": 94
- },
- "s7t-desk-p1": {
-  "src": "out4/brain-desk-empty@2x.png",
-  "only1x": true
- },
- "s7t-phone-p1": {
-  "src": "out4/brain-phone-empty@2x.png",
-  "only1x": true
  }
 }
