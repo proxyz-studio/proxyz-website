@@ -92,11 +92,12 @@ export const nameCss = (): string => TRACES.map((t) => `.blab.n-${t}{color:${BOA
 // one's colour runs down its trace to the chip, the chip flashes, and white sparks run back out. All of it is drawn
 // here, over the picture (light added to it: screen), empty at rest; the zero frame of the loop is the still.
 
-/** The four printed tile icons (look-alikes in our own drawing, src/film/icons, the same art the stills print on the
- *  tiles), left to right. */
-export const TILE_ICONS = ['photo', 'review', 'menu', 'chat'] as const;
-/** the main colour of each icon (its glow on the tile) */
-const ICON_GLOW = ['#F0544A', '#FBBC05', '#E0AE68', '#06C152'];
+/** The four tile pictures, left to right, exactly as the TAPZ site draws them (build 12I: src/film/icons, made by
+ *  scripts/tile-pictograms.mjs from TAPZ's own geometry, the same drawings the stills raise on the tiles): a green chat
+ *  bubble, a pink camera, a white fork and knife, a white globe. */
+export const TILE_ICONS = ['chat', 'photo', 'menu', 'web'] as const;
+/** the main colour of each picture (its glow on the tile): TAPZ's green and pink, and a warm white */
+const ICON_GLOW = ['#22C55E', '#FF4193', '#ECEAE6', '#ECEAE6'];
 const iconRoot = new URL('../src/film/icons/', import.meta.url);
 /** an icon's drawing (its 512 unit square), its ids made unique (drawn in place, not through <use>: WebKit draws a <use>
  *  copy in a hidden tree of its own, which a strict style policy may refuse) */
