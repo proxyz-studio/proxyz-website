@@ -1,18 +1,18 @@
 {
- "_note": "Source drawing for each picture (the 1x drawing). Paths are relative to the source folder given to scripts/pictures.py. A value may be an object: \"src\" the drawing, \"max2x\" a byte budget for the 2x file, \"only1x\" no 2x file, \"q\" its own AVIF quality. A key ending in -matte is the matte of the thing a scene lights first (\"matte\": true). Build 12D: out-12d/ holds stills drawn again with the other things of the one room that their camera sees (each in its world place, lit by that scene's light): scene 2 (laptop) with the coin, scene 4 with the stand, scene 5 with the coin. The PULZ screens of scenes 5 and 6 are the app in its v90 colours (out-12d s5v4-*, brainv2-*; screens made by the stills project's pt-12d/tools/pt/stills5/coach_screens_v90.py from the made up sample person's screens only). Build 12H: out-12h/ holds scenes 1 (phone), 2 and 6 drawn again with the four printed tile icons (the picture maker's ico setting, pt-12h/tools/pt/stills12h/jobs.json), and scene 2's phone tapping the first tile with the cafe's profile page on its screen.",
+ "_note": "Source drawing for each picture (the 1x drawing). Paths are relative to the source folder given to scripts/pictures.py. A value may be an object: \"src\" the drawing, \"max2x\" a byte budget for the 2x file, \"only1x\" no 2x file, \"q\" its own AVIF quality. A key ending in -matte is the matte of the thing a scene lights first (\"matte\": true). Build 12D: out-12d/ holds stills drawn again with the other things of the one room that their camera sees (each in its world place, lit by that scene's light): scene 2 (laptop) with the coin, scene 4 with the stand, scene 5 with the coin. The PULZ screens of scenes 5 and 6 are the app in its v90 colours (out-12d s5v4-*, brainv2-*; screens made by the stills project's pt-12d/tools/pt/stills5/coach_screens_v90.py from the made up sample person's screens only). Build 12H: out-12h/ holds scenes 1 (phone), 2 and 6 drawn again with the four printed tile icons (the picture maker's ico setting, pt-12h/tools/pt/stills12h/jobs.json), and scene 2's phone tapping the first tile with the cafe's profile page on its screen. Build 12I: out-12i/ holds the same stills drawn again with the TAPZ site's own tile pictures raised on the tiles (the picture maker's pic setting, pt-12i/tools/pt/stills12i/jobs.json), and scene 2's phone tapping the second tile (the pink camera).",
  "s1-desk-p1": "out2/s1-desk-p1.png",
  "s1-desk-p2": "out2/s1-desk-p2.png",
  "s1-phone-p1": {
-  "src": "out-12h/s1v3-phone-p1@1x.png",
+  "src": "out-12i/s1v4-phone-p1@1x.png",
   "max2x": 78000
  },
- "s1-phone-p2": "out-12h/s1v3-phone-p2@1x.png",
- "s2-desk-p1": "out-12h/s2v4-desk-p1@1x.png",
- "s2-desk-p2": "out-12h/s2v4-desk-p2@1x.png",
- "s2-desk-p3": "out-12h/s2v4-desk-p3@1x.png",
- "s2-phone-p1": "out-12h/s2v4-phone-p1@1x.png",
- "s2-phone-p2": "out-12h/s2v4-phone-p2@1x.png",
- "s2-phone-p3": "out-12h/s2v4-phone-p3@1x.png",
+ "s1-phone-p2": "out-12i/s1v4-phone-p2@1x.png",
+ "s2-desk-p1": "out-12i/s2v5-desk-p1@1x.png",
+ "s2-desk-p2": "out-12i/s2v5-desk-p2@1x.png",
+ "s2-desk-p3": "out-12i/s2v5-desk-p3@1x.png",
+ "s2-phone-p1": "out-12i/s2v5-phone-p1@1x.png",
+ "s2-phone-p2": "out-12i/s2v5-phone-p2@1x.png",
+ "s2-phone-p3": "out-12i/s2v5-phone-p3@1x.png",
  "s2-desk-matte": {
   "src": "out5/s2v2-desk-matte@1x.png",
   "matte": true
@@ -51,12 +51,12 @@
   "src": "out5/s5v2-phone-matte@1x.png",
   "matte": true
  },
- "s6-desk-p1": "out-12h/brainv3-desk-p1@1x.png",
- "s6-desk-p2": "out-12h/brainv3-desk-p2@1x.png",
- "s6-desk-p3": "out-12h/brainv3-desk-p3@1x.png",
- "s6-phone-p1": "out-12h/brainv3-phone-p1@1x.png",
- "s6-phone-p2": "out-12h/brainv3-phone-p2@1x.png",
- "s6-phone-p3": "out-12h/brainv3-phone-p3@1x.png",
+ "s6-desk-p1": "out-12i/brainv4-desk-p1@1x.png",
+ "s6-desk-p2": "out-12i/brainv4-desk-p2@1x.png",
+ "s6-desk-p3": "out-12i/brainv4-desk-p3@1x.png",
+ "s6-phone-p1": "out-12i/brainv4-phone-p1@1x.png",
+ "s6-phone-p2": "out-12i/brainv4-phone-p2@1x.png",
+ "s6-phone-p3": "out-12i/brainv4-phone-p3@1x.png",
  "s6-desk-matte": {
   "src": "out5/brain-desk-matte@1x.png",
   "matte": true
