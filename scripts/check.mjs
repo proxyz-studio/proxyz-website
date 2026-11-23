@@ -3057,8 +3057,9 @@ async function main() {
 
   /* 41. build 12H, build 12I: the four TAPZ tile pictures are in the stills, where the stand's tiles are: left to right a
    *  green chat bubble, a pink camera, a white fork and knife, a white globe, raised on black tiles. A probe on each
-   *  picture's solid part (the brightest pixel within 2 px of the point, so a thin white line counts) and one on the black
-   *  tile below it */
+   *  picture's solid part (the mean of 3x3 pixels for the green and pink; for the thin white lines the brightest pixel within
+   *  2 px) and one on the tile below it: dark and colourless, and far below the white pictures (the black plastic shows grey
+   *  where the key light falls on it) */
   if (want(41)) await guarded(41, async () => {
     const bad = [], seen = [];
     const { build } = await import(join(ROOT, 'node_modules/esbuild/lib/main.js'));
@@ -3071,12 +3072,12 @@ async function main() {
     const white = (c) => Math.min(...c) > 90 && Math.max(...c) - Math.min(...c) < 60;
     // [name, a point on the picture (TAPZ grid units, x right, y toward the stand's front), its colour test]
     const kinds = [
-      ['chat (green)', [12, 6], (c) => c[1] > 1.3 * c[0] && c[1] > 1.15 * c[2] && c[1] > 60],
+      ['chat (green)', [4.5, 13], (c) => c[1] > 1.3 * c[0] && c[1] > 1.15 * c[2] && c[1] > 60],
       ['photo (pink)', [6, 16.5], (c) => c[0] > c[2] && c[0] > 1.25 * c[1] && c[0] > 70],
       ['menu (white)', [8.6, 9.2], white],
       ['web (white)', [12, 12], white],
     ];
-    const black = (c) => Math.max(...c) < 75;
+    const black = (c) => Math.max(...c) < 130 && Math.max(...c) - Math.min(...c) < 20;
     for (const form of ['desktop', 'phone']) {
       const passes = {};
       for (let n = 1; n <= content.scenes.length; n++) passes[n] = film.scenes[String(n)][form].passes;
@@ -3096,7 +3097,7 @@ async function main() {
           const d = await (0, eval)(decode)(b64);
           const get = (x, y) => { const k = (y * d.width + x) * 4; return [d.data[k], d.data[k + 1], d.data[k + 2]]; };
           return at.map(([x, y], n) => {
-            if (n % 2) { const s = [0, 0, 0]; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) get(Math.round(x + i), Math.round(y + j)).forEach((v, q) => (s[q] += v / 9)); return s.map(Math.round); }
+            if (n % 2 || n < 4) { const s = [0, 0, 0]; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) get(Math.round(x + i), Math.round(y + j)).forEach((v, q) => (s[q] += v / 9)); return s.map(Math.round); }
             let best = [0, 0, 0], bl = -1;
             for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) { const c = get(Math.round(x + i), Math.round(y + j)), l = c[0] + c[1] + c[2]; if (l > bl) { bl = l; best = c; } }
             return best;
@@ -3106,6 +3107,7 @@ async function main() {
           const c = cols[i * 2], g = cols[i * 2 + 1], a = at[i * 2];
           if (!test(c)) bad.push(`${key} tile ${i + 1} ${name} at ${a.map(Math.round).join(',')}: rgb ${c.join(',')}`);
           if (!black(g)) bad.push(`${key} tile ${i + 1}: the tile below the picture is not black (rgb ${g.join(',')})`);
+          if (i >= 2 && Math.min(...c) < Math.max(...g) + 50) bad.push(`${key} tile ${i + 1}: the white picture does not stand out from its tile (${c.join(',')} on ${g.join(',')})`);
         });
         seen.push(`${key} ${cols.filter((_, n) => !(n % 2)).map((c) => c.join('/')).join(' ')}`);
       }
