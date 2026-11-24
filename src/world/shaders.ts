@@ -274,10 +274,12 @@ vec3 live(vec3 n, vec3 v, vec3 lp, vec3 ld, vec2 lc, float li, float lk, float h
   if (held < 0.5 && uSolid < 0.5) { vec3 F = vec3(vW.x, 0.0, vW.z); return display(shade(vec3(0.0, 1.0, 0.0), v, F, vec3(0.006, 0.006, 0.0058), 0.95, 0.0, lp, ld, lc, li * flagPass(F, lp, fc, fu, fv), lk)); }
   // the coin: its own colours by part (its spools), where no still saw it
   vec3 alb = uMap > 0.5 ? texture(uCoinMap, vL.xz / 130.0 + 0.5).rgb : uAlb;
-  // build 12H: a tile's printed icon, a 24 mm square on its face (the face 8 mm up its own axis, its top toward the back)
+  // build 12H: a tile's picture, a 24 mm square on its face (the face 8 mm up its own axis, its top toward the back).
+  // Build 12I: the TAPZ pictures (scripts/tile-pictograms.mjs), their plastic as the stills paint it (whites at half, the
+  // green and pink at about a third of their screen colour)
   if (uTile >= 0.0 && vL.y > 7.6 && abs(vL.x) < 12.0 && abs(vL.z) < 12.0) {
     vec4 ic = texture(uCoinMap, vec2((uTile + (vL.x + 12.0) / 24.0) / 4.0, (vL.z + 12.0) / 24.0));
-    alb = mix(alb, srgbLin(ic.rgb) * 0.8, ic.a);
+    alb = mix(alb, srgbLin(ic.rgb) * mix(0.34, 0.5, step(0.85, min(ic.r, min(ic.g, ic.b)))), ic.a);
   }
   return display(shade(n, v, vW, alb, uRough, uMetal, lp, ld, lc, li * flagPass(vW, lp, fc, fu, fv), lk));
 }

@@ -296,7 +296,7 @@ function form(F, key) {
         phone: arrival(view, 2, fp(rect(T.phone[0], T.phone[1], T.phone[3], T.phone[4], T.phone[2]))),
       };
     })(),
-    // build 12H, the board at work (src/main.ts alive): the four printed icons on the stand's tiles (three corners each:
+    // build 12H, the board at work (src/main.ts alive): the four tile pictures on the stand's tiles (three corners each:
     // the icon's top left, top right and bottom left, its top toward the stand's back), the route on the coin, the coach
     // phone's lit screen and the dial on it
     alive: (() => {
@@ -305,7 +305,8 @@ function form(F, key) {
       const [sx0, sz0, st] = T.stand, c = Math.cos(st * DEG), sn = Math.sin(st * DEG);
       const W = ([x, y, z]) => pt([sx0 + x * c + z * sn, sz0 - x * sn + z * c], y);
       const tiles = A.tiles.map((x) => {
-        const m = [x + up[0] * 0.1, ty + up[1] * 0.1, tz + up[2] * 0.1];
+        // build 12I: on the pictures' top, raised 1 mm on the tile as on TAPZ
+        const m = [x + up[0] * 1, ty + up[1] * 1, tz + up[2] * 1];
         const at = (a, k) => [m[0] + a, m[1] + back[1] * k, m[2] + back[2] * k];
         return [W(at(-h, h)), W(at(h, h)), W(at(-h, -h))];
       });

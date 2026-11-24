@@ -306,6 +306,7 @@ a.nm { min-width: 44px; }
 /* build 12H: the board at work, light added over the picture (empty at rest; src/main.ts alive) */
 .alive { display: none; position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke-linecap: round; stroke-linejoin: round; mix-blend-mode: screen; overflow: visible; }
 .alive path { vector-effect: non-scaling-stroke; }
+.alive .ti path { vector-effect: none; }
 .alive .rg { stroke: #ff5a3c; stroke-opacity: .35; stroke-width: clamp(3px, calc(var(--bw) * 4.5), 6px); }
 .alive .rc { stroke: #ff7a55; stroke-width: clamp(1.25px, calc(var(--bw) * 1.6), 2.25px); }
 .alive .dg { stroke: #d8f34a; stroke-opacity: .3; stroke-width: clamp(3px, calc(var(--bw) * 4), 6px); }

@@ -23,8 +23,8 @@ import tileIcons from './tile-icons.webp?url';
 /** the pictures on scene 2's phone screen, for the phone drawn live (build 12H: side by side, the calm screen it is
  *  held out with, and the cafe's profile page it shows once it has tapped the tile) */
 const SCREEN = 'menu-screen';
-/** build 12H: the four icons printed on the stand's tiles (src/film/icons, the art the stills print), for the tiles where no
- *  still saw them */
+/** build 12H: the four pictures on the stand's tiles (build 12I: the TAPZ pictures, scripts/tile-pictograms.py), for the
+ *  tiles where no still saw them */
 const TILES = 'tile-icons';
 
 export interface Box { left: number; top: number; w: number; h: number }
@@ -465,7 +465,7 @@ export async function startFilm3d(h: Hooks3, onGone: () => void): Promise<Film3d
   }
   /** Build 12H, scene 2's phone, as a pure function of the scroll (r: how far scene 2's light has come, 0 at the scene's
    *  top, 1 at its rest, past 0 before it): the phone comes up from below the frame, held as a person holds a phone out,
-   *  and tilts onto the first tile (r -0.15 to 0.55, about 1.4 screens of scroll: slow at a mouse wheel's 900 px a
+   *  and tilts onto the second tile, the pink camera (r -0.15 to 0.55, about 1.4 screens of scroll: slow at a mouse wheel's 900 px a
    *  second); it touches it and the second light comes in (the tile lights, the page opens on the screen: 0.52 to 0.64);
    *  then it lifts to the camera with the third light (0.68 to 0.95). The still film, under it, keeps its own steps. */
   function tap(y: number): { a: number; t: number[] } {
